@@ -776,8 +776,145 @@ def cmd_install_hook(args) -> None:
     print(f"installed {hook}")
 
 
+def cmd_version(args) -> None:
+    print(__version__)
+    try:
+        ctx = build_ctx(args)
+        print(f"tracker: {ctx.dir}", file=sys.stderr)
+    except SystemExit:
+        pass  # version must work even with no tracker around
+
+
+def cmd_start(args) -> None:
+    ctx = build_ctx(args)
+    target = resolve_alias(ctx.cfg, "start")
+    if not target:
+        die("no 'start' alias configured; use `trck mv <id> <status>`")
+    cmd_mv(ns_like(args, status=target, resolution=None))
+
+
+def cmd_done(args) -> None:
+    ctx = build_ctx(args)
+    target = resolve_alias(ctx.cfg, "done")
+    if not target:
+        die("no 'done' alias configured; use `trck mv <id> <status>`")
+    cmd_mv(ns_like(args, status=target, resolution=getattr(args, "resolution", None)))
+
+
+def ns_like(args, **over):
+    """Clone an argparse Namespace with overrides (for alias delegation)."""
+    data = dict(vars(args))
+    data.update(over)
+    return argparse.Namespace(**data)
+
+
+def cmd_init(args):    die("init not implemented yet")   # replaced in Task 13
+def cmd_update(args):  die("update not implemented yet") # replaced in Task 12
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="trck", description="deterministic in-repo issue tracker")
+    p.add_argument("--dir", help="tracker dir (overrides discovery and $TRCK_DIR)")
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    n = sub.add_parser("new", help="create a new issue (then edit its prose)")
+    n.add_argument("title")
+    n.add_argument("--priority")
+    n.add_argument("--epic", action="store_true")
+    n.add_argument("--parent", type=int)
+    n.add_argument("--milestone")
+    n.add_argument("--depends")
+    n.add_argument("--spec")
+    n.add_argument("--slug")
+    n.set_defaults(func=cmd_new, priority=None)
+
+    mv = sub.add_parser("mv", help="move an issue to a status (vocabulary-agnostic)")
+    mv.add_argument("id", type=int)
+    mv.add_argument("status")
+    mv.add_argument("--resolution")
+    mv.set_defaults(func=cmd_mv)
+
+    st = sub.add_parser("start", help="alias: move to the configured 'start' status")
+    st.add_argument("id", type=int)
+    st.set_defaults(func=cmd_start)
+
+    dn = sub.add_parser("done", help="alias: move to the configured 'done' status")
+    dn.add_argument("id", type=int)
+    dn.add_argument("--resolution")
+    dn.set_defaults(func=cmd_done)
+
+    se = sub.add_parser("set", help="edit metadata fields (index only)")
+    se.add_argument("id", type=int)
+    se.add_argument("--priority")
+    se.add_argument("--parent", help="epic id, or 'none' to clear")
+    se.add_argument("--milestone", help="label, or 'none' to clear")
+    se.add_argument("--spec", help="path, or 'none' to clear")
+    se.add_argument("--kind")
+    se.add_argument("--title")
+    se.set_defaults(func=cmd_set)
+
+    dp = sub.add_parser("dep", help="add/remove a dependency edge")
+    dp.add_argument("id", type=int)
+    dp.add_argument("--add", type=int)
+    dp.add_argument("--remove", type=int)
+    dp.set_defaults(func=cmd_dep)
+
+    rn = sub.add_parser("rename", help="change title + slug (renames the file)")
+    rn.add_argument("id", type=int)
+    rn.add_argument("title")
+    rn.add_argument("--slug")
+    rn.set_defaults(func=cmd_rename)
+
+    sh = sub.add_parser("show", help="print an issue's metadata + body")
+    sh.add_argument("id", type=int)
+    sh.set_defaults(func=cmd_show)
+
+    ls = sub.add_parser("list", help="list issues (filterable)")
+    ls.add_argument("--status")
+    ls.add_argument("--kind")
+    ls.add_argument("--priority")
+    ls.add_argument("--epic", type=int)
+    ls.set_defaults(func=cmd_list)
+
+    tr = sub.add_parser("tree", help="print an issue's child hierarchy")
+    tr.add_argument("id", type=int, nargs="?")
+    tr.set_defaults(func=cmd_tree)
+
+    dz = sub.add_parser("deps", help="show what an issue requires and what it blocks")
+    dz.add_argument("id", type=int)
+    dz.add_argument("--requires", action="store_true")
+    dz.add_argument("--blocks", action="store_true")
+    dz.set_defaults(func=cmd_deps)
+
+    ck = sub.add_parser("check", help="validate consistency (nonzero exit on error)")
+    ck.set_defaults(func=cmd_check)
+
+    su = sub.add_parser("summary", help="regenerate SUMMARY.md")
+    su.set_defaults(func=cmd_summary)
+
+    ih = sub.add_parser("install-hook", help="install the pre-commit consistency hook")
+    ih.set_defaults(func=cmd_install_hook)
+
+    iv = sub.add_parser("init", help="scaffold a tracker into the current repo")
+    iv.add_argument("--dir", dest="init_dir", default="issues")
+    iv.add_argument("--hook", action="store_true")
+    iv.add_argument("--force", action="store_true")
+    iv.set_defaults(func=cmd_init)
+
+    up = sub.add_parser("update", help="self-update from the canonical repo")
+    up.add_argument("--check", action="store_true")
+    up.add_argument("--ref")
+    up.set_defaults(func=cmd_update)
+
+    ve = sub.add_parser("version", help="print the running trck version")
+    ve.set_defaults(func=cmd_version)
+
+    return p
+
+
 def main() -> None:
-    die("not implemented yet")  # replaced in Task 10
+    args = build_parser().parse_args()
+    args.func(args)
 
 
 if __name__ == "__main__":
