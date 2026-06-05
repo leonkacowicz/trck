@@ -52,6 +52,9 @@ class TestCliEndToEnd(unittest.TestCase):
             r = self.run_trck("version", cwd=tmp)
             self.assertEqual(r.returncode, 0)
             self.assertRegex(r.stdout.strip().splitlines()[0], r"\d+\.\d+\.\d+")
+            # outside any tracker: no error/noise on stderr
+            self.assertNotIn("no tracker", r.stderr)
+            self.assertNotIn("error:", r.stderr)
 
     def test_new_then_list_via_cli(self):
         with TemporaryDirectory() as tmp:

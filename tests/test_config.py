@@ -76,6 +76,18 @@ class TestDiscovery(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 self.t.find_tracker(Path(tmp))
 
+    def test_optional_resolution_returns_none(self):
+        with TemporaryDirectory() as tmp:
+            # not-found, but required=False -> None instead of die (no stderr)
+            self.assertIsNone(self.t.find_tracker(Path(tmp), required=False))
+            self.assertIsNone(
+                self.t.resolve_tracker_dir(str(tmp), env={}, required=False)
+            )
+            # TRCK_DIR pointing at a non-tracker, required=False -> None (recursion path)
+            self.assertIsNone(
+                self.t.resolve_tracker_dir(None, env={"TRCK_DIR": str(tmp)}, required=False)
+            )
+
     def test_ambiguous_raises(self):
         with TemporaryDirectory() as tmp:
             make_tracker(tmp, {})

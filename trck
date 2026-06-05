@@ -105,8 +105,9 @@ def resolve_alias(cfg: dict, verb: str) -> str | None:
     return cfg.get("aliases", {}).get(verb)
 
 
-def find_tracker(start: Path) -> Path:
-    """Walk up from `start` to the folder containing trck.json (or a child holding it)."""
+def find_tracker(start: Path, required: bool = True) -> Path | None:
+    """Walk up from `start` to the folder containing trck.json (or a child holding it).
+    With `required=False`, return None instead of dying when nothing is found."""
     start = Path(start).resolve()
     cur = start
     while True:
@@ -118,23 +119,28 @@ def find_tracker(start: Path) -> Path:
         if len(hits) > 1:
             die(f"ambiguous tracker under {cur} ({len(hits)} found); pass --dir")
         if cur.parent == cur:
-            die("no tracker found here; run `trck init`")
+            if required:
+                die("no tracker found here; run `trck init`")
+            return None
         cur = cur.parent
 
 
-def resolve_tracker_dir(dir_opt, env=None) -> Path:
-    """Resolution order: --dir > TRCK_DIR > vendored self-location > walk up from cwd."""
+def resolve_tracker_dir(dir_opt, env=None, required: bool = True) -> Path | None:
+    """Resolution order: --dir > TRCK_DIR > vendored self-location > walk up from cwd.
+    With `required=False`, return None instead of dying when nothing resolves."""
     env = os.environ if env is None else env
     if dir_opt:
         p = Path(dir_opt).resolve()
         if not (p / "trck.json").exists():
-            die(f"{p} is not a tracker (no trck.json)")
+            if required:
+                die(f"{p} is not a tracker (no trck.json)")
+            return None
         return p
     if env.get("TRCK_DIR"):
-        return resolve_tracker_dir(env["TRCK_DIR"], env={})
+        return resolve_tracker_dir(env["TRCK_DIR"], env={}, required=required)
     if (SELF_PATH.parent / "trck.json").exists():
         return SELF_PATH.parent
-    return find_tracker(Path.cwd())
+    return find_tracker(Path.cwd(), required=required)
 
 
 # --------------------------------------------------------------------------- #
@@ -158,8 +164,10 @@ class Ctx:
         return self.dir / "index.jsonl"
 
 
-def build_ctx(args) -> Ctx:
-    d = resolve_tracker_dir(getattr(args, "dir", None))
+def build_ctx(args, required: bool = True) -> Ctx | None:
+    d = resolve_tracker_dir(getattr(args, "dir", None), required=required)
+    if d is None:
+        return None
     return Ctx(d, load_config(d))
 
 
@@ -836,11 +844,9 @@ def cmd_install_hook(args) -> None:
 
 def cmd_version(args) -> None:
     print(__version__)
-    try:
-        ctx = build_ctx(args)
+    ctx = build_ctx(args, required=False)  # version must work with no tracker (silently)
+    if ctx is not None:
         print(f"tracker: {ctx.dir}", file=sys.stderr)
-    except SystemExit:
-        pass  # version must work even with no tracker around
 
 
 def cmd_start(args) -> None:
@@ -896,11 +902,10 @@ def cmd_init(args) -> None:
 
 def _update_repo(args) -> str:
     """Resolve which GitHub repo to update from: tracker config if available, else default."""
-    try:
-        ctx = build_ctx(args)
-        return ctx.cfg.get("update", {}).get("repo") or DEFAULT_UPDATE_REPO
-    except SystemExit:
+    ctx = build_ctx(args, required=False)  # update works outside a tracker (silently)
+    if ctx is None:
         return DEFAULT_UPDATE_REPO
+    return ctx.cfg.get("update", {}).get("repo") or DEFAULT_UPDATE_REPO
 
 
 def _current_version() -> str:
