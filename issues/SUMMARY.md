@@ -7,14 +7,12 @@
 |---|---:|
 | backlog | 10 |
 | ongoing | 0 |
-| done | 5 |
-| **total** | **15** |
+| done | 6 |
+| **total** | **16** |
 
 ## Hierarchies
 
 ### [#002 Part D: richer tracker features](backlog/002-part-d-richer-tracker-features.md) — 0% (0/3) · _medium_ · backlog
-
-? ☐ · ? ☐ · ? ☐
 
 - [ ] [#003 Add labels/tags to issues](backlog/003-add-labels-tags-to-issues.md) _(backlog)_
 - [ ] [#004 Support configurable custom fields](backlog/004-support-configurable-custom-fields.md) _(backlog)_
@@ -40,3 +38,4 @@ _none_
 - [#013 Write root README.md and CLAUDE.md](done/013-write-root-readme-md-and-claude-md.md) — _high_ (closed 2026-06-05)
 - [#014 Cut v0.1.0 release](done/014-cut-v0-1-0-release.md) — _high_ (closed 2026-06-05)
 - [#015 Allow any issue to be a parent (rollup for any parent)](done/015-allow-any-issue-to-be-a-parent-rollup-for-any-parent.md) — _medium_ (closed 2026-06-05)
+- [#016 Improve CLI output presentation (align/icons, color, show, SUMMARY)](done/016-improve-cli-output-presentation-align-icons-color-show-summary.md) — _medium_ (closed 2026-06-05)
