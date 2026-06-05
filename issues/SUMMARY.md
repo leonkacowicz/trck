@@ -7,12 +7,10 @@
 |---|---:|
 | backlog | 12 |
 | ongoing | 0 |
-| done | 2 |
-| **total** | **14** |
+| done | 3 |
+| **total** | **15** |
 
-## Epics
-
-### [#001 Part C: curses TUI for browsing and quick actions](backlog/001-part-c-curses-tui-for-browsing-and-quick-actions.md) — 0% (0/0) · _medium_ · backlog
+## Hierarchies
 
 ### [#002 Part D: richer tracker features](backlog/002-part-d-richer-tracker-features.md) — 0% (0/3) · _medium_ · backlog
 
@@ -24,6 +22,7 @@
 
 ## Backlog
 
+- [#001 Part C: curses TUI for browsing and quick actions](backlog/001-part-c-curses-tui-for-browsing-and-quick-actions.md) — _medium_
 - [#006 init: accept positional dir and add --no-vendor for self-hosting repos](backlog/006-init-accept-positional-dir-and-add-no-vendor-for-self-hosting-repos.md) — _medium_
 - [#007 summary: include foreign/unknown statuses in the counts table](backlog/007-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
 - [#008 validate: report one error per parent cycle, not one per node](backlog/008-validate-report-one-error-per-parent-cycle-not-one-per-node.md) — _low_
@@ -40,3 +39,4 @@ _none_
 
 - [#013 Write root README.md and CLAUDE.md](done/013-write-root-readme-md-and-claude-md.md) — _high_ (closed 2026-06-05)
 - [#014 Cut v0.1.0 release](done/014-cut-v0-1-0-release.md) — _high_ (closed 2026-06-05)
+- [#015 Allow any issue to be a parent (rollup for any parent)](done/015-allow-any-issue-to-be-a-parent-rollup-for-any-parent.md) — _medium_ (closed 2026-06-05)
