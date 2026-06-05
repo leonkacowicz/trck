@@ -5,9 +5,9 @@
 
 | State | Count |
 |---|---:|
-| backlog | 12 |
+| backlog | 11 |
 | ongoing | 0 |
-| done | 3 |
+| done | 4 |
 | **total** | **15** |
 
 ## Hierarchies
@@ -28,7 +28,6 @@
 - [#008 validate: report one error per parent cycle, not one per node](backlog/008-validate-report-one-error-per-parent-cycle-not-one-per-node.md) — _low_
 - [#009 validate: suppress redundant bad-slug error when filename-slug mismatch already reported](backlog/009-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
 - [#010 config: friendly errors for empty statuses/priorities/kinds lists](backlog/010-config-friendly-errors-for-empty-statuses-priorities-kinds-lists.md) — _low_
-- [#011 version: suppress no-tracker stderr noise when run outside a tracker](backlog/011-version-suppress-no-tracker-stderr-noise-when-run-outside-a-tracker.md) — _low_
 - [#012 update: add a minimum-size sanity check on the downloaded engine](backlog/012-update-add-a-minimum-size-sanity-check-on-the-downloaded-engine.md) — _low_
 
 ## Ongoing
@@ -37,6 +36,7 @@ _none_
 
 ## Done
 
+- [#011 version/update: suppress no-tracker stderr noise when run outside a tracker](done/011-version-update-suppress-no-tracker-stderr-noise-when-run-outside-a-tracker.md) — _low_ (closed 2026-06-05)
 - [#013 Write root README.md and CLAUDE.md](done/013-write-root-readme-md-and-claude-md.md) — _high_ (closed 2026-06-05)
 - [#014 Cut v0.1.0 release](done/014-cut-v0-1-0-release.md) — _high_ (closed 2026-06-05)
 - [#015 Allow any issue to be a parent (rollup for any parent)](done/015-allow-any-issue-to-be-a-parent-rollup-for-any-parent.md) — _medium_ (closed 2026-06-05)
