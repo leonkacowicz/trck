@@ -458,6 +458,110 @@ def finalize(ctx: Ctx, rows: list[dict]) -> None:
         print("the tracker is now inconsistent — fix before committing.", file=sys.stderr)
 
 
+# --------------------------------------------------------------------------- #
+# TEMPLATE, parse_ids, move_issue, cmd_new, cmd_mv
+# --------------------------------------------------------------------------- #
+
+TEMPLATE = """# {title}
+
+## Summary
+<!-- What needs doing and why. For an epic, link the spec instead of re-narrating it. -->
+
+## Acceptance criteria
+- [ ]
+
+## Notes
+<!-- Context, links to files/commits, open questions, decisions. -->
+"""
+
+
+def parse_ids(spec):
+    if not spec:
+        return []
+    return [int(p.strip()) for p in spec.split(",") if p.strip()]
+
+
+def move_issue(ctx: Ctx, row: dict, new_status: str) -> None:
+    """Move the file between status folders and stamp dates from roles."""
+    if new_status not in status_names(ctx.cfg):
+        die(f"unknown status '{new_status}' (configured: {', '.join(status_names(ctx.cfg))})")
+    old_status = row["status"]
+    old = issue_path(ctx, row)
+    row["status"] = new_status
+    new = issue_path(ctx, row)
+    if old.resolve() != new.resolve():
+        new.parent.mkdir(parents=True, exist_ok=True)
+        if not old.exists():
+            die(f"file missing for #{row['id']:03d}: {old}")
+        shutil.move(str(old), str(new))
+
+    init = initial_status(ctx.cfg)
+    if old_status == init and new_status != init and not row.get("started"):
+        row["started"] = today()
+    if is_terminal(ctx.cfg, new_status):
+        if not row.get("closed"):
+            row["closed"] = today()
+    else:
+        row["closed"] = None
+        row["resolution"] = None
+
+
+def cmd_new(args) -> None:
+    ctx = build_ctx(args)
+    rows = load_index(ctx)
+    by_id = {r["id"]: r for r in rows}
+    iid = next_id(ctx)
+    slug = args.slug or slugify(args.title)
+    if not SLUG_RE.match(slug):
+        die(f"computed slug '{slug}' is invalid; pass --slug")
+    priority = args.priority or ctx.cfg["priorities"][0]
+    if priority not in ctx.cfg["priorities"]:
+        die(f"bad priority '{priority}' (configured: {', '.join(ctx.cfg['priorities'])})")
+    kind = "epic" if args.epic else "task"
+    parent = args.parent
+    if parent is not None:
+        if parent not in by_id:
+            die(f"--parent #{parent:03d} does not exist")
+        if by_id[parent].get("kind") != "epic":
+            die(f"--parent #{parent:03d} is not an epic")
+    deps = parse_ids(args.depends)
+    for dep in deps:
+        if dep not in by_id:
+            die(f"--depends references #{dep:03d} which does not exist")
+    row = {
+        "id": iid, "slug": slug, "title": args.title, "kind": kind,
+        "status": initial_status(ctx.cfg), "priority": priority,
+        "parent": parent, "milestone": args.milestone, "depends_on": deps,
+        "spec": args.spec, "created": today(), "started": None,
+        "closed": None, "resolution": None,
+    }
+    path = issue_path(ctx, row)
+    if path.exists():
+        die(f"{path} already exists")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(TEMPLATE.format(title=args.title))
+    rows.append(row)
+    finalize(ctx, rows)
+    print(path)
+
+
+def cmd_mv(args) -> None:
+    ctx = build_ctx(args)
+    rows = load_index(ctx)
+    row = get_row(rows, args.id)
+    resolution = getattr(args, "resolution", None)
+    if resolution is not None:
+        if not is_terminal(ctx.cfg, args.status):
+            die(f"--resolution is only valid when moving to a terminal status")
+        if resolution not in ctx.cfg["resolutions"]:
+            die(f"bad resolution '{resolution}' (configured: {', '.join(ctx.cfg['resolutions'])})")
+    move_issue(ctx, row, args.status)
+    if resolution is not None:
+        row["resolution"] = resolution
+    finalize(ctx, rows)
+    print(issue_path(ctx, row))
+
+
 def main() -> None:
     die("not implemented yet")  # replaced in Task 10
 
