@@ -332,7 +332,7 @@ def validate(ctx: Ctx) -> tuple[list[str], list[str]]:
 # --------------------------------------------------------------------------- #
 # tree rendering helpers (used by SUMMARY, tree, deps)
 # --------------------------------------------------------------------------- #
-STATUS_ICON = {"terminal": "✅", "initial": "☐", None: "⏳"}
+STATUS_ICON = {"terminal": "●", "initial": "○", None: "◐"}  # all single-width, for alignment
 
 
 def status_icon(ctx: Ctx, name: str) -> str:
@@ -380,7 +380,8 @@ def status_codes(cfg: dict, name: str) -> tuple:
 def node_label(ctx: Ctx, r: dict) -> str:
     ms = f"{r['milestone']} — " if r.get("milestone") else ""
     tag = " ·epic·" if r.get("kind") == "epic" else ""
-    return f"#{r['id']:03d} {status_icon(ctx, r['status'])} {ms}{r['title']}{tag}"
+    icon = paint(status_icon(ctx, r["status"]), *status_codes(ctx.cfg, r["status"]))
+    return f"#{r['id']:03d} {icon} {ms}{r['title']}{tag}"
 
 
 def walk_tree(nodes, children_fn, label_fn, prefix="", seen=frozenset()):
@@ -779,10 +780,12 @@ def cmd_list(args) -> None:
         if r.get("milestone"):
             tags.append(r["milestone"])
         tagstr = paint(" [" + " ".join(tags) + "]", "dim") if tags else ""
+        codes = status_codes(ctx.cfg, r["status"])
+        icon = paint(status_icon(ctx, r["status"]), *codes)
         iid = paint(f"#{r['id']:03d}", "bold")
-        status = paint(f"{r['status']:<{sw}}", *status_codes(ctx.cfg, r["status"]))
+        status = paint(f"{r['status']:<{sw}}", *codes)
         prio = paint(f"{r['priority']:<{pw}}", *priority_codes(ctx.cfg, r["priority"]))
-        print(f"{status_icon(ctx, r['status'])} {iid} {status}  {prio}  {r['title']}{tagstr}")
+        print(f"{icon} {iid} {status}  {prio}  {r['title']}{tagstr}")
 
 
 def cmd_tree(args) -> None:
