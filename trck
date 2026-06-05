@@ -339,6 +339,44 @@ def status_icon(ctx: Ctx, name: str) -> str:
     return STATUS_ICON.get(status_role(ctx.cfg, name), "⏳")
 
 
+# colour: TTY-gated, honors NO_COLOR. Never used for SUMMARY.md (a persisted file).
+_ANSI = {"reset": "\033[0m", "bold": "\033[1m", "dim": "\033[2m",
+         "red": "\033[31m", "green": "\033[32m", "yellow": "\033[33m"}
+
+
+def _use_color() -> bool:
+    if "NO_COLOR" in os.environ:  # set (any value, incl. empty) disables — no-color.org
+        return False
+    fc = os.environ.get("FORCE_COLOR")
+    if fc is not None and fc != "0":
+        return True
+    return sys.stdout.isatty()
+
+
+def paint(text, *codes) -> str:
+    if not codes or not _use_color():
+        return str(text)
+    return "".join(_ANSI[c] for c in codes) + str(text) + _ANSI["reset"]
+
+
+def priority_codes(cfg: dict, prio: str) -> tuple:
+    order = cfg.get("priorities") or []
+    if order and prio == order[0]:
+        return ("red",)
+    if order and prio == order[-1]:
+        return ("dim",)
+    return ()
+
+
+def status_codes(cfg: dict, name: str) -> tuple:
+    role = status_role(cfg, name)
+    if role == "terminal":
+        return ("green",)
+    if role == "initial":
+        return ("dim",)
+    return ("yellow",)
+
+
 def node_label(ctx: Ctx, r: dict) -> str:
     ms = f"{r['milestone']} — " if r.get("milestone") else ""
     tag = " ·epic·" if r.get("kind") == "epic" else ""
@@ -404,11 +442,13 @@ def generate_summary(ctx: Ctx) -> str:
             if parent.get("spec"):
                 out.append(f"Spec: [`{parent['spec']}`](../{parent['spec']})")
             if kids:
-                strip = " · ".join(
-                    f"{(k.get('milestone') or '?')} {status_icon(ctx, k['status'])}" for k in kids
-                )
-                out.append("")
-                out.append(strip)
+                if any(k.get("milestone") for k in kids):  # milestone overview, when present
+                    strip = " · ".join(
+                        f"{k['milestone']} {status_icon(ctx, k['status'])}"
+                        for k in kids if k.get("milestone")
+                    )
+                    out.append("")
+                    out.append(strip)
                 out.append("")
                 for k in kids:
                     box = "x" if term(k["status"]) else " "
@@ -701,11 +741,16 @@ def cmd_show(args) -> None:
     ctx = build_ctx(args)
     rows = load_index(ctx)
     row = get_row(rows, args.id)
-    printable = {k: row.get(k) for k in CANON_KEYS}
-    for k in sorted(row):
-        if k not in printable:
-            printable[k] = row[k]
-    print(json.dumps(printable, ensure_ascii=False, indent=2))
+    keys = CANON_KEYS + [k for k in sorted(row) if k not in CANON_KEYS]
+    if getattr(args, "json", False):
+        print(json.dumps({k: row.get(k) for k in keys}, ensure_ascii=False, indent=2))
+    else:
+        w = max(len(k) for k in keys)
+        for k in keys:
+            v = row.get(k)
+            if v is None or v == []:
+                continue  # skip empty fields in the human view
+            print(f"{paint(f'{k:>{w}}', 'dim')}  {v}")
     print("\n--- body ---\n")
     print(issue_path(ctx, row).read_text())
 
@@ -713,15 +758,19 @@ def cmd_show(args) -> None:
 def cmd_list(args) -> None:
     ctx = build_ctx(args)
     rows = sorted(load_index(ctx), key=lambda r: r["id"])
+
+    def keep(r):
+        return ((not args.status or r["status"] == args.status)
+                and (not args.kind or r.get("kind") == args.kind)
+                and (not args.priority or r.get("priority") == args.priority)
+                and (args.epic is None or r.get("parent") == args.epic))
+
+    rows = [r for r in rows if keep(r)]
+    if not rows:
+        return
+    sw = max(len(r["status"]) for r in rows)
+    pw = max(len(r["priority"]) for r in rows)
     for r in rows:
-        if args.status and r["status"] != args.status:
-            continue
-        if args.kind and r.get("kind") != args.kind:
-            continue
-        if args.priority and r.get("priority") != args.priority:
-            continue
-        if args.epic is not None and r.get("parent") != args.epic:
-            continue
         tags = []
         if r.get("kind") == "epic":
             tags.append("EPIC")
@@ -729,8 +778,11 @@ def cmd_list(args) -> None:
             tags.append(f"↳{r['parent']:03d}")
         if r.get("milestone"):
             tags.append(r["milestone"])
-        tagstr = (" [" + " ".join(tags) + "]") if tags else ""
-        print(f"#{r['id']:03d} {r['status']:10} {r['priority']:6} {r['title']}{tagstr}")
+        tagstr = paint(" [" + " ".join(tags) + "]", "dim") if tags else ""
+        iid = paint(f"#{r['id']:03d}", "bold")
+        status = paint(f"{r['status']:<{sw}}", *status_codes(ctx.cfg, r["status"]))
+        prio = paint(f"{r['priority']:<{pw}}", *priority_codes(ctx.cfg, r["priority"]))
+        print(f"{status_icon(ctx, r['status'])} {iid} {status}  {prio}  {r['title']}{tagstr}")
 
 
 def cmd_tree(args) -> None:
@@ -1024,6 +1076,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     sh = sub.add_parser("show", help="print an issue's metadata + body")
     sh.add_argument("id", type=int)
+    sh.add_argument("--json", action="store_true", help="raw JSON metadata (machine-readable)")
     sh.set_defaults(func=cmd_show)
 
     ls = sub.add_parser("list", help="list issues (filterable)")

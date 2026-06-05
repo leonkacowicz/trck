@@ -21,14 +21,24 @@ class TestRead(unittest.TestCase):
             fn(args)
         return buf.getvalue()
 
-    def test_show_prints_metadata_and_body(self):
+    def test_show_human_metadata_and_body(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d, "Hello")
-            out = self.cap(self.t.cmd_show, ns(dir=str(d), id=1))
-            self.assertIn('"id": 1', out)
+            out = self.cap(self.t.cmd_show, ns(dir=str(d), id=1, json=False))
+            self.assertIn("title", out)        # aligned key: value, not raw JSON
+            self.assertIn("Hello", out)
+            self.assertNotIn('"id": 1', out)
             self.assertIn("--- body ---", out)
             self.assertIn("# Hello", out)
+
+    def test_show_json_flag(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Hello")
+            out = self.cap(self.t.cmd_show, ns(dir=str(d), id=1, json=True))
+            self.assertIn('"id": 1', out)
+            self.assertIn("--- body ---", out)
 
     def test_list_filters_by_status(self):
         with TemporaryDirectory() as tmp:

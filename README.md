@@ -91,7 +91,11 @@ and either define its own aliases or just use `mv`.
 
 Epics and milestones: create an epic with `--epic`, attach children with `--parent NNN`
 (and optionally `--milestone M1`); the epic's rollup `%` is computed from its children and
-shown in `SUMMARY.md`.
+shown in `SUMMARY.md`. (Any issue can be a parent — `kind: epic` is just a display label.)
+
+Output is colorized when stdout is a terminal (disable with `NO_COLOR=1`, force with
+`FORCE_COLOR=1`); piped/redirected output stays plain for scripts and agents. `trck show`
+prints a human-readable summary by default — add `--json` for machine-readable metadata.
 
 ## Develop
 
