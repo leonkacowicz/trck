@@ -722,6 +722,60 @@ def cmd_deps(args) -> None:
         walk_tree(blk, blocks, label, seen=frozenset({row["id"]}))
 
 
+def cmd_check(args) -> None:
+    ctx = build_ctx(args)
+    errors, warnings = validate(ctx)
+    for w in warnings:
+        print(f"warning: {w}")
+    for e in errors:
+        print(f"error: {e}")
+    if errors:
+        print(f"\n{len(errors)} error(s), {len(warnings)} warning(s) — FAIL")
+        sys.exit(1)
+    print(f"OK — {len(load_index(ctx))} issues, 0 errors, {len(warnings)} warning(s)")
+
+
+def cmd_summary(args) -> None:
+    ctx = build_ctx(args)
+    write_summary(ctx)
+    print(f"wrote {ctx.dir / 'SUMMARY.md'} ({len(load_index(ctx))} issues)")
+
+
+def cmd_install_hook(args) -> None:
+    ctx = build_ctx(args)
+    common = subprocess.run(["git", "rev-parse", "--git-common-dir"],
+                            cwd=ctx.dir, capture_output=True, text=True)
+    toplevel = subprocess.run(["git", "rev-parse", "--show-toplevel"],
+                              cwd=ctx.dir, capture_output=True, text=True)
+    if common.returncode != 0 or toplevel.returncode != 0:
+        die("not a git repository")
+    root = Path(toplevel.stdout.strip())
+    try:
+        rel = ctx.dir.resolve().relative_to(root.resolve()).as_posix()
+    except ValueError:
+        die(f"tracker dir {ctx.dir} is not inside the git repo at {root}")
+    hooks = (ctx.dir / common.stdout.strip()).resolve() / "hooks"
+    hooks.mkdir(parents=True, exist_ok=True)
+    hook = hooks / "pre-commit"
+    rel_re = rel.replace(".", r"\.")
+    body = (
+        "#!/usr/bin/env bash\n"
+        "# Auto-installed by `trck install-hook`. Runs `trck check` when the tracker changes.\n"
+        'root="$(git rev-parse --show-toplevel)"\n'
+        'staged="$(git diff --cached --name-only)"\n'
+        f"if printf '%s\\n' \"$staged\" | grep -qE '(^|/){rel_re}/'; then\n"
+        f'  if [ -x "$root/{rel}/trck" ]; then\n'
+        f'    python3 "$root/{rel}/trck" check || {{ echo "trck inconsistent — aborting commit"; exit 1; }}\n'
+        '  elif command -v trck >/dev/null 2>&1; then\n'
+        f'    trck --dir "$root/{rel}" check || {{ echo "trck inconsistent — aborting commit"; exit 1; }}\n'
+        "  fi\n"
+        "fi\n"
+    )
+    hook.write_text(body)
+    hook.chmod(0o755)
+    print(f"installed {hook}")
+
+
 def main() -> None:
     die("not implemented yet")  # replaced in Task 10
 
