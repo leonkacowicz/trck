@@ -6,8 +6,8 @@
 | State | Count |
 |---|---:|
 | backlog | 12 |
-| ongoing | 1 |
-| done | 1 |
+| ongoing | 0 |
+| done | 2 |
 | **total** | **14** |
 
 ## Epics
@@ -34,8 +34,9 @@
 
 ## Ongoing
 
-- [#014 Cut v0.1.0 release](ongoing/014-cut-v0-1-0-release.md) — _high_
+_none_
 
 ## Done
 
 - [#013 Write root README.md and CLAUDE.md](done/013-write-root-readme-md-and-claude-md.md) — _high_ (closed 2026-06-05)
+- [#014 Cut v0.1.0 release](done/014-cut-v0-1-0-release.md) — _high_ (closed 2026-06-05)
