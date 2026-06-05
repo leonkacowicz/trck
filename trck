@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+"""trck — a deterministic, single-file, in-repo issue tracker.
+
+Bookkeeping is scripted; prose is hand-authored, so the tracker can't drift.
+Status = the folder a markdown file lives in; other metadata lives in index.jsonl;
+SUMMARY.md is generated. Python standard library only. See README.md.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import urllib.error
+import urllib.request
+from datetime import date
+from pathlib import Path
+
+__version__ = "0.0.1"
+DEFAULT_UPDATE_REPO = "leonkacowicz/trck"
+SELF_PATH = Path(__file__).resolve()  # the running engine file; tests may override
+
+SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+FILENAME_RE = re.compile(r"^(\d{3,})-([a-z0-9][a-z0-9-]*)\.md$")
+
+
+def die(msg: str):
+    print(f"error: {msg}", file=sys.stderr)
+    sys.exit(1)
+
+
+def today() -> str:
+    return date.today().isoformat()
+
+
+def slugify(text: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+
+
+def main() -> None:
+    die("not implemented yet")  # replaced in Task 10
+
+
+if __name__ == "__main__":
+    main()
