@@ -5,9 +5,9 @@
 
 | State | Count |
 |---|---:|
-| backlog | 14 |
+| backlog | 13 |
 | ongoing | 0 |
-| done | 0 |
+| done | 1 |
 | **total** | **14** |
 
 ## Epics
@@ -31,7 +31,6 @@
 - [#010 config: friendly errors for empty statuses/priorities/kinds lists](backlog/010-config-friendly-errors-for-empty-statuses-priorities-kinds-lists.md) — _low_
 - [#011 version: suppress no-tracker stderr noise when run outside a tracker](backlog/011-version-suppress-no-tracker-stderr-noise-when-run-outside-a-tracker.md) — _low_
 - [#012 update: add a minimum-size sanity check on the downloaded engine](backlog/012-update-add-a-minimum-size-sanity-check-on-the-downloaded-engine.md) — _low_
-- [#013 Write root README.md and CLAUDE.md](backlog/013-write-root-readme-md-and-claude-md.md) — _high_
 - [#014 Cut v0.1.0 release](backlog/014-cut-v0-1-0-release.md) — _high_
 
 ## Ongoing
@@ -40,4 +39,4 @@ _none_
 
 ## Done
 
-_none_
+- [#013 Write root README.md and CLAUDE.md](done/013-write-root-readme-md-and-claude-md.md) — _high_ (closed 2026-06-05)
