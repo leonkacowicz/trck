@@ -40,6 +40,103 @@ def slugify(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
 
 
+# --------------------------------------------------------------------------- #
+# config + discovery
+# --------------------------------------------------------------------------- #
+DEFAULT_CONFIG = {
+    "update": {"repo": DEFAULT_UPDATE_REPO, "channel": "stable"},
+    "statuses": [
+        {"name": "backlog", "role": "initial"},
+        {"name": "ongoing"},
+        {"name": "done", "role": "terminal"},
+    ],
+    "aliases": {"start": "ongoing", "done": "done"},
+    "priorities": ["high", "medium", "low"],
+    "kinds": ["task", "epic"],
+    "resolutions": ["superseded", "wontfix", "duplicate"],
+}
+
+
+def load_config(tracker_dir: Path) -> dict:
+    """Merge trck.json (if any) over DEFAULT_CONFIG. Top-level keys override;
+    the nested 'update' dict is merged key-by-key."""
+    cfg = json.loads(json.dumps(DEFAULT_CONFIG))  # deep copy
+    path = Path(tracker_dir) / "trck.json"
+    if path.exists():
+        try:
+            user = json.loads(path.read_text() or "{}")
+        except json.JSONDecodeError as e:
+            die(f"{path}: invalid JSON ({e})")
+        for k, v in user.items():
+            if k == "update" and isinstance(v, dict):
+                cfg["update"].update(v)
+            else:
+                cfg[k] = v
+    return cfg
+
+
+def status_names(cfg: dict) -> list[str]:
+    return [s["name"] for s in cfg["statuses"]]
+
+
+def status_role(cfg: dict, name: str) -> str | None:
+    for s in cfg["statuses"]:
+        if s["name"] == name:
+            return s.get("role")
+    return None
+
+
+def initial_status(cfg: dict) -> str:
+    for s in cfg["statuses"]:
+        if s.get("role") == "initial":
+            return s["name"]
+    return cfg["statuses"][0]["name"]
+
+
+def terminal_statuses(cfg: dict) -> list[str]:
+    return [s["name"] for s in cfg["statuses"] if s.get("role") == "terminal"]
+
+
+def is_terminal(cfg: dict, name: str) -> bool:
+    return status_role(cfg, name) == "terminal"
+
+
+def resolve_alias(cfg: dict, verb: str) -> str | None:
+    return cfg.get("aliases", {}).get(verb)
+
+
+def find_tracker(start: Path) -> Path:
+    """Walk up from `start` to the folder containing trck.json (or a child holding it)."""
+    start = Path(start).resolve()
+    cur = start
+    while True:
+        if (cur / "trck.json").exists():
+            return cur
+        hits = sorted(cur.glob("*/trck.json"))
+        if len(hits) == 1:
+            return hits[0].parent.resolve()
+        if len(hits) > 1:
+            die(f"ambiguous tracker under {cur} ({len(hits)} found); pass --dir")
+        if cur.parent == cur:
+            die("no tracker found here; run `trck init`")
+        cur = cur.parent
+
+
+def resolve_tracker_dir(dir_opt, env=None) -> Path:
+    """Resolution order: --dir > TRCK_DIR > vendored self-location > walk up from cwd."""
+    env = os.environ if env is None else env
+    if dir_opt:
+        p = Path(dir_opt).resolve()
+        if not (p / "trck.json").exists():
+            die(f"{p} is not a tracker (no trck.json)")
+        return p
+    if env.get("TRCK_DIR"):
+        return resolve_tracker_dir(env["TRCK_DIR"], env={})
+    if (SELF_PATH.parent / "trck.json").exists():
+        return SELF_PATH.parent
+    return find_tracker(Path.cwd())
+
+
 def main() -> None:
     die("not implemented yet")  # replaced in Task 10
 
