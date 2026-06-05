@@ -1,0 +1,64 @@
+import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+from tests.helpers import load_trck, make_tracker
+
+
+class TestValidate(unittest.TestCase):
+    def setUp(self):
+        self.t = load_trck()
+
+    def ctx(self, tmp, config=None):
+        d = make_tracker(tmp, config or {})
+        return self.t.Ctx(d, self.t.load_config(d))
+
+    def write(self, ctx, row, body="# x\n"):
+        p = self.t.issue_path(ctx, row)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(body)
+
+    def base(self, **over):
+        r = {"id": 1, "slug": "a", "title": "A", "kind": "task",
+             "status": "backlog", "priority": "high", "depends_on": []}
+        r.update(over)
+        return r
+
+    def test_clean_tracker_has_no_errors(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            row = self.base()
+            self.write(ctx, row)
+            self.t.save_index(ctx, [row])
+            errors, _ = self.t.validate(ctx)
+            self.assertEqual(errors, [])
+
+    def test_status_folder_mismatch_is_error(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            row = self.base()
+            self.write(ctx, row)               # file is in backlog/
+            row2 = dict(row, status="done")    # but index says done
+            self.t.save_index(ctx, [row2])
+            errors, _ = self.t.validate(ctx)
+            self.assertTrue(any("status" in e for e in errors))
+
+    def test_parent_must_be_epic(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            p = self.base(id=1, slug="p", kind="task")  # not an epic
+            c = self.base(id=2, slug="c", parent=1)
+            self.write(ctx, p); self.write(ctx, c)
+            self.t.save_index(ctx, [p, c])
+            errors, _ = self.t.validate(ctx)
+            self.assertTrue(any("not an epic" in e for e in errors))
+
+    def test_terminal_role_drives_warnings(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            epic = self.base(id=1, slug="e", kind="epic", status="ongoing")
+            child = self.base(id=2, slug="c", parent=1, status="done")
+            self.write(ctx, epic); self.write(ctx, child)
+            self.t.save_index(ctx, [epic, child])
+            _, warnings = self.t.validate(ctx)
+            self.assertTrue(any("all children" in w for w in warnings))

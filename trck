@@ -223,6 +223,108 @@ def next_id(ctx: Ctx) -> int:
     return (max(ids) + 1) if ids else 1
 
 
+# --------------------------------------------------------------------------- #
+# filesystem scan + validation
+# --------------------------------------------------------------------------- #
+def scan_files(ctx: Ctx) -> dict:
+    """Map id -> (status_folder, slug, filename) for every issue markdown on disk."""
+    found = {}
+    for name in status_names(ctx.cfg):
+        d = ctx.dir / name
+        if not d.is_dir():
+            continue
+        for p in sorted(d.glob("*.md")):
+            m = FILENAME_RE.match(p.name)
+            if not m:
+                continue
+            iid = int(m.group(1))
+            if iid in found:
+                die(f"duplicate issue id {iid:03d} on disk: {found[iid][0]} and {name}")
+            found[iid] = (name, m.group(2), p.name)
+    return found
+
+
+def validate(ctx: Ctx) -> tuple[list[str], list[str]]:
+    errors, warnings = [], []
+    rows = load_index(ctx)
+    files = scan_files(ctx)
+    by_id = {r["id"]: r for r in rows}
+    names = set(status_names(ctx.cfg))
+    prios = set(ctx.cfg["priorities"])
+    kinds = set(ctx.cfg["kinds"])
+    resolutions = set(ctx.cfg["resolutions"])
+
+    for iid, r in by_id.items():
+        if iid not in files:
+            errors.append(f"#{iid:03d} in index but no markdown file on disk")
+            continue
+        folder, slug, fname = files[iid]
+        if r.get("status") != folder:
+            errors.append(f"#{iid:03d} index status '{r.get('status')}' != folder '{folder}'")
+        if r.get("slug") != slug:
+            errors.append(f"#{iid:03d} index slug '{r.get('slug')}' != filename slug '{slug}'")
+        if fname != filename(r):
+            errors.append(f"#{iid:03d} filename '{fname}' != expected '{filename(r)}'")
+        if not r.get("slug") or not SLUG_RE.match(r.get("slug", "")):
+            errors.append(f"#{iid:03d} bad slug '{r.get('slug')}'")
+        if r.get("status") not in names:
+            errors.append(f"#{iid:03d} unknown status '{r.get('status')}'")
+        if r.get("kind") not in kinds:
+            errors.append(f"#{iid:03d} bad kind '{r.get('kind')}'")
+        if r.get("priority") not in prios:
+            errors.append(f"#{iid:03d} bad priority '{r.get('priority')}'")
+        res = r.get("resolution")
+        if res not in (None, *resolutions):
+            errors.append(f"#{iid:03d} bad resolution '{res}'")
+    for iid in files:
+        if iid not in by_id:
+            errors.append(f"#{iid:03d} markdown file on disk but no index row")
+
+    for r in rows:
+        parent = r.get("parent")
+        if parent is not None:
+            if parent not in by_id:
+                errors.append(f"#{r['id']:03d} parent #{parent:03d} does not exist")
+            elif by_id[parent].get("kind") != "epic":
+                errors.append(f"#{r['id']:03d} parent #{parent:03d} is not an epic")
+        for dep in r.get("depends_on", []):
+            if dep not in by_id:
+                errors.append(f"#{r['id']:03d} depends_on #{dep:03d} which does not exist")
+
+    for r in rows:  # parent cycles
+        seen, cur = set(), r
+        while cur and cur.get("parent") is not None:
+            if cur["parent"] in seen:
+                errors.append(f"#{r['id']:03d} is in a parent cycle")
+                break
+            seen.add(cur["parent"])
+            cur = by_id.get(cur["parent"])
+
+    children = {}
+    for r in rows:
+        if r.get("parent") is not None and r["parent"] in by_id:
+            children.setdefault(r["parent"], []).append(r)
+    term = lambda name: is_terminal(ctx.cfg, name)
+    for epic in [r for r in rows if r.get("kind") == "epic"]:
+        kids = children.get(epic["id"], [])
+        if not kids:
+            warnings.append(f"epic #{epic['id']:03d} has no child issues")
+        elif all(term(k["status"]) for k in kids) and not term(epic["status"]):
+            warnings.append(
+                f"epic #{epic['id']:03d} has all children terminal but is still "
+                f"{epic['status']} (run `trck done {epic['id']}` or `trck mv …`)"
+            )
+    for r in rows:
+        p = r.get("parent")
+        if p is not None and p in by_id and term(by_id[p]["status"]) and not term(r["status"]):
+            warnings.append(f"#{r['id']:03d} is {r['status']} but its epic #{p:03d} is terminal")
+        if term(r["status"]):
+            for dep in r.get("depends_on", []):
+                if dep in by_id and not term(by_id[dep]["status"]):
+                    warnings.append(f"#{r['id']:03d} is terminal but depends on non-terminal #{dep:03d}")
+    return errors, warnings
+
+
 def main() -> None:
     die("not implemented yet")  # replaced in Task 10
 
