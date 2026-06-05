@@ -6,7 +6,10 @@
 ## Acceptance criteria
 - [ ] `trck init [dir]` positional works (alongside or instead of `--dir`)
 - [ ] `--no-vendor` skips copying the engine into the tracker dir
+- [ ] `init` fails cleanly (a `die` message, not a `SameFileError` traceback) when `--dir` targets the running engine's own directory
 - [ ] docs updated
 
 ## Notes
-Surfaced during dogfooding the A+B build.
+Surfaced during dogfooding the A+B build. The `SameFileError` traceback on a
+self-targeting `init` was flagged in the final v0.1.0 review (no data risk —
+`shutil.copyfile` checks identity before writing — just a UX wart).
