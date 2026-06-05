@@ -15,7 +15,7 @@ tracker can't drift. `trck` is the generalized successor to the original `track`
 ## Install (global)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/leonkacowicz/trck/v0.1.0/trck \
+curl -fsSL https://raw.githubusercontent.com/leonkacowicz/trck/v0.1.1/trck \
   -o ~/.local/bin/trck && chmod +x ~/.local/bin/trck
 ```
 
