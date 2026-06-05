@@ -285,8 +285,6 @@ def validate(ctx: Ctx) -> tuple[list[str], list[str]]:
         if parent is not None:
             if parent not in by_id:
                 errors.append(f"#{r['id']:03d} parent #{parent:03d} does not exist")
-            elif by_id[parent].get("kind") != "epic":
-                errors.append(f"#{r['id']:03d} parent #{parent:03d} is not an epic")
         for dep in r.get("depends_on", []):
             if dep not in by_id:
                 errors.append(f"#{r['id']:03d} depends_on #{dep:03d} which does not exist")
@@ -305,19 +303,17 @@ def validate(ctx: Ctx) -> tuple[list[str], list[str]]:
         if r.get("parent") is not None and r["parent"] in by_id:
             children.setdefault(r["parent"], []).append(r)
     term = lambda name: is_terminal(ctx.cfg, name)
-    for epic in [r for r in rows if r.get("kind") == "epic"]:
-        kids = children.get(epic["id"], [])
-        if not kids:
-            warnings.append(f"epic #{epic['id']:03d} has no child issues")
-        elif all(term(k["status"]) for k in kids) and not term(epic["status"]):
+    for pid, kids in children.items():
+        parent_row = by_id[pid]
+        if all(term(k["status"]) for k in kids) and not term(parent_row["status"]):
             warnings.append(
-                f"epic #{epic['id']:03d} has all children terminal but is still "
-                f"{epic['status']} (run `trck done {epic['id']}` or `trck mv …`)"
+                f"#{pid:03d} has all children terminal but is still "
+                f"{parent_row['status']} (run `trck done {pid}` or `trck mv …`)"
             )
     for r in rows:
         p = r.get("parent")
         if p is not None and p in by_id and term(by_id[p]["status"]) and not term(r["status"]):
-            warnings.append(f"#{r['id']:03d} is {r['status']} but its epic #{p:03d} is terminal")
+            warnings.append(f"#{r['id']:03d} is {r['status']} but its parent #{p:03d} is terminal")
         if term(r["status"]):
             for dep in r.get("depends_on", []):
                 if dep in by_id and not term(by_id[dep]["status"]):
@@ -384,21 +380,21 @@ def generate_summary(ctx: Ctx) -> str:
     out.append(f"| **total** | **{total}** |")
     out.append("")
 
-    epics = sorted([r for r in rows if r.get("kind") == "epic"], key=lambda r: r["id"])
-    if epics:
-        out.append("## Epics")
+    parents = sorted([r for r in rows if r["id"] in children], key=lambda r: r["id"])
+    if parents:
+        out.append("## Hierarchies")
         out.append("")
-        for epic in epics:
-            kids = sorted(children.get(epic["id"], []),
+        for parent in parents:
+            kids = sorted(children.get(parent["id"], []),
                           key=lambda r: (r.get("milestone") or "", r["id"]))
             ndone = sum(1 for k in kids if term(k["status"]))
             pct = round(100 * ndone / len(kids)) if kids else 0
             out.append(
-                f"### [#{epic['id']:03d} {epic['title']}]({rel_link(epic)}) — "
-                f"{pct}% ({ndone}/{len(kids)}) · _{epic['priority']}_ · {epic['status']}"
+                f"### [#{parent['id']:03d} {parent['title']}]({rel_link(parent)}) — "
+                f"{pct}% ({ndone}/{len(kids)}) · _{parent['priority']}_ · {parent['status']}"
             )
-            if epic.get("spec"):
-                out.append(f"Spec: [`{epic['spec']}`](../{epic['spec']})")
+            if parent.get("spec"):
+                out.append(f"Spec: [`{parent['spec']}`](../{parent['spec']})")
             if kids:
                 strip = " · ".join(
                     f"{(k.get('milestone') or '?')} {status_icon(ctx, k['status'])}" for k in kids
@@ -415,7 +411,7 @@ def generate_summary(ctx: Ctx) -> str:
 
     def standalone(status):
         return sorted(
-            [r for r in rows if r["status"] == status and r.get("kind") != "epic"
+            [r for r in rows if r["status"] == status and r["id"] not in children
              and r.get("parent") is None],
             key=lambda r: r["id"],
         )
@@ -584,11 +580,8 @@ def cmd_new(args) -> None:
         die(f"bad priority '{priority}' (configured: {', '.join(ctx.cfg['priorities'])})")
     kind = "epic" if args.epic else "task"
     parent = args.parent
-    if parent is not None:
-        if parent not in by_id:
-            die(f"--parent #{parent:03d} does not exist")
-        if by_id[parent].get("kind") != "epic":
-            die(f"--parent #{parent:03d} is not an epic")
+    if parent is not None and parent not in by_id:
+        die(f"--parent #{parent:03d} does not exist")
     deps = parse_ids(args.depends)
     for dep in deps:
         if dep not in by_id:
@@ -641,8 +634,8 @@ def cmd_set(args) -> None:
             row["parent"] = None
         else:
             pid = int(args.parent)
-            if pid not in by_id or by_id[pid].get("kind") != "epic":
-                die(f"--parent #{pid:03d} must be an existing epic")
+            if pid not in by_id:
+                die(f"--parent #{pid:03d} must be an existing issue")
             row["parent"] = pid
     if args.milestone is not None:
         row["milestone"] = None if args.milestone == "none" else args.milestone

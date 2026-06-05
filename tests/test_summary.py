@@ -50,6 +50,20 @@ class TestSummary(unittest.TestCase):
             text = self.t.generate_summary(ctx)
             self.assertIn("50% (1/2)", text)
 
+    def test_nonepic_parent_gets_rollup(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            parent = self.base(id=1, slug="p", kind="task", status="ongoing")
+            k1 = self.base(id=2, slug="k1", parent=1, status="done")
+            k2 = self.base(id=3, slug="k2", parent=1, status="ongoing")
+            for r in (parent, k1, k2):
+                self.write(ctx, r)
+            self.t.save_index(ctx, [parent, k1, k2])
+            text = self.t.generate_summary(ctx)
+            self.assertIn("50% (1/2)", text)  # rollup for a non-epic parent
+            # the parent appears once (its Hierarchies heading), not also as a standalone item
+            self.assertEqual(text.count("[#001"), 1)
+
     def test_custom_statuses_render(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp, {"statuses": [

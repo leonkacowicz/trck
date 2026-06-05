@@ -43,15 +43,24 @@ class TestValidate(unittest.TestCase):
             errors, _ = self.t.validate(ctx)
             self.assertTrue(any("status" in e for e in errors))
 
-    def test_parent_must_be_epic(self):
+    def test_parent_can_be_any_kind(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
-            p = self.base(id=1, slug="p", kind="task")  # not an epic
+            p = self.base(id=1, slug="p", kind="task")  # a task, not an epic
             c = self.base(id=2, slug="c", parent=1)
             self.write(ctx, p); self.write(ctx, c)
             self.t.save_index(ctx, [p, c])
             errors, _ = self.t.validate(ctx)
-            self.assertTrue(any("not an epic" in e for e in errors))
+            self.assertEqual(errors, [])  # a non-epic parent is allowed
+
+    def test_parent_must_exist(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            c = self.base(id=2, slug="c", parent=99)  # no such parent
+            self.write(ctx, c)
+            self.t.save_index(ctx, [c])
+            errors, _ = self.t.validate(ctx)
+            self.assertTrue(any("does not exist" in e for e in errors))
 
     def test_terminal_role_drives_warnings(self):
         with TemporaryDirectory() as tmp:

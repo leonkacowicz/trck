@@ -36,13 +36,20 @@ class TestMetadata(unittest.TestCase):
             self.assertEqual(r["priority"], "low")
             self.assertEqual(r["milestone"], "M2")
 
-    def test_set_parent_requires_epic(self):
+    def test_set_parent_to_any_issue(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, title="Epic", epic=True)   # id 1, epic
-            self.seed(d, title="Child")             # id 2
+            self.seed(d, title="Parent task")   # id 1, a plain task (not an epic)
+            self.seed(d, title="Child")         # id 2
             self.t.cmd_set(self.set_args(d, 2, parent="1"))
             self.assertEqual(self.rows(d)[2]["parent"], 1)
+
+    def test_set_parent_must_exist(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, title="Only")          # id 1
+            with self.assertRaises(SystemExit):
+                self.t.cmd_set(self.set_args(d, 1, parent="99"))
 
     def test_set_milestone_none_clears(self):
         with TemporaryDirectory() as tmp:
