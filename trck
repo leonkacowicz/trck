@@ -501,6 +501,44 @@ TEMPLATE = """# {title}
 <!-- Context, links to files/commits, open questions, decisions. -->
 """
 
+CLAUDE_MD_TEMPLATE = """# Issues — agent & contributor instructions
+
+This folder is an in-repo issue tracker managed by `trck`. **Bookkeeping is scripted;
+prose is hand-authored.** You only ever hand-edit the **body** of an issue markdown file
+(Summary / Acceptance criteria / Notes). Every structured change — create, move status,
+set priority/parent/milestone/deps — goes through `trck`, which updates `index.jsonl`,
+regenerates `SUMMARY.md`, and self-validates.
+
+> Never hand-edit `index.jsonl` or `SUMMARY.md`, and never move/rename issue files by hand.
+
+## Where things live
+| Data | Source of truth |
+|---|---|
+| status | the folder the file is in (configured in `trck.json`) |
+| other metadata | `index.jsonl` (one JSON object per issue) |
+| narrative | the issue markdown body |
+| rollup | `SUMMARY.md` (generated) |
+
+## Common verbs (run `trck --help` for all)
+- `trck new "<title>" [--priority …] [--epic] [--parent NNN] [--milestone M] [--depends a,b]`
+- `trck mv NNN <status>` (vocabulary-agnostic); `trck start NNN` / `trck done NNN [--resolution …]` (aliases)
+- `trck set NNN [--priority …] [--parent …|none] [--milestone …|none] [--kind …] [--title …]`
+- `trck dep NNN --add MMM | --remove MMM`
+- `trck list` · `trck tree` · `trck deps NNN` · `trck show NNN` · `trck check` · `trck summary`
+- `trck update` — pull the latest engine from the canonical repo.
+
+Statuses, priorities, kinds, resolutions, and aliases are configured in `trck.json`.
+"""
+
+README_TEMPLATE = """# Issues (managed by `trck`)
+
+This directory is a self-contained, in-repo issue tracker. The `trck` script here is the
+engine; `trck.json` configures it; `index.jsonl` holds metadata; `SUMMARY.md` is generated.
+
+Run `./trck --help` (or `trck --help` if installed on PATH) for the full verb list.
+See `CLAUDE.md` in this folder for the working model.
+"""
+
 
 def parse_ids(spec):
     if not spec:
@@ -835,7 +873,32 @@ def ns_like(args, **over):
     return argparse.Namespace(**data)
 
 
-def cmd_init(args):    die("init not implemented yet")   # replaced in Task 13
+def cmd_init(args) -> None:
+    target = (Path.cwd() / args.init_dir).resolve()
+    cfgfile = target / "trck.json"
+    if cfgfile.exists() and not args.force:
+        die(f"{target} is already a tracker (pass --force to overwrite config)")
+    target.mkdir(parents=True, exist_ok=True)
+
+    config = json.loads(json.dumps(DEFAULT_CONFIG))
+    config["update"]["repo"] = DEFAULT_UPDATE_REPO
+    cfgfile.write_text(json.dumps(config, indent=2) + "\n")
+
+    vendored = target / "trck"
+    shutil.copyfile(SELF_PATH, vendored)
+    shutil.copymode(SELF_PATH, vendored)
+    os.chmod(vendored, os.stat(vendored).st_mode | 0o111)
+
+    claude = target / "CLAUDE.md"
+    if not claude.exists() or args.force:
+        claude.write_text(CLAUDE_MD_TEMPLATE)
+    readme = target / "README.md"
+    if not readme.exists() or args.force:
+        readme.write_text(README_TEMPLATE)
+
+    if args.hook:
+        cmd_install_hook(ns_like(args, dir=str(target)))
+    print(f"initialized tracker at {target}")
 
 
 def _update_repo(args) -> str:
