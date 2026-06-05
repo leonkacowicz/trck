@@ -19,7 +19,7 @@ import urllib.request
 from datetime import date
 from pathlib import Path
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 DEFAULT_UPDATE_REPO = "leonkacowicz/trck"
 SELF_PATH = Path(__file__).resolve()  # the running engine file; tests may override
 
@@ -359,6 +359,15 @@ def paint(text, *codes) -> str:
     return "".join(_ANSI[c] for c in codes) + str(text) + _ANSI["reset"]
 
 
+def priority_rank(cfg: dict, prio: str) -> int:
+    """Sort key: 0 = highest configured priority. Unknown priorities sort last."""
+    order = cfg.get("priorities") or []
+    try:
+        return order.index(prio)
+    except ValueError:
+        return len(order)
+
+
 def priority_codes(cfg: dict, prio: str) -> tuple:
     order = cfg.get("priorities") or []
     if order and prio == order[0]:
@@ -462,7 +471,7 @@ def generate_summary(ctx: Ctx) -> str:
         return sorted(
             [r for r in rows if r["status"] == status and r["id"] not in children
              and r.get("parent") is None],
-            key=lambda r: r["id"],
+            key=lambda r: (priority_rank(ctx.cfg, r["priority"]), r["id"]),
         )
 
     for status in names:
