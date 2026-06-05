@@ -562,6 +562,75 @@ def cmd_mv(args) -> None:
     print(issue_path(ctx, row))
 
 
+def cmd_set(args) -> None:
+    ctx = build_ctx(args)
+    rows = load_index(ctx)
+    by_id = {r["id"]: r for r in rows}
+    row = get_row(rows, args.id)
+    if args.priority:
+        if args.priority not in ctx.cfg["priorities"]:
+            die(f"bad priority '{args.priority}'")
+        row["priority"] = args.priority
+    if args.parent is not None:
+        if args.parent == "none":
+            row["parent"] = None
+        else:
+            pid = int(args.parent)
+            if pid not in by_id or by_id[pid].get("kind") != "epic":
+                die(f"--parent #{pid:03d} must be an existing epic")
+            row["parent"] = pid
+    if args.milestone is not None:
+        row["milestone"] = None if args.milestone == "none" else args.milestone
+    if args.spec is not None:
+        row["spec"] = None if args.spec == "none" else args.spec
+    if args.kind:
+        if args.kind not in ctx.cfg["kinds"]:
+            die(f"bad kind '{args.kind}'")
+        row["kind"] = args.kind
+    if args.title:
+        row["title"] = args.title
+    finalize(ctx, rows)
+    print(f"#{row['id']:03d} updated")
+
+
+def cmd_dep(args) -> None:
+    ctx = build_ctx(args)
+    rows = load_index(ctx)
+    by_id = {r["id"]: r for r in rows}
+    row = get_row(rows, args.id)
+    deps = list(row.get("depends_on", []))
+    if args.add is not None:
+        if args.add not in by_id:
+            die(f"#{args.add:03d} does not exist")
+        if args.add not in deps:
+            deps.append(args.add)
+    if args.remove is not None and args.remove in deps:
+        deps.remove(args.remove)
+    row["depends_on"] = sorted(deps)
+    finalize(ctx, rows)
+    print(f"#{row['id']:03d} depends_on={row['depends_on']}")
+
+
+def cmd_rename(args) -> None:
+    ctx = build_ctx(args)
+    rows = load_index(ctx)
+    row = get_row(rows, args.id)
+    new_slug = args.slug or slugify(args.title)
+    if not SLUG_RE.match(new_slug):
+        die(f"computed slug '{new_slug}' is invalid; pass --slug")
+    old = issue_path(ctx, row)
+    row["title"] = args.title
+    row["slug"] = new_slug
+    new = issue_path(ctx, row)
+    if old.resolve() != new.resolve():
+        shutil.move(str(old), str(new))
+    text = new.read_text()
+    text = re.sub(r"^# .*$", f"# {args.title}", text, count=1, flags=re.MULTILINE)
+    new.write_text(text)
+    finalize(ctx, rows)
+    print(new)
+
+
 def main() -> None:
     die("not implemented yet")  # replaced in Task 10
 
