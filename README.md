@@ -23,6 +23,7 @@ Then, in any repo:
 
 ```bash
 trck init                       # scaffold ./issues (config + a vendored copy of trck)
+                                # `trck init <dir>` for a custom dir; `--no-vendor` skips the engine copy
 trck new "Fix login bug" --priority high
 trck start 1                    # move to the configured 'start' status (default: ongoing)
 trck done 1 --resolution wontfix

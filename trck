@@ -536,11 +536,11 @@ Statuses, priorities, kinds, resolutions, and aliases are configured in `trck.js
 
 README_TEMPLATE = """# Issues (managed by `trck`)
 
-This directory is a self-contained, in-repo issue tracker. The `trck` script here is the
-engine; `trck.json` configures it; `index.jsonl` holds metadata; `SUMMARY.md` is generated.
+This directory is a self-contained, in-repo issue tracker managed by `trck`. `trck.json`
+configures it; `index.jsonl` holds metadata; `SUMMARY.md` is generated.
 
-Run `./trck --help` (or `trck --help` if installed on PATH) for the full verb list.
-See `CLAUDE.md` in this folder for the working model.
+Run `trck --help` for the full verb list — use the vendored `./trck` in this folder if present,
+or a `trck` installed on your `PATH`. See `CLAUDE.md` in this folder for the working model.
 """
 
 
@@ -873,7 +873,13 @@ def ns_like(args, **over):
 
 
 def cmd_init(args) -> None:
-    target = (Path.cwd() / args.init_dir).resolve()
+    if getattr(args, "target", None) and getattr(args, "init_dir", None):
+        die("cannot combine a positional dir with --dir")
+    init_dir = getattr(args, "target", None) or getattr(args, "init_dir", None) or "issues"
+    target = (Path.cwd() / init_dir).resolve()
+    no_vendor = getattr(args, "no_vendor", False)
+    if not no_vendor and (target / "trck").resolve() == SELF_PATH:
+        die("refusing to vendor over the running engine; use --no-vendor or a different dir")
     cfgfile = target / "trck.json"
     if cfgfile.exists() and not args.force:
         die(f"{target} is already a tracker (pass --force to overwrite config)")
@@ -883,10 +889,11 @@ def cmd_init(args) -> None:
     config["update"]["repo"] = DEFAULT_UPDATE_REPO
     cfgfile.write_text(json.dumps(config, indent=2) + "\n")
 
-    vendored = target / "trck"
-    shutil.copyfile(SELF_PATH, vendored)
-    shutil.copymode(SELF_PATH, vendored)
-    os.chmod(vendored, os.stat(vendored).st_mode | 0o111)
+    if not no_vendor:
+        vendored = target / "trck"
+        shutil.copyfile(SELF_PATH, vendored)
+        shutil.copymode(SELF_PATH, vendored)
+        os.chmod(vendored, os.stat(vendored).st_mode | 0o111)
 
     claude = target / "CLAUDE.md"
     if not claude.exists() or args.force:
@@ -1046,7 +1053,9 @@ def build_parser() -> argparse.ArgumentParser:
     ih.set_defaults(func=cmd_install_hook)
 
     iv = sub.add_parser("init", help="scaffold a tracker into the current repo")
-    iv.add_argument("--dir", dest="init_dir", default="issues")
+    iv.add_argument("target", nargs="?", default=None, help="tracker dir to create (default: issues)")
+    iv.add_argument("--dir", dest="init_dir", default=None, help="same as the positional dir")
+    iv.add_argument("--no-vendor", action="store_true", help="don't copy the engine into the tracker dir")
     iv.add_argument("--hook", action="store_true")
     iv.add_argument("--force", action="store_true")
     iv.set_defaults(func=cmd_init)

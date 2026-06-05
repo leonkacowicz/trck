@@ -25,8 +25,8 @@ from the repo root (discovery finds `issues/` via its `trck.json`).
 - `./trck check` must pass before committing. `SUMMARY.md` is generated.
 - Keep issue-tracker commits separate from engine-code commits where reasonable.
 - **This canonical repo keeps no vendored engine copy**: `./trck` (root) runs directly against
-  `./issues/`. (`trck init` vendors `issues/trck` for *consumer* repos; here that copy is
-  intentionally absent to avoid two engines drifting — see issue about `init --no-vendor`.)
+  `./issues/`. (`trck init` vendors `issues/trck` for *consumer* repos; this repo was set up with
+  `trck init --no-vendor` so there's no second engine to drift.)
 
 ## Releasing
 

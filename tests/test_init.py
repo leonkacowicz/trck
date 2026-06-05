@@ -22,7 +22,7 @@ class TestInit(unittest.TestCase):
         return p
 
     def init(self, repo, **over):
-        a = ns(init_dir="issues", hook=False, force=False)
+        a = ns(target=None, init_dir=None, no_vendor=False, hook=False, force=False)
         a.cwd = str(repo)
         for k, v in over.items():
             setattr(a, k, v)
@@ -69,3 +69,41 @@ class TestInit(unittest.TestCase):
                               parent=None, milestone=None, depends=None,
                               spec=None, slug=None))
             self.assertTrue((d / "backlog" / "001-x.md").exists())
+
+    def test_init_positional_dir(self):
+        with TemporaryDirectory() as tmp:
+            self.make_self(tmp)
+            repo = Path(tmp) / "repo"; repo.mkdir()
+            self.init(repo, target="tracker")   # positional dir instead of --dir
+            d = repo / "tracker"
+            self.assertTrue((d / "trck.json").exists())
+            self.assertTrue((d / "CLAUDE.md").exists())
+            self.assertTrue((d / "README.md").exists())
+            self.assertTrue((d / "trck").exists())   # vendored by default
+
+    def test_init_rejects_positional_and_dir_together(self):
+        with TemporaryDirectory() as tmp:
+            self.make_self(tmp)
+            repo = Path(tmp) / "repo"; repo.mkdir()
+            with self.assertRaises(SystemExit):
+                self.init(repo, target="a", init_dir="b")
+
+    def test_init_no_vendor_skips_engine_copy(self):
+        with TemporaryDirectory() as tmp:
+            self.make_self(tmp)
+            repo = Path(tmp) / "repo"; repo.mkdir()
+            self.init(repo, no_vendor=True)
+            d = repo / "issues"
+            self.assertTrue((d / "trck.json").exists())
+            self.assertTrue((d / "CLAUDE.md").exists())
+            self.assertFalse((d / "trck").exists())   # engine NOT vendored
+
+    def test_init_refuses_vendor_over_running_engine(self):
+        with TemporaryDirectory() as tmp:
+            self.make_self(tmp)   # SELF_PATH = tmp/trck
+            # init targeting the engine's own dir would vendor over itself -> clean die
+            with self.assertRaises(SystemExit):
+                self.init(Path(tmp), target=".")
+            # ...but --no-vendor makes it fine
+            self.init(Path(tmp), target=".", no_vendor=True)
+            self.assertTrue((Path(tmp) / "trck.json").exists())
