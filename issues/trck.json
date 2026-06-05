@@ -1,0 +1,37 @@
+{
+  "update": {
+    "repo": "leonkacowicz/trck",
+    "channel": "stable"
+  },
+  "statuses": [
+    {
+      "name": "backlog",
+      "role": "initial"
+    },
+    {
+      "name": "ongoing"
+    },
+    {
+      "name": "done",
+      "role": "terminal"
+    }
+  ],
+  "aliases": {
+    "start": "ongoing",
+    "done": "done"
+  },
+  "priorities": [
+    "high",
+    "medium",
+    "low"
+  ],
+  "kinds": [
+    "task",
+    "epic"
+  ],
+  "resolutions": [
+    "superseded",
+    "wontfix",
+    "duplicate"
+  ]
+}
