@@ -137,6 +137,92 @@ def resolve_tracker_dir(dir_opt, env=None) -> Path:
     return find_tracker(Path.cwd())
 
 
+# --------------------------------------------------------------------------- #
+# context + index I/O
+# --------------------------------------------------------------------------- #
+CANON_KEYS = [
+    "id", "slug", "title", "kind", "status", "priority", "parent",
+    "milestone", "depends_on", "spec", "created", "started", "closed",
+    "resolution",
+]
+
+
+class Ctx:
+    """Resolved invocation context: the tracker dir and its merged config."""
+    def __init__(self, dir: Path, cfg: dict):
+        self.dir = Path(dir)
+        self.cfg = cfg
+
+    @property
+    def index_path(self) -> Path:
+        return self.dir / "index.jsonl"
+
+
+def build_ctx(args) -> Ctx:
+    d = resolve_tracker_dir(getattr(args, "dir", None))
+    return Ctx(d, load_config(d))
+
+
+def filename(row: dict) -> str:
+    return f"{row['id']:03d}-{row['slug']}.md"
+
+
+def rel_link(row: dict) -> str:
+    return f"{row['status']}/{filename(row)}"
+
+
+def issue_path(ctx: Ctx, row: dict) -> Path:
+    return ctx.dir / row["status"] / filename(row)
+
+
+def load_index(ctx: Ctx) -> list[dict]:
+    if not ctx.index_path.exists():
+        return []
+    rows = []
+    for n, line in enumerate(ctx.index_path.read_text().splitlines(), 1):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as e:
+            die(f"index.jsonl line {n}: invalid JSON ({e})")
+        row.setdefault("depends_on", [])
+        rows.append(row)
+    return rows
+
+
+def save_index(ctx: Ctx, rows: list[dict]) -> None:
+    rows = sorted(rows, key=lambda r: r["id"])
+    lines = []
+    for r in rows:
+        ordered = {k: r.get(k, [] if k == "depends_on" else None) for k in CANON_KEYS}
+        for k in sorted(r):  # preserve unknown keys, appended in stable order
+            if k not in ordered:
+                ordered[k] = r[k]
+        lines.append(json.dumps(ordered, ensure_ascii=False))
+    ctx.index_path.write_text("\n".join(lines) + ("\n" if lines else ""))
+
+
+def get_row(rows: list[dict], issue_id: int) -> dict:
+    for r in rows:
+        if r["id"] == issue_id:
+            return r
+    die(f"no issue with id {issue_id}")
+
+
+def next_id(ctx: Ctx) -> int:
+    ids = {r["id"] for r in load_index(ctx)}
+    for name in status_names(ctx.cfg):
+        d = ctx.dir / name
+        if d.is_dir():
+            for p in d.glob("*.md"):
+                m = FILENAME_RE.match(p.name)
+                if m:
+                    ids.add(int(m.group(1)))
+    return (max(ids) + 1) if ids else 1
+
+
 def main() -> None:
     die("not implemented yet")  # replaced in Task 10
 
