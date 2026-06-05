@@ -77,6 +77,36 @@ class TestSummary(unittest.TestCase):
             self.assertIn("M0", text)         # milestone shown
             self.assertNotIn("?", text)        # no '?' placeholder for the milestone-less child
 
+    def test_status_section_sorted_by_priority_then_id(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)  # priorities: high, medium, low
+            rows = [
+                self.base(id=1, slug="a", status="backlog", priority="low"),
+                self.base(id=2, slug="b", status="backlog", priority="high"),
+                self.base(id=3, slug="c", status="backlog", priority="medium"),
+                self.base(id=4, slug="d", status="backlog", priority="high"),
+            ]
+            for r in rows:
+                self.write(ctx, r)
+            self.t.save_index(ctx, rows)
+            text = self.t.generate_summary(ctx)
+            order = [text.index(f"[#{i:03d}") for i in (2, 4, 3, 1)]
+            self.assertEqual(order, sorted(order),
+                             "expected high (id-asc), then medium, then low")
+
+    def test_status_section_unknown_priority_sorts_last(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            rows = [
+                self.base(id=1, slug="a", status="backlog", priority="weird"),
+                self.base(id=2, slug="b", status="backlog", priority="low"),
+            ]
+            for r in rows:
+                self.write(ctx, r)
+            self.t.save_index(ctx, rows)
+            text = self.t.generate_summary(ctx)
+            self.assertLess(text.index("[#002"), text.index("[#001"))
+
     def test_custom_statuses_render(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp, {"statuses": [
