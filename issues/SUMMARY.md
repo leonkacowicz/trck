@@ -5,9 +5,9 @@
 
 | State | Count |
 |---|---:|
-| backlog | 11 |
+| backlog | 10 |
 | ongoing | 0 |
-| done | 4 |
+| done | 5 |
 | **total** | **15** |
 
 ## Hierarchies
@@ -23,7 +23,6 @@
 ## Backlog
 
 - [#001 Part C: curses TUI for browsing and quick actions](backlog/001-part-c-curses-tui-for-browsing-and-quick-actions.md) — _medium_
-- [#006 init: accept positional dir and add --no-vendor for self-hosting repos](backlog/006-init-accept-positional-dir-and-add-no-vendor-for-self-hosting-repos.md) — _medium_
 - [#007 summary: include foreign/unknown statuses in the counts table](backlog/007-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
 - [#008 validate: report one error per parent cycle, not one per node](backlog/008-validate-report-one-error-per-parent-cycle-not-one-per-node.md) — _low_
 - [#009 validate: suppress redundant bad-slug error when filename-slug mismatch already reported](backlog/009-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
@@ -36,6 +35,7 @@ _none_
 
 ## Done
 
+- [#006 init: accept positional dir and add --no-vendor for self-hosting repos](done/006-init-accept-positional-dir-and-add-no-vendor-for-self-hosting-repos.md) — _medium_ (closed 2026-06-05)
 - [#011 version/update: suppress no-tracker stderr noise when run outside a tracker](done/011-version-update-suppress-no-tracker-stderr-noise-when-run-outside-a-tracker.md) — _low_ (closed 2026-06-05)
 - [#013 Write root README.md and CLAUDE.md](done/013-write-root-readme-md-and-claude-md.md) — _high_ (closed 2026-06-05)
 - [#014 Cut v0.1.0 release](done/014-cut-v0-1-0-release.md) — _high_ (closed 2026-06-05)
