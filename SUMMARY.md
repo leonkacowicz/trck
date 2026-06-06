@@ -5,9 +5,9 @@
 
 | State | Count |
 |---|---:|
-| backlog | 11 |
+| backlog | 10 |
 | ongoing | 0 |
-| done | 11 |
+| done | 12 |
 | **total** | **22** |
 
 ## Hierarchies
@@ -22,7 +22,6 @@
 
 - [#001 Part C: curses TUI for browsing and quick actions](backlog/001-part-c-curses-tui-for-browsing-and-quick-actions.md) — _medium_
 - [#018 mv/done: guard closing a parent with open descendants (--recurse to cascade)](backlog/018-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
-- [#022 Introduce an Issue class instead of dict-oriented code](backlog/022-introduce-an-issue-class-instead-of-dict-oriented-code.md) — _medium_
 - [#007 summary: include foreign/unknown statuses in the counts table](backlog/007-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
 - [#008 validate: report one error per parent cycle, not one per node](backlog/008-validate-report-one-error-per-parent-cycle-not-one-per-node.md) — _low_
 - [#009 validate: suppress redundant bad-slug error when filename-slug mismatch already reported](backlog/009-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
@@ -43,5 +42,6 @@ _none_
 - [#016 Improve CLI output presentation (align/icons, color, show, SUMMARY)](done/016-improve-cli-output-presentation-align-icons-color-show-summary.md) — _medium_ (closed 2026-06-05)
 - [#019 Add points field with leaves-only deep-recursive weighted rollup](done/019-add-points-field-with-leaves-only-deep-recursive-weighted-rollup.md) — _medium_ (closed 2026-06-06)
 - [#021 Add normalize command to rewrite index.jsonl in canonical slim form](done/021-add-normalize-command-to-rewrite-index-jsonl-in-canonical-slim-form.md) — _medium_ (closed 2026-06-05)
+- [#022 Introduce an Issue class instead of dict-oriented code](done/022-introduce-an-issue-class-instead-of-dict-oriented-code.md) — _medium_ (closed 2026-06-06)
 - [#011 version/update: suppress no-tracker stderr noise when run outside a tracker](done/011-version-update-suppress-no-tracker-stderr-noise-when-run-outside-a-tracker.md) — _low_ (closed 2026-06-05)
 - [#017 summary: sort status sections by priority (highest first)](done/017-summary-sort-status-sections-by-priority-highest-first.md) — _low_ (closed 2026-06-05)
