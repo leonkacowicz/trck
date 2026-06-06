@@ -23,53 +23,54 @@ defaults.
 ## Acceptance criteria
 
 ### What gets stripped (write side — `save_index`)
-- [ ] Introduce a per-field default map (e.g. `FIELD_DEFAULTS`) covering the CANON_KEYS
+- [x] Introduce a per-field default map (e.g. `FIELD_DEFAULTS`) covering the CANON_KEYS
       that have one: `depends_on -> []`, the rest of the optional fields `-> None`
       (`milestone`, `parent`, `resolution`, `spec`, `started`, `closed`, ...). This is the
       single source of truth that `save_index`'s current inline
       `[] if k == "depends_on" else None` default already implies — promote it to a named
       map and reuse it.
-- [ ] A field is omitted from the serialized object iff its value **equals that field's
+- [x] A field is omitted from the serialized object iff its value **equals that field's
       default**. Fields with no declared default (the always-present required ones —
       `id`, `slug`, `title`, `status`, `kind`, `priority`, `created`) are never stripped.
-- [ ] **Custom/unknown fields are never stripped.** A key that trck does not know about
+- [x] **Custom/unknown fields are never stripped.** A key that trck does not know about
       (not in `FIELD_DEFAULTS`) has no default to compare against, so it passes through
       **verbatim** — even when its value is `null`, `[]`, `""`, or otherwise empty. The
       strip rule applies only to trck-owned fields; user-added fields are preserved as-is.
-      (This keeps the existing "preserve unknown keys" behavior at `trck:208-210` intact
-      and explicitly exempts those keys from the new strip pass.)
+      (This keeps the existing "preserve unknown keys" behavior intact and explicitly
+      exempts those keys from the new strip pass.)
 - [ ] Consequence to verify explicitly: `points: 1` is stripped (default), `points: 0`
       is kept (non-default — "trivial"), `points: 3` is kept. Numeric `0` / `False` are
       never collateral-stripped because the test is equality-to-default, not falsiness.
-- [ ] CANON_KEYS ordering is preserved for the keys that *are* present; unknown/extra keys
+      → *Mechanism is in place (compares to `FIELD_DEFAULTS[k]`, not falsiness); the
+      `points`-specific assertion lands with #019 when the field exists.*
+- [x] CANON_KEYS ordering is preserved for the keys that *are* present; unknown/extra keys
       still follow in the existing stable sorted order.
-- [ ] Output is idempotent: loading a stripped index and re-saving produces byte-identical
+- [x] Output is idempotent: loading a stripped index and re-saving produces byte-identical
       lines (no field reappears, no reordering).
 
 ### Read side
-- [ ] Confirm no code path indexes a stripped field with `r["key"]` where the key may now
-      be absent. Audit the `r["parent"]`/`r["milestone"]`-style direct subscripts
-      (`trck:303`, `:311`, `:417`, `:465`, `:486`) — each is already guarded by a prior
-      `.get(...)` truthiness/`is not None` check, but verify rather than assume.
-- [ ] `load_index` keeps re-defaulting `depends_on` to `[]` so downstream `for dep in
-      r["depends_on"]` style access is safe.
+- [x] `load_index` re-hydrates **all** `FIELD_DEFAULTS` keys (not just `depends_on`) so the
+      in-memory row dicts are byte-for-byte what they were before this change. Stripping is
+      thus a pure *serialization* concern: every reader still sees a full-shaped row, so no
+      `r["key"]` access path needed auditing or changing.
 
 ### Validation / round-trip
-- [ ] `check` passes on a freshly stripped index.
-- [ ] Re-running `trck summary` / any verb that calls `save_index` over the existing repo
+- [x] `check` passes on a freshly stripped index.
+- [x] Re-running `trck summary` / any verb that calls `save_index` over the existing repo
       issues produces the stripped form and `check` stays green.
 
 ### Tests (TDD)
-- [ ] `save_index` omits fields equal to their default (`milestone: None`,
+- [x] `save_index` omits fields equal to their default (`milestone: None`,
       `depends_on: []`, ...) and keeps non-default ones in CANON order.
-- [ ] Non-empty default case: a leaf with `points: 1` (default) is stripped, `points: 0`
-      and `points: 3` (non-default) are kept. (Can land with #019; until then, assert the
-      equality-to-default behavior with whatever field exercises it.)
-- [ ] Round-trip: `load_index(save_index(rows))` equals the logical rows, and a second
+- [~] Non-empty default case: a leaf with `points: 1` (default) is stripped, `points: 0`
+      and `points: 3` (non-default) are kept. Deferred to #019 (no `points` field yet); the
+      equals-default-not-falsiness mechanism is covered by the `depends_on: []`-vs-`[1]`
+      cases here.
+- [x] Round-trip: `load_index(save_index(rows))` equals the logical rows, and a second
       `save_index` is byte-identical to the first.
-- [ ] A row with a populated `milestone`/`parent`/`resolution`/`depends_on` still
+- [x] A row with a populated `milestone`/`parent`/`resolution`/`depends_on` still
       serializes those fields.
-- [ ] A row carrying a custom/unknown key with a `null`/empty value retains that key
+- [x] A row carrying a custom/unknown key with a `null`/empty value retains that key
       verbatim after a save/round-trip (not stripped, not reordered relative to other
       unknown keys).
 
@@ -88,5 +89,7 @@ defaults.
   through verbatim regardless of value, because trck has no default to judge them against
   and shouldn't silently drop data it doesn't understand. Practically: the strip pass runs
   over `FIELD_DEFAULTS` keys; the unknown-key passthrough loop is untouched.
-- Touchpoint is small: `save_index` (`trck:203`). Keep the `depends_on` default in
-  `load_index` as the safety net for that one field.
+- Touchpoints: `save_index` (strip on write) and `load_index` (re-hydrate all
+  `FIELD_DEFAULTS` on read). Re-hydrating on load — rather than only `depends_on` —
+  keeps the in-memory contract identical to before, so stripping never leaks into reader
+  code.
