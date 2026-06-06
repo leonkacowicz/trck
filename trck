@@ -1006,6 +1006,11 @@ def cmd_list(args) -> None:
     if sort in sort_keys:
         rows.sort(key=sort_keys[sort])
 
+    print_rows(ctx, rows)
+
+
+def print_rows(ctx: Ctx, rows: list[Issue]) -> None:
+    """Render issues as aligned one-line summaries (shared by `list` and `ready`)."""
     if not rows:
         return
     sw = max(len(r.status) for r in rows)
@@ -1024,6 +1029,28 @@ def cmd_list(args) -> None:
         status = paint(f"{r.status:<{sw}}", *codes)
         prio = paint(f"{r.priority:<{pw}}", *priority_codes(ctx.cfg, r.priority))
         print(f"{icon} {iid} {status}  {prio}  {r.title}{tagstr}")
+
+
+def cmd_ready(args) -> None:
+    ctx = build_ctx(args)
+    rows = load_index(ctx)
+    by_id = {r.id: r for r in rows}
+    parents = parent_ids(rows)
+
+    def is_ready(r):
+        return (not is_terminal(ctx.cfg, r.status)        # not yet in a terminal status
+                and r.id not in parents                    # a leaf (no children)
+                and not is_blocked(ctx.cfg, r, by_id))     # every dep is terminal
+
+    rows = sorted((r for r in rows if is_ready(r)),
+                  key=lambda r: (priority_rank(ctx.cfg, r.priority), -r.points, r.id))
+    if getattr(args, "next", False):
+        rows = rows[:1]
+    print_rows(ctx, rows)
+
+
+def cmd_next(args) -> None:
+    cmd_ready(ns_like(args, next=True))
 
 
 def cmd_tree(args) -> None:
@@ -1295,6 +1322,7 @@ TYPICAL FLOW
   trck set 7 --points 3 --parent 4              # adjust metadata anytime
   trck start 7                                   # -> ongoing
   trck done 7 --resolution superseded            # -> done (resolution optional)
+  trck ready         /  trck next                # unblocked work / the top pick
   trck list --status ongoing                     # what's in flight
   trck list --status '!done' --sort priority     # open work, hottest first
   trck list --match parser --orphan              # title search, top-level only
@@ -1417,6 +1445,19 @@ def build_parser() -> argparse.ArgumentParser:
     ls.add_argument("--orphan", "--no-parent", dest="orphan", action="store_true",
                     help="only top-level issues (no parent)")
     ls.set_defaults(func=cmd_list)
+
+    rd = sub.add_parser(
+        "ready", help="list issues you can work on right now",
+        description="List not-done leaf issues whose dependencies are all in a "
+                    "terminal status, ranked by priority then points then id.")
+    rd.add_argument("--next", action="store_true",
+                    help="print only the single highest-ranked ready issue")
+    rd.set_defaults(func=cmd_ready)
+
+    nx = sub.add_parser("next", help="print the single best issue to work on next",
+                        description="Print only the highest-ranked ready issue "
+                                    "(shorthand for `ready --next`).")
+    nx.set_defaults(func=cmd_next)
 
     tr = sub.add_parser("tree", help="print an issue's child hierarchy",
                         description="Print the epic/child hierarchy for an issue, "

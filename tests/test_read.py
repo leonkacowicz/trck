@@ -23,6 +23,12 @@ class TestRead(unittest.TestCase):
         a.update(over)
         return self.cap(self.t.cmd_list, ns(**a))
 
+    def ready(self, d, **over):
+        """cmd_ready with flags defaulted; override per test."""
+        a = dict(dir=str(d), next=False)
+        a.update(over)
+        return self.cap(self.t.cmd_ready, ns(**a))
+
     def cap(self, fn, args):
         buf = io.StringIO()
         with redirect_stdout(buf):
@@ -161,6 +167,67 @@ class TestRead(unittest.TestCase):
             out = self.cap(self.t.cmd_tree, ns(dir=str(d), id=None))
             self.assertIn("Epic", out)
             self.assertIn("Child", out)
+
+    def test_ready_lists_unblocked_not_done_leaves(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Free")                           # 1 leaf, no deps
+            out = self.ready(d)
+            self.assertIn("#001", out)
+
+    def test_ready_excludes_unmet_dep(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Dep")                            # 1 backlog (non-terminal)
+            self.seed(d, "Blocked", depends="1")           # 2 unmet dep
+            out = self.ready(d)
+            self.assertIn("#001", out)                     # the dep itself is ready
+            self.assertNotIn("#002", out)
+
+    def test_ready_includes_met_dep(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Dep")                            # 1
+            self.seed(d, "Unblocked", depends="1")         # 2
+            self.t.cmd_mv(ns(dir=str(d), id=1, status="done", resolution=None))
+            out = self.ready(d)
+            self.assertNotIn("#001", out)                  # done -> terminal, excluded
+            self.assertIn("#002", out)                     # its dep is now terminal
+
+    def test_ready_excludes_parents(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Epic", kind="epic")              # 1 non-leaf (has child)
+            self.seed(d, "Child", parent=1)                # 2 leaf
+            out = self.ready(d)
+            self.assertNotIn("#001", out)
+            self.assertIn("#002", out)
+
+    def test_ready_excludes_terminal(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Done")                           # 1
+            self.t.cmd_mv(ns(dir=str(d), id=1, status="done", resolution=None))
+            self.assertEqual(self.ready(d), "")
+
+    def test_ready_ordering_priority_then_points_then_id(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "High small", priority="high", points=1)   # 1
+            self.seed(d, "High big", priority="high", points=8)     # 2
+            self.seed(d, "Low big", priority="low", points=8)       # 3
+            out = self.ready(d)
+            self.assertLess(out.index("#002"), out.index("#001"))   # points within high
+            self.assertLess(out.index("#001"), out.index("#003"))   # priority over points
+
+    def test_next_prints_only_top_pick(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "High", priority="high")          # 1
+            self.seed(d, "Low", priority="low")            # 2
+            out = self.ready(d, next=True)
+            self.assertIn("#001", out)
+            self.assertNotIn("#002", out)
 
     def test_deps_shows_requires_and_blocks(self):
         with TemporaryDirectory() as tmp:
