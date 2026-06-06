@@ -21,7 +21,7 @@ class TestMetadata(unittest.TestCase):
 
     def seed(self, d, **over):
         args = ns(dir=str(d), title=over.pop("title", "Item"), priority="high",
-                  kind=over.pop("kind", None), parent=None, milestone=None,
+                  kind=over.pop("kind", None), parent=None,
                   depends=None, spec=None, slug=None)
         for k, v in over.items():
             setattr(args, k, v)
@@ -32,7 +32,7 @@ class TestMetadata(unittest.TestCase):
         return {r["id"]: r for r in self.t.load_index(ctx)}
 
     def set_args(self, d, iid, **over):
-        a = ns(dir=str(d), id=iid, priority=None, parent=None, milestone=None,
+        a = ns(dir=str(d), id=iid, priority=None, parent=None,
                spec=None, kind=None, title=None)
         for k, v in over.items():
             setattr(a, k, v)
@@ -56,14 +56,12 @@ class TestMetadata(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 self.seed(d, kind="bogus")
 
-    def test_set_priority_and_milestone(self):
+    def test_set_priority(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d)
-            self.t.cmd_set(self.set_args(d, 1, priority="low", milestone="M2"))
-            r = self.rows(d)[1]
-            self.assertEqual(r["priority"], "low")
-            self.assertEqual(r["milestone"], "M2")
+            self.t.cmd_set(self.set_args(d, 1, priority="low"))
+            self.assertEqual(self.rows(d)[1]["priority"], "low")
 
     def test_set_parent_to_any_issue(self):
         with TemporaryDirectory() as tmp:
@@ -79,14 +77,6 @@ class TestMetadata(unittest.TestCase):
             self.seed(d, title="Only")          # id 1
             with self.assertRaises(SystemExit):
                 self.t.cmd_set(self.set_args(d, 1, parent="99"))
-
-    def test_set_milestone_none_clears(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            self.seed(d)
-            self.t.cmd_set(self.set_args(d, 1, milestone="M1"))
-            self.t.cmd_set(self.set_args(d, 1, milestone="none"))
-            self.assertIsNone(self.rows(d)[1]["milestone"])
 
     def test_dep_add_remove(self):
         with TemporaryDirectory() as tmp:

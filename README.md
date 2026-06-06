@@ -85,14 +85,18 @@ and either define its own aliases or just use `mv`.
 
 ## Common verbs
 
-`new` · `mv` · `start` · `done` · `set` · `dep` · `rename` · `show` · `list` · `tree` ·
-`deps` · `check` · `summary` · `install-hook` · `init` · `update` · `version`. Run
+`new` · `mv` · `start` · `done` · `set` · `dep` · `label` · `rename` · `show` · `list` ·
+`tree` · `deps` · `check` · `summary` · `install-hook` · `init` · `update` · `version`. Run
 `trck --help` (or `trck <verb> --help`) for details.
 
-Epics and milestones: create an epic with `--kind epic`, attach children with `--parent NNN`
-(and optionally `--milestone M1`); the epic's rollup `%` is computed from its children and
-shown in `SUMMARY.md`. (Any issue can be a parent — `kind: epic` is just a display label.)
-Filter a list to one epic's children with `trck list --parent NNN`.
+Epics: create an epic with `--kind epic`, attach children with `--parent NNN`; the epic's
+rollup `%` is computed from its children and shown in `SUMMARY.md`. (Any issue can be a
+parent — `kind: epic` is just a display label.) Filter a list to one epic's children with
+`trck list --parent NNN`.
+
+Labels: tag issues with a flat, multi-valued set of free-text labels via
+`trck label NNN --add X --remove Y`, then filter with `trck list --label X`. Labels show
+up in `show`, `list`, `tree`, and `SUMMARY.md`.
 
 Output is colorized when stdout is a terminal (disable with `NO_COLOR=1`, force with
 `FORCE_COLOR=1`); piped/redirected output stays plain for scripts and agents. `trck show`

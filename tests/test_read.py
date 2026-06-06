@@ -12,7 +12,7 @@ class TestRead(unittest.TestCase):
 
     def seed(self, d, title="Item", kind=None, parent=None):
         a = ns(dir=str(d), title=title, priority="high", kind=kind, parent=parent,
-               milestone=None, depends=None, spec=None, slug=None)
+               depends=None, spec=None, slug=None)
         self.t.cmd_new(a)
 
     def cap(self, fn, args):

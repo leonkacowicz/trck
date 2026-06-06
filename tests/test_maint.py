@@ -12,7 +12,7 @@ class TestMaint(unittest.TestCase):
 
     def seed(self, d, title="Item"):
         self.t.cmd_new(ns(dir=str(d), title=title, priority="high", kind=None,
-                          parent=None, milestone=None, depends=None, spec=None, slug=None))
+                          parent=None, depends=None, spec=None, slug=None))
 
     def test_check_passes_clean_tracker(self):
         with TemporaryDirectory() as tmp:
@@ -80,13 +80,13 @@ class TestMaint(unittest.TestCase):
             self.seed(d)
             ctx = self.t.Ctx(d, self.t.load_config(d))
             rows = self.t.load_index(ctx)
-            rows[0]["milestone"] = "m1"
+            rows[0]["labels"] = ["m1"]
             rows[0]["custom"] = None
             self.t.save_index(ctx, rows)
             with redirect_stdout(io.StringIO()):
                 self.t.cmd_normalize(ns(dir=str(d)))
             back = self.t.load_index(ctx)[0]
-            self.assertEqual(back["milestone"], "m1")
+            self.assertEqual(back["labels"], ["m1"])
             self.assertIn("custom", back)
             self.assertIsNone(back["custom"])
 

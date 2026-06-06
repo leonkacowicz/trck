@@ -14,7 +14,7 @@ class TestLifecycle(unittest.TestCase):
 
     def new(self, d, title="First", **over):
         args = ns(dir=str(d), title=title, priority="high", kind=None,
-                  parent=None, milestone=None, depends=None, spec=None, slug=None)
+                  parent=None, depends=None, spec=None, slug=None)
         for k, v in over.items():
             setattr(args, k, v)
         self.t.cmd_new(args)

@@ -148,7 +148,7 @@ def resolve_tracker_dir(dir_opt, env=None, required: bool = True) -> Path | None
 # --------------------------------------------------------------------------- #
 CANON_KEYS = [
     "id", "slug", "title", "kind", "status", "priority", "points", "parent",
-    "milestone", "depends_on", "spec", "created", "started", "closed",
+    "labels", "depends_on", "spec", "created", "started", "closed",
     "resolution",
 ]
 
@@ -159,7 +159,7 @@ CANON_KEYS = [
 # equals-the-default, not falsiness (e.g. a future `points` default of 1 would
 # strip `points: 1` while keeping `points: 0`).
 FIELD_DEFAULTS = {
-    "points": 1, "parent": None, "milestone": None, "depends_on": [], "spec": None,
+    "points": 1, "parent": None, "labels": [], "depends_on": [], "spec": None,
     "started": None, "closed": None, "resolution": None,
 }
 
@@ -206,6 +206,12 @@ def load_index(ctx: Ctx) -> list[dict]:
             row = json.loads(line)
         except json.JSONDecodeError as e:
             die(f"index.jsonl line {n}: invalid JSON ({e})")
+        ms = row.pop("milestone", None)  # legacy field -> migrate to a plain label
+        if ms:
+            labels = row.get("labels") or []
+            if ms not in labels:
+                labels.append(ms)
+            row["labels"] = labels
         for k, dv in FIELD_DEFAULTS.items():  # re-hydrate stripped defaults
             row.setdefault(k, list(dv) if isinstance(dv, list) else dv)
         rows.append(row)
@@ -327,6 +333,9 @@ def validate(ctx: Ctx) -> tuple[list[str], list[str]]:
         res = r.get("resolution")
         if res not in (None, *resolutions):
             errors.append(f"#{iid:03d} bad resolution '{res}'")
+        labels = r.get("labels", [])
+        if not isinstance(labels, list) or any(not isinstance(l, str) for l in labels):
+            errors.append(f"#{iid:03d} labels must be a list of strings")
     for iid in files:
         if iid not in by_id:
             errors.append(f"#{iid:03d} markdown file on disk but no index row")
@@ -429,11 +438,15 @@ def status_codes(cfg: dict, name: str) -> tuple:
     return ("yellow",)
 
 
+def label_tag(r: dict) -> str:
+    labels = r.get("labels") or []
+    return " [" + " ".join(labels) + "]" if labels else ""
+
+
 def node_label(ctx: Ctx, r: dict) -> str:
-    ms = f"{r['milestone']} — " if r.get("milestone") else ""
     tag = " ·epic·" if r.get("kind") == "epic" else ""
     icon = paint(status_icon(ctx, r["status"]), *status_codes(ctx.cfg, r["status"]))
-    return f"#{r['id']:03d} {icon} {ms}{r['title']}{tag}"
+    return f"#{r['id']:03d} {icon} {r['title']}{tag}{label_tag(r)}"
 
 
 def walk_tree(nodes, children_fn, label_fn, prefix="", seen=frozenset()):
@@ -503,8 +516,7 @@ def generate_summary(ctx: Ctx) -> str:
         out.append("## Hierarchies")
         out.append("")
         for parent in parents:
-            kids = sorted(children.get(parent["id"], []),
-                          key=lambda r: (r.get("milestone") or "", r["id"]))
+            kids = sorted(children.get(parent["id"], []), key=lambda r: r["id"])
             pdone, ptotal, ndone, ntotal = leaf_rollup(parent, children, term)
             pct = round(100 * pdone / ptotal) if ptotal else 0
             out.append(
@@ -515,19 +527,12 @@ def generate_summary(ctx: Ctx) -> str:
             if parent.get("spec"):
                 out.append(f"Spec: [`{parent['spec']}`](../{parent['spec']})")
             if kids:
-                if any(k.get("milestone") for k in kids):  # milestone overview, when present
-                    strip = " · ".join(
-                        f"{k['milestone']} {status_icon(ctx, k['status'])}"
-                        for k in kids if k.get("milestone")
-                    )
-                    out.append("")
-                    out.append(strip)
                 out.append("")
                 for k in kids:
                     box = "x" if term(k["status"]) else " "
-                    ms = f"{k['milestone']} — " if k.get("milestone") else ""
                     tail = "" if term(k["status"]) else f" _({k['status']})_"
-                    out.append(f"- [{box}] [#{k['id']:03d} {ms}{k['title']}]({rel_link(k)}){tail}")
+                    out.append(f"- [{box}] [#{k['id']:03d} {k['title']}]"
+                               f"({rel_link(k)}){label_tag(k)}{tail}")
             out.append("")
 
     def standalone(status):
@@ -549,7 +554,8 @@ def generate_summary(ctx: Ctx) -> str:
                 extra += f" · _{r['resolution']}_"
             if is_terminal(ctx.cfg, status) and r.get("closed"):
                 extra += f" (closed {r['closed']})"
-            out.append(f"- [#{r['id']:03d} {r['title']}]({rel_link(r)}) — _{r['priority']}_{extra}")
+            out.append(f"- [#{r['id']:03d} {r['title']}]({rel_link(r)}) — "
+                       f"_{r['priority']}_{label_tag(r)}{extra}")
         out.append("")
 
     return "\n".join(out).rstrip() + "\n"
@@ -624,7 +630,7 @@ CLAUDE_MD_TEMPLATE = """# Issues — agent & contributor instructions
 This folder is an in-repo issue tracker managed by `trck`. **Bookkeeping is scripted;
 prose is hand-authored.** You only ever hand-edit the **body** of an issue markdown file
 (Summary / Acceptance criteria / Notes). Every structured change — create, move status,
-set priority/parent/milestone/deps — goes through `trck`, which updates `index.jsonl`,
+set priority/parent/deps, add labels — goes through `trck`, which updates `index.jsonl`,
 regenerates `SUMMARY.md`, and self-validates.
 
 > Never hand-edit `index.jsonl` or `SUMMARY.md`, and never move/rename issue files by hand.
@@ -638,10 +644,11 @@ regenerates `SUMMARY.md`, and self-validates.
 | rollup | `SUMMARY.md` (generated) |
 
 ## Common verbs (run `trck --help` for all)
-- `trck new "<title>" [--priority …] [--kind …] [--parent NNN] [--milestone M] [--depends a,b]`
+- `trck new "<title>" [--priority …] [--kind …] [--parent NNN] [--depends a,b]`
 - `trck mv NNN <status>` (vocabulary-agnostic); `trck start NNN` / `trck done NNN [--resolution …]` (aliases)
-- `trck set NNN [--priority …] [--parent …|none] [--milestone …|none] [--kind …] [--title …]`
+- `trck set NNN [--priority …] [--parent …|none] [--kind …] [--title …]`
 - `trck dep NNN --add MMM | --remove MMM`
+- `trck label NNN --add X --remove Y`
 - `trck list` · `trck tree` · `trck deps NNN` · `trck show NNN` · `trck check` · `trck summary`
 - `trck update` — pull the latest engine from the canonical repo.
 
@@ -717,7 +724,7 @@ def cmd_new(args) -> None:
     row = {
         "id": iid, "slug": slug, "title": args.title, "kind": kind,
         "status": initial_status(ctx.cfg), "priority": priority, "points": points,
-        "parent": parent, "milestone": args.milestone, "depends_on": deps,
+        "parent": parent, "labels": [], "depends_on": deps,
         "spec": args.spec, "created": today(), "started": None,
         "closed": None, "resolution": None,
     }
@@ -771,8 +778,6 @@ def cmd_set(args) -> None:
             if pid not in by_id:
                 die(f"--parent #{pid:03d} must be an existing issue")
             row["parent"] = pid
-    if args.milestone is not None:
-        row["milestone"] = None if args.milestone == "none" else args.milestone
     if args.spec is not None:
         row["spec"] = None if args.spec == "none" else args.spec
     if args.kind:
@@ -783,6 +788,22 @@ def cmd_set(args) -> None:
         row["title"] = args.title
     finalize(ctx, rows)
     print(f"#{row['id']:03d} updated")
+
+
+def cmd_label(args) -> None:
+    ctx = build_ctx(args)
+    rows = load_index(ctx)
+    row = get_row(rows, args.id)
+    labels = list(row.get("labels", []))
+    for lab in (args.add or []):
+        if lab and lab not in labels:
+            labels.append(lab)
+    for lab in (args.remove or []):
+        if lab in labels:
+            labels.remove(lab)
+    row["labels"] = sorted(labels)
+    finalize(ctx, rows)
+    print(f"#{row['id']:03d} labels={row['labels']}")
 
 
 def cmd_dep(args) -> None:
@@ -851,6 +872,7 @@ def cmd_list(args) -> None:
         return ((not args.status or r["status"] == args.status)
                 and (not args.kind or r.get("kind") == args.kind)
                 and (not args.priority or r.get("priority") == args.priority)
+                and (not getattr(args, "label", None) or args.label in (r.get("labels") or []))
                 and (args.parent is None or r.get("parent") == args.parent))
 
     rows = [r for r in rows if keep(r)]
@@ -864,8 +886,7 @@ def cmd_list(args) -> None:
             tags.append("EPIC")
         if r.get("parent"):
             tags.append(f"↳{r['parent']:03d}")
-        if r.get("milestone"):
-            tags.append(r["milestone"])
+        tags.extend(r.get("labels") or [])
         tagstr = paint(" [" + " ".join(tags) + "]", "dim") if tags else ""
         codes = status_codes(ctx.cfg, r["status"])
         icon = paint(status_icon(ctx, r["status"]), *codes)
@@ -884,7 +905,7 @@ def cmd_tree(args) -> None:
             kids_of.setdefault(r["parent"], []).append(r)
 
     def children(r):
-        return sorted(kids_of.get(r["id"], []), key=lambda c: (c.get("milestone") or "", c["id"]))
+        return sorted(kids_of.get(r["id"], []), key=lambda c: c["id"])
 
     label = lambda r: node_label(ctx, r)
     if args.id is not None:
@@ -1127,8 +1148,9 @@ MODEL
   an issue's prose body (Summary / Acceptance criteria / Notes).
 
   status      every issue has exactly one; move it with mv / start / done.
-  metadata    priority, points, parent, milestone, spec, kind, title -- change
-              with `trck set` (NOT by editing index.jsonl).
+  metadata    priority, points, parent, spec, kind, title -- change with
+              `trck set` (NOT by editing index.jsonl). labels -- a flat set
+              of free-text tags; change with `trck label`.
   hierarchy   --parent / --kind epic build an epic tree (containment).
   deps        dep / --depends build a blocking graph (ordering). A parent is
               "part of"; a dep is "must come first" -- they are independent.
@@ -1172,7 +1194,6 @@ def build_parser() -> argparse.ArgumentParser:
     n.add_argument("--points", type=int, help="leaf weight for rollups (default 1)")
     n.add_argument("--kind", help="configured kind (default: first in trck.json, e.g. task)")
     n.add_argument("--parent", type=int, help="id of the epic to nest this under")
-    n.add_argument("--milestone", help="milestone label")
     n.add_argument("--depends", help="comma-separated ids this issue depends on (must be done first)")
     n.add_argument("--spec", help="path to a spec/design doc")
     n.add_argument("--slug", help="override the auto-derived filename slug")
@@ -1200,12 +1221,11 @@ def build_parser() -> argparse.ArgumentParser:
     se = sub.add_parser(
         "set", help="edit metadata fields (index only)",
         description="Edit indexed metadata in place; does not touch the prose "
-                    "body. Pass 'none' to clear parent/milestone/spec.")
+                    "body. Pass 'none' to clear parent/spec.")
     se.add_argument("id", type=int, help="issue id")
     se.add_argument("--priority", help="configured priority")
     se.add_argument("--points", type=int, help="leaf weight (error if the issue has children)")
     se.add_argument("--parent", help="epic id, or 'none' to clear")
-    se.add_argument("--milestone", help="label, or 'none' to clear")
     se.add_argument("--spec", help="path, or 'none' to clear")
     se.add_argument("--kind", help="configured kind")
     se.add_argument("--title", help="new title (index only; does not rename the file -- use `rename`)")
@@ -1220,6 +1240,18 @@ def build_parser() -> argparse.ArgumentParser:
     dp.add_argument("--add", type=int, help="id this issue should depend on")
     dp.add_argument("--remove", type=int, help="id to remove from this issue's dependencies")
     dp.set_defaults(func=cmd_dep)
+
+    lb = sub.add_parser(
+        "label", help="add/remove labels on an issue", formatter_class=raw,
+        description="Add or remove free-text labels on an issue. Labels are a "
+                    "flat, unordered set; both flags are repeatable.",
+        epilog="examples:\n  trck label 7 --add backend --add urgent --remove stale")
+    lb.add_argument("id", type=int, help="issue id")
+    lb.add_argument("--add", action="append", metavar="LABEL",
+                    help="label to add (repeatable)")
+    lb.add_argument("--remove", action="append", metavar="LABEL",
+                    help="label to remove (repeatable)")
+    lb.set_defaults(func=cmd_label)
 
     rn = sub.add_parser(
         "rename", help="change title + slug (renames the file)",
@@ -1241,6 +1273,7 @@ def build_parser() -> argparse.ArgumentParser:
     ls.add_argument("--status", help="filter by status")
     ls.add_argument("--kind", help="filter by kind")
     ls.add_argument("--priority", help="filter by priority")
+    ls.add_argument("--label", help="filter to issues carrying this label")
     ls.add_argument("--parent", type=int, help="filter to children of this epic/parent id")
     ls.set_defaults(func=cmd_list)
 

@@ -12,7 +12,7 @@ class TestPresentation(unittest.TestCase):
 
     def seed(self, d, title, **over):
         a = ns(dir=str(d), title=title, priority="high", kind=None, parent=None,
-               milestone=None, depends=None, spec=None, slug=None)
+               depends=None, spec=None, slug=None)
         for k, v in over.items():
             setattr(a, k, v)
         with redirect_stdout(io.StringIO()):

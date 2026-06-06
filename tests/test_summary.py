@@ -42,8 +42,8 @@ class TestSummary(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
             epic = self.base(id=1, slug="e", kind="epic", status="ongoing")
-            k1 = self.base(id=2, slug="k1", parent=1, milestone="M0", status="done")
-            k2 = self.base(id=3, slug="k2", parent=1, milestone="M1", status="ongoing")
+            k1 = self.base(id=2, slug="k1", parent=1, status="done")
+            k2 = self.base(id=3, slug="k2", parent=1, status="ongoing")
             for r in (epic, k1, k2):
                 self.write(ctx, r)
             self.t.save_index(ctx, [epic, k1, k2])
@@ -63,19 +63,6 @@ class TestSummary(unittest.TestCase):
             self.assertIn("50% (1/2 pts · 1/2 done)", text)  # rollup for a non-epic parent
             # the parent appears once (its Hierarchies heading), not also as a standalone item
             self.assertEqual(text.count("[#001"), 1)
-
-    def test_milestone_strip_omits_placeholder(self):
-        with TemporaryDirectory() as tmp:
-            ctx = self.ctx(tmp)
-            epic = self.base(id=1, slug="e", kind="epic", status="ongoing")
-            k1 = self.base(id=2, slug="k1", parent=1, milestone="M0", status="done")
-            k2 = self.base(id=3, slug="k2", parent=1, status="ongoing")  # no milestone
-            for r in (epic, k1, k2):
-                self.write(ctx, r)
-            self.t.save_index(ctx, [epic, k1, k2])
-            text = self.t.generate_summary(ctx)
-            self.assertIn("M0", text)         # milestone shown
-            self.assertNotIn("?", text)        # no '?' placeholder for the milestone-less child
 
     def test_status_section_sorted_by_priority_then_id(self):
         with TemporaryDirectory() as tmp:

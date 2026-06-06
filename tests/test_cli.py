@@ -12,7 +12,7 @@ class TestAliases(unittest.TestCase):
 
     def seed(self, d):
         self.t.cmd_new(ns(dir=str(d), title="Item", priority="high", kind=None,
-                          parent=None, milestone=None, depends=None, spec=None, slug=None))
+                          parent=None, depends=None, spec=None, slug=None))
 
     def rows(self, d):
         ctx = self.t.Ctx(d, self.t.load_config(d))
