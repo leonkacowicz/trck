@@ -7,14 +7,14 @@
 |---|---:|
 | backlog | 11 |
 | ongoing | 0 |
-| done | 10 |
-| **total** | **21** |
+| done | 11 |
+| **total** | **22** |
 
 ## Hierarchies
 
-### [#002 Part D: richer tracker features](backlog/002-part-d-richer-tracker-features.md) — 0% (0/3 pts · 0/3 done) · _medium_ · backlog
+### [#002 Part D: richer tracker features](backlog/002-part-d-richer-tracker-features.md) — 33% (1/3 pts · 1/3 done) · _medium_ · backlog
 
-- [ ] [#003 Add labels/tags to issues](backlog/003-add-labels-tags-to-issues.md) _(backlog)_
+- [x] [#003 Add labels/tags to issues](done/003-add-labels-tags-to-issues.md)
 - [ ] [#004 Support configurable custom fields](backlog/004-support-configurable-custom-fields.md) _(backlog)_
 - [ ] [#005 Add reconfigure verb to rename/reorder statuses](backlog/005-add-reconfigure-verb-to-rename-reorder-statuses.md) _(backlog)_
 
@@ -22,6 +22,7 @@
 
 - [#001 Part C: curses TUI for browsing and quick actions](backlog/001-part-c-curses-tui-for-browsing-and-quick-actions.md) — _medium_
 - [#018 mv/done: guard closing a parent with open descendants (--recurse to cascade)](backlog/018-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
+- [#022 Introduce an Issue class instead of dict-oriented code](backlog/022-introduce-an-issue-class-instead-of-dict-oriented-code.md) — _medium_
 - [#007 summary: include foreign/unknown statuses in the counts table](backlog/007-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
 - [#008 validate: report one error per parent cycle, not one per node](backlog/008-validate-report-one-error-per-parent-cycle-not-one-per-node.md) — _low_
 - [#009 validate: suppress redundant bad-slug error when filename-slug mismatch already reported](backlog/009-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
