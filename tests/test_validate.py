@@ -71,14 +71,16 @@ class TestValidate(unittest.TestCase):
             errors, _ = self.t.validate(ctx)
             self.assertTrue(any("points" in e for e in errors))
 
-    def test_non_integer_points_is_error(self):
+    def test_non_integer_points_fails_loud_at_load(self):
+        # wrong *type* (not a wrong value): structurally invalid, so load dies
+        # rather than deferring a soft error to validate.
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
             row = self.base(points="lots")
             self.write(ctx, row)
             self.t.save_index(ctx, [row])
-            errors, _ = self.t.validate(ctx)
-            self.assertTrue(any("points" in e for e in errors))
+            with self.assertRaises(SystemExit):
+                self.t.validate(ctx)  # reloads the index -> from_dict rejects it
 
     def test_parent_carrying_own_points_is_error(self):
         with TemporaryDirectory() as tmp:

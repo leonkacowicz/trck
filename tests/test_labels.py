@@ -183,7 +183,9 @@ class TestLabels(unittest.TestCase):
             self.assertEqual(self.rows(d)[1].labels, ["v1.0"])
 
     # -- validation ----------------------------------------------------------
-    def test_validate_rejects_non_string_labels(self):
+    def test_non_string_labels_fail_loud_at_load(self):
+        # a non-string label is a wrong-typed value -> load fails loud, rather
+        # than a soft validate error.
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             ctx = self.t.Ctx(d, self.t.load_config(d))
@@ -193,8 +195,8 @@ class TestLabels(unittest.TestCase):
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text("# x\n")
             self.t.save_index(ctx, [r])
-            errors, _ = self.t.validate(ctx)
-            self.assertTrue(any("labels" in e for e in errors))
+            with self.assertRaises(SystemExit):
+                self.t.validate(ctx)  # reloads the index -> from_dict rejects it
 
 
 if __name__ == "__main__":

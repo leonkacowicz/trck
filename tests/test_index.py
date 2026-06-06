@@ -110,3 +110,18 @@ class TestIndexIO(unittest.TestCase):
             self.ctx(tmp)
             with self.assertRaises(SystemExit):
                 self.t.get_row([], 99)
+
+    def test_load_index_dies_on_structurally_broken_row(self):
+        # missing 'id' (the case that used to crash with a TypeError), a missing
+        # required string, and a wrong-typed field all fail loudly at load.
+        for row in (
+            '{"slug":"a","title":"A","kind":"task","status":"backlog","priority":"high"}',
+            '{"id":1,"title":"A","kind":"task","status":"backlog","priority":"high"}',
+            '{"id":1,"slug":"a","title":"A","kind":"task","status":"backlog","priority":"high","points":"lots"}',
+            '"not an object"',
+        ):
+            with TemporaryDirectory() as tmp:
+                ctx = self.ctx(tmp)
+                (ctx.dir / "index.jsonl").write_text(row + "\n")
+                with self.assertRaises(SystemExit, msg=row):
+                    self.t.load_index(ctx)

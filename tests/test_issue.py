@@ -60,11 +60,53 @@ class TestIssueModel(unittest.TestCase):
                                   "zeta": 9, "vendor": None})
         self.assertEqual(i.extra, {"zeta": 9, "vendor": None})
 
-    def test_from_dict_tolerates_missing_fields(self):
-        i = self.Issue.from_dict({"id": 1})  # malformed row; validate reports, ctor must not crash
-        self.assertEqual(i.id, 1)
-        self.assertIsNone(i.status)
-        self.assertEqual(i.labels, [])
+    def test_constructing_without_core_fields_raises(self):
+        with self.assertRaises(TypeError):
+            self.Issue()  # id/slug/title/kind/status/priority are required
+
+    def test_from_dict_rejects_missing_required_field(self):
+        for missing in ("id", "slug", "title", "kind", "status", "priority"):
+            d = dict(id=1, slug="a", title="A", kind="task",
+                     status="backlog", priority="high")
+            del d[missing]
+            with self.assertRaises(ValueError, msg=f"missing {missing}"):
+                self.Issue.from_dict(d)
+
+    def test_from_dict_rejects_null_required_field(self):
+        with self.assertRaises(ValueError):
+            self.Issue.from_dict(dict(id=1, slug="a", title="A", kind="task",
+                                      status=None, priority="high"))
+
+    def test_from_dict_rejects_non_object(self):
+        for bad in (5, "x", [1, 2], None):
+            with self.assertRaises(ValueError):
+                self.Issue.from_dict(bad)
+
+    def test_from_dict_rejects_wrong_typed_fields(self):
+        good = dict(id=1, slug="a", title="A", kind="task",
+                    status="backlog", priority="high")
+        cases = [
+            {"id": "1"},               # id must be int
+            {"id": True},              # bool is not a valid int id
+            {"status": 7},             # required string field
+            {"points": "lots"},        # points must be int
+            {"points": None},          # points is non-nullable
+            {"parent": "x"},           # parent int or null
+            {"labels": 5},             # labels must be a list
+            {"labels": ["ok", 9]},     # labels must be all strings
+            {"depends_on": "1,2"},     # depends_on must be a list
+            {"depends_on": [1, "two"]},  # depends_on must be all ints
+            {"spec": 3},               # nullable string field
+        ]
+        for over in cases:
+            with self.assertRaises(ValueError, msg=str(over)):
+                self.Issue.from_dict({**good, **over})
+
+    def test_from_dict_accepts_valid_nullable_fields(self):
+        i = self.Issue.from_dict(dict(id=1, slug="a", title="A", kind="task",
+                                      status="backlog", priority="high",
+                                      parent=None, spec=None, resolution=None))
+        self.assertIsNone(i.parent)
 
     def test_from_dict_migrates_milestone_to_label(self):
         i = self.Issue.from_dict({"id": 1, "slug": "a", "title": "A", "kind": "task",
