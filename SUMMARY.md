@@ -7,8 +7,8 @@
 |---|---:|
 | backlog | 14 |
 | ongoing | 0 |
-| done | 12 |
-| **total** | **26** |
+| done | 13 |
+| **total** | **27** |
 
 ## Hierarchies
 
@@ -21,6 +21,10 @@
 - [ ] [#024 Add --json output to list/show/deps/tree for scripting](backlog/024-add-json-output-to-list-show-deps-tree-for-scripting.md) _(backlog)_
 - [ ] [#025 Add full-text search/grep across issue bodies](backlog/025-add-full-text-search-grep-across-issue-bodies.md) _(backlog)_
 - [ ] [#026 Enrich 'list' filters: multi/negated status, title match, sort, --blocked, --orphan](backlog/026-enrich-list-filters-multi-negated-status-title-match-sort-blocked-orphan.md) _(backlog)_
+
+### [#022 Introduce an Issue class instead of dict-oriented code](done/022-introduce-an-issue-class-instead-of-dict-oriented-code.md) — 100% (1/1 pts · 1/1 done) · _medium_ · done
+
+- [x] [#027 Harden Issue.from_dict with a structural/type contract](done/027-harden-issue-from-dict-with-a-structural-type-contract.md)
 
 ## Backlog
 
@@ -46,6 +50,5 @@ _none_
 - [#016 Improve CLI output presentation (align/icons, color, show, SUMMARY)](done/016-improve-cli-output-presentation-align-icons-color-show-summary.md) — _medium_ (closed 2026-06-05)
 - [#019 Add points field with leaves-only deep-recursive weighted rollup](done/019-add-points-field-with-leaves-only-deep-recursive-weighted-rollup.md) — _medium_ (closed 2026-06-06)
 - [#021 Add normalize command to rewrite index.jsonl in canonical slim form](done/021-add-normalize-command-to-rewrite-index-jsonl-in-canonical-slim-form.md) — _medium_ (closed 2026-06-05)
-- [#022 Introduce an Issue class instead of dict-oriented code](done/022-introduce-an-issue-class-instead-of-dict-oriented-code.md) — _medium_ (closed 2026-06-06)
 - [#011 version/update: suppress no-tracker stderr noise when run outside a tracker](done/011-version-update-suppress-no-tracker-stderr-noise-when-run-outside-a-tracker.md) — _low_ (closed 2026-06-05)
 - [#017 summary: sort status sections by priority (highest first)](done/017-summary-sort-status-sections-by-priority-highest-first.md) — _low_ (closed 2026-06-05)
