@@ -11,7 +11,7 @@ class TestPresentation(unittest.TestCase):
         self.t = load_trck()
 
     def seed(self, d, title, **over):
-        a = ns(dir=str(d), title=title, priority="high", epic=False, parent=None,
+        a = ns(dir=str(d), title=title, priority="high", kind=None, parent=None,
                milestone=None, depends=None, spec=None, slug=None)
         for k, v in over.items():
             setattr(a, k, v)
@@ -21,7 +21,7 @@ class TestPresentation(unittest.TestCase):
     def list_out(self, d):
         buf = io.StringIO()
         with redirect_stdout(buf):
-            self.t.cmd_list(ns(dir=str(d), status=None, kind=None, priority=None, epic=None))
+            self.t.cmd_list(ns(dir=str(d), status=None, kind=None, priority=None, parent=None))
         return buf.getvalue()
 
     def test_paint_emits_codes_when_enabled(self):

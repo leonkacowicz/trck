@@ -638,7 +638,7 @@ regenerates `SUMMARY.md`, and self-validates.
 | rollup | `SUMMARY.md` (generated) |
 
 ## Common verbs (run `trck --help` for all)
-- `trck new "<title>" [--priority …] [--epic] [--parent NNN] [--milestone M] [--depends a,b]`
+- `trck new "<title>" [--priority …] [--kind …] [--parent NNN] [--milestone M] [--depends a,b]`
 - `trck mv NNN <status>` (vocabulary-agnostic); `trck start NNN` / `trck done NNN [--resolution …]` (aliases)
 - `trck set NNN [--priority …] [--parent …|none] [--milestone …|none] [--kind …] [--title …]`
 - `trck dep NNN --add MMM | --remove MMM`
@@ -704,7 +704,9 @@ def cmd_new(args) -> None:
     points = FIELD_DEFAULTS["points"] if points is None else points
     if points < 0:
         die(f"bad points {points} (must be a non-negative integer)")
-    kind = "epic" if args.epic else "task"
+    kind = args.kind or ctx.cfg["kinds"][0]
+    if kind not in ctx.cfg["kinds"]:
+        die(f"bad kind '{kind}' (configured: {', '.join(ctx.cfg['kinds'])})")
     parent = args.parent
     if parent is not None and parent not in by_id:
         die(f"--parent #{parent:03d} does not exist")
@@ -849,7 +851,7 @@ def cmd_list(args) -> None:
         return ((not args.status or r["status"] == args.status)
                 and (not args.kind or r.get("kind") == args.kind)
                 and (not args.priority or r.get("priority") == args.priority)
-                and (args.epic is None or r.get("parent") == args.epic))
+                and (args.parent is None or r.get("parent") == args.parent))
 
     rows = [r for r in rows if keep(r)]
     if not rows:
@@ -1125,7 +1127,7 @@ def build_parser() -> argparse.ArgumentParser:
     n.add_argument("title")
     n.add_argument("--priority")
     n.add_argument("--points", type=int, help="leaf weight for rollups (default 1)")
-    n.add_argument("--epic", action="store_true")
+    n.add_argument("--kind", help="configured kind (default: first in trck.json, e.g. task)")
     n.add_argument("--parent", type=int)
     n.add_argument("--milestone")
     n.add_argument("--depends")
@@ -1180,7 +1182,7 @@ def build_parser() -> argparse.ArgumentParser:
     ls.add_argument("--status")
     ls.add_argument("--kind")
     ls.add_argument("--priority")
-    ls.add_argument("--epic", type=int)
+    ls.add_argument("--parent", type=int, help="filter to children of this epic/parent id")
     ls.set_defaults(func=cmd_list)
 
     tr = sub.add_parser("tree", help="print an issue's child hierarchy")

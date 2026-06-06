@@ -65,7 +65,7 @@ class TestInit(unittest.TestCase):
             repo = Path(tmp) / "repo"; repo.mkdir()
             self.init(repo)
             d = repo / "issues"
-            self.t.cmd_new(ns(dir=str(d), title="X", priority="high", epic=False,
+            self.t.cmd_new(ns(dir=str(d), title="X", priority="high", kind=None,
                               parent=None, milestone=None, depends=None,
                               spec=None, slug=None))
             self.assertTrue((d / "backlog" / "001-x.md").exists())

@@ -10,8 +10,8 @@ class TestRead(unittest.TestCase):
     def setUp(self):
         self.t = load_trck()
 
-    def seed(self, d, title="Item", epic=False, parent=None):
-        a = ns(dir=str(d), title=title, priority="high", epic=epic, parent=parent,
+    def seed(self, d, title="Item", kind=None, parent=None):
+        a = ns(dir=str(d), title=title, priority="high", kind=kind, parent=parent,
                milestone=None, depends=None, spec=None, slug=None)
         self.t.cmd_new(a)
 
@@ -47,14 +47,26 @@ class TestRead(unittest.TestCase):
             self.seed(d, "B")
             self.t.cmd_mv(ns(dir=str(d), id=2, status="ongoing", resolution=None))
             out = self.cap(self.t.cmd_list, ns(dir=str(d), status="ongoing",
-                                               kind=None, priority=None, epic=None))
+                                               kind=None, priority=None, parent=None))
             self.assertIn("#002", out)
             self.assertNotIn("#001", out)
+
+    def test_list_filters_by_parent(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Epic", kind="epic")     # id 1
+            self.seed(d, "Child", parent=1)        # id 2
+            self.seed(d, "Loose")                  # id 3, no parent
+            out = self.cap(self.t.cmd_list, ns(dir=str(d), status=None,
+                                               kind=None, priority=None, parent=1))
+            self.assertIn("#002", out)
+            self.assertNotIn("#001", out)
+            self.assertNotIn("#003", out)
 
     def test_tree_shows_children(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Epic", epic=True)
+            self.seed(d, "Epic", kind="epic")
             self.seed(d, "Child", parent=1)
             out = self.cap(self.t.cmd_tree, ns(dir=str(d), id=None))
             self.assertIn("Epic", out)

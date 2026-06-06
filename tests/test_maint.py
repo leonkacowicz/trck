@@ -11,7 +11,7 @@ class TestMaint(unittest.TestCase):
         self.t = load_trck()
 
     def seed(self, d, title="Item"):
-        self.t.cmd_new(ns(dir=str(d), title=title, priority="high", epic=False,
+        self.t.cmd_new(ns(dir=str(d), title=title, priority="high", kind=None,
                           parent=None, milestone=None, depends=None, spec=None, slug=None))
 
     def test_check_passes_clean_tracker(self):

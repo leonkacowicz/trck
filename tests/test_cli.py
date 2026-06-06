@@ -11,7 +11,7 @@ class TestAliases(unittest.TestCase):
         self.t = load_trck()
 
     def seed(self, d):
-        self.t.cmd_new(ns(dir=str(d), title="Item", priority="high", epic=False,
+        self.t.cmd_new(ns(dir=str(d), title="Item", priority="high", kind=None,
                           parent=None, milestone=None, depends=None, spec=None, slug=None))
 
     def rows(self, d):
