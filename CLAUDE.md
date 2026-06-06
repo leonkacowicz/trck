@@ -32,3 +32,9 @@ from the repo root (discovery finds `issues/` via its `trck.json`).
 
 Bump `__version__` in `trck` → commit → tag `vX.Y.Z` → create a GitHub Release. `trck update`
 consumes the latest release on the stable channel.
+
+## Working method
+
+- Decompose tasks into sub-tasks as much as it makes sense. Keep splitting until each
+  sub-task is small and cohesive enough to be done "in one go" — once breaking it down
+  further no longer makes sense, stop.
