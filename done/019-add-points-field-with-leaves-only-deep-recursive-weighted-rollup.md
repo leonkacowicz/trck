@@ -12,49 +12,49 @@ reflect the real size and depth of the work under it.
 ## Acceptance criteria
 
 ### Field & storage
-- [ ] New per-issue field `points`: a **non-negative integer**, default `1`.
-- [ ] `points` is stored **only on leaves** (issues with no children). On every index
+- [x] New per-issue field `points`: a **non-negative integer**, default `1`.
+- [x] `points` is stored **only on leaves** (issues with no children). On every index
       write, a node that has children has its `points` stripped (absent/null) — normalized
       centrally in `finalize`, so the leaf→parent transition is handled no matter which
       command caused it.
-- [ ] A node that loses its last child becomes a leaf again with no stored points, and
+- [x] A node that loses its last child becomes a leaf again with no stored points, and
       therefore falls back to the default `1`. The previous value is not preserved (git
       history is the audit trail).
-- [ ] Added to `CANON_KEYS` (right after `priority`) so `show` renders it for leaves; a
+- [x] Added to `CANON_KEYS` (right after `priority`) so `show` renders it for leaves; a
       parent (null) shows no points line, per the existing skip-empty rule.
 
 ### CLI
-- [ ] `trck new "<title>" [--points N]` — default `1`; reject `N < 0`.
-- [ ] `trck set NNN --points N` — reject `N < 0`; **error if the issue has children**
+- [x] `trck new "<title>" [--points N]` — default `1`; reject `N < 0`.
+- [x] `trck set NNN --points N` — reject `N < 0`; **error if the issue has children**
       ("points is derived for issues with children"), rather than silently accepting a
       value that `finalize` would strip.
 
 ### Validation
-- [ ] `validate()` errors if a leaf's `points` is not an int or is `< 0`.
-- [ ] `validate()` errors if a node with children carries a non-null `points` (signals a
+- [x] `validate()` errors if a leaf's `points` is not an int or is `< 0`.
+- [x] `validate()` errors if a node with children carries a non-null `points` (signals a
       stale/hand-edited index).
 
 ### Rollup (generate_summary — the one parents loop, covers epics and non-epic parents)
-- [ ] A parent's totals are computed by recursing to leaf descendants, with a `seen`
+- [x] A parent's totals are computed by recursing to leaf descendants, with a `seen`
       cycle guard (so `summary` is safe even on an index that `validate` would reject):
       - `ptotal` = Σ points over leaf descendants
       - `pdone`  = Σ points over leaf descendants whose status is terminal
       - `ntotal`/`ndone` = count of all / terminal leaf descendants
       - `pct = round(100 * pdone / ptotal) if ptotal else 0`
-- [ ] Heading line shows points **and** count:
+- [x] Heading line shows points **and** count:
       `### [#NNN title] — {pct}% ({pdone}/{ptotal} pts · {ndone}/{ntotal} done) · _prio_ · status`
-- [ ] With all-default points (every leaf = 1), `pct` equals the old count-based
+- [x] With all-default points (every leaf = 1), `pct` equals the old count-based
       percentage — existing output is unchanged until points are assigned.
-- [ ] Direct-child bullets under each heading are unchanged (each shows its own
+- [x] Direct-child bullets under each heading are unchanged (each shows its own
       `[x]`/status). Every sub-parent still gets its own heading with its own subtree pct.
 
 ### Tests (TDD)
-- [ ] `new --points` stores the value; default `1`; rejects negative.
-- [ ] `set --points` updates a leaf; rejects negative; errors on a parent.
-- [ ] `finalize`/write strips `points` from a node once it gains children; a former
+- [x] `new --points` stores the value; default `1`; rejects negative.
+- [x] `set --points` updates a leaf; rejects negative; errors on a parent.
+- [x] `finalize`/write strips `points` from a node once it gains children; a former
       parent that becomes a leaf reads as default `1`.
-- [ ] `validate` flags a negative/non-int leaf points and a non-null parent points.
-- [ ] `generate_summary`: weighted pct uses leaf points; deep (grandchild) leaves are
+- [x] `validate` flags a negative/non-int leaf points and a non-null parent points.
+- [x] `generate_summary`: weighted pct uses leaf points; deep (grandchild) leaves are
       summed; `ntotal`/`ndone` are leaf-based; all-default points reproduces the
       count-based pct; `ptotal == 0` guard yields `0%`; cycle guard terminates.
 
