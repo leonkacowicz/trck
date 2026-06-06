@@ -5,10 +5,10 @@
 
 | State | Count |
 |---|---:|
-| backlog | 10 |
+| backlog | 13 |
 | ongoing | 0 |
 | done | 7 |
-| **total** | **17** |
+| **total** | **20** |
 
 ## Hierarchies
 
@@ -20,7 +20,10 @@
 
 ## Backlog
 
+- [#020 Strip null/empty fields from index.jsonl rows to reduce noise](backlog/020-strip-null-empty-fields-from-index-jsonl-rows-to-reduce-noise.md) — _high_
 - [#001 Part C: curses TUI for browsing and quick actions](backlog/001-part-c-curses-tui-for-browsing-and-quick-actions.md) — _medium_
+- [#018 mv/done: guard closing a parent with open descendants (--recurse to cascade)](backlog/018-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
+- [#019 Add points field with leaves-only deep-recursive weighted rollup](backlog/019-add-points-field-with-leaves-only-deep-recursive-weighted-rollup.md) — _medium_
 - [#007 summary: include foreign/unknown statuses in the counts table](backlog/007-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
 - [#008 validate: report one error per parent cycle, not one per node](backlog/008-validate-report-one-error-per-parent-cycle-not-one-per-node.md) — _low_
 - [#009 validate: suppress redundant bad-slug error when filename-slug mismatch already reported](backlog/009-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
