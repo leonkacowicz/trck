@@ -147,7 +147,7 @@ def resolve_tracker_dir(dir_opt, env=None, required: bool = True) -> Path | None
 # context + index I/O
 # --------------------------------------------------------------------------- #
 CANON_KEYS = [
-    "id", "slug", "title", "kind", "status", "priority", "parent",
+    "id", "slug", "title", "kind", "status", "priority", "points", "parent",
     "milestone", "depends_on", "spec", "created", "started", "closed",
     "resolution",
 ]
@@ -159,7 +159,7 @@ CANON_KEYS = [
 # equals-the-default, not falsiness (e.g. a future `points` default of 1 would
 # strip `points: 1` while keeping `points: 0`).
 FIELD_DEFAULTS = {
-    "parent": None, "milestone": None, "depends_on": [], "spec": None,
+    "points": 1, "parent": None, "milestone": None, "depends_on": [], "spec": None,
     "started": None, "closed": None, "resolution": None,
 }
 
@@ -239,6 +239,21 @@ def get_row(rows: list[dict], issue_id: int) -> dict:
     die(f"no issue with id {issue_id}")
 
 
+def parent_ids(rows: list[dict]) -> set:
+    """Ids that have at least one child (i.e. non-leaf issues)."""
+    return {r["parent"] for r in rows if r.get("parent") is not None}
+
+
+def normalize_points(rows: list[dict]) -> None:
+    """`points` is a leaf-only input. A node with children has no own weight — its
+    points are derived from its leaves — so reset it to the default (which serializes
+    as nothing). Mutates rows in place; called on every index write via finalize."""
+    parents = parent_ids(rows)
+    for r in rows:
+        if r["id"] in parents:
+            r["points"] = FIELD_DEFAULTS["points"]
+
+
 def next_id(ctx: Ctx) -> int:
     ids = {r["id"] for r in load_index(ctx)}
     for name in status_names(ctx.cfg):
@@ -281,6 +296,7 @@ def validate(ctx: Ctx) -> tuple[list[str], list[str]]:
     prios = set(ctx.cfg["priorities"])
     kinds = set(ctx.cfg["kinds"])
     resolutions = set(ctx.cfg["resolutions"])
+    parents = parent_ids(rows)
 
     for iid, r in by_id.items():
         if iid not in files:
@@ -301,6 +317,13 @@ def validate(ctx: Ctx) -> tuple[list[str], list[str]]:
             errors.append(f"#{iid:03d} bad kind '{r.get('kind')}'")
         if r.get("priority") not in prios:
             errors.append(f"#{iid:03d} bad priority '{r.get('priority')}'")
+        pts = r.get("points", FIELD_DEFAULTS["points"])
+        if iid in parents:
+            if pts != FIELD_DEFAULTS["points"]:
+                errors.append(f"#{iid:03d} has children but carries points {pts!r} "
+                              f"(derived from leaves, must be unset)")
+        elif isinstance(pts, bool) or not isinstance(pts, int) or pts < 0:
+            errors.append(f"#{iid:03d} bad points {pts!r} (must be a non-negative integer)")
         res = r.get("resolution")
         if res not in (None, *resolutions):
             errors.append(f"#{iid:03d} bad resolution '{res}'")
@@ -429,6 +452,25 @@ def walk_tree(nodes, children_fn, label_fn, prefix="", seen=frozenset()):
 # --------------------------------------------------------------------------- #
 # SUMMARY.md generation
 # --------------------------------------------------------------------------- #
+def leaf_rollup(row, children, term, seen=frozenset()):
+    """Aggregate (done_points, total_points, done_count, total_count) over the leaf
+    descendants of `row`. A leaf's weight defaults to 1; a node's weight is the sum of
+    its leaves. Cycle-guarded so a malformed (mid-edit) index can't spin forever."""
+    if row["id"] in seen:
+        return (0, 0, 0, 0)
+    kids = children.get(row["id"])
+    if not kids:  # leaf
+        pts = row.get("points", FIELD_DEFAULTS["points"])
+        done = term(row["status"])
+        return (pts if done else 0, pts, 1 if done else 0, 1)
+    seen = seen | {row["id"]}
+    pdone = ptotal = ndone = ntotal = 0
+    for k in kids:
+        a, b, c, d = leaf_rollup(k, children, term, seen)
+        pdone += a; ptotal += b; ndone += c; ntotal += d
+    return (pdone, ptotal, ndone, ntotal)
+
+
 def generate_summary(ctx: Ctx) -> str:
     rows = load_index(ctx)
     children = {}
@@ -463,11 +505,12 @@ def generate_summary(ctx: Ctx) -> str:
         for parent in parents:
             kids = sorted(children.get(parent["id"], []),
                           key=lambda r: (r.get("milestone") or "", r["id"]))
-            ndone = sum(1 for k in kids if term(k["status"]))
-            pct = round(100 * ndone / len(kids)) if kids else 0
+            pdone, ptotal, ndone, ntotal = leaf_rollup(parent, children, term)
+            pct = round(100 * pdone / ptotal) if ptotal else 0
             out.append(
                 f"### [#{parent['id']:03d} {parent['title']}]({rel_link(parent)}) — "
-                f"{pct}% ({ndone}/{len(kids)}) · _{parent['priority']}_ · {parent['status']}"
+                f"{pct}% ({pdone}/{ptotal} pts · {ndone}/{ntotal} done) · "
+                f"_{parent['priority']}_ · {parent['status']}"
             )
             if parent.get("spec"):
                 out.append(f"Spec: [`{parent['spec']}`](../{parent['spec']})")
@@ -520,6 +563,7 @@ def write_summary(ctx: Ctx) -> None:
 # finalize: persist + regenerate + validate after every mutation
 # --------------------------------------------------------------------------- #
 def finalize(ctx: Ctx, rows: list[dict]) -> None:
+    normalize_points(rows)
     save_index(ctx, rows)
     write_summary(ctx)
     errors, warnings = validate(ctx)
@@ -656,6 +700,10 @@ def cmd_new(args) -> None:
     priority = args.priority or ctx.cfg["priorities"][0]
     if priority not in ctx.cfg["priorities"]:
         die(f"bad priority '{priority}' (configured: {', '.join(ctx.cfg['priorities'])})")
+    points = getattr(args, "points", None)
+    points = FIELD_DEFAULTS["points"] if points is None else points
+    if points < 0:
+        die(f"bad points {points} (must be a non-negative integer)")
     kind = "epic" if args.epic else "task"
     parent = args.parent
     if parent is not None and parent not in by_id:
@@ -666,7 +714,7 @@ def cmd_new(args) -> None:
             die(f"--depends references #{dep:03d} which does not exist")
     row = {
         "id": iid, "slug": slug, "title": args.title, "kind": kind,
-        "status": initial_status(ctx.cfg), "priority": priority,
+        "status": initial_status(ctx.cfg), "priority": priority, "points": points,
         "parent": parent, "milestone": args.milestone, "depends_on": deps,
         "spec": args.spec, "created": today(), "started": None,
         "closed": None, "resolution": None,
@@ -707,6 +755,12 @@ def cmd_set(args) -> None:
         if args.priority not in ctx.cfg["priorities"]:
             die(f"bad priority '{args.priority}'")
         row["priority"] = args.priority
+    if getattr(args, "points", None) is not None:
+        if args.points < 0:
+            die(f"bad points {args.points} (must be a non-negative integer)")
+        if row["id"] in parent_ids(rows):
+            die(f"#{row['id']:03d} has children; points is derived from them, not set")
+        row["points"] = args.points
     if args.parent is not None:
         if args.parent == "none":
             row["parent"] = None
@@ -772,6 +826,8 @@ def cmd_show(args) -> None:
     rows = load_index(ctx)
     row = get_row(rows, args.id)
     keys = CANON_KEYS + [k for k in sorted(row) if k not in CANON_KEYS]
+    if row["id"] in parent_ids(rows):
+        keys = [k for k in keys if k != "points"]  # derived from leaves, not an input here
     if getattr(args, "json", False):
         print(json.dumps({k: row.get(k) for k in keys}, ensure_ascii=False, indent=2))
     else:
@@ -1068,6 +1124,7 @@ def build_parser() -> argparse.ArgumentParser:
     n = sub.add_parser("new", help="create a new issue (then edit its prose)")
     n.add_argument("title")
     n.add_argument("--priority")
+    n.add_argument("--points", type=int, help="leaf weight for rollups (default 1)")
     n.add_argument("--epic", action="store_true")
     n.add_argument("--parent", type=int)
     n.add_argument("--milestone")
@@ -1094,6 +1151,7 @@ def build_parser() -> argparse.ArgumentParser:
     se = sub.add_parser("set", help="edit metadata fields (index only)")
     se.add_argument("id", type=int)
     se.add_argument("--priority")
+    se.add_argument("--points", type=int, help="leaf weight (error if the issue has children)")
     se.add_argument("--parent", help="epic id, or 'none' to clear")
     se.add_argument("--milestone", help="label, or 'none' to clear")
     se.add_argument("--spec", help="path, or 'none' to clear")

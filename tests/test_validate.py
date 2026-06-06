@@ -62,6 +62,34 @@ class TestValidate(unittest.TestCase):
             errors, _ = self.t.validate(ctx)
             self.assertTrue(any("does not exist" in e for e in errors))
 
+    def test_negative_leaf_points_is_error(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            row = self.base(points=-1)
+            self.write(ctx, row)
+            self.t.save_index(ctx, [row])
+            errors, _ = self.t.validate(ctx)
+            self.assertTrue(any("points" in e for e in errors))
+
+    def test_non_integer_points_is_error(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            row = self.base(points="lots")
+            self.write(ctx, row)
+            self.t.save_index(ctx, [row])
+            errors, _ = self.t.validate(ctx)
+            self.assertTrue(any("points" in e for e in errors))
+
+    def test_parent_carrying_own_points_is_error(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            p = self.base(id=1, slug="p", points=5)       # has children but a stored weight
+            c = self.base(id=2, slug="c", parent=1)
+            self.write(ctx, p); self.write(ctx, c)
+            self.t.save_index(ctx, [p, c])
+            errors, _ = self.t.validate(ctx)
+            self.assertTrue(any("points" in e for e in errors))
+
     def test_terminal_role_drives_warnings(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
