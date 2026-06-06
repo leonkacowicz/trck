@@ -11,13 +11,13 @@ currently exposes this view.
 points. A `trck next` form (or `ready --next`) prints just the top pick.
 
 ## Acceptance criteria
-- [ ] `trck ready` lists not-done leaves whose deps are all in a terminal status.
-- [ ] Output is sorted by priority, then points, then id.
-- [ ] `next` (or `ready --next`) prints only the single highest-ranked ready issue.
-- [ ] Issues with at least one non-terminal dep are excluded (and don't show in `ready`).
-- [ ] Epics/parents (non-leaves) are excluded.
-- [ ] Honors the configured terminal status role(s), not a hardcoded "done".
-- [ ] Tests cover: unmet dep, met dep, no deps, parent excluded, ordering.
+- [x] `trck ready` lists not-done leaves whose deps are all in a terminal status.
+- [x] Output is sorted by priority, then points, then id.
+- [x] `next` (or `ready --next`) prints only the single highest-ranked ready issue.
+- [x] Issues with at least one non-terminal dep are excluded (and don't show in `ready`).
+- [x] Epics/parents (non-leaves) are excluded.
+- [x] Honors the configured terminal status role(s), not a hardcoded "done".
+- [x] Tests cover: unmet dep, met dep, no deps, parent excluded, ordering.
 
 ## Notes
 Relates to the existing `deps` graph and leaf/rollup logic. Terminal status comes

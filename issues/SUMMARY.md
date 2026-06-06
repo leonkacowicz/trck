@@ -5,19 +5,19 @@
 
 | State | Count |
 |---|---:|
-| backlog | 13 |
+| backlog | 12 |
 | ongoing | 0 |
-| done | 14 |
+| done | 15 |
 | **total** | **27** |
 
 ## Hierarchies
 
-### [#002 Part D: richer tracker features](backlog/002-part-d-richer-tracker-features.md) — 29% (2/7 pts · 2/7 done) · _medium_ · backlog
+### [#002 Part D: richer tracker features](backlog/002-part-d-richer-tracker-features.md) — 43% (3/7 pts · 3/7 done) · _medium_ · backlog
 
 - [x] [#003 Add labels/tags to issues](done/003-add-labels-tags-to-issues.md)
 - [ ] [#004 Support configurable custom fields](backlog/004-support-configurable-custom-fields.md) _(backlog)_
 - [ ] [#005 Add reconfigure verb to rename/reorder statuses](backlog/005-add-reconfigure-verb-to-rename-reorder-statuses.md) _(backlog)_
-- [ ] [#023 Add 'ready'/'next' command: list unblocked, not-done leaves](backlog/023-add-ready-next-command-list-unblocked-not-done-leaves.md) _(backlog)_
+- [x] [#023 Add 'ready'/'next' command: list unblocked, not-done leaves](done/023-add-ready-next-command-list-unblocked-not-done-leaves.md)
 - [ ] [#024 Add --json output to list/show/deps/tree for scripting](backlog/024-add-json-output-to-list-show-deps-tree-for-scripting.md) _(backlog)_
 - [ ] [#025 Add full-text search/grep across issue bodies](backlog/025-add-full-text-search-grep-across-issue-bodies.md) _(backlog)_
 - [x] [#026 Enrich 'list' filters: multi/negated status, title match, sort, --blocked, --orphan](done/026-enrich-list-filters-multi-negated-status-title-match-sort-blocked-orphan.md)
