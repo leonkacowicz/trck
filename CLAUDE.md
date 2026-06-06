@@ -17,7 +17,7 @@ regenerates `SUMMARY.md`, and self-validates.
 | rollup | `SUMMARY.md` (generated) |
 
 ## Common verbs (run `trck --help` for all)
-- `trck new "<title>" [--priority …] [--epic] [--parent NNN] [--milestone M] [--depends a,b]`
+- `trck new "<title>" [--priority …] [--kind …] [--parent NNN] [--milestone M] [--depends a,b]`
 - `trck mv NNN <status>` (vocabulary-agnostic); `trck start NNN` / `trck done NNN [--resolution …]` (aliases)
 - `trck set NNN [--priority …] [--parent …|none] [--milestone …|none] [--kind …] [--title …]`
 - `trck dep NNN --add MMM | --remove MMM`
