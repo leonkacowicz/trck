@@ -891,6 +891,13 @@ def cmd_summary(args) -> None:
     print(f"wrote {ctx.dir / 'SUMMARY.md'} ({len(load_index(ctx))} issues)")
 
 
+def cmd_normalize(args) -> None:
+    ctx = build_ctx(args)
+    rows = load_index(ctx)
+    finalize(ctx, rows)  # re-serialize index in canonical slim form + summary + validate
+    print(f"normalized {ctx.index_path} ({len(rows)} issues)")
+
+
 def cmd_install_hook(args) -> None:
     ctx = build_ctx(args)
     common = subprocess.run(["git", "rev-parse", "--git-common-dir"],
@@ -1133,6 +1140,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     su = sub.add_parser("summary", help="regenerate SUMMARY.md")
     su.set_defaults(func=cmd_summary)
+
+    nm = sub.add_parser("normalize", help="rewrite index.jsonl in canonical slim form")
+    nm.set_defaults(func=cmd_normalize)
 
     ih = sub.add_parser("install-hook", help="install the pre-commit consistency hook")
     ih.set_defaults(func=cmd_install_hook)

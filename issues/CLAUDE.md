@@ -22,6 +22,7 @@ regenerates `SUMMARY.md`, and self-validates.
 - `trck set NNN [--priority …] [--parent …|none] [--milestone …|none] [--kind …] [--title …]`
 - `trck dep NNN --add MMM | --remove MMM`
 - `trck list` · `trck tree` · `trck deps NNN` · `trck show NNN` · `trck check` · `trck summary`
+- `trck normalize` — rewrite `index.jsonl` in canonical slim form (no data change)
 - `trck update` — pull the latest engine from the canonical repo.
 
 Statuses, priorities, kinds, resolutions, and aliases are configured in `trck.json`.
