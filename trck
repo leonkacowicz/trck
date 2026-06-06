@@ -1118,109 +1118,184 @@ def cmd_update(args) -> None:
         print(f"\n{notes}")
 
 
+TOP_EPILOG = """\
+MODEL
+  Each issue is a markdown file under the tracker dir plus one line in
+  index.jsonl, keyed by a zero-padded integer id (#001). index.jsonl and
+  SUMMARY.md are GENERATED -- never hand-edit them, and never move or rename
+  issue files by hand; the verbs do that. The only thing you edit by hand is
+  an issue's prose body (Summary / Acceptance criteria / Notes).
+
+  status      every issue has exactly one; move it with mv / start / done.
+  metadata    priority, points, parent, milestone, spec, kind, title -- change
+              with `trck set` (NOT by editing index.jsonl).
+  hierarchy   --parent / --kind epic build an epic tree (containment).
+  deps        dep / --depends build a blocking graph (ordering). A parent is
+              "part of"; a dep is "must come first" -- they are independent.
+  points      a leaf's weight; rolls up to its epic for progress totals.
+  config      the status vocabulary, aliases, priorities, kinds, and
+              resolutions all come from trck.json (defaults:
+              backlog -> ongoing -> done; start=ongoing, done=done).
+
+TYPICAL FLOW
+  trck new "Add CSV export" --priority high     # create; prints the new id
+  trck show 7                                    # then hand-edit its body prose
+  trck set 7 --points 3 --parent 4              # adjust metadata anytime
+  trck start 7                                   # -> ongoing
+  trck done 7 --resolution superseded            # -> done (resolution optional)
+  trck list --status ongoing                     # what's in flight
+  trck tree 4        /  trck deps 7              # hierarchy / blocking view
+  trck check                                     # MUST pass before you commit
+
+DISCOVERY
+  Finds the tracker by walking up for a dir containing trck.json; override with
+  --dir or $TRCK_DIR. Run `trck <verb> -h` for per-verb options.
+"""
+
+
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="trck", description="deterministic in-repo issue tracker")
+    raw = argparse.RawDescriptionHelpFormatter
+    p = argparse.ArgumentParser(
+        prog="trck", description="deterministic in-repo issue tracker",
+        epilog=TOP_EPILOG, formatter_class=raw)
     p.add_argument("--dir", help="tracker dir (overrides discovery and $TRCK_DIR)")
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    n = sub.add_parser("new", help="create a new issue (then edit its prose)")
-    n.add_argument("title")
-    n.add_argument("--priority")
+    n = sub.add_parser(
+        "new", help="create a new issue (then edit its prose)", formatter_class=raw,
+        description="Create an issue: write its markdown file from a prose "
+                    "template and add it to the index; prints the new path.",
+        epilog='examples:\n  trck new "Add CSV export" --priority high '
+               '--parent 4 --depends 5,6')
+    n.add_argument("title", help="short title (also derives the slug)")
+    n.add_argument("--priority", help="configured priority (default: first in trck.json)")
     n.add_argument("--points", type=int, help="leaf weight for rollups (default 1)")
     n.add_argument("--kind", help="configured kind (default: first in trck.json, e.g. task)")
-    n.add_argument("--parent", type=int)
-    n.add_argument("--milestone")
-    n.add_argument("--depends")
-    n.add_argument("--spec")
-    n.add_argument("--slug")
+    n.add_argument("--parent", type=int, help="id of the epic to nest this under")
+    n.add_argument("--milestone", help="milestone label")
+    n.add_argument("--depends", help="comma-separated ids this issue depends on (must be done first)")
+    n.add_argument("--spec", help="path to a spec/design doc")
+    n.add_argument("--slug", help="override the auto-derived filename slug")
     n.set_defaults(func=cmd_new, priority=None)
 
-    mv = sub.add_parser("mv", help="move an issue to a status (vocabulary-agnostic)")
-    mv.add_argument("id", type=int)
-    mv.add_argument("status")
-    mv.add_argument("--resolution")
+    mv = sub.add_parser("mv", help="move an issue to a status (vocabulary-agnostic)",
+                        description="Move an issue to any configured status (vocabulary-agnostic).")
+    mv.add_argument("id", type=int, help="issue id")
+    mv.add_argument("status", help="target status (must be configured)")
+    mv.add_argument("--resolution",
+                    help="resolution label; only valid when moving to a terminal status")
     mv.set_defaults(func=cmd_mv)
 
-    st = sub.add_parser("start", help="alias: move to the configured 'start' status")
-    st.add_argument("id", type=int)
+    st = sub.add_parser("start", help="alias: move to the configured 'start' status",
+                        description="Alias: move an issue to the status configured as the 'start' alias.")
+    st.add_argument("id", type=int, help="issue id")
     st.set_defaults(func=cmd_start)
 
-    dn = sub.add_parser("done", help="alias: move to the configured 'done' status")
-    dn.add_argument("id", type=int)
-    dn.add_argument("--resolution")
+    dn = sub.add_parser("done", help="alias: move to the configured 'done' status",
+                        description="Alias: move an issue to the status configured as the 'done' alias.")
+    dn.add_argument("id", type=int, help="issue id")
+    dn.add_argument("--resolution", help="resolution label (from the configured set)")
     dn.set_defaults(func=cmd_done)
 
-    se = sub.add_parser("set", help="edit metadata fields (index only)")
-    se.add_argument("id", type=int)
-    se.add_argument("--priority")
+    se = sub.add_parser(
+        "set", help="edit metadata fields (index only)",
+        description="Edit indexed metadata in place; does not touch the prose "
+                    "body. Pass 'none' to clear parent/milestone/spec.")
+    se.add_argument("id", type=int, help="issue id")
+    se.add_argument("--priority", help="configured priority")
     se.add_argument("--points", type=int, help="leaf weight (error if the issue has children)")
     se.add_argument("--parent", help="epic id, or 'none' to clear")
     se.add_argument("--milestone", help="label, or 'none' to clear")
     se.add_argument("--spec", help="path, or 'none' to clear")
-    se.add_argument("--kind")
-    se.add_argument("--title")
+    se.add_argument("--kind", help="configured kind")
+    se.add_argument("--title", help="new title (index only; does not rename the file -- use `rename`)")
     se.set_defaults(func=cmd_set)
 
-    dp = sub.add_parser("dep", help="add/remove a dependency edge")
-    dp.add_argument("id", type=int)
-    dp.add_argument("--add", type=int)
-    dp.add_argument("--remove", type=int)
+    dp = sub.add_parser(
+        "dep", help="add/remove a dependency edge", formatter_class=raw,
+        description="Add or remove a dependency edge: make <id> depend on "
+                    "another issue (which must be done first).",
+        epilog="examples:\n  trck dep 7 --add 5    # 7 now waits on 5")
+    dp.add_argument("id", type=int, help="issue id")
+    dp.add_argument("--add", type=int, help="id this issue should depend on")
+    dp.add_argument("--remove", type=int, help="id to remove from this issue's dependencies")
     dp.set_defaults(func=cmd_dep)
 
-    rn = sub.add_parser("rename", help="change title + slug (renames the file)")
-    rn.add_argument("id", type=int)
-    rn.add_argument("title")
-    rn.add_argument("--slug")
+    rn = sub.add_parser(
+        "rename", help="change title + slug (renames the file)",
+        description="Change an issue's title and slug, renaming the file and "
+                    "rewriting its H1. To change only the indexed title, use `set --title`.")
+    rn.add_argument("id", type=int, help="issue id")
+    rn.add_argument("title", help="new title")
+    rn.add_argument("--slug", help="override the auto-derived slug")
     rn.set_defaults(func=cmd_rename)
 
-    sh = sub.add_parser("show", help="print an issue's metadata + body")
-    sh.add_argument("id", type=int)
+    sh = sub.add_parser("show", help="print an issue's metadata + body",
+                        description="Print an issue's metadata, then its markdown body.")
+    sh.add_argument("id", type=int, help="issue id")
     sh.add_argument("--json", action="store_true", help="raw JSON metadata (machine-readable)")
     sh.set_defaults(func=cmd_show)
 
-    ls = sub.add_parser("list", help="list issues (filterable)")
-    ls.add_argument("--status")
-    ls.add_argument("--kind")
-    ls.add_argument("--priority")
+    ls = sub.add_parser("list", help="list issues (filterable)",
+                        description="List issues, optionally filtered; prints nothing if nothing matches.")
+    ls.add_argument("--status", help="filter by status")
+    ls.add_argument("--kind", help="filter by kind")
+    ls.add_argument("--priority", help="filter by priority")
     ls.add_argument("--parent", type=int, help="filter to children of this epic/parent id")
     ls.set_defaults(func=cmd_list)
 
-    tr = sub.add_parser("tree", help="print an issue's child hierarchy")
-    tr.add_argument("id", type=int, nargs="?")
+    tr = sub.add_parser("tree", help="print an issue's child hierarchy",
+                        description="Print the epic/child hierarchy for an issue, "
+                                    "or every hierarchy if no id is given.")
+    tr.add_argument("id", type=int, nargs="?", help="root issue id (default: all epics with children)")
     tr.set_defaults(func=cmd_tree)
 
-    dz = sub.add_parser("deps", help="show what an issue requires and what it blocks")
-    dz.add_argument("id", type=int)
-    dz.add_argument("--requires", action="store_true")
-    dz.add_argument("--blocks", action="store_true")
+    dz = sub.add_parser(
+        "deps", help="show what an issue requires and what it blocks",
+        description="Show what an issue requires (do first) and what it blocks "
+                    "(waiting on it); both sides unless one flag is given.")
+    dz.add_argument("id", type=int, help="issue id")
+    dz.add_argument("--requires", action="store_true", help="show only the requires side")
+    dz.add_argument("--blocks", action="store_true", help="show only the blocks side")
     dz.set_defaults(func=cmd_deps)
 
-    ck = sub.add_parser("check", help="validate consistency (nonzero exit on error)")
+    ck = sub.add_parser("check", help="validate consistency (nonzero exit on error)",
+                        description="Validate index/file/graph consistency; nonzero "
+                                    "exit on any error. Run before committing.")
     ck.set_defaults(func=cmd_check)
 
-    su = sub.add_parser("summary", help="regenerate SUMMARY.md")
+    su = sub.add_parser("summary", help="regenerate SUMMARY.md",
+                        description="Regenerate SUMMARY.md from the index.")
     su.set_defaults(func=cmd_summary)
 
-    nm = sub.add_parser("normalize", help="rewrite index.jsonl in canonical slim form")
+    nm = sub.add_parser("normalize", help="rewrite index.jsonl in canonical slim form",
+                        description="Rewrite index.jsonl in canonical slim form "
+                                    "(stable key order, stripped defaults).")
     nm.set_defaults(func=cmd_normalize)
 
-    ih = sub.add_parser("install-hook", help="install the pre-commit consistency hook")
+    ih = sub.add_parser("install-hook", help="install the pre-commit consistency hook",
+                        description="Install a git pre-commit hook that runs `trck check`.")
     ih.set_defaults(func=cmd_install_hook)
 
-    iv = sub.add_parser("init", help="scaffold a tracker into the current repo")
+    iv = sub.add_parser("init", help="scaffold a tracker into the current repo",
+                        description="Scaffold a tracker (trck.json + dirs) into the "
+                                    "current repo; vendors the engine by default.")
     iv.add_argument("target", nargs="?", default=None, help="tracker dir to create (default: issues)")
     iv.add_argument("--dir", dest="init_dir", default=None, help="same as the positional dir")
     iv.add_argument("--no-vendor", action="store_true", help="don't copy the engine into the tracker dir")
-    iv.add_argument("--hook", action="store_true")
-    iv.add_argument("--force", action="store_true")
+    iv.add_argument("--hook", action="store_true", help="also install the pre-commit hook")
+    iv.add_argument("--force", action="store_true", help="overwrite existing tracker files")
     iv.set_defaults(func=cmd_init)
 
-    up = sub.add_parser("update", help="self-update from the canonical repo")
-    up.add_argument("--check", action="store_true")
-    up.add_argument("--ref")
+    up = sub.add_parser("update", help="self-update from the canonical repo",
+                        description="Self-update the engine from the canonical repo's latest release.")
+    up.add_argument("--check", action="store_true",
+                    help="report whether an update is available without applying it")
+    up.add_argument("--ref", help="update to a specific git ref/tag instead of the latest release")
     up.set_defaults(func=cmd_update)
 
-    ve = sub.add_parser("version", help="print the running trck version")
+    ve = sub.add_parser("version", help="print the running trck version",
+                        description="Print the running trck version.")
     ve.set_defaults(func=cmd_version)
 
     return p

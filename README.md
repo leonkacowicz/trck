@@ -89,9 +89,10 @@ and either define its own aliases or just use `mv`.
 `deps` · `check` · `summary` · `install-hook` · `init` · `update` · `version`. Run
 `trck --help` (or `trck <verb> --help`) for details.
 
-Epics and milestones: create an epic with `--epic`, attach children with `--parent NNN`
+Epics and milestones: create an epic with `--kind epic`, attach children with `--parent NNN`
 (and optionally `--milestone M1`); the epic's rollup `%` is computed from its children and
 shown in `SUMMARY.md`. (Any issue can be a parent — `kind: epic` is just a display label.)
+Filter a list to one epic's children with `trck list --parent NNN`.
 
 Output is colorized when stdout is a terminal (disable with `NO_COLOR=1`, force with
 `FORCE_COLOR=1`); piped/redirected output stays plain for scripts and agents. `trck show`
