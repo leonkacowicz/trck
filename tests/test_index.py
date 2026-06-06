@@ -44,6 +44,67 @@ class TestIndexIO(unittest.TestCase):
                                      "priority": "high"}])
             self.assertEqual(self.t.load_index(ctx)[0]["depends_on"], [])
 
+    def test_strips_known_fields_equal_to_default(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            row = {"id": 1, "slug": "a", "title": "A", "kind": "task",
+                   "status": "backlog", "priority": "high", "parent": None,
+                   "milestone": None, "depends_on": [], "spec": None,
+                   "created": "2026-06-05", "started": None, "closed": None,
+                   "resolution": None}
+            self.t.save_index(ctx, [row])
+            obj = json.loads((ctx.dir / "index.jsonl").read_text().strip())
+            for stripped in ("parent", "milestone", "depends_on", "spec",
+                             "started", "closed", "resolution"):
+                self.assertNotIn(stripped, obj)
+            self.assertEqual(list(obj.keys()),
+                             ["id", "slug", "title", "kind", "status",
+                              "priority", "created"])
+
+    def test_keeps_non_default_known_fields_in_canon_order(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            row = {"id": 2, "slug": "b", "title": "B", "kind": "task",
+                   "status": "done", "priority": "low", "parent": 1,
+                   "milestone": "m1", "depends_on": [1], "spec": None,
+                   "created": "2026-06-05", "started": None, "closed": None,
+                   "resolution": "fixed"}
+            self.t.save_index(ctx, [row])
+            obj = json.loads((ctx.dir / "index.jsonl").read_text().strip())
+            self.assertEqual(obj["parent"], 1)
+            self.assertEqual(obj["milestone"], "m1")
+            self.assertEqual(obj["depends_on"], [1])
+            self.assertEqual(obj["resolution"], "fixed")
+            self.assertNotIn("spec", obj)  # still default -> stripped
+            self.assertEqual(list(obj.keys()),
+                             ["id", "slug", "title", "kind", "status",
+                              "priority", "parent", "milestone", "depends_on",
+                              "created", "resolution"])
+
+    def test_custom_field_kept_even_when_empty(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            row = {"id": 1, "slug": "a", "title": "A", "kind": "task",
+                   "status": "backlog", "priority": "high",
+                   "custom_null": None, "custom_empty": [], "custom_str": ""}
+            self.t.save_index(ctx, [row])
+            obj = json.loads((ctx.dir / "index.jsonl").read_text().strip())
+            self.assertIn("custom_null", obj)
+            self.assertIsNone(obj["custom_null"])
+            self.assertEqual(obj["custom_empty"], [])
+            self.assertEqual(obj["custom_str"], "")
+
+    def test_save_is_idempotent_byte_identical(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            row = {"id": 1, "slug": "a", "title": "A", "kind": "task",
+                   "status": "backlog", "priority": "high", "milestone": "m1",
+                   "extra": None}
+            self.t.save_index(ctx, [row])
+            first = (ctx.dir / "index.jsonl").read_bytes()
+            self.t.save_index(ctx, self.t.load_index(ctx))
+            self.assertEqual((ctx.dir / "index.jsonl").read_bytes(), first)
+
     def test_next_id_counts_index_and_disk(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)

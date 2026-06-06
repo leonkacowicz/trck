@@ -152,6 +152,17 @@ CANON_KEYS = [
     "resolution",
 ]
 
+# Per-field defaults for the optional trck-owned fields. A field whose value
+# equals its default is omitted from the serialized index (noise reduction);
+# everything else — required fields without a default, and custom/unknown keys —
+# is always written verbatim. The default is per-field, so the test is
+# equals-the-default, not falsiness (e.g. a future `points` default of 1 would
+# strip `points: 1` while keeping `points: 0`).
+FIELD_DEFAULTS = {
+    "parent": None, "milestone": None, "depends_on": [], "spec": None,
+    "started": None, "closed": None, "resolution": None,
+}
+
 
 class Ctx:
     """Resolved invocation context: the tracker dir and its merged config."""
@@ -195,7 +206,8 @@ def load_index(ctx: Ctx) -> list[dict]:
             row = json.loads(line)
         except json.JSONDecodeError as e:
             die(f"index.jsonl line {n}: invalid JSON ({e})")
-        row.setdefault("depends_on", [])
+        for k, dv in FIELD_DEFAULTS.items():  # re-hydrate stripped defaults
+            row.setdefault(k, list(dv) if isinstance(dv, list) else dv)
         rows.append(row)
     return rows
 
@@ -204,9 +216,17 @@ def save_index(ctx: Ctx, rows: list[dict]) -> None:
     rows = sorted(rows, key=lambda r: r["id"])
     lines = []
     for r in rows:
-        ordered = {k: r.get(k, [] if k == "depends_on" else None) for k in CANON_KEYS}
-        for k in sorted(r):  # preserve unknown keys, appended in stable order
-            if k not in ordered:
+        ordered = {}
+        for k in CANON_KEYS:  # known keys, in canonical order
+            if k in FIELD_DEFAULTS:
+                v = r.get(k, FIELD_DEFAULTS[k])
+                if v == FIELD_DEFAULTS[k]:
+                    continue  # equals default -> strip as noise
+                ordered[k] = v
+            elif k in r:
+                ordered[k] = r[k]  # required field, always kept
+        for k in sorted(r):  # preserve unknown keys verbatim, in stable order
+            if k not in CANON_KEYS:
                 ordered[k] = r[k]
         lines.append(json.dumps(ordered, ensure_ascii=False))
     ctx.index_path.write_text("\n".join(lines) + ("\n" if lines else ""))
