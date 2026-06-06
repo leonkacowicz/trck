@@ -10,10 +10,18 @@ class TestRead(unittest.TestCase):
     def setUp(self):
         self.t = load_trck()
 
-    def seed(self, d, title="Item", kind=None, parent=None):
-        a = ns(dir=str(d), title=title, priority="high", kind=kind, parent=parent,
-               depends=None, spec=None, slug=None)
+    def seed(self, d, title="Item", kind=None, parent=None, priority="high",
+             points=None, depends=None):
+        a = ns(dir=str(d), title=title, priority=priority, kind=kind, parent=parent,
+               points=points, depends=depends, spec=None, slug=None)
         self.t.cmd_new(a)
+
+    def listing(self, d, **over):
+        """cmd_list with all current flags defaulted; override per test."""
+        a = dict(dir=str(d), status=None, kind=None, priority=None, label=None,
+                 parent=None, match=None, sort=None, blocked=False, orphan=False)
+        a.update(over)
+        return self.cap(self.t.cmd_list, ns(**a))
 
     def cap(self, fn, args):
         buf = io.StringIO()
@@ -62,6 +70,88 @@ class TestRead(unittest.TestCase):
             self.assertIn("#002", out)
             self.assertNotIn("#001", out)
             self.assertNotIn("#003", out)
+
+    def test_list_status_multi_and_negated(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")                                   # 1 backlog
+            self.seed(d, "B")                                   # 2 -> ongoing
+            self.seed(d, "C")                                   # 3 -> done
+            self.t.cmd_mv(ns(dir=str(d), id=2, status="ongoing", resolution=None))
+            self.t.cmd_mv(ns(dir=str(d), id=3, status="done", resolution=None))
+            out = self.listing(d, status="backlog,ongoing")
+            self.assertIn("#001", out)
+            self.assertIn("#002", out)
+            self.assertNotIn("#003", out)
+            out = self.listing(d, status="!done")
+            self.assertIn("#001", out)
+            self.assertIn("#002", out)
+            self.assertNotIn("#003", out)
+
+    def test_list_match_is_case_insensitive_substring(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Fix the parser")
+            self.seed(d, "Add a feature")
+            out = self.listing(d, match="PARSER")
+            self.assertIn("#001", out)
+            self.assertNotIn("#002", out)
+
+    def test_list_sort_by_priority(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Low one", priority="low")        # 1
+            self.seed(d, "High one", priority="high")      # 2
+            self.seed(d, "Mid one", priority="medium")     # 3
+            out = self.listing(d, sort="priority")
+            self.assertLess(out.index("#002"), out.index("#003"))
+            self.assertLess(out.index("#003"), out.index("#001"))
+
+    def test_list_sort_by_points(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Small", points=1)    # 1
+            self.seed(d, "Big", points=8)      # 2
+            self.seed(d, "Mid", points=3)      # 3
+            out = self.listing(d, sort="points")
+            self.assertLess(out.index("#002"), out.index("#003"))
+            self.assertLess(out.index("#003"), out.index("#001"))
+
+    def test_list_blocked_only(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Dep")                            # 1 backlog (non-terminal)
+            self.seed(d, "Blocked", depends="1")           # 2 depends on open #1
+            self.seed(d, "Free")                           # 3 no deps
+            out = self.listing(d, blocked=True)
+            self.assertIn("#002", out)
+            self.assertNotIn("#001", out)
+            self.assertNotIn("#003", out)
+            # once the dependency is terminal, nothing is blocked
+            self.t.cmd_mv(ns(dir=str(d), id=1, status="done", resolution=None))
+            self.assertEqual(self.listing(d, blocked=True), "")
+
+    def test_list_orphan_only(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Epic", kind="epic")              # 1 top-level
+            self.seed(d, "Child", parent=1)                # 2 has parent
+            out = self.listing(d, orphan=True)
+            self.assertIn("#001", out)
+            self.assertNotIn("#002", out)
+
+    def test_list_filters_compose(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Match ongoing", priority="high")     # 1 -> ongoing
+            self.seed(d, "Match backlog", priority="high")     # 2 stays backlog
+            self.seed(d, "Other ongoing", priority="high")     # 3 -> ongoing
+            self.t.cmd_mv(ns(dir=str(d), id=1, status="ongoing", resolution=None))
+            self.t.cmd_mv(ns(dir=str(d), id=3, status="ongoing", resolution=None))
+            out = self.listing(d, status="ongoing", match="match")
+            self.assertIn("#001", out)
+            self.assertNotIn("#002", out)     # filtered by status
+            self.assertNotIn("#003", out)     # filtered by match
 
     def test_tree_shows_children(self):
         with TemporaryDirectory() as tmp:

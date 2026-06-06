@@ -102,6 +102,16 @@ def is_terminal(cfg: dict, name: str) -> bool:
     return status_role(cfg, name) == "terminal"
 
 
+def is_blocked(cfg: dict, row, by_id: dict) -> bool:
+    """True if `row` has at least one existing dependency that is not yet terminal.
+    The inverse of readiness; shared by `list --blocked` and the `ready`/`next` check."""
+    for dep in row.depends_on:
+        d = by_id.get(dep)
+        if d is not None and not is_terminal(cfg, d.status):
+            return True
+    return False
+
+
 def resolve_alias(cfg: dict, verb: str) -> str | None:
     return cfg.get("aliases", {}).get(verb)
 
@@ -497,6 +507,18 @@ def paint(text, *codes) -> str:
     if not codes or not _use_color():
         return str(text)
     return "".join(_ANSI[c] for c in codes) + str(text) + _ANSI["reset"]
+
+
+def parse_status_filter(spec: str | None) -> tuple[set, set]:
+    """Split a `--status` value into (keep, drop) sets. Comma-separates alternatives;
+    a leading `!` negates a token. `ongoing,backlog` -> keep both; `!done` -> drop done."""
+    keep, drop = set(), set()
+    for tok in (spec or "").split(","):
+        tok = tok.strip()
+        if not tok:
+            continue
+        (drop if tok.startswith("!") else keep).add(tok.lstrip("!"))
+    return keep, drop
 
 
 def priority_rank(cfg: dict, prio: str) -> int:
@@ -954,15 +976,36 @@ def cmd_show(args) -> None:
 def cmd_list(args) -> None:
     ctx = build_ctx(args)
     rows = sorted(load_index(ctx), key=lambda r: r.id)
+    by_id = {r.id: r for r in rows}
+
+    keep_st, drop_st = parse_status_filter(args.status)
+    match = (getattr(args, "match", None) or "").lower()
+    only_blocked = getattr(args, "blocked", False)
+    only_orphan = getattr(args, "orphan", False)
 
     def keep(r):
-        return ((not args.status or r.status == args.status)
+        return ((not keep_st or r.status in keep_st)
+                and r.status not in drop_st
                 and (not args.kind or r.kind == args.kind)
                 and (not args.priority or r.priority == args.priority)
                 and (not getattr(args, "label", None) or args.label in (r.labels or []))
-                and (args.parent is None or r.parent == args.parent))
+                and (args.parent is None or r.parent == args.parent)
+                and (not match or match in r.title.lower())
+                and (not only_blocked or is_blocked(ctx.cfg, r, by_id))
+                and (not only_orphan or r.parent is None))
 
     rows = [r for r in rows if keep(r)]
+
+    sort = getattr(args, "sort", None)
+    sort_keys = {
+        "priority": lambda r: (priority_rank(ctx.cfg, r.priority), r.id),
+        "points": lambda r: (-r.points, r.id),
+        "created": lambda r: (r.created or "", r.id),
+        "id": lambda r: r.id,
+    }
+    if sort in sort_keys:
+        rows.sort(key=sort_keys[sort])
+
     if not rows:
         return
     sw = max(len(r.status) for r in rows)
@@ -1253,6 +1296,8 @@ TYPICAL FLOW
   trck start 7                                   # -> ongoing
   trck done 7 --resolution superseded            # -> done (resolution optional)
   trck list --status ongoing                     # what's in flight
+  trck list --status '!done' --sort priority     # open work, hottest first
+  trck list --match parser --orphan              # title search, top-level only
   trck tree 4        /  trck deps 7              # hierarchy / blocking view
   trck check                                     # MUST pass before you commit
 
@@ -1357,11 +1402,20 @@ def build_parser() -> argparse.ArgumentParser:
 
     ls = sub.add_parser("list", help="list issues (filterable)",
                         description="List issues, optionally filtered; prints nothing if nothing matches.")
-    ls.add_argument("--status", help="filter by status")
+    ls.add_argument("--status",
+                    help="filter by status; comma-lists alternatives and a leading "
+                         "'!' negates (e.g. 'ongoing,backlog' or '!done')")
     ls.add_argument("--kind", help="filter by kind")
     ls.add_argument("--priority", help="filter by priority")
     ls.add_argument("--label", help="filter to issues carrying this label")
     ls.add_argument("--parent", type=int, help="filter to children of this epic/parent id")
+    ls.add_argument("--match", help="case-insensitive substring filter on the title")
+    ls.add_argument("--sort", choices=["priority", "points", "id", "created"],
+                    help="order output by this field (default: id)")
+    ls.add_argument("--blocked", action="store_true",
+                    help="only issues with an unmet (non-terminal) dependency")
+    ls.add_argument("--orphan", "--no-parent", dest="orphan", action="store_true",
+                    help="only top-level issues (no parent)")
     ls.set_defaults(func=cmd_list)
 
     tr = sub.add_parser("tree", help="print an issue's child hierarchy",
