@@ -32,6 +32,12 @@ defaults.
 - [ ] A field is omitted from the serialized object iff its value **equals that field's
       default**. Fields with no declared default (the always-present required ones —
       `id`, `slug`, `title`, `status`, `kind`, `priority`, `created`) are never stripped.
+- [ ] **Custom/unknown fields are never stripped.** A key that trck does not know about
+      (not in `FIELD_DEFAULTS`) has no default to compare against, so it passes through
+      **verbatim** — even when its value is `null`, `[]`, `""`, or otherwise empty. The
+      strip rule applies only to trck-owned fields; user-added fields are preserved as-is.
+      (This keeps the existing "preserve unknown keys" behavior at `trck:208-210` intact
+      and explicitly exempts those keys from the new strip pass.)
 - [ ] Consequence to verify explicitly: `points: 1` is stripped (default), `points: 0`
       is kept (non-default — "trivial"), `points: 3` is kept. Numeric `0` / `False` are
       never collateral-stripped because the test is equality-to-default, not falsiness.
@@ -63,6 +69,9 @@ defaults.
       `save_index` is byte-identical to the first.
 - [ ] A row with a populated `milestone`/`parent`/`resolution`/`depends_on` still
       serializes those fields.
+- [ ] A row carrying a custom/unknown key with a `null`/empty value retains that key
+      verbatim after a save/round-trip (not stripped, not reordered relative to other
+      unknown keys).
 
 ## Notes
 - This is purely a serialization-format change; the in-memory row dicts are unchanged.
@@ -75,5 +84,9 @@ defaults.
   redundant line that gets stripped, while `points: 0` ("trivial") is kept as real signal.
   A naive `if not value` would invert this (drop the `0`, keep the `1`) — guard against
   that simplification.
+- Decision: stripping is **trck-owned-fields-only**. Unknown/custom keys are passed
+  through verbatim regardless of value, because trck has no default to judge them against
+  and shouldn't silently drop data it doesn't understand. Practically: the strip pass runs
+  over `FIELD_DEFAULTS` keys; the unknown-key passthrough loop is untouched.
 - Touchpoint is small: `save_index` (`trck:203`). Keep the `depends_on` default in
   `load_index` as the safety net for that one field.
