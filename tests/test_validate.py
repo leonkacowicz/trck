@@ -19,10 +19,10 @@ class TestValidate(unittest.TestCase):
         p.write_text(body)
 
     def base(self, **over):
-        r = {"id": 1, "slug": "a", "title": "A", "kind": "task",
-             "status": "backlog", "priority": "high", "depends_on": []}
-        r.update(over)
-        return r
+        fields = {"id": 1, "slug": "a", "title": "A", "kind": "task",
+                  "status": "backlog", "priority": "high", "depends_on": []}
+        fields.update(over)
+        return self.t.Issue(**fields)
 
     def test_clean_tracker_has_no_errors(self):
         with TemporaryDirectory() as tmp:
@@ -38,7 +38,7 @@ class TestValidate(unittest.TestCase):
             ctx = self.ctx(tmp)
             row = self.base()
             self.write(ctx, row)               # file is in backlog/
-            row2 = dict(row, status="done")    # but index says done
+            row2 = self.base(status="done")    # but index says done
             self.t.save_index(ctx, [row2])
             errors, _ = self.t.validate(ctx)
             self.assertTrue(any("status" in e for e in errors))

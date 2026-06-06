@@ -12,9 +12,13 @@ TRCK_PATH = REPO_ROOT / "trck"
 def load_trck():
     """Import the extensionless ./trck file as a fresh module object."""
     import importlib.machinery
+    import sys
     loader = importlib.machinery.SourceFileLoader("trck_engine", str(TRCK_PATH))
     spec = importlib.util.spec_from_file_location("trck_engine", TRCK_PATH, loader=loader)
     mod = importlib.util.module_from_spec(spec)
+    # Register before exec: @dataclass under `from __future__ import annotations`
+    # resolves field annotations via sys.modules[cls.__module__] (Python 3.12+).
+    sys.modules["trck_engine"] = mod
     spec.loader.exec_module(mod)
     return mod
 

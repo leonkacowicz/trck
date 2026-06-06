@@ -1,6 +1,5 @@
 import json
 import unittest
-from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from tests.helpers import load_trck, make_tracker
@@ -14,22 +13,26 @@ class TestIndexIO(unittest.TestCase):
         d = make_tracker(tmp, {})
         return self.t.Ctx(d, self.t.load_config(d))
 
+    def issue(self, **over):
+        fields = dict(id=1, slug="a", title="A", kind="task",
+                      status="backlog", priority="high")
+        fields.update(over)
+        return self.t.Issue(**fields)
+
     def test_roundtrip_preserves_unknown_keys(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
-            row = {"id": 1, "slug": "a", "title": "A", "kind": "task",
-                   "status": "backlog", "priority": "high", "labels": ["x"],
-                   "zeta": 9}
+            row = self.issue(labels=["x"], extra={"zeta": 9})
             self.t.save_index(ctx, [row])
             back = self.t.load_index(ctx)
-            self.assertEqual(back[0]["labels"], ["x"])
-            self.assertEqual(back[0]["zeta"], 9)
+            self.assertEqual(back[0].labels, ["x"])
+            self.assertEqual(back[0].extra["zeta"], 9)
 
     def test_known_keys_come_first_in_canonical_order(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
-            row = {"zeta": 1, "id": 7, "title": "T", "slug": "t", "kind": "task",
-                   "status": "backlog", "priority": "low"}
+            row = self.issue(id=7, title="T", slug="t", priority="low",
+                             extra={"zeta": 1})
             self.t.save_index(ctx, [row])
             line = (ctx.dir / "index.jsonl").read_text().strip()
             keys = list(json.loads(line).keys())
@@ -39,19 +42,13 @@ class TestIndexIO(unittest.TestCase):
     def test_depends_on_defaults_to_list(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
-            self.t.save_index(ctx, [{"id": 1, "slug": "a", "title": "A",
-                                     "kind": "task", "status": "backlog",
-                                     "priority": "high"}])
-            self.assertEqual(self.t.load_index(ctx)[0]["depends_on"], [])
+            self.t.save_index(ctx, [self.issue()])
+            self.assertEqual(self.t.load_index(ctx)[0].depends_on, [])
 
     def test_strips_known_fields_equal_to_default(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
-            row = {"id": 1, "slug": "a", "title": "A", "kind": "task",
-                   "status": "backlog", "priority": "high", "parent": None,
-                   "labels": [], "depends_on": [], "spec": None,
-                   "created": "2026-06-05", "started": None, "closed": None,
-                   "resolution": None}
+            row = self.issue(created="2026-06-05")  # all optionals at default
             self.t.save_index(ctx, [row])
             obj = json.loads((ctx.dir / "index.jsonl").read_text().strip())
             for stripped in ("parent", "labels", "depends_on", "spec",
@@ -64,11 +61,9 @@ class TestIndexIO(unittest.TestCase):
     def test_keeps_non_default_known_fields_in_canon_order(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
-            row = {"id": 2, "slug": "b", "title": "B", "kind": "task",
-                   "status": "done", "priority": "low", "parent": 1,
-                   "labels": ["m1"], "depends_on": [1], "spec": None,
-                   "created": "2026-06-05", "started": None, "closed": None,
-                   "resolution": "fixed"}
+            row = self.issue(id=2, slug="b", title="B", status="done", priority="low",
+                             parent=1, labels=["m1"], depends_on=[1],
+                             created="2026-06-05", resolution="fixed")
             self.t.save_index(ctx, [row])
             obj = json.loads((ctx.dir / "index.jsonl").read_text().strip())
             self.assertEqual(obj["parent"], 1)
@@ -84,9 +79,8 @@ class TestIndexIO(unittest.TestCase):
     def test_custom_field_kept_even_when_empty(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
-            row = {"id": 1, "slug": "a", "title": "A", "kind": "task",
-                   "status": "backlog", "priority": "high",
-                   "custom_null": None, "custom_empty": [], "custom_str": ""}
+            row = self.issue(extra={"custom_null": None, "custom_empty": [],
+                                    "custom_str": ""})
             self.t.save_index(ctx, [row])
             obj = json.loads((ctx.dir / "index.jsonl").read_text().strip())
             self.assertIn("custom_null", obj)
@@ -97,9 +91,7 @@ class TestIndexIO(unittest.TestCase):
     def test_save_is_idempotent_byte_identical(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
-            row = {"id": 1, "slug": "a", "title": "A", "kind": "task",
-                   "status": "backlog", "priority": "high", "labels": ["m1"],
-                   "extra": None}
+            row = self.issue(labels=["m1"], extra={"vendor": None})
             self.t.save_index(ctx, [row])
             first = (ctx.dir / "index.jsonl").read_bytes()
             self.t.save_index(ctx, self.t.load_index(ctx))
@@ -108,15 +100,13 @@ class TestIndexIO(unittest.TestCase):
     def test_next_id_counts_index_and_disk(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
-            self.t.save_index(ctx, [{"id": 3, "slug": "a", "title": "A",
-                                     "kind": "task", "status": "backlog",
-                                     "priority": "high"}])
+            self.t.save_index(ctx, [self.issue(id=3)])
             (ctx.dir / "backlog").mkdir()
             (ctx.dir / "backlog" / "010-x.md").write_text("# X")
             self.assertEqual(self.t.next_id(ctx), 11)
 
     def test_get_row_missing_dies(self):
         with TemporaryDirectory() as tmp:
-            ctx = self.ctx(tmp)
+            self.ctx(tmp)
             with self.assertRaises(SystemExit):
                 self.t.get_row([], 99)

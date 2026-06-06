@@ -29,7 +29,7 @@ class TestMetadata(unittest.TestCase):
 
     def rows(self, d):
         ctx = self.t.Ctx(d, self.t.load_config(d))
-        return {r["id"]: r for r in self.t.load_index(ctx)}
+        return {r.id: r for r in self.t.load_index(ctx)}
 
     def set_args(self, d, iid, **over):
         a = ns(dir=str(d), id=iid, priority=None, parent=None,
@@ -42,13 +42,13 @@ class TestMetadata(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d)
-            self.assertEqual(self.rows(d)[1]["kind"], "task")
+            self.assertEqual(self.rows(d)[1].kind, "task")
 
     def test_new_kind_sets_configured_kind(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d, kind="epic")
-            self.assertEqual(self.rows(d)[1]["kind"], "epic")
+            self.assertEqual(self.rows(d)[1].kind, "epic")
 
     def test_new_rejects_unconfigured_kind(self):
         with TemporaryDirectory() as tmp:
@@ -61,7 +61,7 @@ class TestMetadata(unittest.TestCase):
             d = make_tracker(tmp, {})
             self.seed(d)
             self.t.cmd_set(self.set_args(d, 1, priority="low"))
-            self.assertEqual(self.rows(d)[1]["priority"], "low")
+            self.assertEqual(self.rows(d)[1].priority, "low")
 
     def test_set_parent_to_any_issue(self):
         with TemporaryDirectory() as tmp:
@@ -69,7 +69,7 @@ class TestMetadata(unittest.TestCase):
             self.seed(d, title="Parent task")   # id 1, a plain task (not an epic)
             self.seed(d, title="Child")         # id 2
             self.t.cmd_set(self.set_args(d, 2, parent="1"))
-            self.assertEqual(self.rows(d)[2]["parent"], 1)
+            self.assertEqual(self.rows(d)[2].parent, 1)
 
     def test_set_parent_must_exist(self):
         with TemporaryDirectory() as tmp:
@@ -83,15 +83,15 @@ class TestMetadata(unittest.TestCase):
             d = make_tracker(tmp, {})
             self.seed(d); self.seed(d)
             self.t.cmd_dep(ns(dir=str(d), id=2, add=1, remove=None))
-            self.assertEqual(self.rows(d)[2]["depends_on"], [1])
+            self.assertEqual(self.rows(d)[2].depends_on, [1])
             self.t.cmd_dep(ns(dir=str(d), id=2, add=None, remove=1))
-            self.assertEqual(self.rows(d)[2]["depends_on"], [])
+            self.assertEqual(self.rows(d)[2].depends_on, [])
 
     def test_new_points_defaults_to_one(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d)
-            self.assertEqual(self.rows(d)[1]["points"], 1)
+            self.assertEqual(self.rows(d)[1].points, 1)
 
     def test_new_points_default_is_stripped_from_index(self):
         with TemporaryDirectory() as tmp:
@@ -103,7 +103,7 @@ class TestMetadata(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d, points=5)
-            self.assertEqual(self.rows(d)[1]["points"], 5)
+            self.assertEqual(self.rows(d)[1].points, 5)
             self.assertEqual(self.raw_rows(d)[1]["points"], 5)
 
     def test_new_points_negative_rejected(self):
@@ -117,7 +117,7 @@ class TestMetadata(unittest.TestCase):
             d = make_tracker(tmp, {})
             self.seed(d)
             self.t.cmd_set(self.set_args(d, 1, points=3))
-            self.assertEqual(self.rows(d)[1]["points"], 3)
+            self.assertEqual(self.rows(d)[1].points, 3)
 
     def test_set_points_negative_rejected(self):
         with TemporaryDirectory() as tmp:
@@ -151,7 +151,7 @@ class TestMetadata(unittest.TestCase):
             self.seed(d, title="Child")              # id 2
             self.t.cmd_set(self.set_args(d, 2, parent="1"))    # 1 is a parent
             self.t.cmd_set(self.set_args(d, 2, parent="none")) # 1 is a leaf again
-            self.assertEqual(self.rows(d)[1]["points"], 1)     # default; old 7 not restored
+            self.assertEqual(self.rows(d)[1].points, 1)     # default; old 7 not restored
 
     def test_rename_changes_title_slug_and_file(self):
         with TemporaryDirectory() as tmp:
@@ -159,7 +159,7 @@ class TestMetadata(unittest.TestCase):
             self.seed(d, title="Old Name")
             self.t.cmd_rename(ns(dir=str(d), id=1, title="Brand New", slug=None))
             r = self.rows(d)[1]
-            self.assertEqual(r["title"], "Brand New")
-            self.assertEqual(r["slug"], "brand-new")
+            self.assertEqual(r.title, "Brand New")
+            self.assertEqual(r.slug, "brand-new")
             self.assertTrue((d / "backlog" / "001-brand-new.md").exists())
             self.assertIn("# Brand New", (d / "backlog" / "001-brand-new.md").read_text())

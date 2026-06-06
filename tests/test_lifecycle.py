@@ -28,9 +28,9 @@ class TestLifecycle(unittest.TestCase):
             d = self.setup_dir(tmp)
             self.new(d)
             r = self.rows(d)[0]
-            self.assertEqual(r["status"], "backlog")
-            self.assertEqual(r["created"], date.today().isoformat())
-            self.assertIsNone(r["started"])
+            self.assertEqual(r.status, "backlog")
+            self.assertEqual(r.created, date.today().isoformat())
+            self.assertIsNone(r.started)
             self.assertTrue((d / "backlog" / "001-first.md").exists())
 
     def test_mv_stamps_started_on_leaving_initial(self):
@@ -39,9 +39,9 @@ class TestLifecycle(unittest.TestCase):
             self.new(d)
             self.t.cmd_mv(ns(dir=str(d), id=1, status="ongoing", resolution=None))
             r = self.rows(d)[0]
-            self.assertEqual(r["status"], "ongoing")
-            self.assertEqual(r["started"], date.today().isoformat())
-            self.assertIsNone(r["closed"])
+            self.assertEqual(r.status, "ongoing")
+            self.assertEqual(r.started, date.today().isoformat())
+            self.assertIsNone(r.closed)
             self.assertTrue((d / "ongoing" / "001-first.md").exists())
 
     def test_mv_to_terminal_stamps_closed_and_resolution(self):
@@ -50,8 +50,8 @@ class TestLifecycle(unittest.TestCase):
             self.new(d)
             self.t.cmd_mv(ns(dir=str(d), id=1, status="done", resolution="wontfix"))
             r = self.rows(d)[0]
-            self.assertEqual(r["closed"], date.today().isoformat())
-            self.assertEqual(r["resolution"], "wontfix")
+            self.assertEqual(r.closed, date.today().isoformat())
+            self.assertEqual(r.resolution, "wontfix")
 
     def test_reopen_clears_closed_and_resolution(self):
         with TemporaryDirectory() as tmp:
@@ -60,8 +60,8 @@ class TestLifecycle(unittest.TestCase):
             self.t.cmd_mv(ns(dir=str(d), id=1, status="done", resolution="wontfix"))
             self.t.cmd_mv(ns(dir=str(d), id=1, status="ongoing", resolution=None))
             r = self.rows(d)[0]
-            self.assertIsNone(r["closed"])
-            self.assertIsNone(r["resolution"])
+            self.assertIsNone(r.closed)
+            self.assertIsNone(r.resolution)
 
     def test_mv_unknown_status_dies(self):
         with TemporaryDirectory() as tmp:

@@ -16,6 +16,7 @@ import subprocess
 import sys
 import urllib.error
 import urllib.request
+from dataclasses import dataclass, field, fields
 from datetime import date
 from pathlib import Path
 
@@ -164,6 +165,76 @@ FIELD_DEFAULTS = {
 }
 
 
+@dataclass
+class Issue:
+    """The single in-memory representation of an issue.
+
+    Known fields are typed attributes carrying their canonical defaults; any
+    unrecognized keys from index.jsonl are preserved verbatim in `extra` (so
+    custom/forward-compatible fields survive a round-trip). The shape, defaults,
+    and (de)serialization all live here — `from_dict` parses an index row,
+    `to_canonical` writes the slim ordered form, `to_dict` is the full mapping.
+    Required scalars default to None so a malformed row constructs cleanly and
+    `validate` can report it rather than the parser crashing.
+    """
+    id: int | None = None
+    slug: str | None = None
+    title: str | None = None
+    kind: str | None = None
+    status: str | None = None
+    priority: str | None = None
+    points: int = 1
+    parent: int | None = None
+    labels: list = field(default_factory=list)
+    depends_on: list = field(default_factory=list)
+    spec: str | None = None
+    created: str | None = None
+    started: str | None = None
+    closed: str | None = None
+    resolution: str | None = None
+    extra: dict = field(default_factory=dict)
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Issue":
+        """Build an Issue from a parsed index row. Migrates the legacy `milestone`
+        field to a plain label, and routes any unknown keys into `extra`."""
+        d = dict(d)
+        ms = d.pop("milestone", None)  # legacy field -> migrate to a plain label
+        if ms:
+            labels = list(d.get("labels") or [])
+            if ms not in labels:
+                labels.append(ms)
+            d["labels"] = labels
+        known = {k: v for k, v in d.items() if k in CANON_KEYS}
+        extra = {k: v for k, v in d.items() if k not in CANON_KEYS}
+        return cls(**known, extra=extra)
+
+    def to_dict(self) -> dict:
+        """The full mapping: every known field (canonical order) plus extras."""
+        return {**{k: getattr(self, k) for k in CANON_KEYS}, **self.extra}
+
+    def to_canonical(self) -> dict:
+        """The slim, ordered form written to index.jsonl: known keys in canonical
+        order with defaults stripped, then unknown keys appended in stable order.
+        A known field equal to its default (or a None required field) is omitted."""
+        ordered = {}
+        for k in CANON_KEYS:
+            v = getattr(self, k)
+            if k in FIELD_DEFAULTS:
+                if v == FIELD_DEFAULTS[k]:
+                    continue  # equals default -> strip as noise
+                ordered[k] = v
+            elif v is not None:
+                ordered[k] = v  # required field, kept when present
+        for k in sorted(self.extra):  # unknown keys verbatim, in stable order
+            ordered[k] = self.extra[k]
+        return ordered
+
+
+# CANON_KEYS must list exactly the known Issue fields (the serialization order).
+assert CANON_KEYS == [f.name for f in fields(Issue) if f.name != "extra"]
+
+
 class Ctx:
     """Resolved invocation context: the tracker dir and its merged config."""
     def __init__(self, dir: Path, cfg: dict):
@@ -182,19 +253,19 @@ def build_ctx(args, required: bool = True) -> Ctx | None:
     return Ctx(d, load_config(d))
 
 
-def filename(row: dict) -> str:
-    return f"{row['id']:03d}-{row['slug']}.md"
+def filename(row: Issue) -> str:
+    return f"{row.id:03d}-{row.slug}.md"
 
 
-def rel_link(row: dict) -> str:
-    return f"{row['status']}/{filename(row)}"
+def rel_link(row: Issue) -> str:
+    return f"{row.status}/{filename(row)}"
 
 
-def issue_path(ctx: Ctx, row: dict) -> Path:
-    return ctx.dir / row["status"] / filename(row)
+def issue_path(ctx: Ctx, row: Issue) -> Path:
+    return ctx.dir / row.status / filename(row)
 
 
-def load_index(ctx: Ctx) -> list[dict]:
+def load_index(ctx: Ctx) -> list[Issue]:
     if not ctx.index_path.exists():
         return []
     rows = []
@@ -203,65 +274,43 @@ def load_index(ctx: Ctx) -> list[dict]:
         if not line:
             continue
         try:
-            row = json.loads(line)
+            raw = json.loads(line)
         except json.JSONDecodeError as e:
             die(f"index.jsonl line {n}: invalid JSON ({e})")
-        ms = row.pop("milestone", None)  # legacy field -> migrate to a plain label
-        if ms:
-            labels = row.get("labels") or []
-            if ms not in labels:
-                labels.append(ms)
-            row["labels"] = labels
-        for k, dv in FIELD_DEFAULTS.items():  # re-hydrate stripped defaults
-            row.setdefault(k, list(dv) if isinstance(dv, list) else dv)
-        rows.append(row)
+        rows.append(Issue.from_dict(raw))
     return rows
 
 
-def save_index(ctx: Ctx, rows: list[dict]) -> None:
-    rows = sorted(rows, key=lambda r: r["id"])
-    lines = []
-    for r in rows:
-        ordered = {}
-        for k in CANON_KEYS:  # known keys, in canonical order
-            if k in FIELD_DEFAULTS:
-                v = r.get(k, FIELD_DEFAULTS[k])
-                if v == FIELD_DEFAULTS[k]:
-                    continue  # equals default -> strip as noise
-                ordered[k] = v
-            elif k in r:
-                ordered[k] = r[k]  # required field, always kept
-        for k in sorted(r):  # preserve unknown keys verbatim, in stable order
-            if k not in CANON_KEYS:
-                ordered[k] = r[k]
-        lines.append(json.dumps(ordered, ensure_ascii=False))
+def save_index(ctx: Ctx, rows: list[Issue]) -> None:
+    rows = sorted(rows, key=lambda r: r.id)
+    lines = [json.dumps(r.to_canonical(), ensure_ascii=False) for r in rows]
     ctx.index_path.write_text("\n".join(lines) + ("\n" if lines else ""))
 
 
-def get_row(rows: list[dict], issue_id: int) -> dict:
+def get_row(rows: list[Issue], issue_id: int) -> Issue:
     for r in rows:
-        if r["id"] == issue_id:
+        if r.id == issue_id:
             return r
     die(f"no issue with id {issue_id}")
 
 
-def parent_ids(rows: list[dict]) -> set:
+def parent_ids(rows: list[Issue]) -> set:
     """Ids that have at least one child (i.e. non-leaf issues)."""
-    return {r["parent"] for r in rows if r.get("parent") is not None}
+    return {r.parent for r in rows if r.parent is not None}
 
 
-def normalize_points(rows: list[dict]) -> None:
+def normalize_points(rows: list[Issue]) -> None:
     """`points` is a leaf-only input. A node with children has no own weight — its
     points are derived from its leaves — so reset it to the default (which serializes
     as nothing). Mutates rows in place; called on every index write via finalize."""
     parents = parent_ids(rows)
     for r in rows:
-        if r["id"] in parents:
-            r["points"] = FIELD_DEFAULTS["points"]
+        if r.id in parents:
+            r.points = FIELD_DEFAULTS["points"]
 
 
 def next_id(ctx: Ctx) -> int:
-    ids = {r["id"] for r in load_index(ctx)}
+    ids = {r.id for r in load_index(ctx)}
     for name in status_names(ctx.cfg):
         d = ctx.dir / name
         if d.is_dir():
@@ -297,7 +346,7 @@ def validate(ctx: Ctx) -> tuple[list[str], list[str]]:
     errors, warnings = [], []
     rows = load_index(ctx)
     files = scan_files(ctx)
-    by_id = {r["id"]: r for r in rows}
+    by_id = {r.id: r for r in rows}
     names = set(status_names(ctx.cfg))
     prios = set(ctx.cfg["priorities"])
     kinds = set(ctx.cfg["kinds"])
@@ -309,31 +358,31 @@ def validate(ctx: Ctx) -> tuple[list[str], list[str]]:
             errors.append(f"#{iid:03d} in index but no markdown file on disk")
             continue
         folder, slug, fname = files[iid]
-        if r.get("status") != folder:
-            errors.append(f"#{iid:03d} index status '{r.get('status')}' != folder '{folder}'")
-        if r.get("slug") != slug:
-            errors.append(f"#{iid:03d} index slug '{r.get('slug')}' != filename slug '{slug}'")
+        if r.status != folder:
+            errors.append(f"#{iid:03d} index status '{r.status}' != folder '{folder}'")
+        if r.slug != slug:
+            errors.append(f"#{iid:03d} index slug '{r.slug}' != filename slug '{slug}'")
         if fname != filename(r):
             errors.append(f"#{iid:03d} filename '{fname}' != expected '{filename(r)}'")
-        if not r.get("slug") or not SLUG_RE.match(r.get("slug", "")):
-            errors.append(f"#{iid:03d} bad slug '{r.get('slug')}'")
-        if r.get("status") not in names:
-            errors.append(f"#{iid:03d} unknown status '{r.get('status')}'")
-        if r.get("kind") not in kinds:
-            errors.append(f"#{iid:03d} bad kind '{r.get('kind')}'")
-        if r.get("priority") not in prios:
-            errors.append(f"#{iid:03d} bad priority '{r.get('priority')}'")
-        pts = r.get("points", FIELD_DEFAULTS["points"])
+        if not r.slug or not SLUG_RE.match(r.slug):
+            errors.append(f"#{iid:03d} bad slug '{r.slug}'")
+        if r.status not in names:
+            errors.append(f"#{iid:03d} unknown status '{r.status}'")
+        if r.kind not in kinds:
+            errors.append(f"#{iid:03d} bad kind '{r.kind}'")
+        if r.priority not in prios:
+            errors.append(f"#{iid:03d} bad priority '{r.priority}'")
+        pts = r.points
         if iid in parents:
             if pts != FIELD_DEFAULTS["points"]:
                 errors.append(f"#{iid:03d} has children but carries points {pts!r} "
                               f"(derived from leaves, must be unset)")
         elif isinstance(pts, bool) or not isinstance(pts, int) or pts < 0:
             errors.append(f"#{iid:03d} bad points {pts!r} (must be a non-negative integer)")
-        res = r.get("resolution")
+        res = r.resolution
         if res not in (None, *resolutions):
             errors.append(f"#{iid:03d} bad resolution '{res}'")
-        labels = r.get("labels", [])
+        labels = r.labels
         if not isinstance(labels, list) or any(not isinstance(l, str) for l in labels):
             errors.append(f"#{iid:03d} labels must be a list of strings")
     for iid in files:
@@ -341,43 +390,42 @@ def validate(ctx: Ctx) -> tuple[list[str], list[str]]:
             errors.append(f"#{iid:03d} markdown file on disk but no index row")
 
     for r in rows:
-        parent = r.get("parent")
-        if parent is not None:
-            if parent not in by_id:
-                errors.append(f"#{r['id']:03d} parent #{parent:03d} does not exist")
-        for dep in r.get("depends_on", []):
+        if r.parent is not None:
+            if r.parent not in by_id:
+                errors.append(f"#{r.id:03d} parent #{r.parent:03d} does not exist")
+        for dep in r.depends_on:
             if dep not in by_id:
-                errors.append(f"#{r['id']:03d} depends_on #{dep:03d} which does not exist")
+                errors.append(f"#{r.id:03d} depends_on #{dep:03d} which does not exist")
 
     for r in rows:  # parent cycles
         seen, cur = set(), r
-        while cur and cur.get("parent") is not None:
-            if cur["parent"] in seen:
-                errors.append(f"#{r['id']:03d} is in a parent cycle")
+        while cur and cur.parent is not None:
+            if cur.parent in seen:
+                errors.append(f"#{r.id:03d} is in a parent cycle")
                 break
-            seen.add(cur["parent"])
-            cur = by_id.get(cur["parent"])
+            seen.add(cur.parent)
+            cur = by_id.get(cur.parent)
 
     children = {}
     for r in rows:
-        if r.get("parent") is not None and r["parent"] in by_id:
-            children.setdefault(r["parent"], []).append(r)
+        if r.parent is not None and r.parent in by_id:
+            children.setdefault(r.parent, []).append(r)
     term = lambda name: is_terminal(ctx.cfg, name)
     for pid, kids in children.items():
         parent_row = by_id[pid]
-        if all(term(k["status"]) for k in kids) and not term(parent_row["status"]):
+        if all(term(k.status) for k in kids) and not term(parent_row.status):
             warnings.append(
                 f"#{pid:03d} has all children terminal but is still "
-                f"{parent_row['status']} (run `trck done {pid}` or `trck mv …`)"
+                f"{parent_row.status} (run `trck done {pid}` or `trck mv …`)"
             )
     for r in rows:
-        p = r.get("parent")
-        if p is not None and p in by_id and term(by_id[p]["status"]) and not term(r["status"]):
-            warnings.append(f"#{r['id']:03d} is {r['status']} but its parent #{p:03d} is terminal")
-        if term(r["status"]):
-            for dep in r.get("depends_on", []):
-                if dep in by_id and not term(by_id[dep]["status"]):
-                    warnings.append(f"#{r['id']:03d} is terminal but depends on non-terminal #{dep:03d}")
+        p = r.parent
+        if p is not None and p in by_id and term(by_id[p].status) and not term(r.status):
+            warnings.append(f"#{r.id:03d} is {r.status} but its parent #{p:03d} is terminal")
+        if term(r.status):
+            for dep in r.depends_on:
+                if dep in by_id and not term(by_id[dep].status):
+                    warnings.append(f"#{r.id:03d} is terminal but depends on non-terminal #{dep:03d}")
     return errors, warnings
 
 
@@ -438,15 +486,15 @@ def status_codes(cfg: dict, name: str) -> tuple:
     return ("yellow",)
 
 
-def label_tag(r: dict) -> str:
-    labels = r.get("labels") or []
+def label_tag(r: Issue) -> str:
+    labels = r.labels or []
     return " [" + " ".join(labels) + "]" if labels else ""
 
 
-def node_label(ctx: Ctx, r: dict) -> str:
-    tag = " ·epic·" if r.get("kind") == "epic" else ""
-    icon = paint(status_icon(ctx, r["status"]), *status_codes(ctx.cfg, r["status"]))
-    return f"#{r['id']:03d} {icon} {r['title']}{tag}{label_tag(r)}"
+def node_label(ctx: Ctx, r: Issue) -> str:
+    tag = " ·epic·" if r.kind == "epic" else ""
+    icon = paint(status_icon(ctx, r.status), *status_codes(ctx.cfg, r.status))
+    return f"#{r.id:03d} {icon} {r.title}{tag}{label_tag(r)}"
 
 
 def walk_tree(nodes, children_fn, label_fn, prefix="", seen=frozenset()):
@@ -454,12 +502,12 @@ def walk_tree(nodes, children_fn, label_fn, prefix="", seen=frozenset()):
     for i, node in enumerate(nodes):
         last = i == len(nodes) - 1
         connector = "└─ " if last else "├─ "
-        cycle = node["id"] in seen
+        cycle = node.id in seen
         print(prefix + connector + label_fn(node) + (" (cycle)" if cycle else ""))
         if cycle:
             continue
         ext = "   " if last else "│  "
-        walk_tree(children_fn(node), children_fn, label_fn, prefix + ext, seen | {node["id"]})
+        walk_tree(children_fn(node), children_fn, label_fn, prefix + ext, seen | {node.id})
 
 
 # --------------------------------------------------------------------------- #
@@ -469,14 +517,14 @@ def leaf_rollup(row, children, term, seen=frozenset()):
     """Aggregate (done_points, total_points, done_count, total_count) over the leaf
     descendants of `row`. A leaf's weight defaults to 1; a node's weight is the sum of
     its leaves. Cycle-guarded so a malformed (mid-edit) index can't spin forever."""
-    if row["id"] in seen:
+    if row.id in seen:
         return (0, 0, 0, 0)
-    kids = children.get(row["id"])
+    kids = children.get(row.id)
     if not kids:  # leaf
-        pts = row.get("points", FIELD_DEFAULTS["points"])
-        done = term(row["status"])
+        pts = row.points
+        done = term(row.status)
         return (pts if done else 0, pts, 1 if done else 0, 1)
-    seen = seen | {row["id"]}
+    seen = seen | {row.id}
     pdone = ptotal = ndone = ntotal = 0
     for k in kids:
         a, b, c, d = leaf_rollup(k, children, term, seen)
@@ -488,14 +536,14 @@ def generate_summary(ctx: Ctx) -> str:
     rows = load_index(ctx)
     children = {}
     for r in rows:
-        if r.get("parent") is not None:
-            children.setdefault(r["parent"], []).append(r)
+        if r.parent is not None:
+            children.setdefault(r.parent, []).append(r)
     names = status_names(ctx.cfg)
     term = lambda n: is_terminal(ctx.cfg, n)
 
     counts = {n: 0 for n in names}
     for r in rows:
-        counts[r["status"]] = counts.get(r["status"], 0) + 1
+        counts[r.status] = counts.get(r.status, 0) + 1
     total = len(rows)
 
     out = []
@@ -511,35 +559,35 @@ def generate_summary(ctx: Ctx) -> str:
     out.append(f"| **total** | **{total}** |")
     out.append("")
 
-    parents = sorted([r for r in rows if r["id"] in children], key=lambda r: r["id"])
+    parents = sorted([r for r in rows if r.id in children], key=lambda r: r.id)
     if parents:
         out.append("## Hierarchies")
         out.append("")
         for parent in parents:
-            kids = sorted(children.get(parent["id"], []), key=lambda r: r["id"])
+            kids = sorted(children.get(parent.id, []), key=lambda r: r.id)
             pdone, ptotal, ndone, ntotal = leaf_rollup(parent, children, term)
             pct = round(100 * pdone / ptotal) if ptotal else 0
             out.append(
-                f"### [#{parent['id']:03d} {parent['title']}]({rel_link(parent)}) — "
+                f"### [#{parent.id:03d} {parent.title}]({rel_link(parent)}) — "
                 f"{pct}% ({pdone}/{ptotal} pts · {ndone}/{ntotal} done) · "
-                f"_{parent['priority']}_ · {parent['status']}"
+                f"_{parent.priority}_ · {parent.status}"
             )
-            if parent.get("spec"):
-                out.append(f"Spec: [`{parent['spec']}`](../{parent['spec']})")
+            if parent.spec:
+                out.append(f"Spec: [`{parent.spec}`](../{parent.spec})")
             if kids:
                 out.append("")
                 for k in kids:
-                    box = "x" if term(k["status"]) else " "
-                    tail = "" if term(k["status"]) else f" _({k['status']})_"
-                    out.append(f"- [{box}] [#{k['id']:03d} {k['title']}]"
+                    box = "x" if term(k.status) else " "
+                    tail = "" if term(k.status) else f" _({k.status})_"
+                    out.append(f"- [{box}] [#{k.id:03d} {k.title}]"
                                f"({rel_link(k)}){label_tag(k)}{tail}")
             out.append("")
 
     def standalone(status):
         return sorted(
-            [r for r in rows if r["status"] == status and r["id"] not in children
-             and r.get("parent") is None],
-            key=lambda r: (priority_rank(ctx.cfg, r["priority"]), r["id"]),
+            [r for r in rows if r.status == status and r.id not in children
+             and r.parent is None],
+            key=lambda r: (priority_rank(ctx.cfg, r.priority), r.id),
         )
 
     for status in names:
@@ -550,12 +598,12 @@ def generate_summary(ctx: Ctx) -> str:
             out.append("_none_")
         for r in items:
             extra = ""
-            if r.get("resolution"):
-                extra += f" · _{r['resolution']}_"
-            if is_terminal(ctx.cfg, status) and r.get("closed"):
-                extra += f" (closed {r['closed']})"
-            out.append(f"- [#{r['id']:03d} {r['title']}]({rel_link(r)}) — "
-                       f"_{r['priority']}_{label_tag(r)}{extra}")
+            if r.resolution:
+                extra += f" · _{r.resolution}_"
+            if is_terminal(ctx.cfg, status) and r.closed:
+                extra += f" (closed {r.closed})"
+            out.append(f"- [#{r.id:03d} {r.title}]({rel_link(r)}) — "
+                       f"_{r.priority}_{label_tag(r)}{extra}")
         out.append("")
 
     return "\n".join(out).rstrip() + "\n"
@@ -671,35 +719,35 @@ def parse_ids(spec):
     return [int(p.strip()) for p in spec.split(",") if p.strip()]
 
 
-def move_issue(ctx: Ctx, row: dict, new_status: str) -> None:
+def move_issue(ctx: Ctx, row: Issue, new_status: str) -> None:
     """Move the file between status folders and stamp dates from roles."""
     if new_status not in status_names(ctx.cfg):
         die(f"unknown status '{new_status}' (configured: {', '.join(status_names(ctx.cfg))})")
-    old_status = row["status"]
+    old_status = row.status
     old = issue_path(ctx, row)
-    row["status"] = new_status
+    row.status = new_status
     new = issue_path(ctx, row)
     if old.resolve() != new.resolve():
         new.parent.mkdir(parents=True, exist_ok=True)
         if not old.exists():
-            die(f"file missing for #{row['id']:03d}: {old}")
+            die(f"file missing for #{row.id:03d}: {old}")
         shutil.move(str(old), str(new))
 
     init = initial_status(ctx.cfg)
-    if old_status == init and new_status != init and not row.get("started"):
-        row["started"] = today()
+    if old_status == init and new_status != init and not row.started:
+        row.started = today()
     if is_terminal(ctx.cfg, new_status):
-        if not row.get("closed"):
-            row["closed"] = today()
+        if not row.closed:
+            row.closed = today()
     else:
-        row["closed"] = None
-        row["resolution"] = None
+        row.closed = None
+        row.resolution = None
 
 
 def cmd_new(args) -> None:
     ctx = build_ctx(args)
     rows = load_index(ctx)
-    by_id = {r["id"]: r for r in rows}
+    by_id = {r.id: r for r in rows}
     iid = next_id(ctx)
     slug = args.slug or slugify(args.title)
     if not SLUG_RE.match(slug):
@@ -721,13 +769,11 @@ def cmd_new(args) -> None:
     for dep in deps:
         if dep not in by_id:
             die(f"--depends references #{dep:03d} which does not exist")
-    row = {
-        "id": iid, "slug": slug, "title": args.title, "kind": kind,
-        "status": initial_status(ctx.cfg), "priority": priority, "points": points,
-        "parent": parent, "labels": [], "depends_on": deps,
-        "spec": args.spec, "created": today(), "started": None,
-        "closed": None, "resolution": None,
-    }
+    row = Issue(
+        id=iid, slug=slug, title=args.title, kind=kind,
+        status=initial_status(ctx.cfg), priority=priority, points=points,
+        parent=parent, depends_on=deps, spec=args.spec, created=today(),
+    )
     path = issue_path(ctx, row)
     if path.exists():
         die(f"{path} already exists")
@@ -750,7 +796,7 @@ def cmd_mv(args) -> None:
             die(f"bad resolution '{resolution}' (configured: {', '.join(ctx.cfg['resolutions'])})")
     move_issue(ctx, row, args.status)
     if resolution is not None:
-        row["resolution"] = resolution
+        row.resolution = resolution
     finalize(ctx, rows)
     print(issue_path(ctx, row))
 
@@ -758,60 +804,60 @@ def cmd_mv(args) -> None:
 def cmd_set(args) -> None:
     ctx = build_ctx(args)
     rows = load_index(ctx)
-    by_id = {r["id"]: r for r in rows}
+    by_id = {r.id: r for r in rows}
     row = get_row(rows, args.id)
     if args.priority:
         if args.priority not in ctx.cfg["priorities"]:
             die(f"bad priority '{args.priority}'")
-        row["priority"] = args.priority
+        row.priority = args.priority
     if getattr(args, "points", None) is not None:
         if args.points < 0:
             die(f"bad points {args.points} (must be a non-negative integer)")
-        if row["id"] in parent_ids(rows):
-            die(f"#{row['id']:03d} has children; points is derived from them, not set")
-        row["points"] = args.points
+        if row.id in parent_ids(rows):
+            die(f"#{row.id:03d} has children; points is derived from them, not set")
+        row.points = args.points
     if args.parent is not None:
         if args.parent == "none":
-            row["parent"] = None
+            row.parent = None
         else:
             pid = int(args.parent)
             if pid not in by_id:
                 die(f"--parent #{pid:03d} must be an existing issue")
-            row["parent"] = pid
+            row.parent = pid
     if args.spec is not None:
-        row["spec"] = None if args.spec == "none" else args.spec
+        row.spec = None if args.spec == "none" else args.spec
     if args.kind:
         if args.kind not in ctx.cfg["kinds"]:
             die(f"bad kind '{args.kind}'")
-        row["kind"] = args.kind
+        row.kind = args.kind
     if args.title:
-        row["title"] = args.title
+        row.title = args.title
     finalize(ctx, rows)
-    print(f"#{row['id']:03d} updated")
+    print(f"#{row.id:03d} updated")
 
 
 def cmd_label(args) -> None:
     ctx = build_ctx(args)
     rows = load_index(ctx)
     row = get_row(rows, args.id)
-    labels = list(row.get("labels", []))
+    labels = list(row.labels)
     for lab in (args.add or []):
         if lab and lab not in labels:
             labels.append(lab)
     for lab in (args.remove or []):
         if lab in labels:
             labels.remove(lab)
-    row["labels"] = sorted(labels)
+    row.labels = sorted(labels)
     finalize(ctx, rows)
-    print(f"#{row['id']:03d} labels={row['labels']}")
+    print(f"#{row.id:03d} labels={row.labels}")
 
 
 def cmd_dep(args) -> None:
     ctx = build_ctx(args)
     rows = load_index(ctx)
-    by_id = {r["id"]: r for r in rows}
+    by_id = {r.id: r for r in rows}
     row = get_row(rows, args.id)
-    deps = list(row.get("depends_on", []))
+    deps = list(row.depends_on)
     if args.add is not None:
         if args.add not in by_id:
             die(f"#{args.add:03d} does not exist")
@@ -819,9 +865,9 @@ def cmd_dep(args) -> None:
             deps.append(args.add)
     if args.remove is not None and args.remove in deps:
         deps.remove(args.remove)
-    row["depends_on"] = sorted(deps)
+    row.depends_on = sorted(deps)
     finalize(ctx, rows)
-    print(f"#{row['id']:03d} depends_on={row['depends_on']}")
+    print(f"#{row.id:03d} depends_on={row.depends_on}")
 
 
 def cmd_rename(args) -> None:
@@ -832,8 +878,8 @@ def cmd_rename(args) -> None:
     if not SLUG_RE.match(new_slug):
         die(f"computed slug '{new_slug}' is invalid; pass --slug")
     old = issue_path(ctx, row)
-    row["title"] = args.title
-    row["slug"] = new_slug
+    row.title = args.title
+    row.slug = new_slug
     new = issue_path(ctx, row)
     if old.resolve() != new.resolve():
         shutil.move(str(old), str(new))
@@ -848,15 +894,16 @@ def cmd_show(args) -> None:
     ctx = build_ctx(args)
     rows = load_index(ctx)
     row = get_row(rows, args.id)
-    keys = CANON_KEYS + [k for k in sorted(row) if k not in CANON_KEYS]
-    if row["id"] in parent_ids(rows):
+    full = row.to_dict()
+    keys = CANON_KEYS + sorted(row.extra)
+    if row.id in parent_ids(rows):
         keys = [k for k in keys if k != "points"]  # derived from leaves, not an input here
     if getattr(args, "json", False):
-        print(json.dumps({k: row.get(k) for k in keys}, ensure_ascii=False, indent=2))
+        print(json.dumps({k: full.get(k) for k in keys}, ensure_ascii=False, indent=2))
     else:
         w = max(len(k) for k in keys)
         for k in keys:
-            v = row.get(k)
+            v = full.get(k)
             if v is None or v == []:
                 continue  # skip empty fields in the human view
             print(f"{paint(f'{k:>{w}}', 'dim')}  {v}")
@@ -866,34 +913,34 @@ def cmd_show(args) -> None:
 
 def cmd_list(args) -> None:
     ctx = build_ctx(args)
-    rows = sorted(load_index(ctx), key=lambda r: r["id"])
+    rows = sorted(load_index(ctx), key=lambda r: r.id)
 
     def keep(r):
-        return ((not args.status or r["status"] == args.status)
-                and (not args.kind or r.get("kind") == args.kind)
-                and (not args.priority or r.get("priority") == args.priority)
-                and (not getattr(args, "label", None) or args.label in (r.get("labels") or []))
-                and (args.parent is None or r.get("parent") == args.parent))
+        return ((not args.status or r.status == args.status)
+                and (not args.kind or r.kind == args.kind)
+                and (not args.priority or r.priority == args.priority)
+                and (not getattr(args, "label", None) or args.label in (r.labels or []))
+                and (args.parent is None or r.parent == args.parent))
 
     rows = [r for r in rows if keep(r)]
     if not rows:
         return
-    sw = max(len(r["status"]) for r in rows)
-    pw = max(len(r["priority"]) for r in rows)
+    sw = max(len(r.status) for r in rows)
+    pw = max(len(r.priority) for r in rows)
     for r in rows:
         tags = []
-        if r.get("kind") == "epic":
+        if r.kind == "epic":
             tags.append("EPIC")
-        if r.get("parent"):
-            tags.append(f"↳{r['parent']:03d}")
-        tags.extend(r.get("labels") or [])
+        if r.parent:
+            tags.append(f"↳{r.parent:03d}")
+        tags.extend(r.labels or [])
         tagstr = paint(" [" + " ".join(tags) + "]", "dim") if tags else ""
-        codes = status_codes(ctx.cfg, r["status"])
-        icon = paint(status_icon(ctx, r["status"]), *codes)
-        iid = paint(f"#{r['id']:03d}", "bold")
-        status = paint(f"{r['status']:<{sw}}", *codes)
-        prio = paint(f"{r['priority']:<{pw}}", *priority_codes(ctx.cfg, r["priority"]))
-        print(f"{icon} {iid} {status}  {prio}  {r['title']}{tagstr}")
+        codes = status_codes(ctx.cfg, r.status)
+        icon = paint(status_icon(ctx, r.status), *codes)
+        iid = paint(f"#{r.id:03d}", "bold")
+        status = paint(f"{r.status:<{sw}}", *codes)
+        prio = paint(f"{r.priority:<{pw}}", *priority_codes(ctx.cfg, r.priority))
+        print(f"{icon} {iid} {status}  {prio}  {r.title}{tagstr}")
 
 
 def cmd_tree(args) -> None:
@@ -901,41 +948,41 @@ def cmd_tree(args) -> None:
     rows = load_index(ctx)
     kids_of = {}
     for r in rows:
-        if r.get("parent") is not None:
-            kids_of.setdefault(r["parent"], []).append(r)
+        if r.parent is not None:
+            kids_of.setdefault(r.parent, []).append(r)
 
     def children(r):
-        return sorted(kids_of.get(r["id"], []), key=lambda c: c["id"])
+        return sorted(kids_of.get(r.id, []), key=lambda c: c.id)
 
     label = lambda r: node_label(ctx, r)
     if args.id is not None:
         roots = [get_row(rows, args.id)]
     else:
-        roots = sorted([r for r in rows if r.get("parent") is None and kids_of.get(r["id"])],
-                       key=lambda r: r["id"])
+        roots = sorted([r for r in rows if r.parent is None and kids_of.get(r.id)],
+                       key=lambda r: r.id)
         if not roots:
             print("no hierarchies (no epic has child issues yet)")
             return
     for root in roots:
         print(label(root))
-        walk_tree(children(root), children, label, seen=frozenset({root["id"]}))
+        walk_tree(children(root), children, label, seen=frozenset({root.id}))
 
 
 def cmd_deps(args) -> None:
     ctx = build_ctx(args)
     rows = load_index(ctx)
-    by_id = {r["id"]: r for r in rows}
+    by_id = {r.id: r for r in rows}
     row = get_row(rows, args.id)
     reverse = {}
     for r in rows:
-        for dep in r.get("depends_on", []):
+        for dep in r.depends_on:
             reverse.setdefault(dep, []).append(r)
 
     def requires(r):
-        return [by_id[d] for d in sorted(r.get("depends_on", [])) if d in by_id]
+        return [by_id[d] for d in sorted(r.depends_on) if d in by_id]
 
     def blocks(r):
-        return sorted(reverse.get(r["id"], []), key=lambda x: x["id"])
+        return sorted(reverse.get(r.id, []), key=lambda x: x.id)
 
     label = lambda r: node_label(ctx, r)
     show_requires = args.requires or not args.blocks
@@ -944,11 +991,11 @@ def cmd_deps(args) -> None:
     if show_requires:
         reqs = requires(row)
         print("\nrequires (must be done first):" if reqs else "\nrequires: none")
-        walk_tree(reqs, requires, label, seen=frozenset({row["id"]}))
+        walk_tree(reqs, requires, label, seen=frozenset({row.id}))
     if show_blocks:
         blk = blocks(row)
         print("\nblocks (these are waiting on it):" if blk else "\nblocks: none")
-        walk_tree(blk, blocks, label, seen=frozenset({row["id"]}))
+        walk_tree(blk, blocks, label, seen=frozenset({row.id}))
 
 
 def cmd_check(args) -> None:

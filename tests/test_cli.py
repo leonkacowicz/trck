@@ -16,14 +16,14 @@ class TestAliases(unittest.TestCase):
 
     def rows(self, d):
         ctx = self.t.Ctx(d, self.t.load_config(d))
-        return {r["id"]: r for r in self.t.load_index(ctx)}
+        return {r.id: r for r in self.t.load_index(ctx)}
 
     def test_start_alias_moves_to_ongoing(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d)
             self.t.cmd_start(ns(dir=str(d), id=1))
-            self.assertEqual(self.rows(d)[1]["status"], "ongoing")
+            self.assertEqual(self.rows(d)[1].status, "ongoing")
 
     def test_done_alias_with_resolution(self):
         with TemporaryDirectory() as tmp:
@@ -31,8 +31,8 @@ class TestAliases(unittest.TestCase):
             self.seed(d)
             self.t.cmd_done(ns(dir=str(d), id=1, resolution="duplicate"))
             r = self.rows(d)[1]
-            self.assertEqual(r["status"], "done")
-            self.assertEqual(r["resolution"], "duplicate")
+            self.assertEqual(r.status, "done")
+            self.assertEqual(r.resolution, "duplicate")
 
     def test_undefined_alias_dies(self):
         with TemporaryDirectory() as tmp:

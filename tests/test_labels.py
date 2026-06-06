@@ -23,7 +23,7 @@ class TestLabels(unittest.TestCase):
 
     def rows(self, d):
         ctx = self.t.Ctx(d, self.t.load_config(d))
-        return {r["id"]: r for r in self.t.load_index(ctx)}
+        return {r.id: r for r in self.t.load_index(ctx)}
 
     def raw_lines(self, d):
         return (Path(d) / "index.jsonl").read_text()
@@ -37,14 +37,14 @@ class TestLabels(unittest.TestCase):
             d = make_tracker(tmp, {})
             self.seed(d)
             self.label(d, 1, add=["backend"])
-            self.assertEqual(self.rows(d)[1]["labels"], ["backend"])
+            self.assertEqual(self.rows(d)[1].labels, ["backend"])
 
     def test_label_add_multiple_dedups_and_sorts(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d)
             self.label(d, 1, add=["beta", "alpha", "beta"])
-            self.assertEqual(self.rows(d)[1]["labels"], ["alpha", "beta"])
+            self.assertEqual(self.rows(d)[1].labels, ["alpha", "beta"])
 
     def test_label_remove_drops_label(self):
         with TemporaryDirectory() as tmp:
@@ -52,14 +52,14 @@ class TestLabels(unittest.TestCase):
             self.seed(d)
             self.label(d, 1, add=["x", "y"])
             self.label(d, 1, remove=["x"])
-            self.assertEqual(self.rows(d)[1]["labels"], ["y"])
+            self.assertEqual(self.rows(d)[1].labels, ["y"])
 
     def test_label_remove_missing_is_noop(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d)
             self.label(d, 1, remove=["nope"])  # should not raise
-            self.assertEqual(self.rows(d)[1]["labels"], [])
+            self.assertEqual(self.rows(d)[1].labels, [])
 
     def test_default_labels_stripped_from_index(self):
         with TemporaryDirectory() as tmp:
@@ -111,11 +111,11 @@ class TestLabels(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             ctx = self.t.Ctx(d, self.t.load_config(d))
-            epic = {"id": 1, "slug": "e", "title": "Epic", "kind": "epic",
-                    "status": "ongoing", "priority": "high"}
-            kid = {"id": 2, "slug": "k", "title": "Kid", "kind": "task",
-                   "status": "ongoing", "priority": "high", "parent": 1,
-                   "labels": ["frontend"]}
+            epic = self.t.Issue(id=1, slug="e", title="Epic", kind="epic",
+                                status="ongoing", priority="high")
+            kid = self.t.Issue(id=2, slug="k", title="Kid", kind="task",
+                               status="ongoing", priority="high", parent=1,
+                               labels=["frontend"])
             for r in (epic, kid):
                 p = self.t.issue_path(ctx, r)
                 p.parent.mkdir(parents=True, exist_ok=True)
@@ -128,8 +128,8 @@ class TestLabels(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             ctx = self.t.Ctx(d, self.t.load_config(d))
-            r = {"id": 1, "slug": "a", "title": "A", "kind": "task",
-                 "status": "backlog", "priority": "high", "labels": ["chore"]}
+            r = self.t.Issue(id=1, slug="a", title="A", kind="task",
+                             status="backlog", priority="high", labels=["chore"])
             p = self.t.issue_path(ctx, r)
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text("# x\n")
@@ -147,8 +147,8 @@ class TestLabels(unittest.TestCase):
                       '"milestone": "v1.0"}\n')
             (Path(d) / "index.jsonl").write_text(legacy)
             rows = self.t.load_index(ctx)
-            self.assertEqual(rows[0]["labels"], ["v1.0"])
-            self.assertNotIn("milestone", rows[0])
+            self.assertEqual(rows[0].labels, ["v1.0"])
+            self.assertNotIn("milestone", rows[0].extra)
 
     def test_null_milestone_dropped_without_label(self):
         with TemporaryDirectory() as tmp:
@@ -159,15 +159,15 @@ class TestLabels(unittest.TestCase):
                       '"milestone": null}\n')
             (Path(d) / "index.jsonl").write_text(legacy)
             rows = self.t.load_index(ctx)
-            self.assertEqual(rows[0]["labels"], [])
-            self.assertNotIn("milestone", rows[0])
+            self.assertEqual(rows[0].labels, [])
+            self.assertNotIn("milestone", rows[0].extra)
 
     def test_normalize_persists_milestone_migration(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             ctx = self.t.Ctx(d, self.t.load_config(d))
-            r = {"id": 1, "slug": "a", "title": "A", "kind": "task",
-                 "status": "backlog", "priority": "high"}
+            r = self.t.Issue(id=1, slug="a", title="A", kind="task",
+                             status="backlog", priority="high")
             p = self.t.issue_path(ctx, r)
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text("# x\n")
@@ -180,15 +180,15 @@ class TestLabels(unittest.TestCase):
             line = self.raw_lines(d)
             self.assertNotIn("milestone", line)
             self.assertIn("v1.0", line)
-            self.assertEqual(self.rows(d)[1]["labels"], ["v1.0"])
+            self.assertEqual(self.rows(d)[1].labels, ["v1.0"])
 
     # -- validation ----------------------------------------------------------
     def test_validate_rejects_non_string_labels(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             ctx = self.t.Ctx(d, self.t.load_config(d))
-            r = {"id": 1, "slug": "a", "title": "A", "kind": "task",
-                 "status": "backlog", "priority": "high", "labels": [5]}
+            r = self.t.Issue(id=1, slug="a", title="A", kind="task",
+                             status="backlog", priority="high", labels=[5])
             p = self.t.issue_path(ctx, r)
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text("# x\n")

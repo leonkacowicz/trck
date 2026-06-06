@@ -18,10 +18,10 @@ class TestSummary(unittest.TestCase):
         p.write_text("# x\n")
 
     def base(self, **over):
-        r = {"id": 1, "slug": "a", "title": "A", "kind": "task",
-             "status": "backlog", "priority": "high", "depends_on": []}
-        r.update(over)
-        return r
+        fields = {"id": 1, "slug": "a", "title": "A", "kind": "task",
+                  "status": "backlog", "priority": "high", "depends_on": []}
+        fields.update(over)
+        return self.t.Issue(**fields)
 
     def test_counts_and_sections_in_config_order(self):
         with TemporaryDirectory() as tmp:

@@ -54,7 +54,7 @@ class TestMaint(unittest.TestCase):
                        '"closed": null, "resolution": null}\n')
             # match the actual slug the seed produced
             row = self.t.load_index(self.t.Ctx(d, self.t.load_config(d)))[0]
-            verbose = verbose.replace('"001-item"', f'"{row["slug"]}"')
+            verbose = verbose.replace('"001-item"', f'"{row.slug}"')
             (d / "index.jsonl").write_text(verbose)
             with redirect_stdout(io.StringIO()):
                 self.t.cmd_normalize(ns(dir=str(d)))
@@ -80,15 +80,15 @@ class TestMaint(unittest.TestCase):
             self.seed(d)
             ctx = self.t.Ctx(d, self.t.load_config(d))
             rows = self.t.load_index(ctx)
-            rows[0]["labels"] = ["m1"]
-            rows[0]["custom"] = None
+            rows[0].labels = ["m1"]
+            rows[0].extra["custom"] = None
             self.t.save_index(ctx, rows)
             with redirect_stdout(io.StringIO()):
                 self.t.cmd_normalize(ns(dir=str(d)))
             back = self.t.load_index(ctx)[0]
-            self.assertEqual(back["labels"], ["m1"])
-            self.assertIn("custom", back)
-            self.assertIsNone(back["custom"])
+            self.assertEqual(back.labels, ["m1"])
+            self.assertIn("custom", back.extra)
+            self.assertIsNone(back.extra["custom"])
 
     def test_normalize_regenerates_summary(self):
         with TemporaryDirectory() as tmp:
