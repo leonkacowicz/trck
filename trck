@@ -352,6 +352,55 @@ def parent_ids(rows: list[Issue]) -> set:
     return {r.parent for r in rows if r.parent is not None}
 
 
+def dep_would_cycle(by_id: dict, src: int, dep: int) -> bool:
+    """True if adding the edge src->dep (src depends_on dep) would create a cycle:
+    i.e. src == dep, or src is already reachable from dep along depends_on edges."""
+    if src == dep:
+        return True
+    seen, stack = set(), [dep]
+    while stack:
+        cur = stack.pop()
+        if cur == src:
+            return True
+        if cur in seen:
+            continue
+        seen.add(cur)
+        node = by_id.get(cur)
+        if node:
+            stack.extend(node.depends_on)
+    return False
+
+
+def find_dep_cycles(by_id: dict) -> list[list[int]]:
+    """Return every cycle in the depends_on graph as a list of node ids, each cycle
+    reported once (deduped by its node set). DFS with white/gray/black coloring;
+    a self-edge (#n depends_on #n) is a one-node cycle."""
+    color = {iid: 0 for iid in by_id}  # 0=unseen, 1=on-stack, 2=done
+    cycles, seen_keys, path = [], set(), []
+
+    def visit(node):
+        color[node] = 1
+        path.append(node)
+        for nxt in by_id[node].depends_on:
+            if nxt not in by_id:
+                continue
+            if color[nxt] == 1:
+                cyc = path[path.index(nxt):]
+                key = frozenset(cyc)
+                if key not in seen_keys:
+                    seen_keys.add(key)
+                    cycles.append(list(cyc))
+            elif color[nxt] == 0:
+                visit(nxt)
+        path.pop()
+        color[node] = 2
+
+    for iid in by_id:
+        if color[iid] == 0:
+            visit(iid)
+    return cycles
+
+
 def normalize_points(rows: list[Issue]) -> None:
     """`points` is a leaf-only input. A node with children has no own weight — its
     points are derived from its leaves — so reset it to the default (which serializes
@@ -455,6 +504,10 @@ def validate(ctx: Ctx) -> tuple[list[str], list[str]]:
                 break
             seen.add(cur.parent)
             cur = by_id.get(cur.parent)
+
+    for cyc in find_dep_cycles(by_id):  # dependency cycles, one error per cycle
+        chain = " -> ".join(f"#{c:03d}" for c in (*cyc, cyc[0]))
+        errors.append(f"dependency cycle: {chain}")
 
     children = {}
     for r in rows:
@@ -935,6 +988,10 @@ def cmd_dep(args) -> None:
     if args.add is not None:
         if args.add not in by_id:
             die(f"#{args.add:03d} does not exist")
+        if args.add == row.id:
+            die(f"#{row.id:03d} cannot depend on itself")
+        if dep_would_cycle(by_id, row.id, args.add):
+            die(f"#{row.id:03d} -> #{args.add:03d} would create a dependency cycle")
         if args.add not in deps:
             deps.append(args.add)
     if args.remove is not None and args.remove in deps:

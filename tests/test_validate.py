@@ -101,3 +101,48 @@ class TestValidate(unittest.TestCase):
             self.t.save_index(ctx, [epic, child])
             _, warnings = self.t.validate(ctx)
             self.assertTrue(any("all children" in w for w in warnings))
+
+    def test_two_node_dependency_cycle_is_error(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            a = self.base(id=1, slug="a", depends_on=[2])
+            b = self.base(id=2, slug="b", depends_on=[1])
+            self.write(ctx, a); self.write(ctx, b)
+            self.t.save_index(ctx, [a, b])
+            errors, _ = self.t.validate(ctx)
+            self.assertTrue(any("dependency cycle" in e for e in errors))
+
+    def test_longer_dependency_cycle_reported_once(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            a = self.base(id=1, slug="a", depends_on=[2])
+            b = self.base(id=2, slug="b", depends_on=[3])
+            c = self.base(id=3, slug="c", depends_on=[1])
+            self.write(ctx, a); self.write(ctx, b); self.write(ctx, c)
+            self.t.save_index(ctx, [a, b, c])
+            errors, _ = self.t.validate(ctx)
+            cyc = [e for e in errors if "dependency cycle" in e]
+            self.assertEqual(len(cyc), 1)  # one error per cycle, not one per node
+
+    def test_self_dependency_is_error(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            a = self.base(id=1, slug="a", depends_on=[1])
+            self.write(ctx, a)
+            self.t.save_index(ctx, [a])
+            errors, _ = self.t.validate(ctx)
+            self.assertTrue(any("dependency cycle" in e for e in errors))
+
+    def test_valid_dep_dag_has_no_cycle_errors(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            # diamond: d depends on b and c; b and c both depend on a. No cycle.
+            a = self.base(id=1, slug="a")
+            b = self.base(id=2, slug="b", depends_on=[1])
+            c = self.base(id=3, slug="c", depends_on=[1])
+            d = self.base(id=4, slug="d", depends_on=[2, 3])
+            for r in (a, b, c, d):
+                self.write(ctx, r)
+            self.t.save_index(ctx, [a, b, c, d])
+            errors, _ = self.t.validate(ctx)
+            self.assertFalse(any("dependency cycle" in e for e in errors))

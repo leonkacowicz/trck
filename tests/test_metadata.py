@@ -87,6 +87,42 @@ class TestMetadata(unittest.TestCase):
             self.t.cmd_dep(ns(dir=str(d), id=2, add=None, remove=1))
             self.assertEqual(self.rows(d)[2].depends_on, [])
 
+    def test_dep_add_rejects_self_edge(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d)
+            with self.assertRaises(SystemExit):
+                self.t.cmd_dep(ns(dir=str(d), id=1, add=1, remove=None))
+            self.assertEqual(self.rows(d)[1].depends_on, [])
+
+    def test_dep_add_rejects_two_node_cycle(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d); self.seed(d)
+            self.t.cmd_dep(ns(dir=str(d), id=1, add=2, remove=None))  # 1 -> 2
+            with self.assertRaises(SystemExit):
+                self.t.cmd_dep(ns(dir=str(d), id=2, add=1, remove=None))  # 2 -> 1 closes cycle
+            self.assertEqual(self.rows(d)[2].depends_on, [])  # not written
+
+    def test_dep_add_rejects_longer_cycle(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d); self.seed(d); self.seed(d)
+            self.t.cmd_dep(ns(dir=str(d), id=1, add=2, remove=None))  # 1 -> 2
+            self.t.cmd_dep(ns(dir=str(d), id=2, add=3, remove=None))  # 2 -> 3
+            with self.assertRaises(SystemExit):
+                self.t.cmd_dep(ns(dir=str(d), id=3, add=1, remove=None))  # 3 -> 1 closes cycle
+            self.assertEqual(self.rows(d)[3].depends_on, [])  # not written
+
+    def test_dep_add_allows_valid_dag(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d); self.seed(d); self.seed(d)
+            self.t.cmd_dep(ns(dir=str(d), id=2, add=1, remove=None))  # 2 -> 1
+            self.t.cmd_dep(ns(dir=str(d), id=3, add=1, remove=None))  # 3 -> 1 (diamond base)
+            self.t.cmd_dep(ns(dir=str(d), id=3, add=2, remove=None))  # 3 -> 2, still a DAG
+            self.assertEqual(self.rows(d)[3].depends_on, [1, 2])
+
     def test_new_points_defaults_to_one(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
