@@ -85,7 +85,7 @@ and either define its own aliases or just use `mv`.
 
 ## Common verbs
 
-`new` · `mv` · `start` · `done` · `set` · `dep` · `label` · `rename` · `show` · `list` ·
+`new` · `mv` · `start` · `done` · `set` · `dep` · `label` · `show` · `list` ·
 `tree` · `deps` · `check` · `summary` · `install-hook` · `init` · `update` · `version`. Run
 `trck --help` (or `trck <verb> --help`) for details.
 

@@ -37,11 +37,8 @@ class TestHelp(unittest.TestCase):
     def test_dep_help_has_example(self):
         self.assertIn("7 now waits on 5", self.sub_help("dep"))
 
-    def test_set_help_points_at_rename(self):
-        self.assertIn("use `rename`", self.sub_help("set"))
-
-    def test_rename_help_points_at_set(self):
-        self.assertIn("set --title", self.sub_help("rename"))
+    def test_set_help_explains_slug_renames_file(self):
+        self.assertIn("renames the file", self.sub_help("set"))
 
     def test_check_description_mentions_before_committing(self):
         self.assertIn("before committing", self.sub_help("check"))

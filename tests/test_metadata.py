@@ -33,7 +33,7 @@ class TestMetadata(unittest.TestCase):
 
     def set_args(self, d, iid, **over):
         a = ns(dir=str(d), id=iid, priority=None, parent=None,
-               spec=None, kind=None, title=None)
+               spec=None, kind=None, title=None, slug=None)
         for k, v in over.items():
             setattr(a, k, v)
         return a
@@ -153,11 +153,37 @@ class TestMetadata(unittest.TestCase):
             self.t.cmd_set(self.set_args(d, 2, parent="none")) # 1 is a leaf again
             self.assertEqual(self.rows(d)[1].points, 1)     # default; old 7 not restored
 
-    def test_rename_changes_title_slug_and_file(self):
+    def test_set_slug_moves_the_file(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d, title="Old Name")
-            self.t.cmd_rename(ns(dir=str(d), id=1, title="Brand New", slug=None))
+            self.t.cmd_set(self.set_args(d, 1, slug="renamed"))
+            r = self.rows(d)[1]
+            self.assertEqual(r.slug, "renamed")
+            self.assertTrue((d / "backlog" / "001-renamed.md").exists())
+            self.assertFalse((d / "backlog" / "001-old-name.md").exists())
+
+    def test_set_slug_rejects_invalid_slug(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, title="Old Name")
+            with self.assertRaises(SystemExit):
+                self.t.cmd_set(self.set_args(d, 1, slug="Not A Slug"))
+
+    def test_set_title_rewrites_the_h1(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, title="Old Name")
+            self.t.cmd_set(self.set_args(d, 1, title="Brand New"))
+            r = self.rows(d)[1]
+            self.assertEqual(r.title, "Brand New")
+            self.assertIn("# Brand New", (d / "backlog" / "001-old-name.md").read_text())
+
+    def test_set_title_and_slug_together(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, title="Old Name")
+            self.t.cmd_set(self.set_args(d, 1, title="Brand New", slug="brand-new"))
             r = self.rows(d)[1]
             self.assertEqual(r.title, "Brand New")
             self.assertEqual(r.slug, "brand-new")

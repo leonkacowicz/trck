@@ -892,8 +892,20 @@ def cmd_set(args) -> None:
         if args.kind not in ctx.cfg["kinds"]:
             die(f"bad kind '{args.kind}'")
         row.kind = args.kind
+    old = issue_path(ctx, row)
+    if args.slug:
+        if not SLUG_RE.match(args.slug):
+            die(f"invalid slug '{args.slug}'")
+        row.slug = args.slug
     if args.title:
         row.title = args.title
+    new = issue_path(ctx, row)
+    if old.resolve() != new.resolve():
+        shutil.move(str(old), str(new))
+    if args.title:
+        text = new.read_text()
+        text = re.sub(r"^# .*$", f"# {args.title}", text, count=1, flags=re.MULTILINE)
+        new.write_text(text)
     finalize(ctx, rows)
     print(f"#{row.id:03d} updated")
 
@@ -930,26 +942,6 @@ def cmd_dep(args) -> None:
     row.depends_on = sorted(deps)
     finalize(ctx, rows)
     print(f"#{row.id:03d} depends_on={row.depends_on}")
-
-
-def cmd_rename(args) -> None:
-    ctx = build_ctx(args)
-    rows = load_index(ctx)
-    row = get_row(rows, args.id)
-    new_slug = args.slug or slugify(args.title)
-    if not SLUG_RE.match(new_slug):
-        die(f"computed slug '{new_slug}' is invalid; pass --slug")
-    old = issue_path(ctx, row)
-    row.title = args.title
-    row.slug = new_slug
-    new = issue_path(ctx, row)
-    if old.resolve() != new.resolve():
-        shutil.move(str(old), str(new))
-    text = new.read_text()
-    text = re.sub(r"^# .*$", f"# {args.title}", text, count=1, flags=re.MULTILINE)
-    new.write_text(text)
-    finalize(ctx, rows)
-    print(new)
 
 
 def cmd_show(args) -> None:
@@ -1305,9 +1297,9 @@ MODEL
   an issue's prose body (Summary / Acceptance criteria / Notes).
 
   status      every issue has exactly one; move it with mv / start / done.
-  metadata    priority, points, parent, spec, kind, title -- change with
-              `trck set` (NOT by editing index.jsonl). labels -- a flat set
-              of free-text tags; change with `trck label`.
+  metadata    priority, points, parent, spec, kind, title, slug -- change
+              with `trck set` (NOT by editing index.jsonl). labels -- a flat
+              set of free-text tags; change with `trck label`.
   hierarchy   --parent / --kind epic build an epic tree (containment).
   deps        dep / --depends build a blocking graph (ordering). A parent is
               "part of"; a dep is "must come first" -- they are independent.
@@ -1379,16 +1371,18 @@ def build_parser() -> argparse.ArgumentParser:
     dn.set_defaults(func=cmd_done)
 
     se = sub.add_parser(
-        "set", help="edit metadata fields (index only)",
-        description="Edit indexed metadata in place; does not touch the prose "
-                    "body. Pass 'none' to clear parent/spec.")
+        "set", help="edit metadata fields",
+        description="Edit an issue's metadata in place. Pass 'none' to clear "
+                    "parent/spec. Changing --slug renames the file; changing "
+                    "--title also rewrites the body's H1.")
     se.add_argument("id", type=int, help="issue id")
     se.add_argument("--priority", help="configured priority")
     se.add_argument("--points", type=int, help="leaf weight (error if the issue has children)")
     se.add_argument("--parent", help="epic id, or 'none' to clear")
     se.add_argument("--spec", help="path, or 'none' to clear")
     se.add_argument("--kind", help="configured kind")
-    se.add_argument("--title", help="new title (index only; does not rename the file -- use `rename`)")
+    se.add_argument("--title", help="new title (also rewrites the body's H1)")
+    se.add_argument("--slug", help="override the filename slug (renames the file)")
     se.set_defaults(func=cmd_set)
 
     dp = sub.add_parser(
@@ -1413,14 +1407,6 @@ def build_parser() -> argparse.ArgumentParser:
                     help="label to remove (repeatable)")
     lb.set_defaults(func=cmd_label)
 
-    rn = sub.add_parser(
-        "rename", help="change title + slug (renames the file)",
-        description="Change an issue's title and slug, renaming the file and "
-                    "rewriting its H1. To change only the indexed title, use `set --title`.")
-    rn.add_argument("id", type=int, help="issue id")
-    rn.add_argument("title", help="new title")
-    rn.add_argument("--slug", help="override the auto-derived slug")
-    rn.set_defaults(func=cmd_rename)
 
     sh = sub.add_parser("show", help="print an issue's metadata + body",
                         description="Print an issue's metadata, then its markdown body.")
