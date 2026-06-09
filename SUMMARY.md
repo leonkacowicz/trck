@@ -5,8 +5,8 @@
 
 | State | Count |
 |---|---:|
-| backlog | 14 |
-| ongoing | 0 |
+| backlog | 13 |
+| ongoing | 1 |
 | done | 25 |
 | **total** | **39** |
 
@@ -28,7 +28,7 @@
 
 - [x] [#027 Harden Issue.from_dict with a structural/type contract](done/027-harden-issue-from-dict-with-a-structural-type-contract.md)
 
-### [#031 Merge tree into list: structure-aware browse verb](backlog/031-merge-tree-into-list-structure-aware-browse-verb.md) — 75% (3/4 pts · 3/4 done) · _high_ · backlog
+### [#031 Merge tree into list: structure-aware browse verb](ongoing/031-merge-tree-into-list-structure-aware-browse-verb.md) — 75% (3/4 pts · 3/4 done) · _high_ · ongoing
 
 - [x] [#036 list: extract shared row renderer with connector prefix](done/036-list-extract-shared-row-renderer-with-connector-prefix.md)
 - [x] [#037 Graph: add ancestor-closure, match-set and sibling-sort traversal](done/037-graph-add-ancestor-closure-match-set-and-sibling-sort-traversal.md)
