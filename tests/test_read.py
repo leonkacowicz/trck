@@ -18,9 +18,11 @@ class TestRead(unittest.TestCase):
         self.t.cmd_new(a)
 
     def listing(self, d, **over):
-        """cmd_list with all current flags defaulted; override per test."""
+        """cmd_list defaulted to the flat view (the stable regression baseline);
+        override `flat=False` for nested-forest tests."""
         a = dict(dir=str(d), status=None, kind=None, priority=None, label=None,
-                 parent=None, match=None, sort=None, blocked=False, orphan=False)
+                 parent=None, match=None, sort=None, blocked=False, orphan=False,
+                 flat=True, id=None)
         a.update(over)
         return self.cap(self.t.cmd_list, ns(**a))
 
@@ -62,7 +64,8 @@ class TestRead(unittest.TestCase):
             self.seed(d, "B")
             self.t.cmd_mv(ns(dir=str(d), id=2, status="ongoing", resolution=None))
             out = self.cap(self.t.cmd_list, ns(dir=str(d), status="ongoing",
-                                               kind=None, priority=None, parent=None))
+                                               kind=None, priority=None, parent=None,
+                                               flat=True, id=None))
             self.assertIn("#002", out)
             self.assertNotIn("#001", out)
 
@@ -73,7 +76,8 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Child", parent=1)        # id 2
             self.seed(d, "Loose")                  # id 3, no parent
             out = self.cap(self.t.cmd_list, ns(dir=str(d), status=None,
-                                               kind=None, priority=None, parent=1))
+                                               kind=None, priority=None, parent=1,
+                                               flat=True, id=None))
             self.assertIn("#002", out)
             self.assertNotIn("#001", out)
             self.assertNotIn("#003", out)
@@ -239,12 +243,134 @@ class TestRead(unittest.TestCase):
             self.assertNotIn("#002", out)     # filtered by status
             self.assertNotIn("#003", out)     # filtered by match
 
+    def nested(self, d, **over):
+        """cmd_list in its default nested-forest view; override per test."""
+        a = dict(dir=str(d), status=None, kind=None, priority=None, label=None,
+                 parent=None, match=None, sort=None, blocked=False, orphan=False,
+                 flat=False, id=None)
+        a.update(over)
+        return self.cap(self.t.cmd_list, ns(**a))
+
+    def write_index(self, d, *objs):
+        """Write a raw index.jsonl (for fixtures the verbs refuse to create, e.g.
+        a dangling parent or a parent cycle)."""
+        import json
+        (d / "index.jsonl").write_text("\n".join(json.dumps(o) for o in objs) + "\n")
+
+    def test_list_nested_by_default_indents_children(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Epic", kind="epic")             # 1 root
+            self.seed(d, "Child", parent=1)               # 2 child
+            out = self.nested(d)
+            self.assertIn("Epic", self.row_for(out, 1))
+            self.assertIn("└─ Child", self.row_for(out, 2))   # sole child -> last branch
+            self.assertNotIn("└─", self.row_for(out, 1))      # root carries no connector
+            self.assertNotIn("├─", self.row_for(out, 1))
+
+    def test_list_flat_has_no_connectors(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Epic", kind="epic")
+            self.seed(d, "Child", parent=1)
+            out = self.listing(d)                          # flat=True
+            self.assertIn("#001", out)
+            self.assertIn("#002", out)
+            self.assertNotIn("└─", out)
+            self.assertNotIn("├─", out)
+
+    def test_list_nested_child_omits_parent_pointer_tag(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Epic", kind="epic")
+            self.seed(d, "Child", parent=1)
+            out = self.nested(d)
+            self.assertNotIn("↳", self.row_for(out, 2))   # the connector already shows the parent
+
+    def test_list_flat_child_keeps_parent_pointer_tag(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Epic", kind="epic")
+            self.seed(d, "Child", parent=1)
+            out = self.listing(d)                          # flat: no indentation, so keep ↳
+            self.assertIn("↳001", self.row_for(out, 2))
+
+    def test_list_positional_id_roots_subtree(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Epic", kind="epic")             # 1
+            self.seed(d, "Child", parent=1)               # 2
+            self.seed(d, "Other")                         # 3 unrelated
+            out = self.nested(d, id=1)
+            self.assertIn("#001", out)
+            self.assertIn("#002", out)
+            self.assertEqual("", self.row_for(out, 3))    # outside the subtree
+
+    def test_list_filter_keeps_ancestor_spine(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Epic", kind="epic")             # 1 ancestor (does not match)
+            self.seed(d, "Child", parent=1)               # 2 matches
+            out = self.nested(d, match="child")
+            self.assertIn("#001", self.row_for(out, 1))   # spine kept as context
+            self.assertIn("Child", self.row_for(out, 2))
+
+    def test_list_filter_dims_nonmatching_ancestor(self):
+        self.t._use_color = lambda: True
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Epic", kind="epic")             # 1 ancestor, stays backlog
+            self.seed(d, "Child", parent=1)               # 2
+            self.t.cmd_mv(ns(dir=str(d), id=2, status="ongoing", resolution=None))
+            out = self.nested(d, match="child")
+            self.assertTrue(self.row_for(out, 1).startswith("\033[2m"))    # dimmed ancestor
+            self.assertFalse(self.row_for(out, 2).startswith("\033[2m"))   # matched row colored
+
+    def test_list_sort_orders_siblings_within_parent(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Epic", kind="epic")                 # 1
+            self.seed(d, "Low child", parent=1, priority="low")    # 2
+            self.seed(d, "High child", parent=1, priority="high")  # 3
+            out = self.nested(d)                              # default id
+            self.assertLess(out.index("#002"), out.index("#003"))
+            out = self.nested(d, sort="priority")             # high before low among siblings
+            self.assertLess(out.index("#003"), out.index("#002"))
+
+    def test_list_dangling_parent_renders_as_root(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.write_index(d, {"id": 2, "slug": "child", "title": "Orphanish",
+                                 "kind": "task", "status": "backlog",
+                                 "priority": "high", "parent": 99})
+            out = self.nested(d)                              # parent 99 missing
+            self.assertIn("#002", out)                        # promoted to a root, no crash
+            self.assertNotIn("└─", self.row_for(out, 2))
+
+    def test_list_parent_cycle_does_not_crash(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.write_index(d,
+                {"id": 1, "slug": "a", "title": "A", "kind": "task",
+                 "status": "backlog", "priority": "high", "parent": 2},
+                {"id": 2, "slug": "b", "title": "B", "kind": "task",
+                 "status": "backlog", "priority": "high", "parent": 1})
+            out = self.nested(d)                              # must return, not hang/raise
+            self.assertIsInstance(out, str)
+
+    def test_tree_is_alias_for_list(self):
+        parser = self.t.build_parser()
+        flat = parser.parse_args(["list"])
+        treed = parser.parse_args(["tree", "5"])
+        self.assertIs(treed.func, flat.func)                 # tree dispatches to cmd_list
+        self.assertEqual(treed.id, 5)                        # carries the positional id
+
     def test_tree_shows_children(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d, "Epic", kind="epic")
             self.seed(d, "Child", parent=1)
-            out = self.cap(self.t.cmd_tree, ns(dir=str(d), id=None))
+            out = self.nested(d)                              # tree is now the nested list
             self.assertIn("Epic", out)
             self.assertIn("Child", out)
 

@@ -5,9 +5,9 @@
 
 | State | Count |
 |---|---:|
-| backlog | 15 |
+| backlog | 14 |
 | ongoing | 0 |
-| done | 24 |
+| done | 25 |
 | **total** | **39** |
 
 ## Hierarchies
@@ -28,11 +28,11 @@
 
 - [x] [#027 Harden Issue.from_dict with a structural/type contract](done/027-harden-issue-from-dict-with-a-structural-type-contract.md)
 
-### [#031 Merge tree into list: structure-aware browse verb](backlog/031-merge-tree-into-list-structure-aware-browse-verb.md) — 50% (2/4 pts · 2/4 done) · _high_ · backlog
+### [#031 Merge tree into list: structure-aware browse verb](backlog/031-merge-tree-into-list-structure-aware-browse-verb.md) — 75% (3/4 pts · 3/4 done) · _high_ · backlog
 
 - [x] [#036 list: extract shared row renderer with connector prefix](done/036-list-extract-shared-row-renderer-with-connector-prefix.md)
 - [x] [#037 Graph: add ancestor-closure, match-set and sibling-sort traversal](done/037-graph-add-ancestor-closure-match-set-and-sibling-sort-traversal.md)
-- [ ] [#038 list: nested forest default (--flat, positional id, dimmed ancestors, tree alias)](backlog/038-list-nested-forest-default-flat-positional-id-dimmed-ancestors-tree-alias.md) _(backlog)_
+- [x] [#038 list: nested forest default (--flat, positional id, dimmed ancestors, tree alias)](done/038-list-nested-forest-default-flat-positional-id-dimmed-ancestors-tree-alias.md)
 - [ ] [#039 list: argparse/help/README and acceptance tests for the merged verb](backlog/039-list-argparse-help-readme-and-acceptance-tests-for-the-merged-verb.md) _(backlog)_
 
 ### [#032 Introduce a derived Graph view over the loaded index](done/032-introduce-a-derived-graph-view-over-the-loaded-index.md) — 100% (3/3 pts · 3/3 done) · _medium_ · done

@@ -723,19 +723,17 @@ def label_tag(r: Issue) -> str:
     return " [" + " ".join(labels) + "]" if labels else ""
 
 
-def block_annotations(ctx: Ctx, r: Issue, by_id: dict[int, Issue],
-                      reverse: dict[int, list[int]]) -> str:
+def block_annotations(g: Graph, r: Issue) -> str:
     """A dim ` needs #… blocks #…` suffix exposing the blocking graph in row form.
     `needs` lists the row's non-terminal dependencies (mirrors `is_blocked`, so a done
     blocker drops off — the block is cleared). `blocks` lists the issues that depend on
     this row, shown only while the row is itself non-terminal (a done task blocks nothing)."""
     parts = []
-    needs = [d for d in sorted(r.depends_on)
-             if d in by_id and not is_terminal(ctx.cfg, by_id[d].status)]
+    needs = [d.id for d in g.requires_of(r) if not g.is_terminal(d)]
     if needs:
         parts.append("needs " + " ".join(f"#{i:03d}" for i in needs))
-    if not is_terminal(ctx.cfg, r.status):
-        blocks = sorted(reverse.get(r.id, []))
+    if not g.is_terminal(r):
+        blocks = [d.id for d in g.dependents_of(r)]
         if blocks:
             parts.append("blocks " + " ".join(f"#{i:03d}" for i in blocks))
     return paint(" " + "  ".join(parts), "dim") if parts else ""
@@ -1155,14 +1153,33 @@ def cmd_show(args) -> None:
     print(issue_path(ctx, row).read_text())
 
 
+def forest_layout(g: Graph, roots, shown: set, key):
+    """Depth-first forest over the `shown` id set: returns (ordered_rows, prefix_by_id).
+    Roots render with no connector; descendants get `walk_tree`-style branch prefixes.
+    Siblings (and roots) are ordered by `key`. Cycle-guarded via `seen`."""
+    ordered, prefix_of = [], {}
+
+    def walk(nodes, pfx, seen):
+        nodes = [n for n in nodes if n.id in shown]
+        for i, n in enumerate(nodes):
+            last = i == len(nodes) - 1
+            ordered.append(n)
+            prefix_of[n.id] = pfx + ("└─ " if last else "├─ ")
+            if n.id in seen:
+                continue
+            ext = "   " if last else "│  "
+            walk(g.children_of(n, key=key), pfx + ext, seen | {n.id})
+
+    for root in sorted(roots, key=key):
+        ordered.append(root)
+        prefix_of[root.id] = ""
+        walk(g.children_of(root, key=key), "", {root.id})
+    return ordered, prefix_of
+
+
 def cmd_list(args) -> None:
     ctx = build_ctx_or_die(args)
-    rows = sorted(load_index(ctx), key=get_id)
-    by_id = {r.id: r for r in rows}
-    reverse: dict[int, list[int]] = {}          # blocker id -> ids that depend on it
-    for r in rows:
-        for dep in r.depends_on:
-            reverse.setdefault(dep, []).append(r.id)
+    g = load_graph(ctx)
 
     keep_st, drop_st = parse_status_filter(args.status)
     match = (getattr(args, "match", None) or "").lower()
@@ -1177,49 +1194,71 @@ def cmd_list(args) -> None:
                 and (not getattr(args, "label", None) or args.label in (r.labels or []))
                 and (args.parent is None or r.parent == args.parent)
                 and (not match or match in r.title.lower())
-                and (not only_blocked or is_blocked(ctx.cfg, r, by_id))
+                and (not only_blocked or g.is_blocked(r))
                 and (not only_orphan or r.parent is None))
 
-    rows = [r for r in rows if keep(r)]
-
-    sort = getattr(args, "sort", "id")
+    sort = getattr(args, "sort", None) or "id"
     sort_keys = {
         "priority": lambda r: (priority_rank(ctx.cfg, r.priority), r.id),
         "points": lambda r: (-r.points, r.id),
         "created": lambda r: (r.created or "", r.id),
         "id": get_id,
     }
-    if sort in sort_keys:
-        rows.sort(key=sort_keys[sort])
+    key = sort_keys.get(sort, get_id)
+    annotate = lambda r: block_annotations(g, r)
 
-    print_rows(ctx, rows, annotate=lambda r: block_annotations(ctx, r, by_id, reverse))
+    if getattr(args, "flat", False):
+        rows = sorted([r for r in g.rows if keep(r)], key=key)
+        print_rows(ctx, rows, annotate=annotate)
+        return
+
+    # nested forest: show a node iff it matches or has a matching descendant; the
+    # non-matching ancestors are kept as dimmed context. Siblings sort by `key`.
+    shown, dim = g.match_closure(keep)
+    root_id = getattr(args, "id", None)
+    if root_id is not None:
+        root = g.row(root_id)
+        roots = [root] if root.id in shown else []
+    else:
+        roots = [r for r in g.rows
+                 if (r.parent is None or r.parent not in g.by_id) and r.id in shown]
+    ordered, prefix_of = forest_layout(g, roots, shown, key)
+    print_rows(ctx, ordered, annotate=annotate,
+               prefix=lambda r: prefix_of[r.id], dim=lambda r: r.id in dim)
 
 
-def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None) -> None:
+def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None) -> None:
     """Render issues as aligned one-line summaries (shared by `list` and `ready`).
     `annotate`, if given, maps a row to a trailing suffix (e.g. the blocking graph);
     callers that want terse output (`ready`/`next`) simply omit it. `prefix`, if given,
     maps a row to a connector string placed immediately before the title — empty for the
-    flat view, `walk_tree`-style connectors (`├─ `/`└─ `) for the nested forest."""
+    flat view, `walk_tree`-style connectors (`├─ `/`└─ `) for the nested forest. `dim`,
+    if given, marks rows shown only as ancestor context (in a filtered forest); their
+    whole line is dimmed instead of per-field colored."""
     if not rows:
         return
     sw = max(len(r.status) for r in rows)
     pw = max(len(r.priority) for r in rows)
     for r in rows:
+        pre = prefix(r) if prefix else ""
         tags = []
         if r.kind == "epic":
             tags.append("EPIC")
-        if r.parent:
+        if r.parent and not pre:  # the connector already shows parentage when nested
             tags.append(f"↳{r.parent:03d}")
         tags.extend(r.labels or [])
-        tagstr = paint(" [" + " ".join(tags) + "]", "dim") if tags else ""
+        plain_tags = " [" + " ".join(tags) + "]" if tags else ""
+        ann = annotate(r) if annotate else ""
+        if dim and dim(r):  # ancestor context: whole line dimmed, no per-field color
+            body = f"{status_icon(ctx, r.status)} #{r.id:03d} {r.status:<{sw}}  {r.priority:<{pw}}  {pre}{r.title}{plain_tags}"
+            print(paint(body, "dim") + ann)
+            continue
         codes = status_codes(ctx.cfg, r.status)
         icon = paint(status_icon(ctx, r.status), *codes)
         iid = paint(f"#{r.id:03d}", "bold")
         status = paint(f"{r.status:<{sw}}", *codes)
         prio = paint(f"{r.priority:<{pw}}", *priority_codes(ctx.cfg, r.priority))
-        pre = prefix(r) if prefix else ""
-        ann = annotate(r) if annotate else ""
+        tagstr = paint(plain_tags, "dim") if tags else ""
         print(f"{icon} {iid} {status}  {prio}  {pre}{r.title}{tagstr}{ann}")
 
 
@@ -1235,30 +1274,6 @@ def cmd_ready(args) -> None:
 
 def cmd_next(args) -> None:
     cmd_ready(ns_like(args, next=True))
-
-
-def cmd_tree(args) -> None:
-    ctx = build_ctx_or_die(args)
-    rows = load_index(ctx)
-    kids_of = {}
-    for r in rows:
-        if r.parent is not None:
-            kids_of.setdefault(r.parent, []).append(r)
-
-    def children(issue: Issue):
-        return sorted(kids_of.get(issue.id, []), key=get_id)
-
-    label = lambda x: node_label(ctx, x)
-    if args.id is not None:
-        roots = [get_row(rows, args.id)]
-    else:
-        roots = sorted([r for r in rows if r.parent is None and kids_of.get(r.id)], key=get_id)
-        if not roots:
-            print("no hierarchies (no epic has child issues yet)")
-            return
-    for root in roots:
-        print(label(root))
-        walk_tree(children(root), children, label, seen=frozenset({root.id}))
 
 
 def cmd_deps(args) -> None:
@@ -1614,11 +1629,18 @@ def build_parser() -> argparse.ArgumentParser:
     sh.add_argument("--json", action="store_true", help="raw JSON metadata (machine-readable)")
     sh.set_defaults(func=cmd_show)
 
-    ls = sub.add_parser("list", help="list issues (filterable)",
-                        description="List issues, optionally filtered; prints nothing if nothing matches. "
+    ls = sub.add_parser("list", aliases=["tree"], help="browse issues as a nested forest (filterable)",
+                        description="Browse issues as a nested forest: every issue, children nested "
+                                    "under their parent. Pass an id to root the forest at one issue's "
+                                    "subtree; --flat for a flat, globally-sorted list. Filters select "
+                                    "the matches; their ancestor spine is kept as dimmed context. "
                                     "Rows carry a dim blocking note: 'needs #NNN' for each open "
                                     "(non-terminal) dependency, and 'blocks #NNN' for the issues "
-                                    "waiting on this one. A note clears once the blocker is done.")
+                                    "waiting on this one. A note clears once the blocker is done. "
+                                    "`tree` is an alias for this command.")
+    ls.add_argument("id", type=int, nargs="?", help="root the forest at this issue's subtree")
+    ls.add_argument("--flat", action="store_true",
+                    help="flat, globally-sorted list instead of the nested forest")
     ls.add_argument("--status",
                     help="filter by status; comma-lists alternatives and a leading "
                          "'!' negates (e.g. 'ongoing,backlog' or '!done')")
@@ -1647,12 +1669,6 @@ def build_parser() -> argparse.ArgumentParser:
                         description="Print only the highest-ranked ready issue "
                                     "(shorthand for `ready --next`).")
     nx.set_defaults(func=cmd_next)
-
-    tr = sub.add_parser("tree", help="print an issue's child hierarchy",
-                        description="Print the epic/child hierarchy for an issue, "
-                                    "or every hierarchy if no id is given.")
-    tr.add_argument("id", type=int, nargs="?", help="root issue id (default: all epics with children)")
-    tr.set_defaults(func=cmd_tree)
 
     dz = sub.add_parser(
         "deps", help="show what an issue requires and what it blocks",
