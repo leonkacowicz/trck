@@ -18,7 +18,23 @@ class TestConfigDefaults(unittest.TestCase):
             self.assertEqual(self.t.initial_status(cfg), "backlog")
             self.assertTrue(self.t.is_terminal(cfg, "done"))
             self.assertFalse(self.t.is_terminal(cfg, "ongoing"))
-            self.assertEqual(cfg["priorities"][0], "high")
+            self.assertEqual(cfg["priorities"],
+                             ["urgent", "high", "medium", "low", "lowest"])
+            self.assertEqual(cfg["kinds"],
+                             ["task", "epic", "bug", "story", "investigation"])
+
+    def test_default_priority_explicit_invalid_and_fallback(self):
+        dp = self.t.default_priority
+        # explicit, valid -> wins
+        self.assertEqual(dp({"priorities": ["a", "b", "c"],
+                             "default_priority": "b"}), "b")
+        # explicit, not in list -> median fallback
+        self.assertEqual(dp({"priorities": ["a", "b", "c"],
+                             "default_priority": "z"}), "b")
+        # no key -> median of the configured list
+        self.assertEqual(dp({"priorities": ["p0", "p1"]}), "p1")
+        # shipped defaults resolve to medium
+        self.assertEqual(dp(self.t.DEFAULT_CONFIG), "medium")
 
     def test_partial_config_overrides_only_given_keys(self):
         with TemporaryDirectory() as tmp:

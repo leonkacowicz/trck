@@ -25,6 +25,12 @@ class TestHelp(unittest.TestCase):
                       "TYPICAL FLOW", "trck.json"):
             self.assertIn(token, h)
 
+    def test_top_level_epilog_teaches_recommended_usage(self):
+        h = norm(self.parser.format_help())
+        for token in ("RECOMMENDED USAGE", "decomposition, not categorization",
+                      "Litmus test", "MUST", "SHOULD"):
+            self.assertIn(token, h)
+
     def test_new_help_documents_flags_and_example(self):
         h = self.sub_help("new")
         self.assertIn("comma-separated", h)        # --depends

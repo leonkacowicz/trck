@@ -53,8 +53,9 @@ DEFAULT_CONFIG = {
         {"name": "done", "role": "terminal"},
     ],
     "aliases": {"start": "ongoing", "done": "done"},
-    "priorities": ["high", "medium", "low"],
-    "kinds": ["task", "epic"],
+    "priorities": ["urgent", "high", "medium", "low", "lowest"],
+    "default_priority": "medium",
+    "kinds": ["task", "epic", "bug", "story", "investigation"],
     "resolutions": ["superseded", "wontfix", "duplicate"],
 }
 
@@ -86,6 +87,18 @@ def status_role(cfg: dict, name: str) -> str | None:
         if s["name"] == name:
             return s.get("role")
     return None
+
+
+def default_priority(cfg: dict) -> str:
+    """The priority `trck new` assigns when none is given. An explicit
+    `default_priority` wins when it's one of the configured priorities;
+    otherwise fall back to the median of the list (a sensible middle, so
+    repos that override `priorities` without setting a default still work)."""
+    prios = cfg.get("priorities") or []
+    dp = cfg.get("default_priority")
+    if dp in prios:
+        return dp
+    return prios[len(prios) // 2] if prios else ""
 
 
 def initial_status(cfg: dict) -> str:
@@ -885,7 +898,7 @@ def cmd_new(args) -> None:
     slug = args.slug or slugify(args.title)
     if not SLUG_RE.match(slug):
         die(f"computed slug '{slug}' is invalid; pass --slug")
-    priority = args.priority or ctx.cfg["priorities"][0]
+    priority = args.priority or default_priority(ctx.cfg)
     if priority not in ctx.cfg["priorities"]:
         die(f"bad priority '{priority}' (configured: {', '.join(ctx.cfg['priorities'])})")
     rawpoints = getattr(args, "points", None)
@@ -1391,6 +1404,17 @@ MODEL
   config      the status vocabulary, aliases, priorities, kinds, and
               resolutions all come from trck.json (defaults:
               backlog -> ongoing -> done; start=ongoing, done=done).
+
+RECOMMENDED USAGE
+  parent      decomposition, not categorization: make B a child of A only when
+              the children break A down into sub-tasks -- A *is* the sum of its
+              children. Litmus test: A can be marked done exactly when all its
+              children are. A generic bucket of similar tasks is a LABEL, not a
+              parent.
+  dependency  hard ordering (MUST): `A depends on B` means B must be done before
+              A -- B blocks A; ready/next hide a task until its deps are met.
+  priority    soft ordering (SHOULD): a preference for what to pick up next, not
+              a constraint -- nothing is blocked.
 
 TYPICAL FLOW
   trck new "Add CSV export" --priority high     # create; prints the new id

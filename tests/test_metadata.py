@@ -44,6 +44,12 @@ class TestMetadata(unittest.TestCase):
             self.seed(d)
             self.assertEqual(self.rows(d)[1].kind, "task")
 
+    def test_new_priority_defaults_to_medium(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, priority=None)
+            self.assertEqual(self.rows(d)[1].priority, "medium")
+
     def test_new_kind_sets_configured_kind(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})

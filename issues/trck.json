@@ -21,14 +21,18 @@
     "done": "done"
   },
   "priorities": [
+    "urgent",
     "high",
     "medium",
-    "low"
+    "low",
+    "lowest"
   ],
   "kinds": [
     "task",
     "epic",
-    "bug"
+    "bug",
+    "story",
+    "investigation"
   ],
   "resolutions": [
     "superseded",

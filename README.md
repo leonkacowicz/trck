@@ -66,8 +66,9 @@ Zero config works out of the box. To customize, edit `trck.json`:
                    {"name": "ongoing"},
                    {"name": "done",    "role": "terminal"} ],
   "aliases":     { "start": "ongoing", "done": "done" },
-  "priorities":  ["high", "medium", "low"],
-  "kinds":       ["task", "epic"],
+  "priorities":  ["urgent", "high", "medium", "low", "lowest"],
+  "default_priority": "medium",
+  "kinds":       ["task", "epic", "bug", "story", "investigation"],
   "resolutions": ["superseded", "wontfix", "duplicate"]
 }
 ```
@@ -82,6 +83,11 @@ groups by that order. Semantics attach to **roles**, not names:
 The generic `trck mv NNN <status>` moves between any statuses; `start`/`done` are convenience
 aliases resolved through `aliases`. So a repo can use, say, `todo → doing → review → shipped`
 and either define its own aliases or just use `mv`.
+
+`priorities` is **ordered by precedence** — first is highest — and that order drives
+`list --sort priority`, `ready`, and `next`. The priority `trck new` assigns when you don't
+pass `--priority` is set separately by `default_priority` (default `medium`); if omitted it
+falls back to the middle of the list.
 
 ## Common verbs
 
@@ -105,6 +111,37 @@ up in `show`, `list`, `tree`, and `SUMMARY.md`.
 Output is colorized when stdout is a terminal (disable with `NO_COLOR=1`, force with
 `FORCE_COLOR=1`); piped/redirected output stays plain for scripts and agents. `trck show`
 prints a human-readable summary by default — add `--json` for machine-readable metadata.
+
+## Recommended usage
+
+trck gives you four ways to relate issues — **parent/child**, **labels**, **dependencies**,
+and **priorities**. They mean different things; using the right one keeps the tracker honest.
+
+### Parent / child = decomposition, not categorization
+
+Make one issue the **child** of another only when the children are a genuine **break-down of
+the parent into sub-tasks** — the parent *is* the sum of its children.
+
+- A parent is **not** a generic bucket of similar tasks. For grouping similar work, use
+  **labels** instead.
+- A parent should be a **single, clear, achievable goal** that you split into the steps
+  needed to reach it.
+- **Litmus test:** the parent can be marked *done* exactly when all its children are done. If
+  finishing the children wouldn't justify closing the parent, it isn't a parent — it's a label.
+
+### Dependencies = hard ordering (MUST)
+
+A **dependency** encodes that one task *must* be completed before another can be:
+`A depends on B` means **B blocks A**. It's a real constraint — `trck ready` and `trck next`
+will not surface a task until its dependencies are satisfied.
+
+### Priorities = soft ordering (SHOULD)
+
+A **priority** expresses that a task *should* be done before another — an ordering
+preference, not a constraint. Nothing is blocked; it just influences what to pick up next.
+
+> Rule of thumb: decomposition → **parent/child**; "a category of similar things" →
+> **labels**; "must come first" → **dependency**; "ought to come first" → **priority**.
 
 ## Develop
 
