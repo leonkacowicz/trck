@@ -374,6 +374,45 @@ class TestRead(unittest.TestCase):
             self.assertIn("Epic", out)
             self.assertIn("Child", out)
 
+    def test_list_argparse_exposes_flat_and_id(self):
+        parser = self.t.build_parser()
+        a = parser.parse_args(["list", "--flat", "3"])
+        self.assertTrue(a.flat)
+        self.assertEqual(a.id, 3)
+        self.assertIs(a.func, self.t.cmd_list)
+
+    def test_list_help_mentions_nested_and_flat(self):
+        parser = self.t.build_parser()
+        buf = io.StringIO()
+        with redirect_stdout(buf), self.assertRaises(SystemExit):
+            parser.parse_args(["list", "--help"])
+        help_text = buf.getvalue()
+        self.assertIn("nested", help_text)
+        self.assertIn("--flat", help_text)
+
+    def test_list_sort_orders_siblings_recursively(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Epic", kind="epic")                      # 1
+            self.seed(d, "Mid", parent=1)                          # 2 (has its own children)
+            self.seed(d, "Low grand", parent=2, priority="low")    # 3
+            self.seed(d, "High grand", parent=2, priority="high")  # 4
+            out = self.nested(d, sort="priority")
+            # the sort reaches the grandchild sibling group, not just the top level
+            self.assertLess(out.index("#004"), out.index("#003"))
+
+    def test_list_dependency_cycle_does_not_crash(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.write_index(d,
+                {"id": 1, "slug": "a", "title": "A", "kind": "task",
+                 "status": "backlog", "priority": "high", "depends_on": [2]},
+                {"id": 2, "slug": "b", "title": "B", "kind": "task",
+                 "status": "backlog", "priority": "high", "depends_on": [1]})
+            out = self.nested(d)                              # dep cycle: must render, not hang
+            self.assertIn("#001", out)
+            self.assertIn("#002", out)
+
     def test_ready_lists_unblocked_not_done_leaves(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})

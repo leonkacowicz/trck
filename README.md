@@ -27,8 +27,9 @@ trck init                       # scaffold ./issues (config + a vendored copy of
 trck new "Fix login bug" --priority high
 trck start 1                    # move to the configured 'start' status (default: ongoing)
 trck done 1 --resolution wontfix
-trck list
-trck tree
+trck list                       # nested forest: every issue, children under their parent
+trck list --flat                # flat, globally-sorted list
+trck tree 1                     # alias for `list 1`: root the forest at one issue's subtree
 ```
 
 `trck` finds its tracker by walking up from your current directory to the folder containing
@@ -94,6 +95,14 @@ falls back to the middle of the list.
 `new` · `mv` · `start` · `done` · `set` · `dep` · `label` · `show` · `list` · `ready` ·
 `next` · `tree` · `deps` · `check` · `summary` · `normalize` · `install-hook` · `init` ·
 `update` · `version`. Run `trck --help` (or `trck <verb> --help`) for details.
+
+`list` is the structure-aware browse verb. By default it prints a **nested forest** — every
+issue, with children nested under their parent and siblings ordered by `--sort` (default id).
+`--flat` gives a flat, globally-sorted list instead; a positional id (`trck list 4`) roots the
+forest at that issue's subtree. Filters (`--status`, `--kind`, `--priority`, `--label`,
+`--match`, `--parent`, `--blocked`, `--orphan`) select the matches and the forest fills in
+their **ancestor spine** as dimmed context, so a matched child never floats away from its
+parent. `tree` is an alias for `list` (`trck tree 4` == `trck list 4`).
 
 `ready` lists issues whose dependencies are all satisfied (add `--next` for just the top
 pick); `next` prints the single best issue to work on next; `normalize` rewrites
