@@ -15,7 +15,7 @@ tracker can't drift. `trck` is the generalized successor to the original `track`
 ## Install (global)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/leonkacowicz/trck/v0.1.2/trck \
+curl -fsSL https://raw.githubusercontent.com/leonkacowicz/trck/main/trck \
   -o ~/.local/bin/trck && chmod +x ~/.local/bin/trck
 ```
 
@@ -85,9 +85,13 @@ and either define its own aliases or just use `mv`.
 
 ## Common verbs
 
-`new` · `mv` · `start` · `done` · `set` · `dep` · `label` · `show` · `list` ·
-`tree` · `deps` · `check` · `summary` · `install-hook` · `init` · `update` · `version`. Run
-`trck --help` (or `trck <verb> --help`) for details.
+`new` · `mv` · `start` · `done` · `set` · `dep` · `label` · `show` · `list` · `ready` ·
+`next` · `tree` · `deps` · `check` · `summary` · `normalize` · `install-hook` · `init` ·
+`update` · `version`. Run `trck --help` (or `trck <verb> --help`) for details.
+
+`ready` lists issues whose dependencies are all satisfied (add `--next` for just the top
+pick); `next` prints the single best issue to work on next; `normalize` rewrites
+`index.jsonl` in canonical slim form.
 
 Epics: create an epic with `--kind epic`, attach children with `--parent NNN`; the epic's
 rollup `%` is computed from its children and shown in `SUMMARY.md`. (Any issue can be a
