@@ -133,7 +133,10 @@ the parent into sub-tasks** — the parent *is* the sum of its children.
 
 A **dependency** encodes that one task *must* be completed before another can be:
 `A depends on B` means **B blocks A**. It's a real constraint — `trck ready` and `trck next`
-will not surface a task until its dependencies are satisfied.
+will not surface a task until its dependencies are satisfied. `trck list` makes the graph
+visible inline: each row carries a dim `needs #NNN` for every open (non-terminal) blocker and
+`blocks #NNN` for the issues waiting on it; both clear automatically once the blocker is done.
+For one issue's full picture, `trck deps NNN` shows what it requires and what it blocks.
 
 ### Priorities = soft ordering (SHOULD)
 

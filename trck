@@ -641,6 +641,24 @@ def label_tag(r: Issue) -> str:
     return " [" + " ".join(labels) + "]" if labels else ""
 
 
+def block_annotations(ctx: Ctx, r: Issue, by_id: dict[int, Issue],
+                      reverse: dict[int, list[int]]) -> str:
+    """A dim ` needs #… blocks #…` suffix exposing the blocking graph in row form.
+    `needs` lists the row's non-terminal dependencies (mirrors `is_blocked`, so a done
+    blocker drops off — the block is cleared). `blocks` lists the issues that depend on
+    this row, shown only while the row is itself non-terminal (a done task blocks nothing)."""
+    parts = []
+    needs = [d for d in sorted(r.depends_on)
+             if d in by_id and not is_terminal(ctx.cfg, by_id[d].status)]
+    if needs:
+        parts.append("needs " + " ".join(f"#{i:03d}" for i in needs))
+    if not is_terminal(ctx.cfg, r.status):
+        blocks = sorted(reverse.get(r.id, []))
+        if blocks:
+            parts.append("blocks " + " ".join(f"#{i:03d}" for i in blocks))
+    return paint(" " + "  ".join(parts), "dim") if parts else ""
+
+
 def node_label(ctx: Ctx, r: Issue) -> str:
     tag = " ·epic·" if r.kind == "epic" else ""
     icon = paint(status_icon(ctx, r.status), *status_codes(ctx.cfg, r.status))
@@ -1057,6 +1075,10 @@ def cmd_list(args) -> None:
     ctx = build_ctx_or_die(args)
     rows = sorted(load_index(ctx), key=get_id)
     by_id = {r.id: r for r in rows}
+    reverse: dict[int, list[int]] = {}          # blocker id -> ids that depend on it
+    for r in rows:
+        for dep in r.depends_on:
+            reverse.setdefault(dep, []).append(r.id)
 
     keep_st, drop_st = parse_status_filter(args.status)
     match = (getattr(args, "match", None) or "").lower()
@@ -1086,11 +1108,13 @@ def cmd_list(args) -> None:
     if sort in sort_keys:
         rows.sort(key=sort_keys[sort])
 
-    print_rows(ctx, rows)
+    print_rows(ctx, rows, annotate=lambda r: block_annotations(ctx, r, by_id, reverse))
 
 
-def print_rows(ctx: Ctx, rows: list[Issue]) -> None:
-    """Render issues as aligned one-line summaries (shared by `list` and `ready`)."""
+def print_rows(ctx: Ctx, rows: list[Issue], annotate=None) -> None:
+    """Render issues as aligned one-line summaries (shared by `list` and `ready`).
+    `annotate`, if given, maps a row to a trailing suffix (e.g. the blocking graph);
+    callers that want terse output (`ready`/`next`) simply omit it."""
     if not rows:
         return
     sw = max(len(r.status) for r in rows)
@@ -1108,7 +1132,8 @@ def print_rows(ctx: Ctx, rows: list[Issue]) -> None:
         iid = paint(f"#{r.id:03d}", "bold")
         status = paint(f"{r.status:<{sw}}", *codes)
         prio = paint(f"{r.priority:<{pw}}", *priority_codes(ctx.cfg, r.priority))
-        print(f"{icon} {iid} {status}  {prio}  {r.title}{tagstr}")
+        ann = annotate(r) if annotate else ""
+        print(f"{icon} {iid} {status}  {prio}  {r.title}{tagstr}{ann}")
 
 
 def cmd_ready(args) -> None:
@@ -1523,7 +1548,10 @@ def build_parser() -> argparse.ArgumentParser:
     sh.set_defaults(func=cmd_show)
 
     ls = sub.add_parser("list", help="list issues (filterable)",
-                        description="List issues, optionally filtered; prints nothing if nothing matches.")
+                        description="List issues, optionally filtered; prints nothing if nothing matches. "
+                                    "Rows carry a dim blocking note: 'needs #NNN' for each open "
+                                    "(non-terminal) dependency, and 'blocks #NNN' for the issues "
+                                    "waiting on this one. A note clears once the blocker is done.")
     ls.add_argument("--status",
                     help="filter by status; comma-lists alternatives and a leading "
                          "'!' negates (e.g. 'ongoing,backlog' or '!done')")

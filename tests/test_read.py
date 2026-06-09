@@ -1,4 +1,5 @@
 import io
+import re
 import unittest
 from contextlib import redirect_stdout
 from tempfile import TemporaryDirectory
@@ -131,11 +132,90 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Free")                           # 3 no deps
             out = self.listing(d, blocked=True)
             self.assertIn("#002", out)
-            self.assertNotIn("#001", out)
-            self.assertNotIn("#003", out)
+            # only #002 is listed as a row; #001 appears only inside its `needs` note
+            self.assertEqual("", self.row_for(out, 1))
+            self.assertEqual("", self.row_for(out, 3))
             # once the dependency is terminal, nothing is blocked
             self.t.cmd_mv(ns(dir=str(d), id=1, status="done", resolution=None))
             self.assertEqual(self.listing(d, blocked=True), "")
+
+    @staticmethod
+    def row_for(out, issue_id):
+        """The output line whose OWN id (the first #NNN on the line, the id column) is
+        `issue_id` — not a line that merely mentions it in a needs/blocks annotation."""
+        tok = f"#{issue_id:03d}"
+        for ln in out.splitlines():
+            m = re.search(r"#\d{3}", ln)
+            if m and m.group(0) == tok:
+                return ln
+        return ""
+
+    def test_list_annotates_blocked_row_with_needs(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Dep")                            # 1 backlog (non-terminal)
+            self.seed(d, "Blocked", depends="1")           # 2 depends on open #1
+            out = self.listing(d)
+            self.assertIn("needs #001", self.row_for(out, 2))
+
+    def test_list_needs_omits_terminal_blocker(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Dep")                            # 1
+            self.seed(d, "Blocked", depends="1")           # 2
+            self.t.cmd_mv(ns(dir=str(d), id=1, status="done", resolution=None))
+            out = self.listing(d)
+            # block cleared: the dependent no longer advertises a blocker
+            self.assertNotIn("needs", self.row_for(out, 2))
+
+    def test_list_needs_lists_only_open_blockers(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "DepA")                           # 1
+            self.seed(d, "DepB")                           # 2
+            self.seed(d, "Blocked", depends="1,2")         # 3 depends on both
+            self.t.cmd_mv(ns(dir=str(d), id=1, status="done", resolution=None))
+            line = self.row_for(self.listing(d), 3)
+            self.assertIn("needs #002", line)              # still open
+            self.assertNotIn("#001", line)                 # done -> dropped
+
+    def test_list_annotates_blocker_row_with_blocks(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Dep")                            # 1 (the blocker)
+            self.seed(d, "Blocked", depends="1")           # 2 depends on #1
+            line = self.row_for(self.listing(d), 1)
+            self.assertIn("blocks #002", line)
+
+    def test_list_blocks_cleared_when_blocker_done(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Dep")                            # 1
+            self.seed(d, "Blocked", depends="1")           # 2
+            self.t.cmd_mv(ns(dir=str(d), id=1, status="done", resolution=None))
+            out = self.listing(d)
+            # a done task blocks nothing — both sides of the edge go quiet
+            self.assertNotIn("blocks", self.row_for(out, 1))
+            self.assertNotIn("needs", self.row_for(out, 2))
+
+    def test_list_block_annotations_are_plain_without_color(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Dep")                            # 1
+            self.seed(d, "Blocked", depends="1")           # 2
+            out = self.listing(d)
+            self.assertIn("needs #001", out)
+            self.assertNotIn("\x1b[", out)                 # no ANSI when color is off
+
+    def test_ready_has_no_block_annotations(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Dep")                            # 1 ready, blocks #2
+            self.seed(d, "Blocked", depends="1")           # 2 blocked (absent from ready)
+            out = self.ready(d)
+            self.assertIn("#001", out)
+            self.assertNotIn("blocks", out)                # ready stays terse
+            self.assertNotIn("needs", out)
 
     def test_list_orphan_only(self):
         with TemporaryDirectory() as tmp:
