@@ -135,6 +135,46 @@ class TestGraph(unittest.TestCase):
         g = self.graph(self.issue(1), self.issue(2), self.issue(3, depends=[1]))
         self.assertFalse(g.would_cycle(2, 1))     # 2 -> 1 introduces no cycle
 
+    # --- ancestor spine, match closure, sibling sort (issue #037) --------- #
+
+    def test_ancestors_of_returns_spine_nearest_first(self):
+        g = self.graph(self.issue(1), self.issue(2, parent=1),
+                       self.issue(3, parent=2), self.issue(4, parent=3))
+        self.assertEqual([a.id for a in g.ancestors_of(g.row(4))], [3, 2, 1])
+
+    def test_ancestors_of_empty_for_root(self):
+        g = self.graph(self.issue(1))
+        self.assertEqual(g.ancestors_of(g.row(1)), [])
+
+    def test_ancestors_of_stops_at_dangling_parent(self):
+        g = self.graph(self.issue(2, parent=99))   # 99 does not exist
+        self.assertEqual(g.ancestors_of(g.row(2)), [])
+
+    def test_ancestors_of_breaks_on_cycle(self):
+        g = self.graph(self.issue(1, parent=2), self.issue(2, parent=1))
+        # must not loop forever: returns the reachable spine, then stops
+        self.assertEqual([a.id for a in g.ancestors_of(g.row(1))], [2])
+
+    def test_match_closure_keeps_ancestor_spine_of_deep_match(self):
+        g = self.graph(self.issue(1), self.issue(2, parent=1), self.issue(3, parent=2))
+        shown, dim = g.match_closure(lambda r: r.id == 3)
+        self.assertEqual(shown, {1, 2, 3})
+        self.assertEqual(dim, {1, 2})              # ancestors shown only as context
+
+    def test_match_closure_excludes_unrelated_nodes(self):
+        g = self.graph(self.issue(1), self.issue(2, parent=1), self.issue(5))
+        shown, dim = g.match_closure(lambda r: r.id == 2)
+        self.assertEqual(shown, {1, 2})            # match + its spine
+        self.assertNotIn(5, shown)                 # unrelated, no matching descendant
+        self.assertEqual(dim, {1})
+
+    def test_children_of_accepts_sort_key(self):
+        parent = self.issue(1)
+        g = self.graph(parent, self.issue(2, parent=1), self.issue(3, parent=1))
+        self.assertEqual([c.id for c in g.children_of(parent)], [2, 3])          # default: id
+        self.assertEqual([c.id for c in g.children_of(parent, key=lambda r: -r.id)],
+                         [3, 2])                                                  # custom key
+
     # --- loader ----------------------------------------------------------- #
 
     def test_load_graph_parallels_load_index(self):

@@ -414,15 +414,42 @@ class Graph:
     def row(self, issue_id: int) -> Issue:
         return get_row(self.rows, issue_id)            # dies if missing
 
-    # edges (id-sorted)
-    def children_of(self, r: Issue) -> list[Issue]:
-        return sorted(self._children.get(r.id, []), key=get_id)
+    # edges (id-sorted unless a sibling sort `key` is given)
+    def children_of(self, r: Issue, key=get_id) -> list[Issue]:
+        return sorted(self._children.get(r.id, []), key=key)
 
     def dependents_of(self, r: Issue) -> list[Issue]:
         return sorted(self._dependents.get(r.id, []), key=get_id)
 
     def requires_of(self, r: Issue) -> list[Issue]:
         return [self.by_id[d] for d in sorted(r.depends_on) if d in self.by_id]
+
+    def ancestors_of(self, r: Issue) -> list[Issue]:
+        """The parent spine above `r`, nearest first, up to a root. A parent that
+        points at a missing id ends the spine (that node is treated as a root); a
+        parent cycle is broken by the `seen` guard so malformed data can't loop."""
+        chain, seen, cur = [], {r.id}, r
+        while cur.parent is not None:
+            nxt = self.by_id.get(cur.parent)
+            if nxt is None or nxt.id in seen:
+                break
+            chain.append(nxt)
+            seen.add(nxt.id)
+            cur = nxt
+        return chain
+
+    def match_closure(self, matches) -> tuple[set[int], set[int]]:
+        """For a filtered forest: given a per-row match predicate, return
+        `(shown, dim)` id sets. `shown` is every matched node plus the ancestor
+        spine of each match (so a deep match keeps its parents) — equivalently,
+        "show a node iff it matches or has a descendant that matches". `dim` is the
+        shown nodes that did not match themselves, rendered as dimmed context."""
+        matched = {r.id for r in self.rows if matches(r)}
+        shown = set(matched)
+        for r in self.rows:
+            if r.id in matched:
+                shown.update(a.id for a in self.ancestors_of(r))
+        return shown, shown - matched
 
     # predicates
     def is_terminal(self, r: Issue) -> bool:
