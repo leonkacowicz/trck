@@ -5,10 +5,10 @@
 
 | State | Count |
 |---|---:|
-| backlog | 12 |
+| backlog | 13 |
 | ongoing | 0 |
 | done | 18 |
-| **total** | **30** |
+| **total** | **31** |
 
 ## Hierarchies
 
@@ -30,6 +30,7 @@
 
 ## Backlog
 
+- [#031 Merge tree into list: structure-aware browse verb](backlog/031-merge-tree-into-list-structure-aware-browse-verb.md) — _high_
 - [#001 Part C: curses TUI for browsing and quick actions](backlog/001-part-c-curses-tui-for-browsing-and-quick-actions.md) — _medium_
 - [#018 mv/done: guard closing a parent with open descendants (--recurse to cascade)](backlog/018-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
 - [#007 summary: include foreign/unknown statuses in the counts table](backlog/007-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
