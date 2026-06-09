@@ -21,7 +21,7 @@ from datetime import date
 from pathlib import Path
 from typing import NoReturn
 
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 DEFAULT_UPDATE_REPO = "leonkacowicz/trck"
 SELF_PATH = Path(__file__).resolve()  # the running engine file; tests may override
 
