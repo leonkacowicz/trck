@@ -5,10 +5,10 @@
 
 | State | Count |
 |---|---:|
-| backlog | 12 |
+| backlog | 18 |
 | ongoing | 0 |
 | done | 27 |
-| **total** | **39** |
+| **total** | **45** |
 
 ## Hierarchies
 
@@ -44,13 +44,19 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 
 ## Backlog
 
+- [#040 Crash instead of clean error when no tracker is found](backlog/040-crash-instead-of-clean-error-when-no-tracker-is-found.md) — _high_
 - [#018 mv/done: guard closing a parent with open descendants (--recurse to cascade)](backlog/018-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
+- [#041 Consolidate parent-to-children map building onto Graph](backlog/041-consolidate-parent-to-children-map-building-onto-graph.md) — _medium_
+- [#042 Deduplicate parent-cycle detection via Graph.ancestors_of](backlog/042-deduplicate-parent-cycle-detection-via-graph-ancestors-of.md) — _medium_
+- [#043 Extract config-vocabulary validation helpers](backlog/043-extract-config-vocabulary-validation-helpers.md) — _medium_
+- [#045 Eliminate unnecessary index double-reads](backlog/045-eliminate-unnecessary-index-double-reads.md) — _medium_
 - [#001 Part C: curses TUI for browsing and quick actions](backlog/001-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
 - [#007 summary: include foreign/unknown statuses in the counts table](backlog/007-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
 - [#008 validate: report one error per parent cycle, not one per node](backlog/008-validate-report-one-error-per-parent-cycle-not-one-per-node.md) — _low_
 - [#009 validate: suppress redundant bad-slug error when filename-slug mismatch already reported](backlog/009-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
 - [#010 config: friendly errors for empty statuses/priorities/kinds lists](backlog/010-config-friendly-errors-for-empty-statuses-priorities-kinds-lists.md) — _low_
 - [#012 update: add a minimum-size sanity check on the downloaded engine](backlog/012-update-add-a-minimum-size-sanity-check-on-the-downloaded-engine.md) — _low_
+- [#044 Clean up minor lint and cruft in the engine](backlog/044-clean-up-minor-lint-and-cruft-in-the-engine.md) — _low_
 
 ## Ongoing
 
