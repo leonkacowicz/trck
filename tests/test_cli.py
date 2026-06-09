@@ -42,6 +42,23 @@ class TestAliases(unittest.TestCase):
                 self.t.cmd_start(ns(dir=str(d), id=1))
 
 
+class TestDie(unittest.TestCase):
+    def setUp(self):
+        self.t = load_trck()
+
+    def test_die_raises_and_never_returns(self):
+        with self.assertRaises(SystemExit) as cm:
+            self.t.die("boom")
+        self.assertEqual(cm.exception.code, 1)
+
+    def test_die_annotated_noreturn(self):
+        # Locks in the NoReturn annotation so callers' type-narrowing
+        # (some_var bound after `except: die()`) stays valid.
+        import typing
+        hints = typing.get_type_hints(self.t.die)
+        self.assertIs(hints["return"], typing.NoReturn)
+
+
 class TestCliEndToEnd(unittest.TestCase):
     def run_trck(self, *argv, cwd):
         return subprocess.run(["python3", str(TRCK_PATH), *argv],

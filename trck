@@ -19,6 +19,7 @@ import urllib.request
 from dataclasses import dataclass, field, fields
 from datetime import date
 from pathlib import Path
+from typing import NoReturn
 
 __version__ = "0.5.0"
 DEFAULT_UPDATE_REPO = "leonkacowicz/trck"
@@ -28,7 +29,7 @@ SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 FILENAME_RE = re.compile(r"^(\d{3,})-([a-z0-9][a-z0-9-]*)\.md$")
 
 
-def die(msg: str):
+def die(msg: str) -> NoReturn:
     print(f"error: {msg}", file=sys.stderr)
     sys.exit(1)
 
@@ -102,7 +103,7 @@ def is_terminal(cfg: dict, name: str) -> bool:
     return status_role(cfg, name) == "terminal"
 
 
-def is_blocked(cfg: dict, row, by_id: dict) -> bool:
+def is_blocked(cfg: dict, row, by_id: dict[int, Issue]) -> bool:
     """True if `row` has at least one existing dependency that is not yet terminal.
     The inverse of readiness; shared by `list --blocked` and the `ready`/`next` check."""
     for dep in row.depends_on:
@@ -154,6 +155,13 @@ def resolve_tracker_dir(dir_opt, env=None, required: bool = True) -> Path | None
     return find_tracker(Path.cwd(), required=required)
 
 
+def resolve_tracker_dir_or_die(dir_opt, env=None) -> Path:
+    path = resolve_tracker_dir(dir_opt, env=env, required=False)
+    if not path:
+        p = Path(dir_opt).resolve()
+        die(f"{p} is not a tracker (no trck.json)")
+    return path
+
 # --------------------------------------------------------------------------- #
 # context + index I/O
 # --------------------------------------------------------------------------- #
@@ -171,8 +179,14 @@ CANON_KEYS = [
 # strip `points: 1` while keeping `points: 0`).
 DEFAULT_POINTS = 1
 FIELD_DEFAULTS = {
-    "points": 1, "parent": None, "labels": [], "depends_on": [], "spec": None,
-    "started": None, "closed": None, "resolution": None,
+    "points": DEFAULT_POINTS,
+    "parent": None,
+    "labels": [],
+    "depends_on": [],
+    "spec": None,
+    "started": None,
+    "closed": None,
+    "resolution": None,
 }
 
 
@@ -303,6 +317,10 @@ def build_ctx(args, required: bool = True) -> Ctx | None:
     return Ctx(d, load_config(d))
 
 
+def build_ctx_or_die(args) -> Ctx:
+    d = resolve_tracker_dir_or_die(getattr(args, "dir", None))
+    return Ctx(d, load_config(d))
+
 def filename(row: Issue) -> str:
     return f"{row.id:03d}-{row.slug}.md"
 
@@ -352,7 +370,7 @@ def parent_ids(rows: list[Issue]) -> set:
     return {r.parent for r in rows if r.parent is not None}
 
 
-def dep_would_cycle(by_id: dict, src: int, dep: int) -> bool:
+def dep_would_cycle(by_id: dict[int, Issue], src: int, dep: int) -> bool:
     """True if adding the edge src->dep (src depends_on dep) would create a cycle:
     i.e. src == dep, or src is already reachable from dep along depends_on edges."""
     if src == dep:
@@ -408,7 +426,7 @@ def normalize_points(rows: list[Issue]) -> None:
     parents = parent_ids(rows)
     for r in rows:
         if r.id in parents:
-            r.points = FIELD_DEFAULTS["points"]
+            r.points = DEFAULT_POINTS
 
 
 def next_id(ctx: Ctx) -> int:
@@ -476,7 +494,7 @@ def validate(ctx: Ctx) -> tuple[list[str], list[str]]:
             errors.append(f"#{iid:03d} bad priority '{r.priority}'")
         pts = r.points  # parse guarantees an int; here we check the value/placement
         if iid in parents:
-            if pts != FIELD_DEFAULTS["points"]:
+            if pts != DEFAULT_POINTS:
                 errors.append(f"#{iid:03d} has children but carries points {pts!r} "
                               f"(derived from leaves, must be unset)")
         elif pts < 0:
@@ -633,18 +651,18 @@ def leaf_rollup(row, children, term, seen=frozenset()):
     descendants of `row`. A leaf's weight defaults to 1; a node's weight is the sum of
     its leaves. Cycle-guarded so a malformed (mid-edit) index can't spin forever."""
     if row.id in seen:
-        return (0, 0, 0, 0)
+        return 0, 0, 0, 0
     kids = children.get(row.id)
     if not kids:  # leaf
         pts = row.points
         done = term(row.status)
-        return (pts if done else 0, pts, 1 if done else 0, 1)
+        return pts if done else 0, pts, 1 if done else 0, 1
     seen = seen | {row.id}
     pdone = ptotal = ndone = ntotal = 0
     for k in kids:
         a, b, c, d = leaf_rollup(k, children, term, seen)
         pdone += a; ptotal += b; ndone += c; ntotal += d
-    return (pdone, ptotal, ndone, ntotal)
+    return pdone, ptotal, ndone, ntotal
 
 
 def generate_summary(ctx: Ctx) -> str:
@@ -731,7 +749,7 @@ def write_summary(ctx: Ctx) -> None:
 # --------------------------------------------------------------------------- #
 # finalize: persist + regenerate + validate after every mutation
 # --------------------------------------------------------------------------- #
-def finalize(ctx: Ctx, rows: list[dict]) -> None:
+def finalize(ctx: Ctx, rows: list[Issue]) -> None:
     normalize_points(rows)
     save_index(ctx, rows)
     write_summary(ctx)
@@ -860,7 +878,7 @@ def move_issue(ctx: Ctx, row: Issue, new_status: str) -> None:
 
 
 def cmd_new(args) -> None:
-    ctx = build_ctx(args)
+    ctx = build_ctx_or_die(args)
     rows = load_index(ctx)
     by_id = {r.id: r for r in rows}
     iid = next_id(ctx)
@@ -900,7 +918,7 @@ def cmd_new(args) -> None:
 
 
 def cmd_mv(args) -> None:
-    ctx = build_ctx(args)
+    ctx = build_ctx_or_die(args)
     rows = load_index(ctx)
     row = get_row(rows, args.id)
     resolution = getattr(args, "resolution", None)
@@ -917,7 +935,7 @@ def cmd_mv(args) -> None:
 
 
 def cmd_set(args) -> None:
-    ctx = build_ctx(args)
+    ctx = build_ctx_or_die(args)
     rows = load_index(ctx)
     by_id = {r.id: r for r in rows}
     row = get_row(rows, args.id)
@@ -964,7 +982,7 @@ def cmd_set(args) -> None:
 
 
 def cmd_label(args) -> None:
-    ctx = build_ctx(args)
+    ctx = build_ctx_or_die(args)
     rows = load_index(ctx)
     row = get_row(rows, args.id)
     labels = list(row.labels)
@@ -980,7 +998,7 @@ def cmd_label(args) -> None:
 
 
 def cmd_dep(args) -> None:
-    ctx = build_ctx(args)
+    ctx = build_ctx_or_die(args)
     rows = load_index(ctx)
     by_id = {r.id: r for r in rows}
     row = get_row(rows, args.id)
@@ -1002,7 +1020,7 @@ def cmd_dep(args) -> None:
 
 
 def cmd_show(args) -> None:
-    ctx = build_ctx(args)
+    ctx = build_ctx_or_die(args)
     rows = load_index(ctx)
     row = get_row(rows, args.id)
     full = row.to_dict()
@@ -1023,7 +1041,7 @@ def cmd_show(args) -> None:
 
 
 def cmd_list(args) -> None:
-    ctx = build_ctx(args)
+    ctx = build_ctx_or_die(args)
     rows = sorted(load_index(ctx), key=lambda r: r.id)
     by_id = {r.id: r for r in rows}
 
@@ -1081,7 +1099,7 @@ def print_rows(ctx: Ctx, rows: list[Issue]) -> None:
 
 
 def cmd_ready(args) -> None:
-    ctx = build_ctx(args)
+    ctx = build_ctx_or_die(args)
     rows = load_index(ctx)
     by_id = {r.id: r for r in rows}
     parents = parent_ids(rows)
@@ -1103,7 +1121,7 @@ def cmd_next(args) -> None:
 
 
 def cmd_tree(args) -> None:
-    ctx = build_ctx(args)
+    ctx = build_ctx_or_die(args)
     rows = load_index(ctx)
     kids_of = {}
     for r in rows:
@@ -1128,7 +1146,7 @@ def cmd_tree(args) -> None:
 
 
 def cmd_deps(args) -> None:
-    ctx = build_ctx(args)
+    ctx = build_ctx_or_die(args)
     rows = load_index(ctx)
     by_id = {r.id: r for r in rows}
     row = get_row(rows, args.id)
@@ -1158,7 +1176,7 @@ def cmd_deps(args) -> None:
 
 
 def cmd_check(args) -> None:
-    ctx = build_ctx(args)
+    ctx = build_ctx_or_die(args)
     errors, warnings = validate(ctx)
     for w in warnings:
         print(f"warning: {w}")
@@ -1171,20 +1189,20 @@ def cmd_check(args) -> None:
 
 
 def cmd_summary(args) -> None:
-    ctx = build_ctx(args)
+    ctx = build_ctx_or_die(args)
     write_summary(ctx)
     print(f"wrote {ctx.dir / 'SUMMARY.md'} ({len(load_index(ctx))} issues)")
 
 
 def cmd_normalize(args) -> None:
-    ctx = build_ctx(args)
+    ctx = build_ctx_or_die(args)
     rows = load_index(ctx)
     finalize(ctx, rows)  # re-serialize index in canonical slim form + summary + validate
     print(f"normalized {ctx.index_path} ({len(rows)} issues)")
 
 
 def cmd_install_hook(args) -> None:
-    ctx = build_ctx(args)
+    ctx = build_ctx_or_die(args)
     common = subprocess.run(["git", "rev-parse", "--git-common-dir"],
                             cwd=ctx.dir, capture_output=True, text=True)
     toplevel = subprocess.run(["git", "rev-parse", "--show-toplevel"],
@@ -1236,7 +1254,7 @@ def cmd_version(args) -> None:
 
 
 def cmd_start(args) -> None:
-    ctx = build_ctx(args)
+    ctx = build_ctx_or_die(args)
     target = resolve_alias(ctx.cfg, "start")
     if not target:
         die("no 'start' alias configured; use `trck mv <id> <status>`")
@@ -1244,7 +1262,7 @@ def cmd_start(args) -> None:
 
 
 def cmd_done(args) -> None:
-    ctx = build_ctx(args)
+    ctx = build_ctx_or_die(args)
     target = resolve_alias(ctx.cfg, "done")
     if not target:
         die("no 'done' alias configured; use `trck mv <id> <status>`")
