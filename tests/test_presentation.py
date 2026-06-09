@@ -44,6 +44,32 @@ class TestPresentation(unittest.TestCase):
             self.assertIn("#001", out)
             self.assertIn("Alpha", out)
 
+    def row(self, iid=1, title="Alpha", **over):
+        base = dict(id=iid, slug=f"i{iid}", title=title, kind="task",
+                    status="backlog", priority="high")
+        base.update(over)
+        return self.t.Issue(**base)
+
+    def render(self, d, rows, **kw):
+        ctx = self.t.build_ctx_or_die(ns(dir=str(d)))
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.t.print_rows(ctx, rows, **kw)
+        return buf.getvalue()
+
+    def test_print_rows_prefix_sits_before_title(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            out = self.render(d, [self.row(title="Alpha")], prefix=lambda r: "|- ")
+            self.assertIn("|- Alpha", out)
+
+    def test_print_rows_default_has_no_prefix(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            out = self.render(d, [self.row(title="Alpha")])
+            self.assertIn(" Alpha", out)
+            self.assertNotIn("|-", out)
+
     def test_list_columns_align_with_custom_statuses(self):
         cfg = {"statuses": [{"name": "todo", "role": "initial"},
                             {"name": "in-progress"},

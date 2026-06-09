@@ -1168,10 +1168,12 @@ def cmd_list(args) -> None:
     print_rows(ctx, rows, annotate=lambda r: block_annotations(ctx, r, by_id, reverse))
 
 
-def print_rows(ctx: Ctx, rows: list[Issue], annotate=None) -> None:
+def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None) -> None:
     """Render issues as aligned one-line summaries (shared by `list` and `ready`).
     `annotate`, if given, maps a row to a trailing suffix (e.g. the blocking graph);
-    callers that want terse output (`ready`/`next`) simply omit it."""
+    callers that want terse output (`ready`/`next`) simply omit it. `prefix`, if given,
+    maps a row to a connector string placed immediately before the title — empty for the
+    flat view, `walk_tree`-style connectors (`├─ `/`└─ `) for the nested forest."""
     if not rows:
         return
     sw = max(len(r.status) for r in rows)
@@ -1189,8 +1191,9 @@ def print_rows(ctx: Ctx, rows: list[Issue], annotate=None) -> None:
         iid = paint(f"#{r.id:03d}", "bold")
         status = paint(f"{r.status:<{sw}}", *codes)
         prio = paint(f"{r.priority:<{pw}}", *priority_codes(ctx.cfg, r.priority))
+        pre = prefix(r) if prefix else ""
         ann = annotate(r) if annotate else ""
-        print(f"{icon} {iid} {status}  {prio}  {r.title}{tagstr}{ann}")
+        print(f"{icon} {iid} {status}  {prio}  {pre}{r.title}{tagstr}{ann}")
 
 
 def cmd_ready(args) -> None:
