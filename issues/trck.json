@@ -27,7 +27,8 @@
   ],
   "kinds": [
     "task",
-    "epic"
+    "epic",
+    "bug"
   ],
   "resolutions": [
     "superseded",
