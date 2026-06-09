@@ -382,6 +382,67 @@ def get_row(rows: list[Issue], issue_id: int) -> Issue:
     die(f"no issue with id {issue_id}")
 
 
+# --------------------------------------------------------------------------- #
+# issue graph (derived read view)
+# --------------------------------------------------------------------------- #
+class Graph:
+    """A derived read view over a loaded index: id lookup, the parent/child and
+    depends_on edges, and the readiness/blocking predicates every read command
+    needs. Built once per command from `(cfg, rows)`; never mutated — `rows`
+    stays the source of truth and no back-references are bolted onto `Issue`.
+
+    The list accessors (`children_of`/`dependents_of`/`requires_of`) return
+    id-sorted lists so callers don't re-sort."""
+
+    def __init__(self, cfg: dict, rows: list[Issue]):
+        self.cfg = cfg
+        self.rows = rows
+        self.by_id: dict[int, Issue] = {r.id: r for r in rows}
+        self._children: dict[int, list[Issue]] = {}    # parent id -> children
+        self._dependents: dict[int, list[Issue]] = {}  # dep id -> dependents
+        for r in rows:
+            if r.parent is not None:
+                self._children.setdefault(r.parent, []).append(r)
+            for d in r.depends_on:
+                self._dependents.setdefault(d, []).append(r)
+        self._parents = set(self._children)            # ids with >= 1 child
+
+    # lookup
+    def get(self, issue_id: int) -> Issue | None:
+        return self.by_id.get(issue_id)
+
+    def row(self, issue_id: int) -> Issue:
+        return get_row(self.rows, issue_id)            # dies if missing
+
+    # edges (id-sorted)
+    def children_of(self, r: Issue) -> list[Issue]:
+        return sorted(self._children.get(r.id, []), key=get_id)
+
+    def dependents_of(self, r: Issue) -> list[Issue]:
+        return sorted(self._dependents.get(r.id, []), key=get_id)
+
+    def requires_of(self, r: Issue) -> list[Issue]:
+        return [self.by_id[d] for d in sorted(r.depends_on) if d in self.by_id]
+
+    # predicates
+    def is_terminal(self, r: Issue) -> bool:
+        return is_terminal(self.cfg, r.status)
+
+    def is_blocked(self, r: Issue) -> bool:
+        return is_blocked(self.cfg, r, self.by_id)
+
+    def is_leaf(self, r: Issue) -> bool:
+        return r.id not in self._parents
+
+    def is_ready(self, r: Issue) -> bool:
+        return not self.is_terminal(r) and self.is_leaf(r) and not self.is_blocked(r)
+
+
+def load_graph(ctx: Ctx) -> Graph:
+    """Load the index and wrap it in a `Graph` — the read-side analog of `load_index`."""
+    return Graph(ctx.cfg, load_index(ctx))
+
+
 def parent_ids(rows: list[Issue]) -> set:
     """Ids that have at least one child (i.e., non-leaf issues)."""
     return {r.parent for r in rows if r.parent is not None}
