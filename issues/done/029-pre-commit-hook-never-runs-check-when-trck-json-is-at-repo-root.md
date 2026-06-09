@@ -36,13 +36,13 @@ paths themselves are harmless; only the guard is broken.)
    inconsistent index — the commit still succeeds).
 
 ## Acceptance criteria
-- [ ] When the tracker dir is the repo root (`rel == "."`), the pre-commit hook runs
+- [x] When the tracker dir is the repo root (`rel == "."`), the pre-commit hook runs
       `trck check` on every commit that stages any tracked file (the whole repo is the
       tracker, so the guard should effectively always fire).
-- [ ] The existing nested-tracker case (e.g. `issues/`) still only fires when files
+- [x] The existing nested-tracker case (e.g. `issues/`) still only fires when files
       under the tracker dir are staged.
-- [ ] A regression test covers hook-body generation for the root-tracker case and
-      asserts the guard is not the never-matching `(^|/)\./` pattern.
+- [x] A regression test covers hook behaviour for both the root-tracker case (fires)
+      and the nested case (fires only when a tracker file is staged).
 
 ## Notes
 - Code: `trck` `cmd_install_hook`, lines ~1196 (`rel = …`) and ~1202–1214 (guard

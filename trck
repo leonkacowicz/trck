@@ -1199,17 +1199,27 @@ def cmd_install_hook(args) -> None:
     hooks = (ctx.dir / common.stdout.strip()).resolve() / "hooks"
     hooks.mkdir(parents=True, exist_ok=True)
     hook = hooks / "pre-commit"
-    rel_re = rel.replace(".", r"\.")
+    # When the tracker dir IS the repo root, rel == "." and a path-prefix grep
+    # ('(^|/)\\./') would never match git's repo-relative staged paths — the hook
+    # would silently never run. In that case the whole repo is the tracker, so fire
+    # on any staged change; otherwise guard on the tracker's path prefix.
+    if rel == ".":
+        guard = 'if [ -n "$staged" ]; then'
+        edir = "$root"
+    else:
+        rel_re = rel.replace(".", r"\.")
+        guard = f"if printf '%s\\n' \"$staged\" | grep -qE '(^|/){rel_re}/'; then"
+        edir = f"$root/{rel}"
     body = (
         "#!/usr/bin/env bash\n"
         "# Auto-installed by `trck install-hook`. Runs `trck check` when the tracker changes.\n"
         'root="$(git rev-parse --show-toplevel)"\n'
         'staged="$(git diff --cached --name-only)"\n'
-        f"if printf '%s\\n' \"$staged\" | grep -qE '(^|/){rel_re}/'; then\n"
-        f'  if [ -x "$root/{rel}/trck" ]; then\n'
-        f'    python3 "$root/{rel}/trck" check || {{ echo "trck inconsistent — aborting commit"; exit 1; }}\n'
+        f"{guard}\n"
+        f'  if [ -x "{edir}/trck" ]; then\n'
+        f'    python3 "{edir}/trck" check || {{ echo "trck inconsistent — aborting commit"; exit 1; }}\n'
         '  elif command -v trck >/dev/null 2>&1; then\n'
-        f'    trck --dir "$root/{rel}" check || {{ echo "trck inconsistent — aborting commit"; exit 1; }}\n'
+        f'    trck --dir "{edir}" check || {{ echo "trck inconsistent — aborting commit"; exit 1; }}\n'
         "  fi\n"
         "fi\n"
     )

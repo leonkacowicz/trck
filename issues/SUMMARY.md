@@ -5,9 +5,9 @@
 
 | State | Count |
 |---|---:|
-| backlog | 13 |
+| backlog | 12 |
 | ongoing | 0 |
-| done | 16 |
+| done | 17 |
 | **total** | **29** |
 
 ## Hierarchies
@@ -29,7 +29,6 @@
 
 ## Backlog
 
-- [#029 pre-commit hook never runs check when trck.json is at repo root](backlog/029-pre-commit-hook-never-runs-check-when-trck-json-is-at-repo-root.md) — _high_
 - [#001 Part C: curses TUI for browsing and quick actions](backlog/001-part-c-curses-tui-for-browsing-and-quick-actions.md) — _medium_
 - [#018 mv/done: guard closing a parent with open descendants (--recurse to cascade)](backlog/018-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
 - [#007 summary: include foreign/unknown statuses in the counts table](backlog/007-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
@@ -47,6 +46,7 @@ _none_
 - [#013 Write root README.md and CLAUDE.md](done/013-write-root-readme-md-and-claude-md.md) — _high_ (closed 2026-06-05)
 - [#014 Cut v0.1.0 release](done/014-cut-v0-1-0-release.md) — _high_ (closed 2026-06-05)
 - [#020 Strip null/empty fields from index.jsonl rows to reduce noise](done/020-strip-null-empty-fields-from-index-jsonl-rows-to-reduce-noise.md) — _high_ (closed 2026-06-05)
+- [#029 pre-commit hook never runs check when trck.json is at repo root](done/029-pre-commit-hook-never-runs-check-when-trck-json-is-at-repo-root.md) — _high_ (closed 2026-06-09)
 - [#006 init: accept positional dir and add --no-vendor for self-hosting repos](done/006-init-accept-positional-dir-and-add-no-vendor-for-self-hosting-repos.md) — _medium_ (closed 2026-06-05)
 - [#015 Allow any issue to be a parent (rollup for any parent)](done/015-allow-any-issue-to-be-a-parent-rollup-for-any-parent.md) — _medium_ (closed 2026-06-05)
 - [#016 Improve CLI output presentation (align/icons, color, show, SUMMARY)](done/016-improve-cli-output-presentation-align-icons-color-show-summary.md) — _medium_ (closed 2026-06-05)
