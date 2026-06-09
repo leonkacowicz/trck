@@ -437,73 +437,67 @@ class Graph:
     def is_ready(self, r: Issue) -> bool:
         return not self.is_terminal(r) and self.is_leaf(r) and not self.is_blocked(r)
 
+    # dependency graph
+    def would_cycle(self, src: int, dep: int) -> bool:
+        """True if adding the edge src->dep (src depends_on dep) would create a cycle:
+        i.e. src == dep, or src is already reachable from dep along depends_on edges."""
+        if src == dep:
+            return True
+        seen, stack = set(), [dep]
+        while stack:
+            cur = stack.pop()
+            if cur == src:
+                return True
+            if cur in seen:
+                continue
+            seen.add(cur)
+            node = self.by_id.get(cur)
+            if node:
+                stack.extend(node.depends_on)
+        return False
+
+    def cycles(self) -> list[list[int]]:
+        """Every cycle in the depends_on graph as a list of node ids, each cycle
+        reported once (deduped by its node set). DFS with white/gray/black coloring;
+        a self-edge (#n depends_on #n) is a one-node cycle."""
+        by_id = self.by_id
+        color = {iid: 0 for iid in by_id}  # 0=unseen, 1=on-stack, 2=done
+        found, seen_keys, path = [], set(), []
+
+        def visit(node):
+            color[node] = 1
+            path.append(node)
+            for nxt in by_id[node].depends_on:
+                if nxt not in by_id:
+                    continue
+                if color[nxt] == 1:
+                    cyc = path[path.index(nxt):]
+                    key = frozenset(cyc)
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        found.append(list(cyc))
+                elif color[nxt] == 0:
+                    visit(nxt)
+            path.pop()
+            color[node] = 2
+
+        for iid in by_id:
+            if color[iid] == 0:
+                visit(iid)
+        return found
+
 
 def load_graph(ctx: Ctx) -> Graph:
     """Load the index and wrap it in a `Graph` — the read-side analog of `load_index`."""
     return Graph(ctx.cfg, load_index(ctx))
 
 
-def parent_ids(rows: list[Issue]) -> set:
-    """Ids that have at least one child (i.e., non-leaf issues)."""
-    return {r.parent for r in rows if r.parent is not None}
-
-
-def dep_would_cycle(by_id: dict[int, Issue], src: int, dep: int) -> bool:
-    """True if adding the edge src->dep (src depends_on dep) would create a cycle:
-    i.e. src == dep, or src is already reachable from dep along depends_on edges."""
-    if src == dep:
-        return True
-    seen, stack = set(), [dep]
-    while stack:
-        cur = stack.pop()
-        if cur == src:
-            return True
-        if cur in seen:
-            continue
-        seen.add(cur)
-        node = by_id.get(cur)
-        if node:
-            stack.extend(node.depends_on)
-    return False
-
-
-def find_dep_cycles(by_id: dict) -> list[list[int]]:
-    """Return every cycle in the depends_on graph as a list of node ids, each cycle
-    reported once (deduped by its node set). DFS with white/gray/black coloring;
-    a self-edge (#n depends_on #n) is a one-node cycle."""
-    color = {iid: 0 for iid in by_id}  # 0=unseen, 1=on-stack, 2=done
-    cycles, seen_keys, path = [], set(), []
-
-    def visit(node):
-        color[node] = 1
-        path.append(node)
-        for nxt in by_id[node].depends_on:
-            if nxt not in by_id:
-                continue
-            if color[nxt] == 1:
-                cyc = path[path.index(nxt):]
-                key = frozenset(cyc)
-                if key not in seen_keys:
-                    seen_keys.add(key)
-                    cycles.append(list(cyc))
-            elif color[nxt] == 0:
-                visit(nxt)
-        path.pop()
-        color[node] = 2
-
-    for iid in by_id:
-        if color[iid] == 0:
-            visit(iid)
-    return cycles
-
-
-def normalize_points(rows: list[Issue]) -> None:
+def normalize_points(g: Graph) -> None:
     """`points` is a leaf-only input. A node with children has no own weight — its
     points are derived from its leaves — so reset it to the default (which serializes
     as nothing). Mutates rows in place; called on every index write via finalize."""
-    parents = parent_ids(rows)
-    for r in rows:
-        if r.id in parents:
+    for r in g.rows:
+        if not g.is_leaf(r):
             r.points = DEFAULT_POINTS
 
 
@@ -544,12 +538,12 @@ def validate(ctx: Ctx) -> tuple[list[str], list[str]]:
     errors, warnings = [], []
     rows = load_index(ctx)
     files = scan_files(ctx)
-    by_id = {r.id: r for r in rows}
+    g = Graph(ctx.cfg, rows)
+    by_id = g.by_id
     names = set(status_names(ctx.cfg))
     prios = set(ctx.cfg["priorities"])
     kinds = set(ctx.cfg["kinds"])
     resolutions = set(ctx.cfg["resolutions"])
-    parents = parent_ids(rows)
 
     for iid, r in by_id.items():
         if iid not in files:
@@ -571,7 +565,7 @@ def validate(ctx: Ctx) -> tuple[list[str], list[str]]:
         if r.priority not in prios:
             errors.append(f"#{iid:03d} bad priority '{r.priority}'")
         pts = r.points  # parse guarantees an int; here we check the value/placement
-        if iid in parents:
+        if not g.is_leaf(r):
             if pts != DEFAULT_POINTS:
                 errors.append(f"#{iid:03d} has children but carries points {pts!r} "
                               f"(derived from leaves, must be unset)")
@@ -601,7 +595,7 @@ def validate(ctx: Ctx) -> tuple[list[str], list[str]]:
             seen.add(cur.parent)
             cur = by_id.get(cur.parent)
 
-    for cyc in find_dep_cycles(by_id):  # dependency cycles, one error per cycle
+    for cyc in g.cycles():  # dependency cycles, one error per cycle
         chain = " -> ".join(f"#{c:03d}" for c in (*cyc, cyc[0]))
         errors.append(f"dependency cycle: {chain}")
 
@@ -842,7 +836,7 @@ def write_summary(ctx: Ctx) -> None:
 # finalize: persist + regenerate + validate after every mutation
 # --------------------------------------------------------------------------- #
 def finalize(ctx: Ctx, rows: list[Issue]) -> None:
-    normalize_points(rows)
+    normalize_points(Graph(ctx.cfg, rows))
     save_index(ctx, rows)
     write_summary(ctx)
     errors, warnings = validate(ctx)
@@ -1029,7 +1023,8 @@ def cmd_mv(args) -> None:
 def cmd_set(args) -> None:
     ctx = build_ctx_or_die(args)
     rows = load_index(ctx)
-    by_id = {r.id: r for r in rows}
+    g = Graph(ctx.cfg, rows)
+    by_id = g.by_id
     row = get_row(rows, args.id)
     if args.priority:
         if args.priority not in ctx.cfg["priorities"]:
@@ -1038,7 +1033,7 @@ def cmd_set(args) -> None:
     if getattr(args, "points", None) is not None:
         if args.points < 0:
             die(f"bad points {args.points} (must be a non-negative integer)")
-        if row.id in parent_ids(rows):
+        if not g.is_leaf(row):
             die(f"#{row.id:03d} has children; points is derived from them, not set")
         row.points = args.points
     if args.parent is not None:
@@ -1092,7 +1087,8 @@ def cmd_label(args) -> None:
 def cmd_dep(args) -> None:
     ctx = build_ctx_or_die(args)
     rows = load_index(ctx)
-    by_id = {r.id: r for r in rows}
+    g = Graph(ctx.cfg, rows)
+    by_id = g.by_id
     row = get_row(rows, args.id)
     deps = list(row.depends_on)
     if args.add is not None:
@@ -1100,7 +1096,7 @@ def cmd_dep(args) -> None:
             die(f"#{args.add:03d} does not exist")
         if args.add == row.id:
             die(f"#{row.id:03d} cannot depend on itself")
-        if dep_would_cycle(by_id, row.id, args.add):
+        if g.would_cycle(row.id, args.add):
             die(f"#{row.id:03d} -> #{args.add:03d} would create a dependency cycle")
         if args.add not in deps:
             deps.append(args.add)
@@ -1117,7 +1113,7 @@ def cmd_show(args) -> None:
     row = get_row(rows, args.id)
     full = row.to_dict()
     keys = CANON_KEYS + sorted(row.extra)
-    if row.id in parent_ids(rows):
+    if not Graph(ctx.cfg, rows).is_leaf(row):
         keys = [k for k in keys if k != "points"]  # derived from leaves, not an input here
     if getattr(args, "json", False):
         print(json.dumps({k: full.get(k) for k in keys}, ensure_ascii=False, indent=2))

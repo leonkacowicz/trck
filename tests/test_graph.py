@@ -107,6 +107,34 @@ class TestGraph(unittest.TestCase):
         g = self.graph(self.issue(1, status="done"), self.issue(2, depends=[1]))
         self.assertTrue(g.is_ready(g.row(2)))
 
+    # --- dependency cycles ------------------------------------------------ #
+
+    def test_cycles_detects_two_node_cycle(self):
+        g = self.graph(self.issue(1, depends=[2]), self.issue(2, depends=[1]))
+        cycles = g.cycles()
+        self.assertEqual(len(cycles), 1)
+        self.assertEqual(set(cycles[0]), {1, 2})
+
+    def test_cycles_detects_self_loop(self):
+        g = self.graph(self.issue(1, depends=[1]))
+        self.assertEqual(g.cycles(), [[1]])
+
+    def test_cycles_empty_when_acyclic(self):
+        g = self.graph(self.issue(1), self.issue(2, depends=[1]))
+        self.assertEqual(g.cycles(), [])
+
+    def test_would_cycle_true_for_self_edge(self):
+        self.assertTrue(self.graph(self.issue(1)).would_cycle(1, 1))
+
+    def test_would_cycle_true_when_it_closes_a_loop(self):
+        # 2 already depends on 1; adding 1 -> 2 would close the loop
+        g = self.graph(self.issue(1), self.issue(2, depends=[1]))
+        self.assertTrue(g.would_cycle(1, 2))
+
+    def test_would_cycle_false_for_safe_edge(self):
+        g = self.graph(self.issue(1), self.issue(2), self.issue(3, depends=[1]))
+        self.assertFalse(g.would_cycle(2, 1))     # 2 -> 1 introduces no cycle
+
     # --- loader ----------------------------------------------------------- #
 
     def test_load_graph_parallels_load_index(self):

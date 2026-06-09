@@ -5,9 +5,9 @@
 
 | State | Count |
 |---|---:|
-| backlog | 19 |
+| backlog | 17 |
 | ongoing | 0 |
-| done | 20 |
+| done | 22 |
 | **total** | **39** |
 
 ## Hierarchies
@@ -35,12 +35,12 @@
 - [ ] [#038 list: nested forest default (--flat, positional id, dimmed ancestors, tree alias)](backlog/038-list-nested-forest-default-flat-positional-id-dimmed-ancestors-tree-alias.md) _(backlog)_
 - [ ] [#039 list: argparse/help/README and acceptance tests for the merged verb](backlog/039-list-argparse-help-readme-and-acceptance-tests-for-the-merged-verb.md) _(backlog)_
 
-### [#032 Introduce a derived Graph view over the loaded index](backlog/032-introduce-a-derived-graph-view-over-the-loaded-index.md) — 67% (2/3 pts · 2/3 done) · _medium_ · backlog
+### [#032 Introduce a derived Graph view over the loaded index](done/032-introduce-a-derived-graph-view-over-the-loaded-index.md) — 100% (3/3 pts · 3/3 done) · _medium_ · done
 Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-06-09-graph-derived-view-design.md)
 
 - [x] [#033 Graph: add class and load_graph (maps, accessors, predicates)](done/033-graph-add-class-and-load-graph-maps-accessors-predicates.md)
 - [x] [#034 Graph: migrate ready/next and deps to the Graph view](done/034-graph-migrate-ready-next-and-deps-to-the-graph-view.md)
-- [ ] [#035 Graph: absorb cycle/parent free functions; migrate validate and dep](backlog/035-graph-absorb-cycle-parent-free-functions-migrate-validate-and-dep.md) _(backlog)_
+- [x] [#035 Graph: absorb cycle/parent free functions; migrate validate and dep](done/035-graph-absorb-cycle-parent-free-functions-migrate-validate-and-dep.md)
 
 ## Backlog
 
