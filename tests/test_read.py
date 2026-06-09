@@ -309,6 +309,11 @@ class TestRead(unittest.TestCase):
             self.assertIn("#001", out)
             self.assertNotIn("#002", out)
 
+    def deps(self, d, issue_id, requires=False, blocks=False):
+        """cmd_deps with flags defaulted; override per test."""
+        return self.cap(self.t.cmd_deps,
+                        ns(dir=str(d), id=issue_id, requires=requires, blocks=blocks))
+
     def test_deps_shows_requires_and_blocks(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
@@ -318,4 +323,49 @@ class TestRead(unittest.TestCase):
             out = self.cap(self.t.cmd_deps, ns(dir=str(d), id=2,
                                                requires=False, blocks=False))
             self.assertIn("requires", out)
+            self.assertIn("#001", out)
+
+    def test_deps_blocks_section_lists_dependents(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Dep")                            # 1 (the blocker)
+            self.seed(d, "X", depends="1")                 # 2 depends on 1
+            self.seed(d, "Y", depends="1")                 # 3 depends on 1
+            out = self.deps(d, 1)                          # default: both sections
+            self.assertIn("blocks (these are waiting on it):", out)
+            blocks_section = out.split("blocks (these are waiting on it):", 1)[1]
+            self.assertIn("#002", blocks_section)
+            self.assertIn("#003", blocks_section)
+
+    def test_deps_requires_flag_hides_blocks_section(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Dep")                            # 1
+            self.seed(d, "Mid", depends="1")               # 2 requires 1, blocks 3
+            self.seed(d, "Top", depends="2")               # 3
+            out = self.deps(d, 2, requires=True)
+            self.assertIn("requires", out)
+            self.assertIn("#001", out)                     # its requirement
+            self.assertNotIn("blocks", out)                # blocks section suppressed
+
+    def test_deps_blocks_flag_hides_requires_section(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Dep")                            # 1
+            self.seed(d, "Mid", depends="1")               # 2 requires 1, blocks 3
+            self.seed(d, "Top", depends="2")               # 3
+            out = self.deps(d, 2, blocks=True)
+            self.assertIn("blocks", out)
+            self.assertIn("#003", out)                     # the dependent
+            self.assertNotIn("requires", out)              # requires section suppressed
+
+    def test_deps_requires_walk_is_transitive(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Base")                           # 1
+            self.seed(d, "Mid", depends="1")               # 2 requires 1
+            self.seed(d, "Top", depends="2")               # 3 requires 2 (-> 1)
+            out = self.deps(d, 3, requires=True)
+            # the walk recurses: both the direct and transitive requirement appear
+            self.assertIn("#002", out)
             self.assertIn("#001", out)

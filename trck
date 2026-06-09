@@ -1199,16 +1199,8 @@ def print_rows(ctx: Ctx, rows: list[Issue], annotate=None) -> None:
 
 def cmd_ready(args) -> None:
     ctx = build_ctx_or_die(args)
-    rows = load_index(ctx)
-    by_id = {r.id: r for r in rows}
-    parents = parent_ids(rows)
-
-    def is_ready(r):
-        return (not is_terminal(ctx.cfg, r.status)        # not yet in a terminal status
-                and r.id not in parents                    # a leaf (no children)
-                and not is_blocked(ctx.cfg, r, by_id))     # every dep is terminal
-
-    rows = sorted((r for r in rows if is_ready(r)),
+    g = load_graph(ctx)                                    # not-terminal leaf, every dep terminal
+    rows = sorted((r for r in g.rows if g.is_ready(r)),
                   key=lambda r: (priority_rank(ctx.cfg, r.priority), -r.points, r.id))
     if getattr(args, "next", False):
         rows = rows[:1]
@@ -1245,32 +1237,20 @@ def cmd_tree(args) -> None:
 
 def cmd_deps(args) -> None:
     ctx = build_ctx_or_die(args)
-    rows = load_index(ctx)
-    by_id = {r.id: r for r in rows}
-    row = get_row(rows, args.id)
-    reverse = {}
-    for r in rows:
-        for dep in r.depends_on:
-            reverse.setdefault(dep, []).append(r)
-
-    def requires(r: Issue) -> list[Issue]:
-        return [by_id[d] for d in sorted(r.depends_on) if d in by_id]
-
-    def blocks(r: Issue) -> list[Issue]:
-        return sorted(reverse.get(r.id, []), key=get_id)
-
+    g = load_graph(ctx)
+    row = g.row(args.id)
     label = lambda r: node_label(ctx, r)
     show_requires = args.requires or not args.blocks
     show_blocks = args.blocks or not args.requires
     print(label(row))
     if show_requires:
-        reqs = requires(row)
+        reqs = g.requires_of(row)
         print("\nrequires (must be done first):" if reqs else "\nrequires: none")
-        walk_tree(reqs, requires, label, seen=frozenset({row.id}))
+        walk_tree(reqs, g.requires_of, label, seen=frozenset({row.id}))
     if show_blocks:
-        blk = blocks(row)
+        blk = g.dependents_of(row)
         print("\nblocks (these are waiting on it):" if blk else "\nblocks: none")
-        walk_tree(blk, blocks, label, seen=frozenset({row.id}))
+        walk_tree(blk, g.dependents_of, label, seen=frozenset({row.id}))
 
 
 def cmd_check(args) -> None:
