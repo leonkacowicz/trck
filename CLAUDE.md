@@ -27,3 +27,22 @@ regenerates `SUMMARY.md`, and self-validates.
 - `trck update` — pull the latest engine from the canonical repo.
 
 Statuses, priorities, kinds, resolutions, and aliases are configured in `trck.json`.
+
+## Recommended usage
+
+Four ways to relate issues — **parent/child**, **labels**, **dependencies**, **priorities** —
+each means something distinct. Pick the right one.
+
+- **Parent / child = decomposition, not categorization.** Make an issue a child of another
+  only when the children are a genuine break-down of the parent into sub-tasks — the parent
+  *is* the sum of its children. A parent is **not** a generic bucket of similar tasks (use
+  **labels** for that); it's a single, clear, achievable goal split into the steps to reach
+  it. **Litmus test:** the parent can be marked *done* exactly when all its children are done.
+  If finishing the children wouldn't justify closing the parent, it's a label, not a parent.
+- **Dependencies = hard ordering (MUST).** `A depends on B` means B *must* be done before A —
+  B **blocks** A. `trck ready`/`trck next` won't surface a task until its deps are satisfied.
+- **Priorities = soft ordering (SHOULD).** A task that *should* be done before another — a
+  preference that influences what to pick up next, not a constraint. Nothing is blocked.
+
+Rule of thumb: decomposition → **parent/child**; "category of similar things" → **labels**;
+"must come first" → **dependency**; "ought to come first" → **priority**.
