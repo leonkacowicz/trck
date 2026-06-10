@@ -145,3 +145,30 @@ class TestWhich(unittest.TestCase):
             err = self.cap_err(self.t.cmd_which, args)
             self.assertIn("warning:", err)
             self.assertIn("SUMMARY.md", err)
+
+
+class TestWiring(unittest.TestCase):
+    def setUp(self):
+        self.t = load_trck()
+
+    def test_list_paths_flag_parses(self):
+        a = self.t.build_parser().parse_args(["list", "--paths", "--status", "ongoing"])
+        self.assertTrue(a.paths)
+        self.assertEqual(a.status, "ongoing")
+        self.assertIs(a.func, self.t.cmd_list)
+
+    def test_path_verb_parses_id(self):
+        a = self.t.build_parser().parse_args(["path", "7"])
+        self.assertEqual(a.id, 7)
+        self.assertIs(a.func, self.t.cmd_path)
+
+    def test_which_verb_parses_paths_and_ids(self):
+        a = self.t.build_parser().parse_args(["which", "--ids", "a.md", "b.md"])
+        self.assertTrue(a.ids)
+        self.assertEqual(a.paths, ["a.md", "b.md"])
+        self.assertIs(a.func, self.t.cmd_which)
+
+    def test_which_defaults_to_no_paths_for_stdin(self):
+        a = self.t.build_parser().parse_args(["which"])
+        self.assertEqual(a.paths, [])
+        self.assertFalse(a.ids)
