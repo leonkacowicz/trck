@@ -957,7 +957,10 @@ def leaf_rollup(row, children, term, seen=frozenset()) -> tuple[int, int, int, i
     pdone = ptotal = ndone = ntotal = 0
     for k in kids:
         a, b, c, d = leaf_rollup(k, children, term, seen)
-        pdone += a; ptotal += b; ndone += c; ntotal += d
+        pdone += a
+        ptotal += b
+        ndone += c
+        ntotal += d
     return pdone, ptotal, ndone, ntotal
 
 
@@ -1181,7 +1184,7 @@ def cmd_new(args) -> None:
     if priority not in ctx.cfg["priorities"]:
         die(f"bad priority '{priority}' (configured: {', '.join(ctx.cfg['priorities'])})")
     rawpoints = getattr(args, "points", None)
-    points = DEFAULT_POINTS if rawpoints is None else int(str(rawpoints))
+    points = DEFAULT_POINTS if rawpoints is None else rawpoints
     if points < 0:
         die(f"bad points {points} (must be a non-negative integer)")
     kind = args.kind or ctx.cfg["kinds"][0]
@@ -1216,7 +1219,7 @@ def cmd_mv(args) -> None:
     resolution = getattr(args, "resolution", None)
     if resolution is not None:
         if not is_terminal(ctx.cfg, args.status):
-            die(f"--resolution is only valid when moving to a terminal status")
+            die("--resolution is only valid when moving to a terminal status")
         if resolution not in ctx.cfg["resolutions"]:
             die(f"bad resolution '{resolution}' (configured: {', '.join(ctx.cfg['resolutions'])})")
     move_issue(ctx, row, args.status)
@@ -1839,7 +1842,6 @@ def build_parser() -> argparse.ArgumentParser:
     lb.add_argument("--remove", action="append", metavar="LABEL",
                     help="label to remove (repeatable)")
     lb.set_defaults(func=cmd_label)
-
 
     sh = sub.add_parser("show", help="print an issue's metadata + body",
                         description="Print an issue's metadata, then its markdown body.")
