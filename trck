@@ -670,25 +670,20 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
         chain = " -> ".join(f"#{c:03d}" for c in (*cyc, cyc[0]))
         errors.append(f"dependency cycle: {chain}")
 
-    children = {}
-    for r in rows:
-        if r.parent is not None and r.parent in by_id:
-            children.setdefault(r.parent, []).append(r)
-    term = lambda name: is_terminal(ctx.cfg, name)
-    for pid, kids in children.items():
-        parent_row = by_id[pid]
-        if all(term(k.status) for k in kids) and not term(parent_row.status):
+    for parent_row in rows:
+        kids = g.children_of(parent_row)
+        if kids and all(g.is_terminal(k) for k in kids) and not g.is_terminal(parent_row):
             warnings.append(
-                f"#{pid:03d} has all children terminal but is still "
-                f"{parent_row.status} (run `trck done {pid}` or `trck mv …`)"
+                f"#{parent_row.id:03d} has all children terminal but is still "
+                f"{parent_row.status} (run `trck done {parent_row.id}` or `trck mv …`)"
             )
     for r in rows:
         p = r.parent
-        if p is not None and p in by_id and term(by_id[p].status) and not term(r.status):
+        if p is not None and p in by_id and g.is_terminal(by_id[p]) and not g.is_terminal(r):
             warnings.append(f"#{r.id:03d} is {r.status} but its parent #{p:03d} is terminal")
-        if term(r.status):
+        if g.is_terminal(r):
             for dep in r.depends_on:
-                if dep in by_id and not term(by_id[dep].status):
+                if dep in by_id and not g.is_terminal(by_id[dep]):
                     warnings.append(f"#{r.id:03d} is terminal but depends on non-terminal #{dep:03d}")
     return errors, warnings
 
@@ -977,21 +972,22 @@ def render_graph(g: "Graph", ids) -> list:
 # --------------------------------------------------------------------------- #
 # SUMMARY.md generation
 # --------------------------------------------------------------------------- #
-def leaf_rollup(row, children, term, seen=frozenset()) -> tuple[int, int, int, int]:
+def leaf_rollup(g: "Graph", row, seen=frozenset()) -> tuple[int, int, int, int]:
     """Aggregate (done_points, total_points, done_count, total_count) over the leaf
-    descendants of `row`. A leaf's weight defaults to 1; a node's weight is the sum of
-    its leaves. Cycle-guarded so a malformed (mid-edit) index can't spin forever."""
+    descendants of `row`, deriving children and terminal-ness from `g`. A leaf's weight
+    defaults to 1; a node's weight is the sum of its leaves. Cycle-guarded so a
+    malformed (mid-edit) index can't spin forever."""
     if row.id in seen:
         return 0, 0, 0, 0
-    kids = children.get(row.id)
+    kids = g.children_of(row)
     if not kids:  # leaf
         pts = row.points
-        done = term(row.status)
+        done = g.is_terminal(row)
         return pts if done else 0, pts, 1 if done else 0, 1
     seen = seen | {row.id}
     pdone = ptotal = ndone = ntotal = 0
     for k in kids:
-        a, b, c, d = leaf_rollup(k, children, term, seen)
+        a, b, c, d = leaf_rollup(g, k, seen)
         pdone += a
         ptotal += b
         ndone += c
@@ -1000,13 +996,9 @@ def leaf_rollup(row, children, term, seen=frozenset()) -> tuple[int, int, int, i
 
 
 def generate_summary(ctx: Ctx) -> str:
-    rows = load_index(ctx)
-    children = {}
-    for r in rows:
-        if r.parent is not None:
-            children.setdefault(r.parent, []).append(r)
+    g = load_graph(ctx)
+    rows = g.rows
     names = status_names(ctx.cfg)
-    term = lambda n: is_terminal(ctx.cfg, n)
 
     counts = {n: 0 for n in names}
     for r in rows:
@@ -1025,13 +1017,13 @@ def generate_summary(ctx: Ctx) -> str:
         ""
     ]
 
-    parents = sorted([r for r in rows if r.id in children], key=get_id)
+    parents = sorted([r for r in rows if not g.is_leaf(r)], key=get_id)
     if parents:
         out.append("## Hierarchies")
         out.append("")
         for parent in parents:
-            kids = sorted(children.get(parent.id, []), key=get_id)
-            pdone, ptotal, ndone, ntotal = leaf_rollup(parent, children, term)
+            kids = g.children_of(parent)  # id-sorted
+            pdone, ptotal, ndone, ntotal = leaf_rollup(g, parent)
             pct = round(100 * pdone / ptotal) if ptotal else 0
             out.append(
                 f"### [#{parent.id:03d} {parent.title}]({rel_link(parent)}) — "
@@ -1043,14 +1035,14 @@ def generate_summary(ctx: Ctx) -> str:
             if kids:
                 out.append("")
                 for k in kids:
-                    box = "x" if term(k.status) else " "
-                    tail = "" if term(k.status) else f" _({k.status})_"
+                    box = "x" if g.is_terminal(k) else " "
+                    tail = "" if g.is_terminal(k) else f" _({k.status})_"
                     out.append(f"- [{box}] [#{k.id:03d} {k.title}]"
                                f"({rel_link(k)}){label_tag(k)}{tail}")
             out.append("")
 
     def standalone(s: str):
-        issues = [t for t in rows if t.status == s and t.id not in children and t.parent is None]
+        issues = [t for t in rows if t.status == s and g.is_leaf(t) and t.parent is None]
         return sorted(issues, key=lambda x: (priority_rank(ctx.cfg, x.priority), x.id))
 
     for status in names:
