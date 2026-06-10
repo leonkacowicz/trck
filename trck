@@ -1383,6 +1383,12 @@ def cmd_show(args) -> None:
     print(issue_path(ctx, row).read_text())
 
 
+def cmd_path(args) -> None:
+    ctx = build_ctx_or_die(args)
+    row = get_row(load_index(ctx), args.id)
+    print(issue_path(ctx, row).resolve())
+
+
 def forest_layout(g: Graph, roots, shown: set, key):
     """Depth-first forest over the `shown` id set: returns (ordered_rows, prefix_by_id).
     Roots render with no connector; descendants get `walk_tree`-style branch prefixes.
@@ -1903,6 +1909,12 @@ def build_parser() -> argparse.ArgumentParser:
     sh.add_argument("id", type=int, help="issue id")
     sh.add_argument("--json", action="store_true", help="raw JSON metadata (machine-readable)")
     sh.set_defaults(func=cmd_show)
+
+    pa = sub.add_parser("path", help="print the absolute file path of one issue",
+                        description="Print the absolute path to an issue's markdown "
+                                    "file (e.g. $(trck path 25) to open or grep it).")
+    pa.add_argument("id", type=int, help="issue id")
+    pa.set_defaults(func=cmd_path)
 
     ls = sub.add_parser("list", aliases=["tree"], help="browse issues as a nested forest (filterable)",
                         description="Browse issues as a nested forest: every issue, children nested "
