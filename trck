@@ -1437,6 +1437,11 @@ def cmd_list(args) -> None:
     key = sort_keys.get(sort, get_id)
     annotate = lambda r: block_annotations(g, r)
 
+    if getattr(args, "paths", False):
+        for r in sorted((r for r in g.rows if keep(r)), key=key):
+            print(issue_path(ctx, r).resolve())
+        return
+
     if getattr(args, "flat", False):
         rows = sorted([r for r in g.rows if keep(r)], key=key)
         print_rows(ctx, rows, annotate=annotate)
@@ -1925,6 +1930,9 @@ def build_parser() -> argparse.ArgumentParser:
                     help="only issues with an unmet (non-terminal) dependency")
     ls.add_argument("--orphan", "--no-parent", dest="orphan", action="store_true",
                     help="only top-level issues (no parent)")
+    ls.add_argument("--paths", action="store_true",
+                    help="print the absolute file path of each matching issue "
+                         "(flat, matches only) instead of rows — pipe into rg/grep/fzf")
     ls.set_defaults(func=cmd_list)
 
     rd = sub.add_parser(

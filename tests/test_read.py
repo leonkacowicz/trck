@@ -243,6 +243,54 @@ class TestRead(unittest.TestCase):
             self.assertNotIn("#002", out)     # filtered by status
             self.assertNotIn("#003", out)     # filtered by match
 
+    def paths(self, d, **over):
+        """cmd_list in --paths output mode; filters default as in `listing`."""
+        a = dict(dir=str(d), status=None, kind=None, priority=None, label=None,
+                 parent=None, match=None, sort=None, blocked=False, orphan=False,
+                 flat=True, id=None, paths=True)
+        a.update(over)
+        return self.cap(self.t.cmd_list, ns(**a))
+
+    def test_list_paths_emits_absolute_file_path_per_match(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Alpha")          # 1 -> 001-alpha.md
+            self.seed(d, "Beta")           # 2 -> 002-beta.md
+            out = self.paths(d)
+            lines = out.splitlines()
+            self.assertEqual(len(lines), 2)
+            for ln in lines:
+                self.assertTrue(ln.startswith("/"))        # absolute
+                self.assertTrue(ln.endswith(".md"))
+            self.assertTrue(any(ln.endswith("001-alpha.md") for ln in lines))
+            self.assertTrue(any(ln.endswith("002-beta.md") for ln in lines))
+
+    def test_list_paths_honors_status_filter(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Stay")                                   # 1 backlog
+            self.seed(d, "Move")                                   # 2 -> ongoing
+            self.t.cmd_mv(ns(dir=str(d), id=2, status="ongoing", resolution=None))
+            out = self.paths(d, status="ongoing")
+            lines = out.splitlines()
+            self.assertEqual(len(lines), 1)
+            self.assertTrue(lines[0].endswith("002-move.md"))
+
+    def test_list_paths_points_at_real_files(self):
+        with TemporaryDirectory() as tmp:
+            from pathlib import Path
+            d = make_tracker(tmp, {})
+            self.seed(d, "Real")
+            out = self.paths(d)
+            for ln in out.splitlines():
+                self.assertTrue(Path(ln).is_file())               # path actually resolves
+
+    def test_list_paths_empty_when_no_match(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Only")
+            self.assertEqual(self.paths(d, status="nonesuch"), "")
+
     def nested(self, d, **over):
         """cmd_list in its default nested-forest view; override per test."""
         a = dict(dir=str(d), status=None, kind=None, priority=None, label=None,
