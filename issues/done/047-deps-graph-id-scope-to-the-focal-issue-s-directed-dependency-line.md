@@ -19,20 +19,20 @@ everything that (transitively) depends on it. In the example,
 weakly-connected-component view available behind a flag.
 
 ## Acceptance criteria
-- [ ] `deps --graph <id>` renders exactly `{id} ∪ prerequisites*(id) ∪ dependents*(id)`,
+- [x] `deps --graph <id>` renders exactly `{id} ∪ prerequisites*(id) ∪ dependents*(id)`,
       where `prerequisites*` is the forward closure along `depends_on` edges and
       `dependents*` the reverse closure. (NB: this is the **dependency** graph —
       `depends_on` — not the parent/epic spine that `Graph.ancestors_of` walks.)
-- [ ] In the A→B, A→C, B→D example, `deps --graph B` shows A, B, D and omits C.
-- [ ] The previous whole-component view stays reachable via a flag
-      (e.g. `--component` / `--full`); decide the exact name at design time.
-- [ ] The no-id whole-graph form (`deps --graph`) is unchanged — it has no focal
+- [x] In the A→B, A→C, B→D example, `deps --graph B` shows A, B, D and omits C.
+- [x] The previous whole-component view stays reachable via a flag: chose
+      **`--full`** (`deps --graph <id> --full`).
+- [x] The no-id whole-graph form (`deps --graph`) is unchanged — it has no focal
       node, so directed scoping doesn't apply.
-- [ ] Reuses the existing `render_graph` / component-splitting renderer; the only
+- [x] Reuses the existing `render_graph` / component-splitting renderer; the only
       new logic is computing the restricted id-set (a directed forward+reverse
       reachability over `depends_on`, similar to the traversal in
       `Graph.would_cycle`).
-- [ ] Covered by tests (incl. the cousin-exclusion case); full suite and
+- [x] Covered by tests (incl. the cousin-exclusion case); full suite and
       `trck check` green.
 
 ## Notes
@@ -44,3 +44,12 @@ renderer when an `<id>` is given; the rendering path itself is untouched.
 The user chose "compact view as the default" over adding a `--compact` opt-in:
 the directed line is almost always what you want when you ask for one issue's
 dependency graph, and the undirected component is the surprising part.
+
+Implemented: new `Graph.dependency_line(r)` does the forward (prerequisite) +
+backward (dependent) sweep, sharing one `seen` set so the two directions never
+cross (that crossing is exactly what pulled cousins into the component view).
+`_print_deps_graph` gained a `full` arg selecting `graph_components` (whole
+cluster) vs `dependency_line` (directed line); `cmd_deps` threads
+`args.full`, and `deps` gained a `--full` flag. README updated. New tests in
+`tests/test_graph_render.py`: three `dependency_line` unit tests plus
+`deps --graph` command tests for default cousin-exclusion and `--full`.
