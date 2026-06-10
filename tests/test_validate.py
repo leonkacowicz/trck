@@ -147,6 +147,37 @@ class TestValidate(unittest.TestCase):
             errors, _ = self.t.validate(ctx)
             self.assertFalse(any("dependency cycle" in e for e in errors))
 
+    def test_self_parent_reported_as_parent_cycle(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            a = self.base(id=1, slug="a", parent=1)  # points at itself
+            self.write(ctx, a)
+            self.t.save_index(ctx, [a])
+            errors, _ = self.t.validate(ctx)
+            self.assertIn("#001 is in a parent cycle", errors)
+
+    def test_two_node_parent_cycle_flags_both(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            a = self.base(id=1, slug="a", parent=2)
+            b = self.base(id=2, slug="b", parent=1)
+            self.write(ctx, a); self.write(ctx, b)
+            self.t.save_index(ctx, [a, b])
+            errors, _ = self.t.validate(ctx)
+            cyc = [e for e in errors if "parent cycle" in e]
+            self.assertEqual(sorted(cyc),
+                             ["#001 is in a parent cycle", "#002 is in a parent cycle"])
+
+    def test_clean_parent_spine_has_no_cycle_error(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            p = self.base(id=1, slug="p")
+            c = self.base(id=2, slug="c", parent=1)
+            self.write(ctx, p); self.write(ctx, c)
+            self.t.save_index(ctx, [p, c])
+            errors, _ = self.t.validate(ctx)
+            self.assertFalse(any("parent cycle" in e for e in errors))
+
     def test_preloaded_rows_skip_the_index_reread(self):
         # validate() accepts already-loaded rows and validates those against the
         # on-disk file scan, without re-parsing index.jsonl.

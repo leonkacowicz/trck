@@ -470,6 +470,21 @@ class Graph:
             cur = nxt
         return chain
 
+    def in_parent_cycle(self, r: Issue) -> bool:
+        """True if `r` sits in (or beneath) a parent cycle. Reuses the spine walk
+        of `ancestors_of` and inspects only why it stopped: the spine ends in a
+        cycle iff the node it halted on still has a parent that resolves back onto
+        the spine (`r` or one of its ancestors). A missing/None parent is a clean
+        root, not a cycle (and is reported separately)."""
+        chain = self.ancestors_of(r)
+        last = chain[-1] if chain else r
+        if last.parent is None:
+            return False
+        nxt = self.by_id.get(last.parent)
+        if nxt is None:
+            return False
+        return nxt.id == r.id or nxt.id in {a.id for a in chain}
+
     def match_closure(self, matches) -> tuple[set[int], set[int]]:
         """For a filtered forest: given a per-row match predicate, return
         `(shown, dim)` id sets. `shown` is every matched node plus the ancestor
@@ -648,13 +663,8 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
                 errors.append(f"#{r.id:03d} depends_on #{dep:03d} which does not exist")
 
     for r in rows:  # parent cycles
-        seen, cur = set(), r
-        while cur and cur.parent is not None:
-            if cur.parent in seen:
-                errors.append(f"#{r.id:03d} is in a parent cycle")
-                break
-            seen.add(cur.parent)
-            cur = by_id.get(cur.parent)
+        if g.in_parent_cycle(r):
+            errors.append(f"#{r.id:03d} is in a parent cycle")
 
     for cyc in g.cycles():  # dependency cycles, one error per cycle
         chain = " -> ".join(f"#{c:03d}" for c in (*cyc, cyc[0]))

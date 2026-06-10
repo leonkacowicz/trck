@@ -155,6 +155,31 @@ class TestGraph(unittest.TestCase):
         # must not loop forever: returns the reachable spine, then stops
         self.assertEqual([a.id for a in g.ancestors_of(g.row(1))], [2])
 
+    def test_in_parent_cycle_false_for_clean_spine(self):
+        g = self.graph(self.issue(1), self.issue(2, parent=1),
+                       self.issue(3, parent=2))
+        self.assertFalse(g.in_parent_cycle(g.row(3)))
+        self.assertFalse(g.in_parent_cycle(g.row(1)))  # a root
+
+    def test_in_parent_cycle_false_for_dangling_parent(self):
+        g = self.graph(self.issue(2, parent=99))  # missing parent != cycle
+        self.assertFalse(g.in_parent_cycle(g.row(2)))
+
+    def test_in_parent_cycle_true_for_self_parent(self):
+        g = self.graph(self.issue(1, parent=1))
+        self.assertTrue(g.in_parent_cycle(g.row(1)))
+
+    def test_in_parent_cycle_true_for_two_node_cycle(self):
+        g = self.graph(self.issue(1, parent=2), self.issue(2, parent=1))
+        self.assertTrue(g.in_parent_cycle(g.row(1)))
+        self.assertTrue(g.in_parent_cycle(g.row(2)))
+
+    def test_in_parent_cycle_true_for_node_beneath_a_cycle(self):
+        # 4's spine leads into the 1<->2<->3 cycle though 4 isn't in it
+        g = self.graph(self.issue(1, parent=2), self.issue(2, parent=3),
+                       self.issue(3, parent=1), self.issue(4, parent=1))
+        self.assertTrue(g.in_parent_cycle(g.row(4)))
+
     def test_match_closure_keeps_ancestor_spine_of_deep_match(self):
         g = self.graph(self.issue(1), self.issue(2, parent=1), self.issue(3, parent=2))
         shown, dim = g.match_closure(lambda r: r.id == 3)
