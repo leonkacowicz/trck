@@ -171,8 +171,11 @@ def resolve_tracker_dir(dir_opt, env=None, required: bool = True) -> Path | None
 def resolve_tracker_dir_or_die(dir_opt, env=None) -> Path:
     path = resolve_tracker_dir(dir_opt, env=env, required=False)
     if not path:
-        p = Path(dir_opt).resolve()
-        die(f"{p} is not a tracker (no trck.json)")
+        env = os.environ if env is None else env
+        explicit = dir_opt or env.get("TRCK_DIR")
+        if explicit:
+            die(f"{Path(explicit).resolve()} is not a tracker (no trck.json)")
+        die("no tracker found here; run `trck init`")
     return path
 
 # --------------------------------------------------------------------------- #

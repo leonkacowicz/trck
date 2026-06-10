@@ -1,5 +1,8 @@
+import io
 import json
+import os
 import unittest
+from contextlib import redirect_stderr
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -123,3 +126,38 @@ class TestDiscovery(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.assertEqual(self.t.resolve_tracker_dir(str(d), env={}), d.resolve())
+
+    def test_or_die_no_tracker_no_dir_is_clean_error(self):
+        # dir_opt is None and nothing resolves: a clean `error: …` message,
+        # not a Python traceback (regression for the Path(None) TypeError).
+        with TemporaryDirectory() as tmp:
+            self.t.SELF_PATH = Path(tmp) / "trck"  # parent has no trck.json
+            cwd = os.getcwd()
+            err = io.StringIO()
+            try:
+                os.chdir(tmp)
+                with redirect_stderr(err), self.assertRaises(SystemExit):
+                    self.t.resolve_tracker_dir_or_die(None, env={})
+            finally:
+                os.chdir(cwd)
+        self.assertIn("no tracker found here", err.getvalue())
+
+    def test_or_die_explicit_invalid_dir_names_path(self):
+        # An explicit but invalid --dir still produces a message naming the path.
+        with TemporaryDirectory() as tmp:
+            err = io.StringIO()
+            with redirect_stderr(err), self.assertRaises(SystemExit):
+                self.t.resolve_tracker_dir_or_die(str(tmp), env={})
+            out = err.getvalue()
+            self.assertIn("is not a tracker", out)
+            self.assertIn(str(Path(tmp).resolve()), out)
+
+    def test_or_die_explicit_invalid_env_names_path(self):
+        # Same for an explicit but invalid $TRCK_DIR (no --dir).
+        with TemporaryDirectory() as tmp:
+            err = io.StringIO()
+            with redirect_stderr(err), self.assertRaises(SystemExit):
+                self.t.resolve_tracker_dir_or_die(None, env={"TRCK_DIR": str(tmp)})
+            out = err.getvalue()
+            self.assertIn("is not a tracker", out)
+            self.assertIn(str(Path(tmp).resolve()), out)
