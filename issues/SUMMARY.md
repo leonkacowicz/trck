@@ -7,8 +7,8 @@
 |---|---:|
 | backlog | 18 |
 | ongoing | 0 |
-| done | 27 |
-| **total** | **45** |
+| done | 28 |
+| **total** | **46** |
 
 ## Hierarchies
 
@@ -73,5 +73,6 @@ _none_
 - [#016 Improve CLI output presentation (align/icons, color, show, SUMMARY)](done/016-improve-cli-output-presentation-align-icons-color-show-summary.md) — _medium_ (closed 2026-06-05)
 - [#019 Add points field with leaves-only deep-recursive weighted rollup](done/019-add-points-field-with-leaves-only-deep-recursive-weighted-rollup.md) — _medium_ (closed 2026-06-06)
 - [#021 Add normalize command to rewrite index.jsonl in canonical slim form](done/021-add-normalize-command-to-rewrite-index-jsonl-in-canonical-slim-form.md) — _medium_ (closed 2026-06-05)
+- [#046 deps --graph: lazygit-style dependency DAG renderer](done/046-deps-graph-lazygit-style-dependency-dag-renderer.md) — _medium_ (closed 2026-06-09)
 - [#011 version/update: suppress no-tracker stderr noise when run outside a tracker](done/011-version-update-suppress-no-tracker-stderr-noise-when-run-outside-a-tracker.md) — _low_ (closed 2026-06-05)
 - [#017 summary: sort status sections by priority (highest first)](done/017-summary-sort-status-sections-by-priority-highest-first.md) — _low_ (closed 2026-06-05)
