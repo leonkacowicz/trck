@@ -5,9 +5,9 @@
 
 | State | Count |
 |---|---:|
-| backlog | 13 |
+| backlog | 12 |
 | ongoing | 0 |
-| done | 33 |
+| done | 34 |
 | **total** | **46** |
 
 ## Hierarchies
@@ -45,7 +45,6 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 ## Backlog
 
 - [#018 mv/done: guard closing a parent with open descendants (--recurse to cascade)](backlog/018-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
-- [#041 Consolidate parent-to-children map building onto Graph](backlog/041-consolidate-parent-to-children-map-building-onto-graph.md) — _medium_
 - [#001 Part C: curses TUI for browsing and quick actions](backlog/001-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
 - [#007 summary: include foreign/unknown statuses in the counts table](backlog/007-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
 - [#008 validate: report one error per parent cycle, not one per node](backlog/008-validate-report-one-error-per-parent-cycle-not-one-per-node.md) — _low_
@@ -69,6 +68,7 @@ _none_
 - [#016 Improve CLI output presentation (align/icons, color, show, SUMMARY)](done/016-improve-cli-output-presentation-align-icons-color-show-summary.md) — _medium_ (closed 2026-06-05)
 - [#019 Add points field with leaves-only deep-recursive weighted rollup](done/019-add-points-field-with-leaves-only-deep-recursive-weighted-rollup.md) — _medium_ (closed 2026-06-06)
 - [#021 Add normalize command to rewrite index.jsonl in canonical slim form](done/021-add-normalize-command-to-rewrite-index-jsonl-in-canonical-slim-form.md) — _medium_ (closed 2026-06-05)
+- [#041 Consolidate parent-to-children map building onto Graph](done/041-consolidate-parent-to-children-map-building-onto-graph.md) — _medium_ (closed 2026-06-10)
 - [#042 Deduplicate parent-cycle detection via Graph.ancestors_of](done/042-deduplicate-parent-cycle-detection-via-graph-ancestors-of.md) — _medium_ (closed 2026-06-10)
 - [#043 Extract config-vocabulary validation helpers](done/043-extract-config-vocabulary-validation-helpers.md) — _medium_ (closed 2026-06-10)
 - [#045 Eliminate unnecessary index double-reads](done/045-eliminate-unnecessary-index-double-reads.md) — _medium_ (closed 2026-06-10)
