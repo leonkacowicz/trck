@@ -470,20 +470,6 @@ class Graph:
             cur = nxt
         return chain
 
-    def in_parent_cycle(self, r: Issue) -> bool:
-        """True if `r` sits in (or beneath) a parent cycle. Reuses the spine walk
-        of `ancestors_of` and inspects only why it stopped: the spine ends in a
-        cycle iff the node it halted on still has a parent that resolves back onto
-        the spine (`r` or one of its ancestors). A missing/None parent is a clean
-        root, not a cycle (and is reported separately)."""
-        chain = self.ancestors_of(r)
-        last = chain[-1] if chain else r
-        if last.parent is None:
-            return False
-        nxt = self.by_id.get(last.parent)
-        if nxt is None:
-            return False
-        return nxt.id == r.id or nxt.id in {a.id for a in chain}
 
     def match_closure(self, matches) -> tuple[set[int], set[int]]:
         """For a filtered forest: given a per-row match predicate, return
@@ -530,10 +516,11 @@ class Graph:
                 stack.extend(node.depends_on)
         return False
 
-    def cycles(self) -> list[list[int]]:
-        """Every cycle in the depends_on graph as a list of node ids, each cycle
-        reported once (deduped by its node set). DFS with white/gray/black coloring;
-        a self-edge (#n depends_on #n) is a one-node cycle."""
+    def _find_cycles(self, successors) -> list[list[int]]:
+        """Every cycle reachable by following `successors(row)` (a list of next ids)
+        as a list of node ids, each cycle reported once (deduped by its node set).
+        DFS with white/gray/black coloring; a self-edge is a one-node cycle. Shared
+        by `cycles` (depends_on edges) and `parent_cycles` (the single parent edge)."""
         by_id = self.by_id
         color = {iid: 0 for iid in by_id}  # 0=unseen, 1=on-stack, 2=done
         found, seen_keys, path = [], set(), []
@@ -541,7 +528,7 @@ class Graph:
         def visit(node):
             color[node] = 1
             path.append(node)
-            for nxt in by_id[node].depends_on:
+            for nxt in successors(by_id[node]):
                 if nxt not in by_id:
                     continue
                 if color[nxt] == 1:
@@ -559,6 +546,17 @@ class Graph:
             if color[iid] == 0:
                 visit(iid)
         return found
+
+    def cycles(self) -> list[list[int]]:
+        """Every cycle in the depends_on graph, each reported once."""
+        return self._find_cycles(lambda r: r.depends_on)
+
+    def parent_cycles(self) -> list[list[int]]:
+        """Every cycle in the parent graph, each reported once. The parent graph is
+        functional (each node has at most one parent), so cycles are simple and
+        disjoint; a self-parent (#n parent #n) is a one-node cycle. Nodes that merely
+        point into a cycle are not part of it and are not reported."""
+        return self._find_cycles(lambda r: () if r.parent is None else (r.parent,))
 
 
 def load_graph(ctx: Ctx) -> Graph:
@@ -662,9 +660,9 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
             if dep not in by_id:
                 errors.append(f"#{r.id:03d} depends_on #{dep:03d} which does not exist")
 
-    for r in rows:  # parent cycles
-        if g.in_parent_cycle(r):
-            errors.append(f"#{r.id:03d} is in a parent cycle")
+    for cyc in g.parent_cycles():  # one error per cycle, not one per node
+        chain = " -> ".join(f"#{c:03d}" for c in (*cyc, cyc[0]))
+        errors.append(f"parent cycle: {chain}")
 
     for cyc in g.cycles():  # dependency cycles, one error per cycle
         chain = " -> ".join(f"#{c:03d}" for c in (*cyc, cyc[0]))

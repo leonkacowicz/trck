@@ -154,9 +154,9 @@ class TestValidate(unittest.TestCase):
             self.write(ctx, a)
             self.t.save_index(ctx, [a])
             errors, _ = self.t.validate(ctx)
-            self.assertIn("#001 is in a parent cycle", errors)
+            self.assertIn("parent cycle: #001 -> #001", errors)
 
-    def test_two_node_parent_cycle_flags_both(self):
+    def test_two_node_parent_cycle_reported_once(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
             a = self.base(id=1, slug="a", parent=2)
@@ -165,8 +165,7 @@ class TestValidate(unittest.TestCase):
             self.t.save_index(ctx, [a, b])
             errors, _ = self.t.validate(ctx)
             cyc = [e for e in errors if "parent cycle" in e]
-            self.assertEqual(sorted(cyc),
-                             ["#001 is in a parent cycle", "#002 is in a parent cycle"])
+            self.assertEqual(len(cyc), 1)  # one error per cycle, not one per node
 
     def test_clean_parent_spine_has_no_cycle_error(self):
         with TemporaryDirectory() as tmp:
