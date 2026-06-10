@@ -1503,6 +1503,43 @@ def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None
         print(f"{icon} {iid} {status}  {prio}  {pre}{r.title}{tagstr}{ann}")
 
 
+def cmd_which(args) -> None:
+    """Map issue file paths (args, or stdin when none) back to issues. Each path's
+    basename must start with the zero-padded id (the filename is NNN-slug.md); the id
+    is looked up in the index. Unknown/non-issue paths are skipped with a stderr note.
+    Prints matched rows in `list` format, or bare ids with --ids; id-sorted, deduped."""
+    ctx = build_ctx_or_die(args)
+    rows = load_index(ctx)
+    by_id = {r.id: r for r in rows}
+
+    paths = list(getattr(args, "paths", None) or [])
+    if not paths:
+        paths = [ln.strip() for ln in sys.stdin.read().splitlines() if ln.strip()]
+
+    seen, picked = set(), []
+    for p in paths:
+        name = Path(p).name
+        m = re.match(r"(\d+)-", name)
+        if not m:
+            print(f"trck: not an issue path: {p}", file=sys.stderr)
+            continue
+        iid = int(m.group(1))
+        if iid not in by_id:
+            print(f"trck: no issue #{iid:03d} for {p}", file=sys.stderr)
+            continue
+        if iid in seen:
+            continue
+        seen.add(iid)
+        picked.append(by_id[iid])
+
+    picked.sort(key=get_id)
+    if getattr(args, "ids", False):
+        for r in picked:
+            print(r.id)
+    else:
+        print_rows(ctx, picked)
+
+
 def cmd_ready(args) -> None:
     ctx = build_ctx_or_die(args)
     g = load_graph(ctx)                                    # not-terminal leaf, every dep terminal
@@ -1915,6 +1952,18 @@ def build_parser() -> argparse.ArgumentParser:
                                     "file (e.g. $(trck path 25) to open or grep it).")
     pa.add_argument("id", type=int, help="issue id")
     pa.set_defaults(func=cmd_path)
+
+    wh = sub.add_parser(
+        "which", help="resolve issue file paths back to issues",
+        description="Read issue file paths (as positional args, or one per line on "
+                    "stdin when none are given) and print the matching issues in "
+                    "`list` format. The reverse of `path`/`list --paths`: pipe "
+                    "`rg -l PATTERN $(trck list --paths)` into it for body search. "
+                    "Non-issue paths are skipped.")
+    wh.add_argument("paths", nargs="*", help="issue file paths (default: read stdin)")
+    wh.add_argument("--ids", action="store_true",
+                    help="print bare issue ids (for `| xargs -n1 trck show`) instead of rows")
+    wh.set_defaults(func=cmd_which)
 
     ls = sub.add_parser("list", aliases=["tree"], help="browse issues as a nested forest (filterable)",
                         description="Browse issues as a nested forest: every issue, children nested "

@@ -38,3 +38,95 @@ class TestPath(unittest.TestCase):
             self.seed(d, "Alpha")
             with self.assertRaises(SystemExit):
                 self.cap(self.t.cmd_path, ns(dir=str(d), id=99))
+
+
+class TestWhich(unittest.TestCase):
+    def setUp(self):
+        self.t = load_trck()
+
+    def seed(self, d, title="Item", **over):
+        a = dict(dir=str(d), title=title, priority="high", kind=None, parent=None,
+                 points=None, depends=None, spec=None, slug=None)
+        a.update(over)
+        self.t.cmd_new(ns(**a))
+
+    def cap(self, fn, args):
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            fn(args)
+        return buf.getvalue()
+
+    def which(self, d, paths, ids=False, stdin=None):
+        a = ns(dir=str(d), paths=list(paths), ids=ids)
+        if stdin is not None:
+            import sys
+            real = sys.stdin
+            sys.stdin = io.StringIO(stdin)
+            try:
+                return self.cap(self.t.cmd_which, a)
+            finally:
+                sys.stdin = real
+        return self.cap(self.t.cmd_which, a)
+
+    def issue_file(self, d, issue_id):
+        ctx = self.t.build_ctx_or_die(ns(dir=str(d)))
+        row = self.t.get_row(self.t.load_index(ctx), issue_id)
+        return str(self.t.issue_path(ctx, row).resolve())
+
+    def test_which_maps_path_to_list_row(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Alpha")                          # id 1
+            p = self.issue_file(d, 1)
+            out = self.which(d, [p])
+            self.assertIn("#001", out)
+            self.assertIn("Alpha", out)
+
+    def test_which_ids_flag_prints_bare_id(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Alpha")                          # id 1
+            p = self.issue_file(d, 1)
+            out = self.which(d, [p], ids=True).strip()
+            self.assertEqual(out, "1")
+
+    def test_which_reads_paths_from_stdin(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Alpha")                          # id 1
+            self.seed(d, "Beta")                           # id 2
+            piped = self.issue_file(d, 1) + "\n" + self.issue_file(d, 2) + "\n"
+            out = self.which(d, [], stdin=piped)
+            self.assertIn("#001", out)
+            self.assertIn("#002", out)
+
+    def test_which_bare_filename_resolves_by_leading_id(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Alpha")                          # id 1 -> 001-alpha.md
+            out = self.which(d, ["issues/backlog/001-alpha.md"])
+            self.assertIn("#001", out)
+
+    def test_which_skips_non_issue_path(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Alpha")                          # id 1
+            out = self.which(d, [self.issue_file(d, 1), "issues/SUMMARY.md"])
+            self.assertIn("#001", out)                     # known one still rendered
+            self.assertNotIn("SUMMARY", out)               # junk path dropped from stdout
+
+    def test_which_unknown_id_is_skipped(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Alpha")                          # only id 1 exists
+            out = self.which(d, ["someplace/777-ghost.md"])
+            self.assertEqual(out.strip(), "")              # no row, no crash
+
+    def test_which_dedupes_and_orders_by_id(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Alpha")                          # 1
+            self.seed(d, "Beta")                           # 2
+            ps = [self.issue_file(d, 2), self.issue_file(d, 1), self.issue_file(d, 2)]
+            out = self.which(d, ps, ids=True)
+            self.assertEqual(out.split(), ["1", "2"])
