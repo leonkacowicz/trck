@@ -5,9 +5,9 @@
 
 | State | Count |
 |---|---:|
-| backlog | 18 |
+| backlog | 17 |
 | ongoing | 0 |
-| done | 28 |
+| done | 29 |
 | **total** | **46** |
 
 ## Hierarchies
@@ -44,7 +44,6 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 
 ## Backlog
 
-- [#040 Crash instead of clean error when no tracker is found](backlog/040-crash-instead-of-clean-error-when-no-tracker-is-found.md) — _high_
 - [#018 mv/done: guard closing a parent with open descendants (--recurse to cascade)](backlog/018-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
 - [#041 Consolidate parent-to-children map building onto Graph](backlog/041-consolidate-parent-to-children-map-building-onto-graph.md) — _medium_
 - [#042 Deduplicate parent-cycle detection via Graph.ancestors_of](backlog/042-deduplicate-parent-cycle-detection-via-graph-ancestors-of.md) — _medium_
@@ -68,6 +67,7 @@ _none_
 - [#014 Cut v0.1.0 release](done/014-cut-v0-1-0-release.md) — _high_ (closed 2026-06-05)
 - [#020 Strip null/empty fields from index.jsonl rows to reduce noise](done/020-strip-null-empty-fields-from-index-jsonl-rows-to-reduce-noise.md) — _high_ (closed 2026-06-05)
 - [#029 pre-commit hook never runs check when trck.json is at repo root](done/029-pre-commit-hook-never-runs-check-when-trck-json-is-at-repo-root.md) — _high_ (closed 2026-06-09)
+- [#040 Crash instead of clean error when no tracker is found](done/040-crash-instead-of-clean-error-when-no-tracker-is-found.md) — _high_ (closed 2026-06-10)
 - [#006 init: accept positional dir and add --no-vendor for self-hosting repos](done/006-init-accept-positional-dir-and-add-no-vendor-for-self-hosting-repos.md) — _medium_ (closed 2026-06-05)
 - [#015 Allow any issue to be a parent (rollup for any parent)](done/015-allow-any-issue-to-be-a-parent-rollup-for-any-parent.md) — _medium_ (closed 2026-06-05)
 - [#016 Improve CLI output presentation (align/icons, color, show, SUMMARY)](done/016-improve-cli-output-presentation-align-icons-color-show-summary.md) — _medium_ (closed 2026-06-05)
