@@ -1,6 +1,7 @@
 import io
+import sys
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -59,7 +60,6 @@ class TestWhich(unittest.TestCase):
     def which(self, d, paths, ids=False, stdin=None):
         a = ns(dir=str(d), paths=list(paths), ids=ids)
         if stdin is not None:
-            import sys
             real = sys.stdin
             sys.stdin = io.StringIO(stdin)
             try:
@@ -67,6 +67,12 @@ class TestWhich(unittest.TestCase):
             finally:
                 sys.stdin = real
         return self.cap(self.t.cmd_which, a)
+
+    def cap_err(self, fn, args):
+        buf = io.StringIO()
+        with redirect_stderr(buf):
+            fn(args)
+        return buf.getvalue()
 
     def issue_file(self, d, issue_id):
         ctx = self.t.build_ctx_or_die(ns(dir=str(d)))
@@ -130,3 +136,12 @@ class TestWhich(unittest.TestCase):
             ps = [self.issue_file(d, 2), self.issue_file(d, 1), self.issue_file(d, 2)]
             out = self.which(d, ps, ids=True)
             self.assertEqual(out.split(), ["1", "2"])
+
+    def test_which_warns_on_non_issue_path(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Alpha")                          # id 1
+            args = ns(dir=str(d), paths=["issues/SUMMARY.md"], ids=False)
+            err = self.cap_err(self.t.cmd_which, args)
+            self.assertIn("warning:", err)
+            self.assertIn("SUMMARY.md", err)

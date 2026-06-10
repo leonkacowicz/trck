@@ -1519,13 +1519,13 @@ def cmd_which(args) -> None:
     seen, picked = set(), []
     for p in paths:
         name = Path(p).name
-        m = re.match(r"(\d+)-", name)
+        m = FILENAME_RE.match(name)
         if not m:
-            print(f"trck: not an issue path: {p}", file=sys.stderr)
+            print(f"warning: not an issue path: {p}", file=sys.stderr)
             continue
         iid = int(m.group(1))
         if iid not in by_id:
-            print(f"trck: no issue #{iid:03d} for {p}", file=sys.stderr)
+            print(f"warning: no issue #{iid:03d} (from {p})", file=sys.stderr)
             continue
         if iid in seen:
             continue
