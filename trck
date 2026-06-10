@@ -498,6 +498,27 @@ class Graph:
         return not self.is_terminal(r) and self.is_leaf(r) and not self.is_blocked(r)
 
     # dependency graph
+    def dependency_line(self, r: Issue) -> set[int]:
+        """The ids in `r`'s directed depends_on line: `r` itself, everything it
+        transitively depends on (prerequisites, following edges forward) and
+        everything that transitively depends on it (dependents, following edges
+        back). Excludes "cousins" joined only through a shared neighbour — unlike
+        a weakly-connected component, the two sweeps never cross direction."""
+        seen = {r.id}
+        stack = [r.id]                                  # forward: prerequisites
+        while stack:
+            node = self.by_id.get(stack.pop())
+            if node:
+                for d in node.depends_on:
+                    if d in self.by_id and d not in seen:
+                        seen.add(d); stack.append(d)
+        stack = [r.id]                                  # back: dependents
+        while stack:
+            for dep in self._dependents.get(stack.pop(), []):
+                if dep.id not in seen:
+                    seen.add(dep.id); stack.append(dep.id)
+        return seen
+
     def would_cycle(self, src: int, dep: int) -> bool:
         """True if adding the edge src->dep (src depends_on dep) would create a cycle:
         i.e. src == dep, or src is already reachable from dep along depends_on edges."""
@@ -1485,10 +1506,12 @@ def cmd_next(args) -> None:
     cmd_ready(ns_like(args, next=True))
 
 
-def _print_deps_graph(ctx: Ctx, g: Graph, root_id) -> None:
+def _print_deps_graph(ctx: Ctx, g: Graph, root_id, full: bool = False) -> None:
     """`deps --graph`: render the depends_on DAG as a lazygit-style gutter. With no
     id, the whole graph (every issue touching an edge), components separated; with an
-    id, only that issue's connected component."""
+    id, only that issue's directed dependency line (its transitive prerequisites and
+    dependents). `full` widens that to the issue's whole weakly-connected component,
+    pulling in cousins joined only through a shared neighbour."""
     edged = set()
     for r in g.rows:
         for dep in r.depends_on:
@@ -1498,7 +1521,8 @@ def _print_deps_graph(ctx: Ctx, g: Graph, root_id) -> None:
         if root_id not in edged:
             print(node_label(ctx, g.row(root_id)) + "  (no dependencies)")
             return
-        ids = next(c for c in graph_components(g, edged) if root_id in set(c))
+        ids = (next(c for c in graph_components(g, edged) if root_id in set(c))
+               if full else g.dependency_line(g.row(root_id)))
     elif not edged:
         print("no dependencies recorded yet")
         return
@@ -1519,7 +1543,8 @@ def cmd_deps(args) -> None:
     ctx = build_ctx_or_die(args)
     g = load_graph(ctx)
     if getattr(args, "graph", False):
-        _print_deps_graph(ctx, g, getattr(args, "id", None))
+        _print_deps_graph(ctx, g, getattr(args, "id", None),
+                          full=getattr(args, "full", False))
         return
     if getattr(args, "id", None) is None:
         die("deps: an issue id is required (or pass --graph for the whole graph)")
@@ -1920,12 +1945,17 @@ def build_parser() -> argparse.ArgumentParser:
         description="Show what an issue requires (do first) and what it blocks "
                     "(waiting on it); both sides unless one flag is given. With "
                     "--graph, draw the depends_on DAG as a lazygit-style gutter — "
-                    "the whole graph with no id, or one issue's component with an id.")
+                    "the whole graph with no id, or one issue's directed dependency "
+                    "line (its prerequisites and dependents) with an id; add --full "
+                    "to widen that to the issue's whole connected cluster.")
     dz.add_argument("id", type=int, nargs="?", help="issue id (optional with --graph)")
     dz.add_argument("--requires", action="store_true", help="show only the requires side")
     dz.add_argument("--blocks", action="store_true", help="show only the blocks side")
     dz.add_argument("--graph", action="store_true",
-                    help="draw the dependency DAG (whole graph, or one id's component)")
+                    help="draw the dependency DAG (whole graph, or one id's line)")
+    dz.add_argument("--full", action="store_true",
+                    help="with --graph and an id, show the whole connected cluster "
+                         "(cousins included), not just the directed dependency line")
     dz.set_defaults(func=cmd_deps)
 
     ck = sub.add_parser("check", help="validate consistency (nonzero exit on error)",

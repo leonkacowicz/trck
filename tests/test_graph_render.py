@@ -49,6 +49,26 @@ class TestGraphRender(unittest.TestCase):
                        self.issue(1), self.issue(2, depends=[1]))
         self.assertEqual(self.t.graph_components(g, [5, 6, 1, 2]), [[1, 2], [5, 6]])
 
+    # --- directed dependency line (focal scoping) ------------------------- #
+
+    def test_dependency_line_excludes_cousins(self):
+        # A blocks B, A blocks C, B blocks D  =>  2,3 depend on 1; 4 depends on 2.
+        # B's line is {A, B, D}; C is a cousin (shares only the prerequisite A).
+        g = self.graph(self.issue(1), self.issue(2, depends=[1]),
+                       self.issue(3, depends=[1]), self.issue(4, depends=[2]))
+        self.assertEqual(g.dependency_line(g.row(2)), {1, 2, 4})
+
+    def test_dependency_line_is_transitive_both_directions(self):
+        # chain 1 <- 2 <- 3 <- 4 <- 5, focus on the middle node
+        g = self.graph(self.issue(1), self.issue(2, depends=[1]),
+                       self.issue(3, depends=[2]), self.issue(4, depends=[3]),
+                       self.issue(5, depends=[4]))
+        self.assertEqual(g.dependency_line(g.row(3)), {1, 2, 3, 4, 5})
+
+    def test_dependency_line_of_isolated_node_is_just_itself(self):
+        g = self.graph(self.issue(1))
+        self.assertEqual(g.dependency_line(g.row(1)), {1})
+
     # --- rendering: canonical shapes -------------------------------------- #
 
     def test_chain_renders_as_stacked_bullets(self):
@@ -105,10 +125,10 @@ class TestGraphRender(unittest.TestCase):
                           parent=None, points=None, depends=depends, spec=None,
                           slug=None))
 
-    def deps_graph(self, d, issue_id=None):
+    def deps_graph(self, d, issue_id=None, full=False):
         buf = io.StringIO()
         with redirect_stdout(buf):
-            self.t.cmd_deps(ns(dir=str(d), id=issue_id,
+            self.t.cmd_deps(ns(dir=str(d), id=issue_id, full=full,
                                requires=False, blocks=False, graph=True))
         return buf.getvalue()
 
@@ -134,6 +154,34 @@ class TestGraphRender(unittest.TestCase):
             self.assertIn("#002", out)
             self.assertNotIn("#003", out)               # component B excluded
             self.assertNotIn("#004", out)
+
+    def test_deps_graph_excludes_cousins_by_default(self):
+        # A blocks B, A blocks C, B blocks D: B's graph is A, B, D — not C.
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")                           # 1
+            self.seed(d, "B", depends="1")              # 2
+            self.seed(d, "C", depends="1")              # 3  (cousin of B)
+            self.seed(d, "D", depends="2")              # 4
+            out = self.deps_graph(d, 2)                 # focus on B
+            self.assertIn("#001", out)                  # ancestor A
+            self.assertIn("#002", out)                  # B itself
+            self.assertIn("#004", out)                  # descendant D
+            self.assertNotIn("#003", out)               # cousin C excluded
+
+    def test_deps_graph_full_includes_the_whole_component(self):
+        # --full restores the weakly-connected-component view (cousin included).
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")                           # 1
+            self.seed(d, "B", depends="1")              # 2
+            self.seed(d, "C", depends="1")              # 3  (cousin of B)
+            self.seed(d, "D", depends="2")              # 4
+            out = self.deps_graph(d, 2, full=True)      # focus on B, whole cluster
+            self.assertIn("#001", out)
+            self.assertIn("#002", out)
+            self.assertIn("#003", out)                  # cousin now present
+            self.assertIn("#004", out)
 
     def test_deps_graph_reports_isolated_issue(self):
         with TemporaryDirectory() as tmp:

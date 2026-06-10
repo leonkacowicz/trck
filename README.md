@@ -146,6 +146,10 @@ will not surface a task until its dependencies are satisfied. `trck list` makes 
 visible inline: each row carries a dim `needs #NNN` for every open (non-terminal) blocker and
 `blocks #NNN` for the issues waiting on it; both clear automatically once the blocker is done.
 For one issue's full picture, `trck deps NNN` shows what it requires and what it blocks.
+`trck deps --graph` draws the dependency DAG as a lazygit-style gutter — the whole graph
+with no id, or `trck deps NNN --graph` for just that issue's directed dependency line (its
+transitive prerequisites and dependents). Add `--full` to widen that to the issue's whole
+connected cluster, including cousins joined only through a shared neighbour.
 
 ### Priorities = soft ordering (SHOULD)
 
