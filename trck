@@ -1505,9 +1505,10 @@ def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None
 
 def cmd_which(args) -> None:
     """Map issue file paths (args, or stdin when none) back to issues. Each path's
-    basename must start with the zero-padded id (the filename is NNN-slug.md); the id
-    is looked up in the index. Unknown/non-issue paths are skipped with a stderr note.
-    Prints matched rows in `list` format, or bare ids with --ids; id-sorted, deduped."""
+    basename must be a well-formed issue filename (NNN-slug.md, matched by FILENAME_RE);
+    the leading id is looked up in the index. Unknown/non-issue paths are skipped with a
+    stderr note. Prints matched rows in `list` format, or bare ids with --ids; id-sorted,
+    deduped."""
     ctx = build_ctx_or_die(args)
     rows = load_index(ctx)
     by_id = {r.id: r for r in rows}

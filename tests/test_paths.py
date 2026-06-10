@@ -146,6 +146,23 @@ class TestWhich(unittest.TestCase):
             self.assertIn("warning:", err)
             self.assertIn("SUMMARY.md", err)
 
+    def test_list_paths_round_trips_through_which(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Alpha")                          # 1
+            self.seed(d, "Beta")                           # 2
+            # capture `list --paths` output, then feed it straight into `which`
+            list_args = ns(dir=str(d), status=None, kind=None, priority=None, label=None,
+                           parent=None, match=None, sort=None, blocked=False, orphan=False,
+                           flat=False, id=None, paths=True)
+            paths_out = self.cap(self.t.cmd_list, list_args)
+            self.assertEqual(len(paths_out.splitlines()), 2)
+            out = self.which(d, paths_out.splitlines())
+            self.assertIn("#001", out)
+            self.assertIn("#002", out)
+            self.assertIn("Alpha", out)
+            self.assertIn("Beta", out)
+
 
 class TestWiring(unittest.TestCase):
     def setUp(self):

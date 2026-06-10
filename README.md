@@ -93,8 +93,8 @@ falls back to the middle of the list.
 ## Common verbs
 
 `new` · `mv` · `start` · `done` · `set` · `dep` · `label` · `show` · `list` · `ready` ·
-`next` · `tree` · `deps` · `check` · `summary` · `normalize` · `install-hook` · `init` ·
-`update` · `version`. Run `trck --help` (or `trck <verb> --help`) for details.
+`next` · `tree` · `deps` · `path` · `which` · `check` · `summary` · `normalize` ·
+`install-hook` · `init` · `update` · `version`. Run `trck --help` (or `trck <verb> --help`) for details.
 
 `list` is the structure-aware browse verb. By default it prints a **nested forest** — every
 issue, with children nested under their parent and siblings ordered by `--sort` (default id).
@@ -116,6 +116,17 @@ parent — `kind: epic` is just a display label.) Filter a list to one epic's ch
 Labels: tag issues with a flat, multi-valued set of free-text labels via
 `trck label NNN --add X --remove Y`, then filter with `trck list --label X`. Labels show
 up in `show`, `list`, `tree`, and `SUMMARY.md`.
+
+Full-text body search: `trck` has no built-in `search`/`grep` verb — issue bodies are plain
+Markdown files, so it composes with the search tool you already have. `trck list --paths`
+prints the absolute file path of each issue passing the usual filters, `trck path NNN` prints
+one issue's path, and `trck which` maps issue file paths (positional args, or one per line on
+stdin) back to `list`-style rows (`--ids` for bare ids). Together they scope, search, and
+render:
+
+    rg -l 'race condition' $(trck list --paths --status '!done')   # paths, scoped by metadata
+    rg -l 'race condition' $(trck list --paths) | trck which       # ...rendered back as issues
+    trck path 25                                                   # one issue's file, e.g. to $EDITOR
 
 Output is colorized when stdout is a terminal (disable with `NO_COLOR=1`, force with
 `FORCE_COLOR=1`); piped/redirected output stays plain for scripts and agents. `trck show`
