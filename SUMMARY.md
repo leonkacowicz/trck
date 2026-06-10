@@ -5,9 +5,9 @@
 
 | State | Count |
 |---|---:|
-| backlog | 16 |
+| backlog | 15 |
 | ongoing | 0 |
-| done | 30 |
+| done | 31 |
 | **total** | **46** |
 
 ## Hierarchies
@@ -54,7 +54,6 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 - [#009 validate: suppress redundant bad-slug error when filename-slug mismatch already reported](backlog/009-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
 - [#010 config: friendly errors for empty statuses/priorities/kinds lists](backlog/010-config-friendly-errors-for-empty-statuses-priorities-kinds-lists.md) — _low_
 - [#012 update: add a minimum-size sanity check on the downloaded engine](backlog/012-update-add-a-minimum-size-sanity-check-on-the-downloaded-engine.md) — _low_
-- [#044 Clean up minor lint and cruft in the engine](backlog/044-clean-up-minor-lint-and-cruft-in-the-engine.md) — _low_
 
 ## Ongoing
 
@@ -76,3 +75,4 @@ _none_
 - [#046 deps --graph: lazygit-style dependency DAG renderer](done/046-deps-graph-lazygit-style-dependency-dag-renderer.md) — _medium_ (closed 2026-06-09)
 - [#011 version/update: suppress no-tracker stderr noise when run outside a tracker](done/011-version-update-suppress-no-tracker-stderr-noise-when-run-outside-a-tracker.md) — _low_ (closed 2026-06-05)
 - [#017 summary: sort status sections by priority (highest first)](done/017-summary-sort-status-sections-by-priority-highest-first.md) — _low_ (closed 2026-06-05)
+- [#044 Clean up minor lint and cruft in the engine](done/044-clean-up-minor-lint-and-cruft-in-the-engine.md) — _low_ (closed 2026-06-10)
