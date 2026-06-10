@@ -2,6 +2,7 @@ import io
 import re
 import unittest
 from contextlib import redirect_stdout
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from tests.helpers import load_trck, make_tracker, ns
@@ -247,7 +248,7 @@ class TestRead(unittest.TestCase):
         """cmd_list in --paths output mode; filters default as in `listing`."""
         a = dict(dir=str(d), status=None, kind=None, priority=None, label=None,
                  parent=None, match=None, sort=None, blocked=False, orphan=False,
-                 flat=True, id=None, paths=True)
+                 flat=False, id=None, paths=True)
         a.update(over)
         return self.cap(self.t.cmd_list, ns(**a))
 
@@ -278,7 +279,6 @@ class TestRead(unittest.TestCase):
 
     def test_list_paths_points_at_real_files(self):
         with TemporaryDirectory() as tmp:
-            from pathlib import Path
             d = make_tracker(tmp, {})
             self.seed(d, "Real")
             out = self.paths(d)
@@ -290,6 +290,16 @@ class TestRead(unittest.TestCase):
             d = make_tracker(tmp, {})
             self.seed(d, "Only")
             self.assertEqual(self.paths(d, status="nonesuch"), "")
+
+    def test_list_paths_excludes_nonmatching_ancestors(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Epic", kind="epic")             # 1 ancestor, does NOT match
+            self.seed(d, "Child", parent=1)               # 2 matches
+            out = self.paths(d, match="child")
+            lines = out.splitlines()
+            self.assertEqual(len(lines), 1)               # only the match, no dim ancestor
+            self.assertTrue(lines[0].endswith("002-child.md"))
 
     def nested(self, d, **over):
         """cmd_list in its default nested-forest view; override per test."""
