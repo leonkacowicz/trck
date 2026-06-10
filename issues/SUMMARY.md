@@ -5,10 +5,10 @@
 
 | State | Count |
 |---|---:|
-| backlog | 11 |
+| backlog | 12 |
 | ongoing | 0 |
 | done | 35 |
-| **total** | **46** |
+| **total** | **47** |
 
 ## Hierarchies
 
@@ -45,6 +45,7 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 ## Backlog
 
 - [#018 mv/done: guard closing a parent with open descendants (--recurse to cascade)](backlog/018-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
+- [#047 deps --graph <id>: scope to the focal issue's directed dependency line](backlog/047-deps-graph-id-scope-to-the-focal-issue-s-directed-dependency-line.md) — _medium_
 - [#001 Part C: curses TUI for browsing and quick actions](backlog/001-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
 - [#007 summary: include foreign/unknown statuses in the counts table](backlog/007-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
 - [#009 validate: suppress redundant bad-slug error when filename-slug mismatch already reported](backlog/009-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
