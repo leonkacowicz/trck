@@ -5,9 +5,9 @@
 
 | State | Count |
 |---|---:|
-| backlog | 12 |
+| backlog | 11 |
 | ongoing | 0 |
-| done | 34 |
+| done | 35 |
 | **total** | **46** |
 
 ## Hierarchies
@@ -47,7 +47,6 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 - [#018 mv/done: guard closing a parent with open descendants (--recurse to cascade)](backlog/018-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
 - [#001 Part C: curses TUI for browsing and quick actions](backlog/001-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
 - [#007 summary: include foreign/unknown statuses in the counts table](backlog/007-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
-- [#008 validate: report one error per parent cycle, not one per node](backlog/008-validate-report-one-error-per-parent-cycle-not-one-per-node.md) — _low_
 - [#009 validate: suppress redundant bad-slug error when filename-slug mismatch already reported](backlog/009-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
 - [#010 config: friendly errors for empty statuses/priorities/kinds lists](backlog/010-config-friendly-errors-for-empty-statuses-priorities-kinds-lists.md) — _low_
 - [#012 update: add a minimum-size sanity check on the downloaded engine](backlog/012-update-add-a-minimum-size-sanity-check-on-the-downloaded-engine.md) — _low_
@@ -73,6 +72,7 @@ _none_
 - [#043 Extract config-vocabulary validation helpers](done/043-extract-config-vocabulary-validation-helpers.md) — _medium_ (closed 2026-06-10)
 - [#045 Eliminate unnecessary index double-reads](done/045-eliminate-unnecessary-index-double-reads.md) — _medium_ (closed 2026-06-10)
 - [#046 deps --graph: lazygit-style dependency DAG renderer](done/046-deps-graph-lazygit-style-dependency-dag-renderer.md) — _medium_ (closed 2026-06-09)
+- [#008 validate: report one error per parent cycle, not one per node](done/008-validate-report-one-error-per-parent-cycle-not-one-per-node.md) — _low_ (closed 2026-06-10)
 - [#011 version/update: suppress no-tracker stderr noise when run outside a tracker](done/011-version-update-suppress-no-tracker-stderr-noise-when-run-outside-a-tracker.md) — _low_ (closed 2026-06-05)
 - [#017 summary: sort status sections by priority (highest first)](done/017-summary-sort-status-sections-by-priority-highest-first.md) — _low_ (closed 2026-06-05)
 - [#044 Clean up minor lint and cruft in the engine](done/044-clean-up-minor-lint-and-cruft-in-the-engine.md) — _low_ (closed 2026-06-10)
