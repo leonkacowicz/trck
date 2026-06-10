@@ -101,6 +101,35 @@ def default_priority(cfg: dict) -> str:
     return prios[len(prios) // 2] if prios else ""
 
 
+# --- value-vocabulary checks ------------------------------------------------ #
+# One predicate per rule, shared by the command handlers (which `die` on the
+# returned message) and `validate` (which appends it to the error list). Each
+# returns None when the value is acceptable, else a human-readable message that
+# still names the configured options.
+def check_priority(cfg: dict, value: str) -> str | None:
+    if value in cfg["priorities"]:
+        return None
+    return f"bad priority '{value}' (configured: {', '.join(cfg['priorities'])})"
+
+
+def check_kind(cfg: dict, value: str) -> str | None:
+    if value in cfg["kinds"]:
+        return None
+    return f"bad kind '{value}' (configured: {', '.join(cfg['kinds'])})"
+
+
+def check_resolution(cfg: dict, value: str) -> str | None:
+    if value in cfg["resolutions"]:
+        return None
+    return f"bad resolution '{value}' (configured: {', '.join(cfg['resolutions'])})"
+
+
+def check_points(value: int) -> str | None:
+    if value >= 0:
+        return None
+    return f"bad points {value} (must be a non-negative integer)"
+
+
 def initial_status(cfg: dict) -> str:
     for s in cfg["statuses"]:
         if s.get("role") == "initial":
@@ -577,9 +606,6 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
     g = Graph(ctx.cfg, rows)
     by_id = g.by_id
     names = set(status_names(ctx.cfg))
-    prios = set(ctx.cfg["priorities"])
-    kinds = set(ctx.cfg["kinds"])
-    resolutions = set(ctx.cfg["resolutions"])
 
     for iid, r in by_id.items():
         if iid not in files:
@@ -596,20 +622,19 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
             errors.append(f"#{iid:03d} bad slug '{r.slug}'")
         if r.status not in names:
             errors.append(f"#{iid:03d} unknown status '{r.status}'")
-        if r.kind not in kinds:
-            errors.append(f"#{iid:03d} bad kind '{r.kind}'")
-        if r.priority not in prios:
-            errors.append(f"#{iid:03d} bad priority '{r.priority}'")
+        if (m := check_kind(ctx.cfg, r.kind)):
+            errors.append(f"#{iid:03d} {m}")
+        if (m := check_priority(ctx.cfg, r.priority)):
+            errors.append(f"#{iid:03d} {m}")
         pts = r.points  # parse guarantees an int; here we check the value/placement
         if not g.is_leaf(r):
             if pts != DEFAULT_POINTS:
                 errors.append(f"#{iid:03d} has children but carries points {pts!r} "
                               f"(derived from leaves, must be unset)")
-        elif pts < 0:
-            errors.append(f"#{iid:03d} bad points {pts!r} (must be a non-negative integer)")
-        res = r.resolution
-        if res not in (None, *resolutions):
-            errors.append(f"#{iid:03d} bad resolution '{res}'")
+        elif (m := check_points(pts)):
+            errors.append(f"#{iid:03d} {m}")
+        if r.resolution is not None and (m := check_resolution(ctx.cfg, r.resolution)):
+            errors.append(f"#{iid:03d} {m}")
     for iid in files:
         if iid not in by_id:
             errors.append(f"#{iid:03d} markdown file on disk but no index row")
@@ -1181,15 +1206,15 @@ def cmd_new(args) -> None:
     if not SLUG_RE.match(slug):
         die(f"computed slug '{slug}' is invalid; pass --slug")
     priority = args.priority or default_priority(ctx.cfg)
-    if priority not in ctx.cfg["priorities"]:
-        die(f"bad priority '{priority}' (configured: {', '.join(ctx.cfg['priorities'])})")
+    if (m := check_priority(ctx.cfg, priority)):
+        die(m)
     rawpoints = getattr(args, "points", None)
     points = DEFAULT_POINTS if rawpoints is None else rawpoints
-    if points < 0:
-        die(f"bad points {points} (must be a non-negative integer)")
+    if (m := check_points(points)):
+        die(m)
     kind = args.kind or ctx.cfg["kinds"][0]
-    if kind not in ctx.cfg["kinds"]:
-        die(f"bad kind '{kind}' (configured: {', '.join(ctx.cfg['kinds'])})")
+    if (m := check_kind(ctx.cfg, kind)):
+        die(m)
     parent = args.parent
     if parent is not None and parent not in by_id:
         die(f"--parent #{parent:03d} does not exist")
@@ -1220,8 +1245,8 @@ def cmd_mv(args) -> None:
     if resolution is not None:
         if not is_terminal(ctx.cfg, args.status):
             die("--resolution is only valid when moving to a terminal status")
-        if resolution not in ctx.cfg["resolutions"]:
-            die(f"bad resolution '{resolution}' (configured: {', '.join(ctx.cfg['resolutions'])})")
+        if (m := check_resolution(ctx.cfg, resolution)):
+            die(m)
     move_issue(ctx, row, args.status)
     if resolution is not None:
         row.resolution = resolution
@@ -1236,12 +1261,12 @@ def cmd_set(args) -> None:
     by_id = g.by_id
     row = get_row(rows, args.id)
     if args.priority:
-        if args.priority not in ctx.cfg["priorities"]:
-            die(f"bad priority '{args.priority}'")
+        if (m := check_priority(ctx.cfg, args.priority)):
+            die(m)
         row.priority = args.priority
     if getattr(args, "points", None) is not None:
-        if args.points < 0:
-            die(f"bad points {args.points} (must be a non-negative integer)")
+        if (m := check_points(args.points)):
+            die(m)
         if not g.is_leaf(row):
             die(f"#{row.id:03d} has children; points is derived from them, not set")
         row.points = args.points
@@ -1256,8 +1281,8 @@ def cmd_set(args) -> None:
     if args.spec is not None:
         row.spec = None if args.spec == "none" else args.spec
     if args.kind:
-        if args.kind not in ctx.cfg["kinds"]:
-            die(f"bad kind '{args.kind}'")
+        if (m := check_kind(ctx.cfg, args.kind)):
+            die(m)
         row.kind = args.kind
     old = issue_path(ctx, row)
     if args.slug:

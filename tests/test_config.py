@@ -74,6 +74,41 @@ class TestConfigDefaults(unittest.TestCase):
             self.assertIsNone(self.t.resolve_alias(cfg, "nope"))
 
 
+class TestVocabularyChecks(unittest.TestCase):
+    """The shared predicate helpers: return None when valid, else a die-ready
+    message that still lists the configured options."""
+
+    def setUp(self):
+        self.t = load_trck()
+        self.cfg = {"priorities": ["high", "low"], "kinds": ["task", "bug"],
+                    "resolutions": ["fixed", "wontfix"]}
+
+    def test_check_priority(self):
+        self.assertIsNone(self.t.check_priority(self.cfg, "high"))
+        msg = self.t.check_priority(self.cfg, "bogus")
+        self.assertIn("bad priority 'bogus'", msg)
+        self.assertIn("high, low", msg)  # lists the configured set
+
+    def test_check_kind(self):
+        self.assertIsNone(self.t.check_kind(self.cfg, "bug"))
+        msg = self.t.check_kind(self.cfg, "bogus")
+        self.assertIn("bad kind 'bogus'", msg)
+        self.assertIn("task, bug", msg)
+
+    def test_check_resolution(self):
+        self.assertIsNone(self.t.check_resolution(self.cfg, "fixed"))
+        msg = self.t.check_resolution(self.cfg, "bogus")
+        self.assertIn("bad resolution 'bogus'", msg)
+        self.assertIn("fixed, wontfix", msg)
+
+    def test_check_points(self):
+        self.assertIsNone(self.t.check_points(0))
+        self.assertIsNone(self.t.check_points(5))
+        msg = self.t.check_points(-1)
+        self.assertIn("bad points -1", msg)
+        self.assertIn("non-negative integer", msg)
+
+
 class TestDiscovery(unittest.TestCase):
     def setUp(self):
         self.t = load_trck()
