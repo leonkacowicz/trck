@@ -146,3 +146,38 @@ class TestValidate(unittest.TestCase):
             self.t.save_index(ctx, [a, b, c, d])
             errors, _ = self.t.validate(ctx)
             self.assertFalse(any("dependency cycle" in e for e in errors))
+
+    def test_preloaded_rows_skip_the_index_reread(self):
+        # validate() accepts already-loaded rows and validates those against the
+        # on-disk file scan, without re-parsing index.jsonl.
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            row = self.base()
+            self.write(ctx, row)
+            self.t.save_index(ctx, [row])
+            calls = []
+            orig = self.t.load_index
+            self.t.load_index = lambda c: (calls.append(1), orig(c))[1]
+            try:
+                errors, warnings = self.t.validate(ctx, [row])
+            finally:
+                self.t.load_index = orig
+            self.assertEqual(errors, [])
+            self.assertEqual(calls, [])  # rows supplied -> no index re-read
+            # identical to the reloading path
+            self.assertEqual((errors, warnings), self.t.validate(ctx))
+
+    def test_omitting_rows_still_reloads_from_disk(self):
+        # The default path must still read (and re-parse) the persisted index so
+        # finalize's "validate the persisted state" intent holds for callers that
+        # don't pass rows.
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            calls = []
+            orig = self.t.load_index
+            self.t.load_index = lambda c: (calls.append(1), orig(c))[1]
+            try:
+                self.t.validate(ctx)
+            finally:
+                self.t.load_index = orig
+            self.assertEqual(calls, [1])

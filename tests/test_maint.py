@@ -23,6 +23,24 @@ class TestMaint(unittest.TestCase):
                 self.t.cmd_check(ns(dir=str(d)))   # should not raise
             self.assertIn("OK", buf.getvalue())
 
+    def test_check_reads_index_once_and_reports_count(self):
+        # cmd_check must not load the index a second time just to count issues.
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "one")
+            self.seed(d, "two")
+            calls = []
+            orig = self.t.load_index
+            self.t.load_index = lambda c: (calls.append(1), orig(c))[1]
+            buf = io.StringIO()
+            try:
+                with redirect_stdout(buf):
+                    self.t.cmd_check(ns(dir=str(d)))
+            finally:
+                self.t.load_index = orig
+            self.assertEqual(len(calls), 1)            # single read, not two
+            self.assertIn("OK — 2 issues", buf.getvalue())
+
     def test_check_exits_nonzero_on_error(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
