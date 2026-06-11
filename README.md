@@ -174,7 +174,8 @@ visible inline: each row carries a dim `needs #NNN` for every open (non-terminal
 `trck deps` draws the dependency DAG as a lazygit-style gutter, topologically sorted so a
 blocker always sits above what it blocks — the whole graph with no id, or `trck deps NNN`
 for just that issue's directed dependency line (its transitive prerequisites and
-dependents). Scope to one cone with `trck deps NNN --requires` (only what it needs) or
+dependents), where the focal issue's row is marked with a `▸` and bolded. Scope to one
+cone with `trck deps NNN --requires` (only what it needs) or
 `--blocks` (only what waits on it); add `--full` instead to widen to the issue's whole
 connected cluster, including cousins joined only through a shared neighbour.
 

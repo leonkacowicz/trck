@@ -228,6 +228,42 @@ class TestGraphRender(unittest.TestCase):
             out = self.deps_graph(d)
             self.assertNotIn("\033[", out)
 
+    # --- focal-row highlight (deps NNN) ----------------------------------- #
+
+    def row_with(self, out, needle):
+        return next(ln for ln in out.splitlines() if needle in ln)
+
+    def test_deps_marks_only_the_focal_row_with_a_caret(self):
+        # color off: the ▸ marker (color-independent) sits on the focal row only
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Base")                        # 1
+            self.seed(d, "Top", depends="1")            # 2
+            out = self.deps_graph(d, 2)                 # focus on 2
+            self.assertTrue(self.row_with(out, "#002").startswith("▸"))
+            self.assertFalse(self.row_with(out, "#001").startswith("▸"))
+            # context rows keep their columns aligned under the marker gutter
+            self.assertTrue(self.row_with(out, "#001").startswith("  "))
+
+    def test_deps_whole_graph_has_no_focal_marker(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Base")                        # 1
+            self.seed(d, "Top", depends="1")            # 2
+            out = self.deps_graph(d)                    # no id -> no focal row
+            self.assertNotIn("▸", out)
+
+    def test_deps_focal_row_id_and_title_are_bold(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Base")                        # 1
+            self.seed(d, "Top", depends="1")            # 2
+            self.t._use_color = lambda: True
+            out = self.deps_graph(d, 2)
+            self.assertIn(self.t.paint("#002", "bold"), out)   # focal id bold
+            self.assertIn(self.t.paint("Top", "bold"), out)    # focal title bold
+            self.assertNotIn(self.t.paint("#001", "bold"), out)  # context id plain
+
     # --- label dimming (node_label, the shared `deps` row renderer) -------- #
 
     def node_label_out(self, d, **over):

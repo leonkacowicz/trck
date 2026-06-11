@@ -818,11 +818,12 @@ def block_annotations(g: Graph, r: Issue) -> str:
     return paint(" " + "  ".join(parts), "dim") if parts else ""
 
 
-def node_label(ctx: Ctx, r: Issue) -> str:
+def node_label(ctx: Ctx, r: Issue, focal: bool = False) -> str:
     tag = " ·epic·" if r.kind == "epic" else ""
     icon = paint(status_icon(ctx, r.status), *status_codes(ctx.cfg, r.status))
     labels = paint(label_tag(r), "dim") if r.labels else ""  # dim, as in print_rows
-    return f"#{r.id:03d} {icon} {r.title}{tag}{labels}"
+    emph = ("bold",) if focal else ()                        # focal row of `deps NNN`
+    return f"{paint(f'#{r.id:03d}', *emph)} {icon} {paint(r.title, *emph)}{tag}{labels}"
 
 
 # --- depends_on DAG rendering (deps): lazygit-style one-row-per-node ---
@@ -1561,7 +1562,7 @@ def _print_deps_graph(ctx: Ctx, g: Graph, root_id, full: bool = False,
                 edged.add(r.id); edged.add(dep)
     if root_id is not None:
         if root_id not in edged:
-            print(node_label(ctx, g.row(root_id)) + "  (no dependencies)")
+            print(node_label(ctx, g.row(root_id), focal=True) + "  (no dependencies)")
             return
         ids = (next(c for c in graph_components(g, edged) if root_id in set(c))
                if full else g.dependency_line(g.row(root_id), up=up, down=down))
@@ -1572,13 +1573,19 @@ def _print_deps_graph(ctx: Ctx, g: Graph, root_id, full: bool = False,
         ids = edged
     rows = render_graph(g, ids)
     width = max((len(gut) for r in rows if r for (_i, gut, _o) in [r]), default=0)
+    # When focused on one issue, mark its row with a left-margin caret (a blank
+    # 2-col gutter on every other row keeps the graph aligned); skipped for the
+    # whole-graph view, which has no focal node.
     for r in rows:
         if r is None:
             print()
             continue
         iid, gutter, owners = r
+        focal = iid == root_id
+        marker = "" if root_id is None else (paint("▸", "bold") + " " if focal else "  ")
         painted = "".join(paint_lane(ch, ow) for ch, ow in zip(gutter, owners))
-        print(f"{painted}{' ' * (width - len(gutter))}  {node_label(ctx, g.row(iid))}")
+        print(f"{marker}{painted}{' ' * (width - len(gutter))}  "
+              f"{node_label(ctx, g.row(iid), focal=focal)}")
 
 
 def cmd_deps(args) -> None:
