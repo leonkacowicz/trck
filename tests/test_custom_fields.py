@@ -133,3 +133,39 @@ class TestCustomFields(unittest.TestCase):
             ctx = self.t.Ctx(d, self.t.load_config(d))
             errors, _ = self.t.validate(ctx)
             self.assertTrue(any("estimate" in e for e in errors), errors)
+
+    # -- list --field filter -------------------------------------------------
+    def list_(self, d, **over):
+        args = ns(dir=str(d), id=None, flat=True, status=None, kind=None,
+                  priority=None, label=None, parent=None, match=None,
+                  sort=None, blocked=False, orphan=False, paths=False,
+                  field=over.pop("field", None),
+                  show_field=over.pop("show_field", None))
+        for k, v in over.items():
+            setattr(args, k, v)
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.t.cmd_list(args)
+        return buf.getvalue()
+
+    def test_field_filter(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, title="Alpha")
+            self.seed(d, title="Beta")
+            self.set_(d, 1, field=["assignee=leon"])
+            self.set_(d, 2, field=["assignee=mara"])
+            out = self.list_(d, field=["assignee=leon"])
+            self.assertIn("Alpha", out)
+            self.assertNotIn("Beta", out)
+
+    def test_field_filter_anded(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, title="Alpha")
+            self.seed(d, title="Beta")
+            self.set_(d, 1, field=["assignee=leon", "component=ui"])
+            self.set_(d, 2, field=["assignee=leon", "component=api"])
+            out = self.list_(d, field=["assignee=leon", "component=ui"])
+            self.assertIn("Alpha", out)
+            self.assertNotIn("Beta", out)

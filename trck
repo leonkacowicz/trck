@@ -1445,6 +1445,13 @@ def cmd_list(args) -> None:
     only_blocked = getattr(args, "blocked", False)
     only_orphan = getattr(args, "orphan", False)
 
+    field_filters = {}
+    for spec in (getattr(args, "field", None) or []):
+        if "=" not in spec:
+            die(f"--field expects key=value, got '{spec}'")
+        k, v = spec.split("=", 1)
+        field_filters[k] = v
+
     def keep(r):
         return ((not keep_st or r.status in keep_st)
                 and r.status not in drop_st
@@ -1454,7 +1461,8 @@ def cmd_list(args) -> None:
                 and (args.parent is None or r.parent == args.parent)
                 and (not match or match in r.title.lower())
                 and (not only_blocked or g.is_blocked(r))
-                and (not only_orphan or r.parent is None))
+                and (not only_orphan or r.parent is None)
+                and all(r.extra.get(k) == v for k, v in field_filters.items()))
 
     sort = getattr(args, "sort", None) or "id"
     sort_keys = {
@@ -2011,6 +2019,9 @@ def build_parser() -> argparse.ArgumentParser:
     ls.add_argument("--label", help="filter to issues carrying this label")
     ls.add_argument("--parent", type=int, help="filter to children of this epic/parent id")
     ls.add_argument("--match", help="case-insensitive substring filter on the title")
+    ls.add_argument("--field", action="append", metavar="KEY=VALUE",
+                    help="filter to issues whose custom field KEY equals VALUE "
+                         "(repeatable; multiple are AND-ed)")
     ls.add_argument("--sort", choices=["priority", "points", "id", "created"],
                     help="order output by this field (default: id)")
     ls.add_argument("--blocked", action="store_true",
