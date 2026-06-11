@@ -5,14 +5,14 @@
 
 | State | Count |
 |---|---:|
-| backlog | 10 |
+| backlog | 17 |
 | ongoing | 0 |
 | done | 37 |
-| **total** | **47** |
+| **total** | **54** |
 
 ## Hierarchies
 
-### [#002 Part D: richer tracker features](backlog/002-part-d-richer-tracker-features.md) — 67% (6/9 pts · 6/9 done) · _medium_ · backlog
+### [#002 Part D: richer tracker features](backlog/002-part-d-richer-tracker-features.md) — 40% (6/15 pts · 6/15 done) · _medium_ · backlog
 
 - [x] [#003 Add labels/tags to issues](done/003-add-labels-tags-to-issues.md)
 - [ ] [#004 Support configurable custom fields](backlog/004-support-configurable-custom-fields.md) _(backlog)_
@@ -23,6 +23,7 @@
 - [x] [#026 Enrich 'list' filters: multi/negated status, title match, sort, --blocked, --orphan](done/026-enrich-list-filters-multi-negated-status-title-match-sort-blocked-orphan.md)
 - [x] [#028 validate/dep: detect and prevent dependency cycles](done/028-validate-dep-detect-and-prevent-dependency-cycles.md)
 - [x] [#030 list: annotate blocked/blocker relationships and clear them when resolved](done/030-list-annotate-blocked-blocker-relationships-and-clear-them-when-resolved.md)
+- [ ] [#048 Free-form custom fields: set/filter/sort arbitrary key→value](backlog/048-free-form-custom-fields-set-filter-sort-arbitrary-key-value.md) _(backlog)_
 
 ### [#022 Introduce an Issue class instead of dict-oriented code](done/022-introduce-an-issue-class-instead-of-dict-oriented-code.md) — 100% (1/1 pts · 1/1 done) · _medium_ · done
 
@@ -41,6 +42,16 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 - [x] [#033 Graph: add class and load_graph (maps, accessors, predicates)](done/033-graph-add-class-and-load-graph-maps-accessors-predicates.md)
 - [x] [#034 Graph: migrate ready/next and deps to the Graph view](done/034-graph-migrate-ready-next-and-deps-to-the-graph-view.md)
 - [x] [#035 Graph: absorb cycle/parent free functions; migrate validate and dep](done/035-graph-absorb-cycle-parent-free-functions-migrate-validate-and-dep.md)
+
+### [#048 Free-form custom fields: set/filter/sort arbitrary key→value](backlog/048-free-form-custom-fields-set-filter-sort-arbitrary-key-value.md) — 0% (0/6 pts · 0/6 done) · _medium_ · backlog
+Spec: [`docs/specs/2026-06-11-custom-fields-design.md`](../docs/specs/2026-06-11-custom-fields-design.md)
+
+- [ ] [#049 set: --field/--unset to write/clear free-form custom fields, with key-shape and reserved-key guards](backlog/049-set-field-unset-to-write-clear-free-form-custom-fields-with-key-shape-and-reserved-key-guards.md) _(backlog)_
+- [ ] [#050 validate/check: enforce extra keys are well-formed and values are strings](backlog/050-validate-check-enforce-extra-keys-are-well-formed-and-values-are-strings.md) _(backlog)_
+- [ ] [#051 list: --field key=value exact-match filter (repeatable, AND-ed, composes with existing filters)](backlog/051-list-field-key-value-exact-match-filter-repeatable-and-ed-composes-with-existing-filters.md) _(backlog)_
+- [ ] [#052 list: --sort field:NAME (string compare, missing-value rows sort last)](backlog/052-list-sort-field-name-string-compare-missing-value-rows-sort-last.md) _(backlog)_
+- [ ] [#053 list: --show-field NAME opt-in trailing column in print_rows](backlog/053-list-show-field-name-opt-in-trailing-column-in-print-rows.md) _(backlog)_
+- [ ] [#054 docs: help/epilog/README examples for custom fields; link the design spec](backlog/054-docs-help-epilog-readme-examples-for-custom-fields-link-the-design-spec.md) _(backlog)_
 
 ## Backlog
 
