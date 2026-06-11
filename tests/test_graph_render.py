@@ -209,6 +209,34 @@ class TestGraphRender(unittest.TestCase):
             out = self.deps_graph(d)
             self.assertNotIn("\033[", out)
 
+    # --- label dimming (node_label, shared with `deps`/`deps --graph`) ------ #
+
+    def node_label_out(self, d, **over):
+        ctx = self.t.build_ctx_or_die(ns(dir=str(d)))
+        base = dict(id=1, slug="i1", title="Alpha", kind="task",
+                    status="backlog", priority="high")
+        base.update(over)
+        return self.t.node_label(ctx, self.t.Issue(**base))
+
+    def test_node_label_dims_the_label_tag_like_list_and_tree(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.t._use_color = lambda: True
+            out = self.node_label_out(d, labels=["combat"])
+            # the label bracket is wrapped in dim, exactly as print_rows renders it
+            self.assertIn(self.t.paint(" [combat]", "dim"), out)
+            # the title is not swallowed into the dim run
+            self.assertIn("Alpha", out)
+            self.assertNotIn(self.t.paint("Alpha", "dim"), out)
+
+    def test_node_label_has_no_bracket_without_labels(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.t._use_color = lambda: True
+            out = self.node_label_out(d, labels=[])
+            plain = re.sub("\033\\[[0-9;]*m", "", out)
+            self.assertNotIn("[", plain)            # no label bracket, no stray dim
+
 
 if __name__ == "__main__":
     unittest.main()

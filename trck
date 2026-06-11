@@ -818,7 +818,8 @@ def block_annotations(g: Graph, r: Issue) -> str:
 def node_label(ctx: Ctx, r: Issue) -> str:
     tag = " ·epic·" if r.kind == "epic" else ""
     icon = paint(status_icon(ctx, r.status), *status_codes(ctx.cfg, r.status))
-    return f"#{r.id:03d} {icon} {r.title}{tag}{label_tag(r)}"
+    labels = paint(label_tag(r), "dim") if r.labels else ""  # dim, as in print_rows
+    return f"#{r.id:03d} {icon} {r.title}{tag}{labels}"
 
 
 def walk_tree(nodes, children_fn, label_fn, prefix="", seen=frozenset()):
