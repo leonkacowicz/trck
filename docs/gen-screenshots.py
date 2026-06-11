@@ -27,7 +27,7 @@ OUT = ROOT / "docs" / "img"
 # slug -> argv passed after `trck` (the --dir is added automatically).
 COMMANDS = [
     ("tree",       ["tree"]),
-    ("deps-graph", ["deps", "--graph"]),
+    ("deps-graph", ["deps"]),
     ("ready",      ["ready"]),
     ("show-21",    ["show", "21"]),
 ]

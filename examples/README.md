@@ -16,7 +16,7 @@ Run everything against it with `--dir examples/action-game` (from the repo root)
 ./trck --dir examples/action-game tree        # the whole forest, nested
 ./trck --dir examples/action-game ready        # what you could pick up right now
 ./trck --dir examples/action-game next         # the single best next task
-./trck --dir examples/action-game deps --graph # the dependency DAG, lazygit-style
+./trck --dir examples/action-game deps         # the dependency DAG, lazygit-style
 ./trck --dir examples/action-game show 21      # one issue's metadata + prose
 ```
 
@@ -28,9 +28,9 @@ Run everything against it with `--dir examples/action-game` (from the repo root)
 |---|---|
 | **3-level hierarchy** | `tree` — `#001 Player movement & combat` → nested epic `#002 Combat system` → leaf tasks. |
 | **Points roll up to epics** | `summary` (or `tree`) — each epic shows `% (done/total pts)`; only leaves carry points. |
-| **Dependency DAG** | `deps --graph` — fan-out from `#016 Sprite atlas tool` (blocks 4 art tasks) and fan-in at `#021 Level 1` (needs movement + art from different epics). |
+| **Dependency DAG** | `deps` — fan-out from `#016 Sprite atlas tool` (blocks 4 art tasks) and fan-in at `#021 Level 1` (needs movement + art from different epics). |
 | **`ready` vs `next`** | `ready` hides anything still blocked by an unfinished dependency; `next` is the top pick. |
-| **`deps` for one issue** | `deps 21` — what it requires and what it blocks. |
+| **`deps` for one issue** | `deps 21` — its directed line; `deps 21 --requires` / `--blocks` for just one cone. |
 | **All 5 kinds** | task, epic, bug, story, investigation — e.g. `list --kind bug`. |
 | **Priorities (soft order)** | `list --status '!done' --sort priority`. |
 | **Labels (the cross-cutting axis)** | `list --label combat` — labels categorize *across* the hierarchy. |

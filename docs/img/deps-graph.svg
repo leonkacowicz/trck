@@ -4,7 +4,7 @@
 <circle cx="16" cy="17" r="6" fill="#ec6a5e"/>
 <circle cx="34" cy="17" r="6" fill="#f4bf4f"/>
 <circle cx="52" cy="17" r="6" fill="#61c454"/>
-<text x="343" y="21" fill="#8b93a1" text-anchor="middle">$ trck deps --graph</text>
+<text x="343" y="21" fill="#8b93a1" text-anchor="middle">$ trck deps</text>
 <text y="63" xml:space="preserve">
 <tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
 <tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">─</tspan>

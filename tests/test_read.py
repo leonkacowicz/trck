@@ -532,63 +532,68 @@ class TestRead(unittest.TestCase):
             self.assertIn("#001", out)
             self.assertNotIn("#002", out)
 
-    def deps(self, d, issue_id, requires=False, blocks=False):
-        """cmd_deps with flags defaulted; override per test."""
+    def deps(self, d, issue_id=None, requires=False, blocks=False, full=False):
+        """cmd_deps (graph is the only mode now); flags defaulted, override per test."""
         return self.cap(self.t.cmd_deps,
-                        ns(dir=str(d), id=issue_id, requires=requires, blocks=blocks))
+                        ns(dir=str(d), id=issue_id, requires=requires,
+                           blocks=blocks, full=full))
 
-    def test_deps_shows_requires_and_blocks(self):
+    def test_deps_default_shows_both_cones(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d, "A")
             self.seed(d, "B")
             self.t.cmd_dep(ns(dir=str(d), id=2, add=1, remove=None))
-            out = self.cap(self.t.cmd_deps, ns(dir=str(d), id=2,
-                                               requires=False, blocks=False))
-            self.assertIn("requires", out)
-            self.assertIn("#001", out)
+            out = self.deps(d, 2)                          # neither flag: full line
+            self.assertIn("#001", out)                     # its prerequisite
+            self.assertIn("#002", out)
 
-    def test_deps_blocks_section_lists_dependents(self):
+    def test_deps_default_includes_dependents(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d, "Dep")                            # 1 (the blocker)
             self.seed(d, "X", depends="1")                 # 2 depends on 1
             self.seed(d, "Y", depends="1")                 # 3 depends on 1
-            out = self.deps(d, 1)                          # default: both sections
-            self.assertIn("blocks (these are waiting on it):", out)
-            blocks_section = out.split("blocks (these are waiting on it):", 1)[1]
-            self.assertIn("#002", blocks_section)
-            self.assertIn("#003", blocks_section)
+            out = self.deps(d, 1)                          # default: whole line
+            self.assertIn("#002", out)                     # dependents appear
+            self.assertIn("#003", out)
 
-    def test_deps_requires_flag_hides_blocks_section(self):
+    def test_deps_requires_scopes_to_prerequisite_cone(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d, "Dep")                            # 1
             self.seed(d, "Mid", depends="1")               # 2 requires 1, blocks 3
             self.seed(d, "Top", depends="2")               # 3
             out = self.deps(d, 2, requires=True)
-            self.assertIn("requires", out)
-            self.assertIn("#001", out)                     # its requirement
-            self.assertNotIn("blocks", out)                # blocks section suppressed
+            self.assertIn("#001", out)                     # its requirement (upstream)
+            self.assertIn("#002", out)
+            self.assertNotIn("#003", out)                  # dependent cone excluded
 
-    def test_deps_blocks_flag_hides_requires_section(self):
+    def test_deps_blocks_scopes_to_dependent_cone(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d, "Dep")                            # 1
             self.seed(d, "Mid", depends="1")               # 2 requires 1, blocks 3
             self.seed(d, "Top", depends="2")               # 3
             out = self.deps(d, 2, blocks=True)
-            self.assertIn("blocks", out)
-            self.assertIn("#003", out)                     # the dependent
-            self.assertNotIn("requires", out)              # requires section suppressed
+            self.assertIn("#002", out)
+            self.assertIn("#003", out)                     # the dependent (downstream)
+            self.assertNotIn("#001", out)                  # prerequisite cone excluded
 
-    def test_deps_requires_walk_is_transitive(self):
+    def test_deps_requires_cone_is_transitive(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d, "Base")                           # 1
             self.seed(d, "Mid", depends="1")               # 2 requires 1
             self.seed(d, "Top", depends="2")               # 3 requires 2 (-> 1)
             out = self.deps(d, 3, requires=True)
-            # the walk recurses: both the direct and transitive requirement appear
+            # the cone is transitive: both the direct and transitive requirement appear
             self.assertIn("#002", out)
             self.assertIn("#001", out)
+
+    def test_deps_requires_without_id_is_an_error(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Solo")
+            with self.assertRaises(SystemExit):
+                self.deps(d, None, requires=True)          # cone flags need an id

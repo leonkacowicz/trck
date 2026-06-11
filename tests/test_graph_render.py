@@ -1,7 +1,8 @@
-"""Unit + integration tests for the `deps --graph` lazygit-style DAG renderer.
+"""Unit + integration tests for the `deps` lazygit-style DAG renderer (the default,
+and only, mode of `deps`).
 
 Pure-function tests drive the `Graph` directly (mirroring test_graph.py); the
-command tests drive `cmd_deps` with `graph=True` (mirroring test_read.py).
+command tests drive `cmd_deps` (mirroring test_read.py).
 """
 import io
 import re
@@ -65,6 +66,18 @@ class TestGraphRender(unittest.TestCase):
                        self.issue(5, depends=[4]))
         self.assertEqual(g.dependency_line(g.row(3)), {1, 2, 3, 4, 5})
 
+    def test_dependency_line_up_only_is_the_prerequisite_cone(self):
+        # chain 1 <- 2 <- 3; from 2, up scopes to {1, 2} (drops dependent 3)
+        g = self.graph(self.issue(1), self.issue(2, depends=[1]),
+                       self.issue(3, depends=[2]))
+        self.assertEqual(g.dependency_line(g.row(2), down=False), {1, 2})
+
+    def test_dependency_line_down_only_is_the_dependent_cone(self):
+        # chain 1 <- 2 <- 3; from 2, down scopes to {2, 3} (drops prerequisite 1)
+        g = self.graph(self.issue(1), self.issue(2, depends=[1]),
+                       self.issue(3, depends=[2]))
+        self.assertEqual(g.dependency_line(g.row(2), up=False), {2, 3})
+
     def test_dependency_line_of_isolated_node_is_just_itself(self):
         g = self.graph(self.issue(1))
         self.assertEqual(g.dependency_line(g.row(1)), {1})
@@ -118,7 +131,7 @@ class TestGraphRender(unittest.TestCase):
         rows = self.t.render_graph(g, [1, 2])
         self.assertNotIn(None, rows)
 
-    # --- command: deps --graph -------------------------------------------- #
+    # --- command: deps ---------------------------------------------------- #
 
     def seed(self, d, title="Item", depends=None):
         self.t.cmd_new(ns(dir=str(d), title=title, priority="high", kind=None,
@@ -191,14 +204,20 @@ class TestGraphRender(unittest.TestCase):
             self.assertIn("#001", out)
             self.assertIn("no dependencies", out.lower())
 
-    def test_deps_without_id_or_graph_is_an_error(self):
+    def test_deps_without_id_renders_the_whole_graph_by_default(self):
+        # graph is the default mode now: no --graph flag, no id needed.
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Solo")
-            with self.assertRaises(SystemExit):
-                with redirect_stdout(io.StringIO()):
-                    self.t.cmd_deps(ns(dir=str(d), id=None,
-                                       requires=False, blocks=False, graph=False))
+            self.seed(d, "Base")                        # 1
+            self.seed(d, "Top", depends="1")            # 2
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                self.t.cmd_deps(ns(dir=str(d), id=None, requires=False,
+                                   blocks=False, full=False))
+            out = buf.getvalue()
+            self.assertIn("●", out)
+            self.assertIn("#001", out)
+            self.assertIn("#002", out)
 
     def test_deps_graph_gutter_is_plain_when_color_is_off(self):
         # captured (non-tty) output must carry no ANSI escapes
@@ -209,7 +228,7 @@ class TestGraphRender(unittest.TestCase):
             out = self.deps_graph(d)
             self.assertNotIn("\033[", out)
 
-    # --- label dimming (node_label, shared with `deps`/`deps --graph`) ------ #
+    # --- label dimming (node_label, the shared `deps` row renderer) -------- #
 
     def node_label_out(self, d, **over):
         ctx = self.t.build_ctx_or_die(ns(dir=str(d)))

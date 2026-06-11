@@ -171,15 +171,16 @@ A **dependency** encodes that one task *must* be completed before another can be
 will not surface a task until its dependencies are satisfied. `trck list` makes the graph
 visible inline: each row carries a dim `needs #NNN` for every open (non-terminal) blocker and
 `blocks #NNN` for the issues waiting on it; both clear automatically once the blocker is done.
-For one issue's full picture, `trck deps NNN` shows what it requires and what it blocks.
-`trck deps --graph` draws the dependency DAG as a lazygit-style gutter — the whole graph
-with no id, or `trck deps NNN --graph` for just that issue's directed dependency line (its
-transitive prerequisites and dependents). Add `--full` to widen that to the issue's whole
+`trck deps` draws the dependency DAG as a lazygit-style gutter, topologically sorted so a
+blocker always sits above what it blocks — the whole graph with no id, or `trck deps NNN`
+for just that issue's directed dependency line (its transitive prerequisites and
+dependents). Scope to one cone with `trck deps NNN --requires` (only what it needs) or
+`--blocks` (only what waits on it); add `--full` instead to widen to the issue's whole
 connected cluster, including cousins joined only through a shared neighbour.
 
 <p align="center">
-  <img src="docs/img/deps-graph.svg" alt="trck deps --graph — the dependency DAG as a coloured gutter" width="800"><br>
-  <sub><code>trck deps --graph</code> — the dependency DAG, each lane traced in its own colour</sub>
+  <img src="docs/img/deps-graph.svg" alt="trck deps — the dependency DAG as a coloured gutter" width="800"><br>
+  <sub><code>trck deps</code> — the dependency DAG, each lane traced in its own colour</sub>
 </p>
 
 ### Priorities = soft ordering (SHOULD)
