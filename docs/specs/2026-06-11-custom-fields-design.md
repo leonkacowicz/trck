@@ -45,7 +45,9 @@ trck set NNN --field key=           # empty value == remove (alias for --unset)
 
 - `--field` and `--unset` are `action="append"`, so multiple may be given in one call
   and combined with the existing `--priority` / `--kind` / … flags.
-- Applied in order; later `--field`/`--unset` for the same key wins.
+- Within a single `set` call, all `--field` assignments apply first, then all
+  `--unset` removals; so if the same key appears in both, `--unset` wins.
+  `--field key=` (empty value) is equivalent to `--unset key`.
 
 **Guards (fail-loud, via `die`):**
 

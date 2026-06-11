@@ -197,3 +197,34 @@ class TestCustomFields(unittest.TestCase):
             line2 = next(l for l in out.splitlines() if "#002" in l)
             self.assertIn("component=ui", line1)
             self.assertNotIn("component=", line2)
+
+    def test_list_field_reserved_key_rejected(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d)
+            with self.assertRaises(SystemExit):
+                self.list_(d, field=["status=backlog"])
+
+    def test_show_displays_custom_field(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d)
+            self.set_(d, 1, field=["assignee=leon"])
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                self.t.cmd_show(ns(dir=str(d), id=1, json=False))
+            out = buf.getvalue()
+            self.assertIn("assignee", out)
+            self.assertIn("leon", out)
+
+    def test_field_filter_composes_with_status(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, title="Alpha")
+            self.seed(d, title="Beta")
+            self.set_(d, 1, field=["assignee=leon"])
+            self.set_(d, 2, field=["assignee=leon"])
+            self.t.cmd_mv(ns(dir=str(d), id=1, status="ongoing", resolution=None))
+            out = self.list_(d, field=["assignee=leon"], status="ongoing")
+            self.assertIn("Alpha", out)
+            self.assertNotIn("Beta", out)

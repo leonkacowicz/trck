@@ -1451,6 +1451,8 @@ def cmd_list(args) -> None:
         if "=" not in spec:
             die(f"--field expects key=value, got '{spec}'")
         k, v = spec.split("=", 1)
+        if (m := check_field_key(k)):
+            die(m)
         field_filters[k] = v
     show_fields = getattr(args, "show_field", None) or []
 
