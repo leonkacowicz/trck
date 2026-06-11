@@ -1465,13 +1465,23 @@ def cmd_list(args) -> None:
                 and all(r.extra.get(k) == v for k, v in field_filters.items()))
 
     sort = getattr(args, "sort", None) or "id"
-    sort_keys = {
-        "priority": lambda r: (priority_rank(ctx.cfg, r.priority), r.id),
-        "points": lambda r: (-r.points, r.id),
-        "created": lambda r: (r.created or "", r.id),
-        "id": get_id,
-    }
-    key = sort_keys.get(sort, get_id)
+    if sort.startswith("field:"):
+        fname = sort[len("field:"):]
+        if not fname:
+            die("--sort field: needs a field name (e.g. --sort field:assignee)")
+        # present rows (group 0) sort by value then id; missing rows (group 1) sort last
+        key = lambda r: (0, r.extra[fname], r.id) if fname in r.extra else (1, "", r.id)
+    else:
+        sort_keys = {
+            "priority": lambda r: (priority_rank(ctx.cfg, r.priority), r.id),
+            "points": lambda r: (-r.points, r.id),
+            "created": lambda r: (r.created or "", r.id),
+            "id": get_id,
+        }
+        if sort not in sort_keys:
+            die(f"unknown --sort '{sort}' "
+                "(choices: id, priority, points, created, field:NAME)")
+        key = sort_keys[sort]
     annotate = lambda r: block_annotations(g, r)
 
     if getattr(args, "paths", False):
@@ -2022,8 +2032,9 @@ def build_parser() -> argparse.ArgumentParser:
     ls.add_argument("--field", action="append", metavar="KEY=VALUE",
                     help="filter to issues whose custom field KEY equals VALUE "
                          "(repeatable; multiple are AND-ed)")
-    ls.add_argument("--sort", choices=["priority", "points", "id", "created"],
-                    help="order output by this field (default: id)")
+    ls.add_argument("--sort", metavar="FIELD",
+                    help="order by id (default), priority, points, created, or "
+                         "field:NAME for a custom field (missing values sort last)")
     ls.add_argument("--blocked", action="store_true",
                     help="only issues with an unmet (non-terminal) dependency")
     ls.add_argument("--orphan", "--no-parent", dest="orphan", action="store_true",

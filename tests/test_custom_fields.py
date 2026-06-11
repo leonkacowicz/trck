@@ -169,3 +169,19 @@ class TestCustomFields(unittest.TestCase):
             out = self.list_(d, field=["assignee=leon", "component=ui"])
             self.assertIn("Alpha", out)
             self.assertNotIn("Beta", out)
+
+    def _order(self, out):
+        # the leading "#NNN" of each printed row, in print order
+        import re
+        return re.findall(r"#(\d{3})", out)
+
+    def test_sort_by_field_missing_last(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, title="One")    # #1 -> zebra
+            self.seed(d, title="Two")    # #2 -> alpha
+            self.seed(d, title="Three")  # #3 -> (unset)
+            self.set_(d, 1, field=["owner=zebra"])
+            self.set_(d, 2, field=["owner=alpha"])
+            out = self.list_(d, sort="field:owner")
+            self.assertEqual(self._order(out), ["002", "001", "003"])
