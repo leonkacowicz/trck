@@ -111,3 +111,25 @@ class TestCustomFields(unittest.TestCase):
             self.seed(d)
             with self.assertRaises(SystemExit):
                 self.set_(d, 1, unset=["status"])
+
+    def test_check_passes_with_custom_fields(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d)
+            self.set_(d, 1, field=["assignee=leon"])
+            ctx = self.t.Ctx(d, self.t.load_config(d))
+            errors, _ = self.t.validate(ctx)
+            self.assertEqual(errors, [])
+
+    def test_validate_flags_non_string_extra(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d)
+            # hand-corrupt the index: a non-string custom value
+            p = Path(d) / "index.jsonl"
+            row = json.loads(p.read_text().splitlines()[0])
+            row["estimate"] = 5  # int, not a string
+            p.write_text(json.dumps(row) + "\n")
+            ctx = self.t.Ctx(d, self.t.load_config(d))
+            errors, _ = self.t.validate(ctx)
+            self.assertTrue(any("estimate" in e for e in errors), errors)

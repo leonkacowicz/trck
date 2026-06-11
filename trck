@@ -684,6 +684,11 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
             errors.append(f"#{iid:03d} {m}")
         if r.resolution is not None and (m := check_resolution(ctx.cfg, r.resolution)):
             errors.append(f"#{iid:03d} {m}")
+        for k, v in r.extra.items():
+            if not FIELD_KEY_RE.match(k):
+                errors.append(f"#{iid:03d} bad custom field key '{k}'")
+            elif not isinstance(v, str):
+                errors.append(f"#{iid:03d} custom field '{k}' must be a string, got {v!r}")
     for iid in files:
         if iid not in by_id:
             errors.append(f"#{iid:03d} markdown file on disk but no index row")
