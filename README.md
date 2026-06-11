@@ -12,6 +12,11 @@ tracker can't drift. `trck` is the generalized successor to the original `track`
 - **Vocabulary-agnostic.** Statuses, priorities, kinds, resolutions, and verb aliases are
   configurable per repo; sensible defaults work with zero config.
 
+<p align="center">
+  <img src="docs/img/ready.svg" alt="trck ready — the unblocked work, colourised" width="660"><br>
+  <sub><code>trck ready</code> against the bundled <a href="examples/">example tracker</a></sub>
+</p>
+
 ## Install (global)
 
 ```bash
@@ -104,6 +109,11 @@ forest at that issue's subtree. Filters (`--status`, `--kind`, `--priority`, `--
 their **ancestor spine** as dimmed context, so a matched child never floats away from its
 parent. `tree` is an alias for `list` (`trck tree 4` == `trck list 4`).
 
+<p align="center">
+  <img src="docs/img/tree.svg" alt="trck tree — the nested issue forest" width="900"><br>
+  <sub><code>trck tree</code> — the whole forest, children nested under their parent</sub>
+</p>
+
 `ready` lists issues whose dependencies are all satisfied (add `--next` for just the top
 pick); `next` prints the single best issue to work on next; `normalize` rewrites
 `index.jsonl` in canonical slim form.
@@ -131,6 +141,11 @@ render:
 Output is colorized when stdout is a terminal (disable with `NO_COLOR=1`, force with
 `FORCE_COLOR=1`); piped/redirected output stays plain for scripts and agents. `trck show`
 prints a human-readable summary by default — add `--json` for machine-readable metadata.
+
+<p align="center">
+  <img src="docs/img/show-21.svg" alt="trck show 21 — one issue's metadata and prose body" width="760"><br>
+  <sub><code>trck show 21</code> — one issue's metadata above its hand-authored body</sub>
+</p>
 
 ## Recommended usage
 
@@ -162,6 +177,11 @@ with no id, or `trck deps NNN --graph` for just that issue's directed dependency
 transitive prerequisites and dependents). Add `--full` to widen that to the issue's whole
 connected cluster, including cousins joined only through a shared neighbour.
 
+<p align="center">
+  <img src="docs/img/deps-graph.svg" alt="trck deps --graph — the dependency DAG as a coloured gutter" width="800"><br>
+  <sub><code>trck deps --graph</code> — the dependency DAG, each lane traced in its own colour</sub>
+</p>
+
 ### Priorities = soft ordering (SHOULD)
 
 A **priority** expresses that a task *should* be done before another — an ordering
@@ -179,6 +199,9 @@ python3 -m unittest discover -s tests -v
 The engine is the single file `./trck` (executable, and importable for tests). Keep it
 standard-library only. This repo **self-hosts** its own issues under `./issues/` — browse them
 to see `trck` tracking its own roadmap.
+
+The README screenshots are regenerated (also standard-library only) from the bundled example
+tracker with `python3 docs/gen-screenshots.py`, which writes the SVGs under `docs/img/`.
 
 Releasing: bump `__version__` in `trck`, commit, tag `vX.Y.Z`, and create a GitHub Release —
 that release is the stable channel `trck update` consumes.

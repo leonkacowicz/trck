@@ -1,0 +1,345 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="859" height="556" viewBox="0 0 859 556" font-family="ui-monospace, 'DejaVu Sans Mono', 'Cascadia Code', 'Menlo', 'Consolas', monospace" font-size="13">
+<rect width="859" height="556" rx="8" fill="#1b1e24"/>
+<path d="M0,8 A8,8 0 0 1 8,0 L851,0 A8,8 0 0 1 859,8 L859,34 L0,34 Z" fill="#23272e"/>
+<circle cx="16" cy="17" r="6" fill="#ec6a5e"/>
+<circle cx="34" cy="17" r="6" fill="#f4bf4f"/>
+<circle cx="52" cy="17" r="6" fill="#61c454"/>
+<text x="429" y="21" fill="#8b93a1" text-anchor="middle">$ trck tree</text>
+<text y="63" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#001</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#d19a66">ongoing</tspan>
+<tspan x="125.2" textLength="265.2" lengthAdjust="spacing" fill="#c5cdd9">  high    Player movement &amp; combat</tspan>
+<tspan x="390.4" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [EPIC]</tspan>
+</text>
+<text y="77" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#002</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#d19a66">ongoing</tspan>
+<tspan x="125.2" textLength="202.8" lengthAdjust="spacing" fill="#c5cdd9">  high    ├─ Combat system</tspan>
+<tspan x="328.0" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [EPIC]</tspan>
+</text>
+<text y="91" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#010</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#d19a66">ongoing</tspan>
+<tspan x="125.2" textLength="218.4" lengthAdjust="spacing" fill="#c5cdd9">  high    │  ├─ Melee combos</tspan>
+<tspan x="343.6" textLength="70.2" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [combat]</tspan>
+<tspan x="413.8" textLength="171.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> blocks #011 #013 #025</tspan>
+</text>
+<text y="105" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#011</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="125.2" textLength="335.4" lengthAdjust="spacing" fill="#c5cdd9">  medium  │  ├─ Ranged / projectile attacks</tspan>
+<tspan x="460.6" textLength="171.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [combat needs-design]</tspan>
+<tspan x="632.2" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> needs #010</tspan>
+</text>
+<text y="119" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#012</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#d19a66">ongoing</tspan>
+<tspan x="125.2" textLength="296.4" lengthAdjust="spacing" fill="#c5cdd9">  medium  │  ├─ Damage &amp; health system</tspan>
+<tspan x="421.6" textLength="70.2" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [combat]</tspan>
+<tspan x="491.8" textLength="132.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> blocks #024 #029</tspan>
+</text>
+<text y="133" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#013</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="125.2" textLength="312.0" lengthAdjust="spacing" fill="#c5cdd9">  medium  │  ├─ Enemy AI: patrol &amp; aggro</tspan>
+<tspan x="437.2" textLength="132.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [combat enemies]</tspan>
+<tspan x="569.8" textLength="187.2" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> needs #010  blocks #015</tspan>
+</text>
+<text y="147" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#014</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#d19a66">ongoing</tspan>
+<tspan x="125.2" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
+<tspan x="140.8" textLength="46.8" lengthAdjust="spacing" fill="#e06c75">urgent</tspan>
+<tspan x="187.6" textLength="257.4" lengthAdjust="spacing" fill="#c5cdd9">  │  ├─ Dash i-frames not applied</tspan>
+<tspan x="445.0" textLength="70.2" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [combat]</tspan>
+<tspan x="515.2" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> needs #008</tspan>
+</text>
+<text y="161" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#015</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="125.2" textLength="382.2" lengthAdjust="spacing" fill="#c5cdd9">  high    │  └─ Hitbox persists after enemy death</tspan>
+<tspan x="507.4" textLength="210.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [combat enemies tech-debt]</tspan>
+<tspan x="718.0" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> needs #013</tspan>
+</text>
+<text y="175" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#98c379">●</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#007</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#98c379">done   </tspan>
+<tspan x="125.2" textLength="319.8" lengthAdjust="spacing" fill="#c5cdd9">  medium  ├─ Walk / run / jump controller</tspan>
+<tspan x="445.0" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [movement]</tspan>
+</text>
+<text y="189" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#008</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#d19a66">ongoing</tspan>
+<tspan x="125.2" textLength="226.2" lengthAdjust="spacing" fill="#c5cdd9">  medium  ├─ Dash &amp; wall-jump</tspan>
+<tspan x="351.4" textLength="140.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [combat movement]</tspan>
+<tspan x="491.8" textLength="132.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> blocks #014 #021</tspan>
+</text>
+<text y="203" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#009</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="125.2" textLength="210.6" lengthAdjust="spacing" fill="#c5cdd9">  medium  └─ Crouch &amp; slide</tspan>
+<tspan x="335.8" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [movement]</tspan>
+</text>
+<text y="217" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#003</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="125.2" textLength="265.2" lengthAdjust="spacing" fill="#c5cdd9">  medium  Art &amp; animation pipeline</tspan>
+<tspan x="390.4" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [EPIC]</tspan>
+</text>
+<text y="231" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#98c379">●</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#016</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#98c379">done   </tspan>
+<tspan x="125.2" textLength="280.8" lengthAdjust="spacing" fill="#c5cdd9">  medium  ├─ Sprite atlas build tool</tspan>
+<tspan x="406.0" textLength="109.2" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [art tooling]</tspan>
+</text>
+<text y="245" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#017</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#d19a66">ongoing</tspan>
+<tspan x="125.2" textLength="249.6" lengthAdjust="spacing" fill="#c5cdd9">  medium  ├─ Player sprite sheet</tspan>
+<tspan x="374.8" textLength="46.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [art]</tspan>
+<tspan x="421.6" textLength="93.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> blocks #021</tspan>
+</text>
+<text y="259" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#018</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="125.2" textLength="249.6" lengthAdjust="spacing" fill="#c5cdd9">  medium  ├─ Enemy sprite sheets</tspan>
+<tspan x="374.8" textLength="109.2" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [art enemies]</tspan>
+</text>
+<text y="273" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#019</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="125.2" textLength="210.6" lengthAdjust="spacing" fill="#c5cdd9">  medium  ├─ Forest tileset</tspan>
+<tspan x="335.8" textLength="46.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [art]</tspan>
+<tspan x="382.6" textLength="93.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> blocks #021</tspan>
+</text>
+<text y="287" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#020</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="125.2" textLength="195.0" lengthAdjust="spacing" fill="#c5cdd9">  medium  └─ Cave tileset</tspan>
+<tspan x="320.2" textLength="46.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [art]</tspan>
+<tspan x="367.0" textLength="93.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> blocks #022</tspan>
+</text>
+<text y="301" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#004</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="125.2" textLength="257.4" lengthAdjust="spacing" fill="#c5cdd9">  medium  World building &amp; levels</tspan>
+<tspan x="382.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [EPIC]</tspan>
+</text>
+<text y="315" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#021</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="125.2" textLength="296.4" lengthAdjust="spacing" fill="#c5cdd9">  medium  ├─ Level 1 - Forest entrance</tspan>
+<tspan x="421.6" textLength="117.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [level-design]</tspan>
+<tspan x="538.6" textLength="304.2" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> needs #008 #017 #019  blocks #022 #023</tspan>
+</text>
+<text y="329" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#022</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="125.2" textLength="265.2" lengthAdjust="spacing" fill="#c5cdd9">  medium  ├─ Level 2 - Cave depths</tspan>
+<tspan x="390.4" textLength="117.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [level-design]</tspan>
+<tspan x="507.4" textLength="124.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> needs #020 #021</tspan>
+</text>
+<text y="343" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#023</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="125.2" textLength="280.8" lengthAdjust="spacing" fill="#c5cdd9">  medium  ├─ World map &amp; fast travel</tspan>
+<tspan x="406.0" textLength="140.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [level-design ux]</tspan>
+<tspan x="546.4" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> needs #021</tspan>
+</text>
+<text y="357" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#024</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="125.2" textLength="257.4" lengthAdjust="spacing" fill="#c5cdd9">  medium  └─ Checkpoint &amp; respawn</tspan>
+<tspan x="382.6" textLength="156.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [level-design tech]</tspan>
+<tspan x="538.6" textLength="187.2" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> needs #012  blocks #032</tspan>
+</text>
+<text y="371" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#005</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="125.2" textLength="179.4" lengthAdjust="spacing" fill="#c5cdd9">  low     Audio &amp; music</tspan>
+<tspan x="304.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [EPIC]</tspan>
+</text>
+<text y="385" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#025</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="125.2" textLength="179.4" lengthAdjust="spacing" fill="#c5cdd9">  medium  ├─ Combat SFX</tspan>
+<tspan x="304.6" textLength="117.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [audio combat]</tspan>
+<tspan x="421.6" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> needs #010</tspan>
+</text>
+<text y="399" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#026</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="125.2" textLength="241.8" lengthAdjust="spacing" fill="#c5cdd9">  medium  ├─ Forest biome music</tspan>
+<tspan x="367.0" textLength="62.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [audio]</tspan>
+</text>
+<text y="413" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#027</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="125.2" textLength="327.6" lengthAdjust="spacing" fill="#c5cdd9">  medium  └─ Audio mixer &amp; volume settings</tspan>
+<tspan x="452.8" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [audio ux]</tspan>
+</text>
+<text y="427" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#006</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="125.2" textLength="195.0" lengthAdjust="spacing" fill="#c5cdd9">  medium  UI, menus &amp; HUD</tspan>
+<tspan x="320.2" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [EPIC]</tspan>
+</text>
+<text y="441" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#028</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#d19a66">ongoing</tspan>
+<tspan x="125.2" textLength="171.6" lengthAdjust="spacing" fill="#c5cdd9">  medium  ├─ Main menu</tspan>
+<tspan x="296.8" textLength="39.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [ux]</tspan>
+<tspan x="335.8" textLength="93.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> blocks #030</tspan>
+</text>
+<text y="455" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#029</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="125.2" textLength="241.8" lengthAdjust="spacing" fill="#c5cdd9">  medium  ├─ HUD: health &amp; ammo</tspan>
+<tspan x="367.0" textLength="39.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [ux]</tspan>
+<tspan x="406.0" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> needs #012</tspan>
+</text>
+<text y="469" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#030</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="125.2" textLength="265.2" lengthAdjust="spacing" fill="#c5cdd9">  medium  └─ Pause &amp; settings menu</tspan>
+<tspan x="390.4" textLength="39.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [ux]</tspan>
+<tspan x="429.4" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> needs #028</tspan>
+</text>
+<text y="483" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#031</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#d19a66">ongoing</tspan>
+<tspan x="125.2" textLength="257.4" lengthAdjust="spacing" fill="#c5cdd9">  high    Pick a save-data format</tspan>
+<tspan x="382.6" textLength="156.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [needs-design tech]</tspan>
+<tspan x="538.6" textLength="93.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> blocks #032</tspan>
+</text>
+<text y="497" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#032</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="125.2" textLength="218.4" lengthAdjust="spacing" fill="#c5cdd9">  medium  Save / load system</tspan>
+<tspan x="343.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [tech]</tspan>
+<tspan x="398.2" textLength="124.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> needs #024 #031</tspan>
+</text>
+<text y="511" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#98c379">●</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#033</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#98c379">done   </tspan>
+<tspan x="125.2" textLength="257.4" lengthAdjust="spacing" fill="#c5cdd9">  medium  Prototype WASD movement</tspan>
+<tspan x="382.6" textLength="163.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [movement tech-debt]</tspan>
+</text>
+<text y="525" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#98c379">●</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#034</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#98c379">done   </tspan>
+<tspan x="125.2" textLength="249.6" lengthAdjust="spacing" fill="#c5cdd9">  low     Slope collision jitter</tspan>
+<tspan x="374.8" textLength="93.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [tech-debt]</tspan>
+</text>
+<text y="539" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#98c379">●</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#035</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#98c379">done   </tspan>
+<tspan x="125.2" textLength="265.2" lengthAdjust="spacing" fill="#c5cdd9">  medium  Online co-op multiplayer</tspan>
+<tspan x="390.4" textLength="210.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [multiplayer needs-design]</tspan>
+</text>
+</svg>
