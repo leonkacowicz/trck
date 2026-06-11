@@ -127,10 +127,23 @@ Labels: tag issues with a flat, multi-valued set of free-text labels via
 `trck label NNN --add X --remove Y`, then filter with `trck list --label X`. Labels show
 up in `show`, `list`, `tree`, and `SUMMARY.md`.
 
-**Custom fields** — attach arbitrary `key=value` metadata to any issue
-(`trck set N --field assignee=leon`) and filter/sort on it
-(`trck list --field assignee=leon --sort field:assignee`). Free-form by design;
-see `docs/specs/2026-06-11-custom-fields-design.md`.
+**Custom fields** — attach arbitrary `key=value` metadata that trck doesn't model itself:
+`assignee`, `reporter`, `component`, `area` — whatever a project needs. They're **free-form**
+(no `trck.json` declaration) and always string-valued, so they stay out of the core mental
+model until you reach for them. Set them on `set`, then **filter**, **sort**, and **show**
+them on `list`:
+
+    trck set 42 --field assignee=leon --field component=engine   # set (repeatable)
+    trck set 42 --field assignee=                                 # clear (same as --unset assignee)
+    trck list --field component=engine                           # filter: exact, AND-ed, composes with --status etc.
+    trck list --field component=engine --sort field:assignee     # sort by a field (rows missing it sort last)
+    trck list --show-field assignee --show-field component        # opt-in trailing columns
+
+Keys must be slug-like (`[a-z][a-z0-9_-]*`) and can't shadow a built-in field. Values always
+appear in `trck show`; `list` stays clean unless you ask for a `--show-field` column. `check`
+flags any malformed key or non-string value. Free-form by design — a future opt-in schema
+(types, allowed values, required-ness) is sketched in
+`docs/specs/2026-06-11-custom-fields-design.md`.
 
 Full-text body search: `trck` has no built-in `search`/`grep` verb — issue bodies are plain
 Markdown files, so it composes with the search tool you already have. `trck list --paths`
