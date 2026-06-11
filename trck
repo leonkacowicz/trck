@@ -27,6 +27,7 @@ SELF_PATH = Path(__file__).resolve()  # the running engine file; tests may overr
 
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 FILENAME_RE = re.compile(r"^(\d{3,})-([a-z0-9][a-z0-9-]*)\.md$")
+FIELD_KEY_RE = re.compile(r"^[a-z][a-z0-9_-]*$")
 
 
 def die(msg: str) -> NoReturn:
@@ -233,6 +234,17 @@ FIELD_DEFAULTS = {
     "closed": None,
     "resolution": None,
 }
+
+
+def check_field_key(key: str) -> str | None:
+    """Validate a custom-field key. Returns an error message, or None if OK.
+    Custom fields are free-form, but their keys must be slug-like and must not
+    collide with a built-in field name (use the matching flag/verb for those)."""
+    if key in CANON_KEYS:
+        return f"'{key}' is a built-in field; use its flag/verb, not --field/--unset"
+    if not FIELD_KEY_RE.match(key):
+        return f"invalid field key '{key}' (must match [a-z][a-z0-9_-]*)"
+    return None
 
 
 @dataclass
@@ -1297,6 +1309,20 @@ def cmd_set(args) -> None:
         if (m := check_kind(ctx.cfg, args.kind)):
             die(m)
         row.kind = args.kind
+    for spec in (getattr(args, "field", None) or []):
+        if "=" not in spec:
+            die(f"--field expects key=value, got '{spec}'")
+        key, val = spec.split("=", 1)
+        if (m := check_field_key(key)):
+            die(m)
+        if val == "":
+            row.extra.pop(key, None)  # empty value clears (alias for --unset)
+        else:
+            row.extra[key] = val
+    for key in (getattr(args, "unset", None) or []):
+        if (m := check_field_key(key)):
+            die(m)
+        row.extra.pop(key, None)
     old = issue_path(ctx, row)
     if args.slug:
         if not SLUG_RE.match(args.slug):
@@ -1908,6 +1934,10 @@ def build_parser() -> argparse.ArgumentParser:
     se.add_argument("--kind", help="configured kind")
     se.add_argument("--title", help="new title (also rewrites the body's H1)")
     se.add_argument("--slug", help="override the filename slug (renames the file)")
+    se.add_argument("--field", action="append", metavar="KEY=VALUE",
+                    help="set a custom field (repeatable); empty value clears it")
+    se.add_argument("--unset", action="append", metavar="KEY",
+                    help="remove a custom field (repeatable)")
     se.set_defaults(func=cmd_set)
 
     dp = sub.add_parser(
