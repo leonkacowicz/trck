@@ -185,3 +185,15 @@ class TestCustomFields(unittest.TestCase):
             self.set_(d, 2, field=["owner=alpha"])
             out = self.list_(d, sort="field:owner")
             self.assertEqual(self._order(out), ["002", "001", "003"])
+
+    def test_show_field_column(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, title="Alpha")
+            self.seed(d, title="Beta")
+            self.set_(d, 1, field=["component=ui"])
+            out = self.list_(d, show_field=["component"])
+            line1 = next(l for l in out.splitlines() if "#001" in l)
+            line2 = next(l for l in out.splitlines() if "#002" in l)
+            self.assertIn("component=ui", line1)
+            self.assertNotIn("component=", line2)

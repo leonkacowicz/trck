@@ -1451,6 +1451,7 @@ def cmd_list(args) -> None:
             die(f"--field expects key=value, got '{spec}'")
         k, v = spec.split("=", 1)
         field_filters[k] = v
+    show_fields = getattr(args, "show_field", None) or []
 
     def keep(r):
         return ((not keep_st or r.status in keep_st)
@@ -1491,7 +1492,7 @@ def cmd_list(args) -> None:
 
     if getattr(args, "flat", False):
         rows = sorted([r for r in g.rows if keep(r)], key=key)
-        print_rows(ctx, rows, annotate=annotate)
+        print_rows(ctx, rows, annotate=annotate, show_fields=show_fields)
         return
 
     # nested forest: show a node iff it matches or has a matching descendant; the
@@ -1506,10 +1507,12 @@ def cmd_list(args) -> None:
                  if (r.parent is None or r.parent not in g.by_id) and r.id in shown]
     ordered, prefix_of = forest_layout(g, roots, shown, key)
     print_rows(ctx, ordered, annotate=annotate,
-               prefix=lambda r: prefix_of[r.id], dim=lambda r: r.id in dim)
+               prefix=lambda r: prefix_of[r.id], dim=lambda r: r.id in dim,
+               show_fields=show_fields)
 
 
-def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None) -> None:
+def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None,
+               show_fields=None) -> None:
     """Render issues as aligned one-line summaries (shared by `list` and `ready`).
     `annotate`, if given, maps a row to a trailing suffix (e.g. the blocking graph);
     callers that want terse output (`ready`/`next`) simply omit it. `prefix`, if given,
@@ -1531,9 +1534,14 @@ def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None
         tags.extend(r.labels or [])
         plain_tags = " [" + " ".join(tags) + "]" if tags else ""
         ann = annotate(r) if annotate else ""
+        fsuf = ""
+        if show_fields:
+            segs = [f"{n}={r.extra[n]}" for n in show_fields if n in r.extra]
+            if segs:
+                fsuf = "  " + paint(" ".join(segs), "dim")
         if dim and dim(r):  # ancestor context: whole line dimmed, no per-field color
             body = f"{status_icon(ctx, r.status)} #{r.id:03d} {r.status:<{sw}}  {r.priority:<{pw}}  {pre}{r.title}{plain_tags}"
-            print(paint(body, "dim") + ann)
+            print(paint(body, "dim") + ann + fsuf)
             continue
         codes = status_codes(ctx.cfg, r.status)
         icon = paint(status_icon(ctx, r.status), *codes)
@@ -1541,7 +1549,7 @@ def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None
         status = paint(f"{r.status:<{sw}}", *codes)
         prio = paint(f"{r.priority:<{pw}}", *priority_codes(ctx.cfg, r.priority))
         tagstr = paint(plain_tags, "dim") if tags else ""
-        print(f"{icon} {iid} {status}  {prio}  {pre}{r.title}{tagstr}{ann}")
+        print(f"{icon} {iid} {status}  {prio}  {pre}{r.title}{tagstr}{ann}{fsuf}")
 
 
 def cmd_which(args) -> None:
@@ -2032,6 +2040,9 @@ def build_parser() -> argparse.ArgumentParser:
     ls.add_argument("--field", action="append", metavar="KEY=VALUE",
                     help="filter to issues whose custom field KEY equals VALUE "
                          "(repeatable; multiple are AND-ed)")
+    ls.add_argument("--show-field", action="append", metavar="NAME", dest="show_field",
+                    help="append a custom field's value as a trailing column "
+                         "(repeatable); list is otherwise unchanged")
     ls.add_argument("--sort", metavar="FIELD",
                     help="order by id (default), priority, points, created, or "
                          "field:NAME for a custom field (missing values sort last)")
