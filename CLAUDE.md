@@ -1,4 +1,6 @@
-# CLAUDE.md — trck
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 `trck` is a single-file, standard-library-only, in-repo issue tracker. The entire engine is the
 executable file **`./trck`** at the repo root (no extension; it is also importable as a module
@@ -8,7 +10,8 @@ from the repo root (discovery finds `issues/` via its `trck.json`).
 ## Working on the engine
 
 - The whole engine is `./trck`. Keep it **standard-library only** — no third-party imports, ever.
-- Run the tests: `python3 -m unittest discover -s tests -v`. Add a test for every change (TDD).
+- Run the full suite: `python3 -m unittest discover -s tests -v`. Add a test for every change (TDD).
+  Run one module: `python3 -m unittest tests.test_paths -v`; one case: `python3 -m unittest tests.test_paths.TestClass.test_method`.
 - `tests/helpers.py::load_trck()` imports the extensionless file via `importlib`
   (`SourceFileLoader`, required on Python 3.12+/3.14).
 - **Never let a test overwrite the real `./trck`.** Anything that writes to the engine file —
@@ -16,6 +19,10 @@ from the repo root (discovery finds `issues/` via its `trck.json`).
   reassign `mod.SELF_PATH` to a throwaway temp copy first. Follow that pattern.
 - The file is organized in bands: constants → config/discovery → index I/O → scan/validate →
   SUMMARY/finalize → networking seam → command handlers → argparse/`main`.
+- The vocabulary is **data-driven, not hard-coded**: statuses (with `initial`/`terminal` roles),
+  verb aliases (`start`, `done`), priorities, kinds, and resolutions all come from each tracker's
+  `trck.json` (see `issues/trck.json`). Code reads them via the `load_config`/`status_*`/`check_*`
+  helpers — don't bake status or priority names into the engine.
 
 ## Tracking work (dogfooding)
 
