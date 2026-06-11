@@ -48,3 +48,12 @@ class TestHelp(unittest.TestCase):
 
     def test_check_description_mentions_before_committing(self):
         self.assertIn("before committing", self.sub_help("check"))
+
+    def test_set_help_documents_custom_fields(self):
+        h = self.sub_help("set")
+        self.assertIn("--field", h)
+        self.assertIn("custom field", h)
+
+    def test_top_level_epilog_shows_custom_field_example(self):
+        h = norm(self.parser.format_help())
+        self.assertIn("--field assignee=leon", h)

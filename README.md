@@ -127,6 +127,11 @@ Labels: tag issues with a flat, multi-valued set of free-text labels via
 `trck label NNN --add X --remove Y`, then filter with `trck list --label X`. Labels show
 up in `show`, `list`, `tree`, and `SUMMARY.md`.
 
+**Custom fields** — attach arbitrary `key=value` metadata to any issue
+(`trck set N --field assignee=leon`) and filter/sort on it
+(`trck list --field assignee=leon --sort field:assignee`). Free-form by design;
+see `docs/specs/2026-06-11-custom-fields-design.md`.
+
 Full-text body search: `trck` has no built-in `search`/`grep` verb — issue bodies are plain
 Markdown files, so it composes with the search tool you already have. `trck list --paths`
 prints the absolute file path of each issue passing the usual filters, `trck path NNN` prints
