@@ -36,3 +36,19 @@ def make_tracker(tmp_path, config=None):
 def ns(**kwargs):
     """Build an argparse-style Namespace for calling cmd_* handlers directly."""
     return Namespace(**kwargs)
+
+
+SCRIPT_PATH = REPO_ROOT / "scripts" / "backfill_timestamps.py"
+
+
+def load_backfill():
+    """Import scripts/backfill_timestamps.py as a fresh module object."""
+    import importlib.machinery
+    import importlib.util
+    import sys
+    loader = importlib.machinery.SourceFileLoader("backfill_timestamps", str(SCRIPT_PATH))
+    spec = importlib.util.spec_from_file_location("backfill_timestamps", SCRIPT_PATH, loader=loader)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["backfill_timestamps"] = mod
+    spec.loader.exec_module(mod)
+    return mod
