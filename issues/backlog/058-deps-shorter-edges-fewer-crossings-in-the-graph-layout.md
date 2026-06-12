@@ -42,9 +42,9 @@ Two improvements, independent and separately shippable:
   graph and confirm the trade is wanted.
 
 ## Acceptance criteria
-- [ ] (A) Forked lanes choose the free column nearest `pos`; lane *count* is unchanged
+- [x] (A) Forked lanes choose the free column nearest `pos`; lane *count* is unchanged
       for every existing graph (width is still greedy-optimal), and visible crossings are
-      reduced or equal on the repo's own `deps` output.
+      reduced or equal on the repo's own `deps` output. *(shipped — see Notes)*
 - [ ] (B) `_graph_topo` tie-break prefers the ready node with the most-recently-placed
       predecessor, falling back to id for full determinism; output stays a valid
       topological order (every blocker above what it blocks).
@@ -68,3 +68,8 @@ Relevant code (all in `trck`):
 Discussion origin: layout was analysed as constrained MinLA (edge length) + interval
 colouring (lanes). Conclusion: lane colouring is already optimal for width, so the gains
 live in the ordering (B) and in same-width bridge shortening (A).
+
+**Progress:** (A) shipped — the `started` k>0 branch now picks the free column nearest
+`pos` (`min(free, key=…|c-pos|, c)`), covered by `test_reopened_lane_hugs_the_node_…`
+and `test_nearest_gap_reuse_does_not_widen_the_graph`. (B) remains open; keeping the
+issue in `backlog` until (B) is decided.
