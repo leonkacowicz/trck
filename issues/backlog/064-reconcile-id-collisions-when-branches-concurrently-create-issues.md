@@ -28,6 +28,10 @@ This is an investigation: decide the approach before committing to an implementa
       referenced by another issue, and a no-collision merge (no spurious renumbering).
 
 ## Notes
+**Status: on hold pending #65.** Direction (2) is being pursued first as #65 (short random
+ids). If that ships and no collision is ever observed in practice, this issue (the
+renumber-on-merge driver) is likely YAGNI — revisit only if a real clash occurs.
+
 Two distinct directions, to be decided here rather than assumed:
 
 1. **Renumber-on-merge (keep integer ids).** A custom git merge driver on `index.jsonl`

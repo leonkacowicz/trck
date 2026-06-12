@@ -5,14 +5,14 @@
 
 | State | Count |
 |---|---:|
-| backlog | 19 |
+| backlog | 20 |
 | ongoing | 0 |
 | done | 45 |
-| **total** | **64** |
+| **total** | **65** |
 
 ## Hierarchies
 
-### [#002 Part D: richer tracker features](backlog/002-part-d-richer-tracker-features.md) — 60% (12/20 pts · 12/20 done) · _medium_ · backlog
+### [#002 Part D: richer tracker features](backlog/002-part-d-richer-tracker-features.md) — 57% (12/21 pts · 12/21 done) · _medium_ · backlog
 
 - [x] [#003 Add labels/tags to issues](done/003-add-labels-tags-to-issues.md)
 - [ ] [#004 Support configurable custom fields](backlog/004-support-configurable-custom-fields.md) _(backlog)_
@@ -25,6 +25,7 @@
 - [x] [#030 list: annotate blocked/blocker relationships and clear them when resolved](done/030-list-annotate-blocked-blocker-relationships-and-clear-them-when-resolved.md)
 - [x] [#048 Free-form custom fields: set/filter/sort arbitrary key→value](done/048-free-form-custom-fields-set-filter-sort-arbitrary-key-value.md)
 - [ ] [#064 Reconcile id collisions when branches concurrently create issues](backlog/064-reconcile-id-collisions-when-branches-concurrently-create-issues.md) _(backlog)_
+- [ ] [#065 Use random alphanumeric ids to make concurrent creation collision-free](backlog/065-use-random-alphanumeric-ids-to-make-concurrent-creation-collision-free.md) _(backlog)_
 
 ### [#022 Introduce an Issue class instead of dict-oriented code](done/022-introduce-an-issue-class-instead-of-dict-oriented-code.md) — 100% (1/1 pts · 1/1 done) · _medium_ · done
 
