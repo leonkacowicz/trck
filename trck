@@ -39,6 +39,10 @@ def now_utc() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def date_slice(ts: str | None) -> str:
+    return ts[:10] if ts else ""
+
+
 def slugify(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
 
@@ -1099,7 +1103,7 @@ def generate_summary(ctx: Ctx) -> str:
             if r.resolution:
                 extra += f" · _{r.resolution}_"
             if is_terminal(ctx.cfg, status) and r.closed:
-                extra += f" (closed {r.closed})"
+                extra += f" (closed {date_slice(r.closed)})"
             out.append(f"- [#{r.id:03d} {r.title}]({rel_link(r)}) — "
                        f"_{r.priority}_{label_tag(r)}{extra}")
         out.append("")
@@ -1417,6 +1421,8 @@ def cmd_show(args) -> None:
             v = full.get(k)
             if v is None or v == []:
                 continue  # skip empty fields in the human view
+            if k in ("created", "started", "closed"):
+                v = date_slice(v)
             print(f"{paint(f'{k:>{w}}', 'dim')}  {v}")
     print("\n--- body ---\n")
     print(issue_path(ctx, row).read_text())
