@@ -67,3 +67,29 @@ def rewrite_lines(lines, recovered):
                 warnings.append((iid, f, v))
         new_lines.append(json.dumps(row, ensure_ascii=False))
     return new_lines, changes, warnings
+
+
+def reduce_transitions(snapshots):
+    """Fold an oldest->newest sequence of (author_iso, rows) into
+    {(id, field): author_iso}.
+
+    `rows` is the list of issue dicts from index.jsonl at that commit. A field is
+    "recovered" at the author date of every commit where its value changes to a
+    new non-null value; later transitions overwrite earlier ones, so the final
+    value is the author date of the LAST commit that set the field to the value
+    it has at the end of history. Clearing a field to None records nothing and
+    does not erase a prior recovered time.
+    """
+    recovered, prev = {}, {}
+    for author_iso, rows in snapshots:
+        for row in rows:
+            iid = row.get("id")
+            if not isinstance(iid, int) or isinstance(iid, bool):
+                continue
+            pv = prev.setdefault(iid, {})
+            for f in DATE_FIELDS:
+                cur = row.get(f)
+                if cur is not None and cur != pv.get(f):
+                    recovered[(iid, f)] = author_iso
+                pv[f] = cur
+    return recovered

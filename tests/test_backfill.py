@@ -76,5 +76,39 @@ class TestRewriteLines(unittest.TestCase):
         self.assertEqual(warnings, [])
 
 
+class TestReduceTransitions(unittest.TestCase):
+    def setUp(self):
+        self.b = load_backfill()
+
+    def test_first_appearance_sets_created(self):
+        snaps = [("2026-06-01T10:00:00+00:00", [{"id": 1, "created": "2026-06-01"}])]
+        rec = self.b.reduce_transitions(snaps)
+        self.assertEqual(rec[(1, "created")], "2026-06-01T10:00:00+00:00")
+
+    def test_last_close_wins_after_reopen(self):
+        snaps = [
+            ("2026-06-01T10:00:00+00:00", [{"id": 1, "created": "2026-06-01"}]),
+            ("2026-06-02T10:00:00+00:00", [{"id": 1, "created": "2026-06-01", "closed": "2026-06-02"}]),
+            ("2026-06-03T10:00:00+00:00", [{"id": 1, "created": "2026-06-01"}]),               # reopened: closed cleared
+            ("2026-06-04T10:00:00+00:00", [{"id": 1, "created": "2026-06-01", "closed": "2026-06-04"}]),  # reclosed
+        ]
+        rec = self.b.reduce_transitions(snaps)
+        self.assertEqual(rec[(1, "closed")], "2026-06-04T10:00:00+00:00")
+        self.assertEqual(rec[(1, "created")], "2026-06-01T10:00:00+00:00")
+
+    def test_clear_to_none_keeps_last_set_time(self):
+        snaps = [
+            ("2026-06-02T10:00:00+00:00", [{"id": 1, "closed": "2026-06-02"}]),
+            ("2026-06-03T10:00:00+00:00", [{"id": 1}]),  # cleared
+        ]
+        rec = self.b.reduce_transitions(snaps)
+        self.assertEqual(rec[(1, "closed")], "2026-06-02T10:00:00+00:00")
+
+    def test_non_integer_id_rows_are_ignored(self):
+        snaps = [("2026-06-01T10:00:00+00:00", [{"slug": "noid", "created": "2026-06-01"}])]
+        rec = self.b.reduce_transitions(snaps)
+        self.assertEqual(rec, {})
+
+
 if __name__ == "__main__":
     unittest.main()
