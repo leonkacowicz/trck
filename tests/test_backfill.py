@@ -110,5 +110,74 @@ class TestReduceTransitions(unittest.TestCase):
         self.assertEqual(rec, {})
 
 
+def _git(cwd, *args):
+    env = dict(
+        os.environ,
+        GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@e",
+        GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@e",
+    )
+    subprocess.run(["git", "-C", str(cwd), *args], check=True,
+                   capture_output=True, text=True, env=env)
+
+
+def _commit_index(repo, content, author_iso):
+    """Write issues/index.jsonl and commit it with a fixed author/committer date."""
+    issues = Path(repo) / "issues"
+    issues.mkdir(exist_ok=True)
+    (issues / "index.jsonl").write_text(content)
+    env = dict(
+        os.environ,
+        GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@e",
+        GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@e",
+        GIT_AUTHOR_DATE=author_iso, GIT_COMMITTER_DATE=author_iso,
+    )
+    subprocess.run(["git", "-C", str(repo), "add", "issues/index.jsonl"],
+                   check=True, capture_output=True, text=True, env=env)
+    subprocess.run(["git", "-C", str(repo), "-c", "commit.gpgsign=false",
+                    "commit", "-m", "x"],
+                   check=True, capture_output=True, text=True, env=env)
+
+
+def _row(iid, **extra):
+    row = {"id": iid, "slug": f"i{iid}", "title": f"I{iid}", "kind": "task",
+           "status": "backlog", "priority": "medium"}
+    row.update(extra)
+    return json.dumps(row, ensure_ascii=False)
+
+
+@unittest.skipUnless(shutil.which("git"), "git not available")
+class TestGitLayer(unittest.TestCase):
+    def setUp(self):
+        self.b = load_backfill()
+
+    def test_resolve_index_missing_file(self):
+        with TemporaryDirectory() as tmp:
+            with self.assertRaises(SystemExit):
+                self.b.resolve_index(tmp)
+
+    def test_resolve_index_not_a_repo(self):
+        with TemporaryDirectory() as tmp:
+            (Path(tmp) / "index.jsonl").write_text("")
+            with self.assertRaises(SystemExit):
+                self.b.resolve_index(tmp)
+
+    def test_recover_times_over_history(self):
+        with TemporaryDirectory() as tmp:
+            _git(tmp, "init", "-q")
+            _commit_index(tmp, _row(1, created="2026-06-01") + "\n",
+                          "2026-06-01T09:00:00+00:00")
+            _commit_index(tmp, _row(1, created="2026-06-01", started="2026-06-02",
+                                    status="ongoing") + "\n",
+                          "2026-06-02T12:00:00-03:00")
+            _commit_index(tmp, _row(1, created="2026-06-01", started="2026-06-02",
+                                    closed="2026-06-03", status="done") + "\n",
+                          "2026-06-03T10:00:00+00:00")
+            root, index_rel, _ = self.b.resolve_index(str(Path(tmp) / "issues"))
+            rec = self.b.recover_times(root, index_rel)
+            self.assertEqual(rec[(1, "created")], "2026-06-01T09:00:00+00:00")
+            self.assertEqual(rec[(1, "started")], "2026-06-02T12:00:00-03:00")
+            self.assertEqual(rec[(1, "closed")], "2026-06-03T10:00:00+00:00")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -93,3 +93,76 @@ def reduce_transitions(snapshots):
                     recovered[(iid, f)] = author_iso
                 pv[f] = cur
     return recovered
+
+
+def _git(root, *args):
+    """Run a git command in `root`; returns the CompletedProcess (text mode)."""
+    try:
+        return subprocess.run(["git", "-C", str(root), *args],
+                              capture_output=True, text=True)
+    except FileNotFoundError:
+        sys.exit("error: git not found on PATH")
+
+
+def resolve_index(tracker_dir):
+    """Return (git_root, index_rel, index_path) for a tracker dir, or exit with a
+    clear error if git is missing, the dir is not in a repo, or there is no
+    index.jsonl."""
+    d = Path(tracker_dir)
+    index_path = d / "index.jsonl"
+    if not index_path.is_file():
+        sys.exit(f"error: {index_path} not found")
+    r = _git(d, "rev-parse", "--show-toplevel")
+    if r.returncode != 0:
+        sys.exit(f"error: {d} is not inside a git repository")
+    root = Path(r.stdout.strip())
+    try:
+        index_rel = index_path.resolve().relative_to(root.resolve())
+    except ValueError:
+        sys.exit(f"error: {index_path} is not under git root {root}")
+    return root, str(index_rel), index_path
+
+
+def list_history(root, index_rel):
+    """Commits touching the index, oldest->newest, as (sha, author_iso) pairs."""
+    r = _git(root, "log", "--reverse", "--format=%H%x09%aI", "--", index_rel)
+    if r.returncode != 0:
+        sys.exit(f"error: git log failed: {r.stderr.strip()}")
+    out = []
+    for line in r.stdout.splitlines():
+        if not line.strip():
+            continue
+        sha, _, author_iso = line.partition("\t")
+        # Normalize the trailing "Z" that some git versions emit for UTC
+        if author_iso.endswith("Z"):
+            author_iso = author_iso[:-1] + "+00:00"
+        out.append((sha, author_iso))
+    return out
+
+
+def read_index_at(root, index_rel, sha):
+    """Parse the index blob at a commit into a list of row dicts, or None if the
+    blob is missing (path didn't exist there) or unparseable."""
+    r = _git(root, "show", f"{sha}:{index_rel}")
+    if r.returncode != 0:
+        return None
+    rows = []
+    for line in r.stdout.splitlines():
+        if not line.strip():
+            continue
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError:
+            return None
+    return rows
+
+
+def recover_times(root, index_rel):
+    """Walk the index's git history and recover {(id, field): author_iso}."""
+    snapshots = []
+    for sha, author_iso in list_history(root, index_rel):
+        rows = read_index_at(root, index_rel, sha)
+        if rows is None:
+            continue
+        snapshots.append((author_iso, rows))
+    return reduce_transitions(snapshots)
