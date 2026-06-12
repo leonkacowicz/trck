@@ -5,14 +5,14 @@
 
 | State | Count |
 |---|---:|
-| backlog | 20 |
+| backlog | 21 |
 | ongoing | 0 |
 | done | 45 |
-| **total** | **65** |
+| **total** | **66** |
 
 ## Hierarchies
 
-### [#002 Part D: richer tracker features](backlog/002-part-d-richer-tracker-features.md) — 57% (12/21 pts · 12/21 done) · _medium_ · backlog
+### [#002 Part D: richer tracker features](backlog/002-part-d-richer-tracker-features.md) — 55% (12/22 pts · 12/22 done) · _medium_ · backlog
 
 - [x] [#003 Add labels/tags to issues](done/003-add-labels-tags-to-issues.md)
 - [ ] [#004 Support configurable custom fields](backlog/004-support-configurable-custom-fields.md) _(backlog)_
@@ -24,8 +24,9 @@
 - [x] [#028 validate/dep: detect and prevent dependency cycles](done/028-validate-dep-detect-and-prevent-dependency-cycles.md)
 - [x] [#030 list: annotate blocked/blocker relationships and clear them when resolved](done/030-list-annotate-blocked-blocker-relationships-and-clear-them-when-resolved.md)
 - [x] [#048 Free-form custom fields: set/filter/sort arbitrary key→value](done/048-free-form-custom-fields-set-filter-sort-arbitrary-key-value.md)
-- [ ] [#064 Reconcile id collisions when branches concurrently create issues](backlog/064-reconcile-id-collisions-when-branches-concurrently-create-issues.md) _(backlog)_
-- [ ] [#065 Use random alphanumeric ids to make concurrent creation collision-free](backlog/065-use-random-alphanumeric-ids-to-make-concurrent-creation-collision-free.md) _(backlog)_
+- [ ] [#064 Reconcile id collisions when branches concurrently create issues](backlog/064-reconcile-id-collisions-when-branches-concurrently-create-issues.md) [conflict-resolution] _(backlog)_
+- [ ] [#065 Use random alphanumeric ids to make concurrent creation collision-free](backlog/065-use-random-alphanumeric-ids-to-make-concurrent-creation-collision-free.md) [conflict-resolution] _(backlog)_
+- [ ] [#066 Auto-resolve index.jsonl and SUMMARY.md merge conflicts via git merge drivers](backlog/066-auto-resolve-index-jsonl-and-summary-md-merge-conflicts-via-git-merge-drivers.md) [conflict-resolution] _(backlog)_
 
 ### [#022 Introduce an Issue class instead of dict-oriented code](done/022-introduce-an-issue-class-instead-of-dict-oriented-code.md) — 100% (1/1 pts · 1/1 done) · _medium_ · done
 
