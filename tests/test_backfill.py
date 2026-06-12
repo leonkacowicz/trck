@@ -75,6 +75,19 @@ class TestRewriteLines(unittest.TestCase):
         self.assertEqual(changes, [])
         self.assertEqual(warnings, [])
 
+    def test_rows_without_integer_id_are_passed_through_untouched(self):
+        # A row with no integer id and a day-only date must NOT produce a warning
+        # with a None id (which would later crash the #{:03d} report). It is left
+        # byte-identical and ignored.
+        noid = self.canonical(slug="noid", title="No id", kind="task",
+                              status="done", priority="medium", created="2026-06-05")
+        boolid = self.canonical(id=True, slug="b", title="B", kind="task",
+                               status="done", priority="medium", created="2026-06-05")
+        new_lines, changes, warnings = self.b.rewrite_lines([noid, boolid], {})
+        self.assertEqual(new_lines, [noid, boolid])  # unchanged, byte-identical
+        self.assertEqual(changes, [])
+        self.assertEqual(warnings, [])
+
 
 class TestReduceTransitions(unittest.TestCase):
     def setUp(self):

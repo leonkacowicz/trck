@@ -54,17 +54,18 @@ def rewrite_lines(lines, recovered):
             continue
         row = json.loads(line)
         iid = row.get("id")
-        for f in DATE_FIELDS:
-            v = row.get(f)
-            if not is_day_only(v):
-                continue
-            key = (iid, f)
-            if key in recovered:
-                new = to_utc(recovered[key])
-                row[f] = new
-                changes.append((iid, f, v, new))
-            else:
-                warnings.append((iid, f, v))
+        if isinstance(iid, int) and not isinstance(iid, bool):
+            for f in DATE_FIELDS:
+                v = row.get(f)
+                if not is_day_only(v):
+                    continue
+                key = (iid, f)
+                if key in recovered:
+                    new = to_utc(recovered[key])
+                    row[f] = new
+                    changes.append((iid, f, v, new))
+                else:
+                    warnings.append((iid, f, v))
         new_lines.append(json.dumps(row, ensure_ascii=False))
     return new_lines, changes, warnings
 
@@ -172,10 +173,10 @@ def backfill(index_path, recovered, dry_run):
     """Rewrite the working-tree index, applying recovered timestamps to day-only
     date fields. Returns (changes, warnings). Writes only when not dry_run and
     something actually changed."""
-    lines = Path(index_path).read_text().splitlines()
+    lines = index_path.read_text().splitlines()
     new_lines, changes, warnings = rewrite_lines(lines, recovered)
     if not dry_run and changes:
-        Path(index_path).write_text("\n".join(new_lines) + "\n")
+        index_path.write_text("\n".join(new_lines) + "\n")
     return changes, warnings
 
 
@@ -200,8 +201,9 @@ def main(argv=None):
         print(f"#{iid:03d} {field}: {old} -> {new}")
     for iid, field, old in warnings:
         print(f"WARNING: #{iid:03d} {field} day-only but no history found ({old})")
+    verb = "would be updated" if args.dry_run else "updated"
     note = "dry-run, no changes written; " if args.dry_run else ""
-    print(f"{note}{len(changes)} field(s) updated, {len(warnings)} warning(s)")
+    print(f"{note}{len(changes)} field(s) {verb}, {len(warnings)} warning(s)")
     return 0
 
 
