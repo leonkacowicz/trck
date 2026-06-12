@@ -166,3 +166,44 @@ def recover_times(root, index_rel):
             continue
         snapshots.append((author_iso, rows))
     return reduce_transitions(snapshots)
+
+
+def backfill(index_path, recovered, dry_run):
+    """Rewrite the working-tree index, applying recovered timestamps to day-only
+    date fields. Returns (changes, warnings). Writes only when not dry_run and
+    something actually changed."""
+    lines = Path(index_path).read_text().splitlines()
+    new_lines, changes, warnings = rewrite_lines(lines, recovered)
+    if not dry_run and changes:
+        Path(index_path).write_text("\n".join(new_lines) + "\n")
+    return changes, warnings
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        description="Backfill day-only trck dates with UTC timestamps recovered "
+                    "from git history.")
+    parser.add_argument("tracker_dir", nargs="?", default="issues",
+                        help="tracker dir containing index.jsonl (default: issues)")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="print the planned changes but do not write")
+    args = parser.parse_args(argv)
+
+    root, index_rel, index_path = resolve_index(args.tracker_dir)
+    recovered = recover_times(root, index_rel)
+    try:
+        changes, warnings = backfill(index_path, recovered, args.dry_run)
+    except json.JSONDecodeError as e:
+        sys.exit(f"error: malformed JSON in {index_path}: {e}")
+
+    for iid, field, old, new in changes:
+        print(f"#{iid:03d} {field}: {old} -> {new}")
+    for iid, field, old in warnings:
+        print(f"WARNING: #{iid:03d} {field} day-only but no history found ({old})")
+    note = "dry-run, no changes written; " if args.dry_run else ""
+    print(f"{note}{len(changes)} field(s) updated, {len(warnings)} warning(s)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

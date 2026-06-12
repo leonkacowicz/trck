@@ -179,5 +179,66 @@ class TestGitLayer(unittest.TestCase):
             self.assertEqual(rec[(1, "closed")], "2026-06-03T10:00:00+00:00")
 
 
+@unittest.skipUnless(shutil.which("git"), "git not available")
+class TestMainEndToEnd(unittest.TestCase):
+    def setUp(self):
+        self.b = load_backfill()
+
+    def _build_repo(self, tmp):
+        """Issue 1: created, started, closed, reopened, reclosed. Working tree =
+        final state with all three fields day-only."""
+        _git(tmp, "init", "-q")
+        _commit_index(tmp, _row(1, created="2026-06-01") + "\n",
+                      "2026-06-01T09:00:00+00:00")
+        _commit_index(tmp, _row(1, created="2026-06-01", started="2026-06-02",
+                                status="ongoing") + "\n",
+                      "2026-06-02T12:00:00-03:00")
+        _commit_index(tmp, _row(1, created="2026-06-01", started="2026-06-02",
+                                closed="2026-06-03", status="done") + "\n",
+                      "2026-06-03T10:00:00+00:00")
+        _commit_index(tmp, _row(1, created="2026-06-01", started="2026-06-02",
+                                status="ongoing") + "\n",   # reopened
+                      "2026-06-04T10:00:00+00:00")
+        _commit_index(tmp, _row(1, created="2026-06-01", started="2026-06-02",
+                                closed="2026-06-05", status="done") + "\n",   # reclosed
+                      "2026-06-05T22:30:00-03:00")
+        return str(Path(tmp) / "issues")
+
+    def test_main_backfills_to_expected_utc_and_is_idempotent(self):
+        with TemporaryDirectory() as tmp:
+            tracker = self._build_repo(tmp)
+            index = Path(tracker) / "index.jsonl"
+
+            rc = self.b.main([tracker])
+            self.assertEqual(rc, 0)
+            row = json.loads(index.read_text().splitlines()[0])
+            self.assertEqual(row["created"], "2026-06-01T09:00:00Z")
+            self.assertEqual(row["started"], "2026-06-02T15:00:00Z")
+            self.assertEqual(row["closed"], "2026-06-06T01:30:00Z")  # 22:30-03:00 -> next day UTC
+
+            # second run changes nothing (idempotent)
+            before = index.read_text()
+            self.b.main([tracker])
+            self.assertEqual(index.read_text(), before)
+
+    def test_dry_run_writes_nothing(self):
+        with TemporaryDirectory() as tmp:
+            tracker = self._build_repo(tmp)
+            index = Path(tracker) / "index.jsonl"
+            before = index.read_text()
+            self.b.main([tracker, "--dry-run"])
+            self.assertEqual(index.read_text(), before)  # still day-only, unchanged
+
+    def test_main_runs_as_subprocess(self):
+        with TemporaryDirectory() as tmp:
+            tracker = self._build_repo(tmp)
+            from tests.helpers import SCRIPT_PATH
+            r = subprocess.run([sys.executable, str(SCRIPT_PATH), tracker],
+                               capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            row = json.loads((Path(tracker) / "index.jsonl").read_text().splitlines()[0])
+            self.assertEqual(row["created"], "2026-06-01T09:00:00Z")
+
+
 if __name__ == "__main__":
     unittest.main()
