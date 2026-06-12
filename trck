@@ -932,7 +932,11 @@ def _graph_component_rows(g: "Graph", comp) -> list[tuple[int, str, list]]:
             if k == 0:
                 bottom[pos] = d; started.append(pos)
             else:
-                c = bottom.index(None) if None in bottom else len(bottom)
+                # Reuse the free column NEAREST the node, not the leftmost gap:
+                # same lane count (still greedy interval colouring) but a shorter
+                # horizontal bridge and fewer crossings. Ties go to the lower column.
+                free = [c for c, t in enumerate(bottom) if t is None]
+                c = min(free, key=lambda c: (abs(c - pos), c)) if free else len(bottom)
                 if c == len(bottom):
                     bottom.append(None)
                 bottom[c] = d; started.append(c)

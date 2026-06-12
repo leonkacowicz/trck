@@ -107,6 +107,31 @@ class TestGraphRender(unittest.TestCase):
         self.assertEqual(self.order(rows), [1, 2, 3, 4])
         self.assertEqual(self.gutters(rows), ["●─╮", "● │", "│ ●", "●─╯"])
 
+    def test_reopened_lane_hugs_the_node_not_the_leftmost_gap(self):
+        # 1 forks to 2,3,4 (cols 0,1,2); 2 and 3 finish, freeing cols 0 and 1;
+        # then 4 (sitting at col 2) forks again to 5,6. The second new lane must
+        # reuse the gap NEAREST the node (col 1), not swing out to the leftmost
+        # free column (col 0) — same lane count, but a shorter bridge / no crossing.
+        g = self.graph(self.issue(1),
+                       self.issue(2, depends=[1]), self.issue(3, depends=[1]),
+                       self.issue(4, depends=[1]),
+                       self.issue(5, depends=[4]), self.issue(6, depends=[4]))
+        rows = self.t.render_graph(g, [1, 2, 3, 4, 5, 6])
+        self.assertEqual(self.order(rows), [1, 2, 3, 4, 5, 6])
+        self.assertEqual(self.gutters(rows),
+                         ["●─┬─╮", "● │ │", "  ● │", "  ╭─●", "  │ ●", "  ●"])
+
+    def test_nearest_gap_reuse_does_not_widen_the_graph(self):
+        # The nearest-gap choice must never use more columns than the optimal
+        # (leftmost-free) colouring would: width stays at the max overlap (3 lanes).
+        g = self.graph(self.issue(1),
+                       self.issue(2, depends=[1]), self.issue(3, depends=[1]),
+                       self.issue(4, depends=[1]),
+                       self.issue(5, depends=[4]), self.issue(6, depends=[4]))
+        rows = self.t.render_graph(g, [1, 2, 3, 4, 5, 6])
+        # 3 lanes -> at most 3 glyph cells + 2 connectors = width 5
+        self.assertEqual(max(len(g) for g in self.gutters(rows)), 5)
+
     def test_order_is_prerequisites_first(self):
         # every requirement must be rendered above the issue that needs it
         g = self.graph(self.issue(1, depends=[2]), self.issue(2, depends=[3]),
