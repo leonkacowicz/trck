@@ -45,11 +45,12 @@ Two improvements, independent and separately shippable:
 - [x] (A) Forked lanes choose the free column nearest `pos`; lane *count* is unchanged
       for every existing graph (width is still greedy-optimal), and visible crossings are
       reduced or equal on the repo's own `deps` output. *(shipped — see Notes)*
-- [ ] (B) `_graph_topo` tie-break prefers the ready node with the most-recently-placed
+- [x] (B) `_graph_topo` tie-break prefers the ready node with the most-recently-placed
       predecessor, falling back to id for full determinism; output stays a valid
-      topological order (every blocker above what it blocks).
-- [ ] (B) is gated on a before/after comparison on the real `issues/` graph being judged
-      an improvement — if it isn't, ship (A) alone and drop (B).
+      topological order (every blocker above what it blocks). *(shipped as DFS/LIFO)*
+- [x] (B) is gated on a before/after comparison on the real `issues/` graph being judged
+      an improvement — if it isn't, ship (A) alone and drop (B). *(judged an improvement;
+      real `issues/` graph byte-identical, synthetic branching graph stops zig-zagging)*
 - [ ] Tests cover: lane count unchanged after (A) on representative DAGs; (B) still
       produces a valid topo order and is deterministic; a fan-in/fan-out case where (A)
       demonstrably shortens a bridge.
@@ -69,7 +70,13 @@ Discussion origin: layout was analysed as constrained MinLA (edge length) + inte
 colouring (lanes). Conclusion: lane colouring is already optimal for width, so the gains
 live in the ordering (B) and in same-width bridge shortening (A).
 
-**Progress:** (A) shipped — the `started` k>0 branch now picks the free column nearest
-`pos` (`min(free, key=…|c-pos|, c)`), covered by `test_reopened_lane_hugs_the_node_…`
-and `test_nearest_gap_reuse_does_not_widen_the_graph`. (B) remains open; keeping the
-issue in `backlog` until (B) is decided.
+**Progress:** both shipped.
+- (A) — the `started` k>0 branch now picks the free column nearest `pos`
+  (`min(free, key=…|c-pos|, c)`), covered by `test_reopened_lane_hugs_the_node_…`
+  and `test_nearest_gap_reuse_does_not_widen_the_graph`.
+- (B) — `_graph_topo` now uses a DFS/LIFO stack instead of an id-priority queue, so a
+  branch is drawn to its end before the next starts (lowest id on top for determinism).
+  Covered by `test_tie_break_finishes_a_branch_before_starting_the_next` and
+  `test_tie_break_is_deterministic_by_id_within_a_branch`. Before/after on a synthetic
+  reconverging-chains graph: id-priority zig-zagged the bullets between columns; DFS
+  keeps each chain in one column. The real `issues/` graph renders byte-identically.

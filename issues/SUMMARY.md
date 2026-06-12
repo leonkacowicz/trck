@@ -5,14 +5,14 @@
 
 | State | Count |
 |---|---:|
-| backlog | 14 |
+| backlog | 18 |
 | ongoing | 0 |
-| done | 44 |
-| **total** | **58** |
+| done | 45 |
+| **total** | **63** |
 
 ## Hierarchies
 
-### [#002 Part D: richer tracker features](backlog/002-part-d-richer-tracker-features.md) — 80% (12/15 pts · 12/15 done) · _medium_ · backlog
+### [#002 Part D: richer tracker features](backlog/002-part-d-richer-tracker-features.md) — 63% (12/19 pts · 12/19 done) · _medium_ · backlog
 
 - [x] [#003 Add labels/tags to issues](done/003-add-labels-tags-to-issues.md)
 - [ ] [#004 Support configurable custom fields](backlog/004-support-configurable-custom-fields.md) _(backlog)_
@@ -28,6 +28,14 @@
 ### [#022 Introduce an Issue class instead of dict-oriented code](done/022-introduce-an-issue-class-instead-of-dict-oriented-code.md) — 100% (1/1 pts · 1/1 done) · _medium_ · done
 
 - [x] [#027 Harden Issue.from_dict with a structural/type contract](done/027-harden-issue-from-dict-with-a-structural-type-contract.md)
+
+### [#024 Add --json output to list/show/deps/tree for scripting](backlog/024-add-json-output-to-list-show-deps-tree-for-scripting.md) — 0% (0/5 pts · 0/5 done) · _high_ · backlog
+
+- [ ] [#059 list/tree: drop the tree alias (nested forest is list's default)](backlog/059-list-tree-drop-the-tree-alias-nested-forest-is-list-s-default.md) _(backlog)_
+- [ ] [#060 json: shared emit_json stdout seam + --json flag plumbing](backlog/060-json-shared-emit-json-stdout-seam-json-flag-plumbing.md) _(backlog)_
+- [ ] [#061 list --json: nested hierarchy (and --flat --json flat array)](backlog/061-list-json-nested-hierarchy-and-flat-json-flat-array.md) _(backlog)_
+- [ ] [#062 show --json: single JSON document with body folded in](backlog/062-show-json-single-json-document-with-body-folded-in.md) _(backlog)_
+- [ ] [#063 deps --json: {requires, blocks} cones as JSON](backlog/063-deps-json-requires-blocks-cones-as-json.md) _(backlog)_
 
 ### [#031 Merge tree into list: structure-aware browse verb](done/031-merge-tree-into-list-structure-aware-browse-verb.md) — 100% (4/4 pts · 4/4 done) · _high_ · done
 
@@ -59,7 +67,6 @@ Spec: [`docs/specs/2026-06-11-custom-fields-design.md`](../docs/specs/2026-06-11
 - [#055 deps: select graph seeds by predicate (union of per-seed cones)](backlog/055-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#056 deps: graph display filters (--omit-completed, --depth N)](backlog/056-deps-graph-display-filters-omit-completed-depth-n.md) — _medium_
 - [#057 mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](backlog/057-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
-- [#058 deps: shorter edges / fewer crossings in the graph layout](backlog/058-deps-shorter-edges-fewer-crossings-in-the-graph-layout.md) — _medium_
 - [#001 Part C: curses TUI for browsing and quick actions](backlog/001-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
 - [#007 summary: include foreign/unknown statuses in the counts table](backlog/007-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
 - [#009 validate: suppress redundant bad-slug error when filename-slug mismatch already reported](backlog/009-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
@@ -88,6 +95,7 @@ _none_
 - [#045 Eliminate unnecessary index double-reads](done/045-eliminate-unnecessary-index-double-reads.md) — _medium_ (closed 2026-06-10)
 - [#046 deps --graph: lazygit-style dependency DAG renderer](done/046-deps-graph-lazygit-style-dependency-dag-renderer.md) — _medium_ (closed 2026-06-09)
 - [#047 deps --graph <id>: scope to the focal issue's directed dependency line](done/047-deps-graph-id-scope-to-the-focal-issue-s-directed-dependency-line.md) — _medium_ (closed 2026-06-10)
+- [#058 deps: shorter edges / fewer crossings in the graph layout](done/058-deps-shorter-edges-fewer-crossings-in-the-graph-layout.md) — _medium_ (closed 2026-06-12)
 - [#008 validate: report one error per parent cycle, not one per node](done/008-validate-report-one-error-per-parent-cycle-not-one-per-node.md) — _low_ (closed 2026-06-10)
 - [#011 version/update: suppress no-tracker stderr noise when run outside a tracker](done/011-version-update-suppress-no-tracker-stderr-noise-when-run-outside-a-tracker.md) — _low_ (closed 2026-06-05)
 - [#017 summary: sort status sections by priority (highest first)](done/017-summary-sort-status-sections-by-priority-highest-first.md) — _low_ (closed 2026-06-05)
