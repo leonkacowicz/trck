@@ -63,5 +63,66 @@ class TestTimestampDisplay(unittest.TestCase):
             self.assertEqual(payload["created"], "2026-06-12T10:00:00Z")
 
 
+class TestTimestampBackCompat(unittest.TestCase):
+    def setUp(self):
+        self.t = load_trck()
+
+    def setup_dir(self, tmp):
+        return make_tracker(tmp, {})
+
+    def write_index(self, d, lines):
+        (d / "index.jsonl").write_text("".join(json.dumps(x) + "\n" for x in lines))
+
+    def ctx(self, d):
+        return self.t.Ctx(d, self.t.load_config(d))
+
+    def test_legacy_date_only_loads_check_clean_and_normalize_preserves(self):
+        with TemporaryDirectory() as tmp:
+            d = self.setup_dir(tmp)
+            (d / "backlog").mkdir()
+            # create the issue body file the index points at
+            (d / "backlog" / "001-legacy.md").write_text("# Legacy\n")
+            self.write_index(d, [{
+                "id": 1, "slug": "legacy", "title": "Legacy", "kind": "task",
+                "status": "backlog", "priority": "medium",
+                "created": "2026-06-05",  # legacy day-only value
+            }])
+            ctx = self.ctx(d)
+            rows = self.t.load_index(ctx)          # loads without error
+            self.assertEqual(rows[0].created, "2026-06-05")
+            errors, _ = self.t.validate(ctx, rows)  # check passes
+            self.assertEqual(errors, [])
+            # normalize must NOT expand the date-only value
+            self.t.cmd_normalize(ns(dir=str(d)))
+            reloaded = self.t.load_index(self.ctx(d))
+            self.assertEqual(reloaded[0].created, "2026-06-05")
+
+    def test_mixed_form_sort_orders_date_before_same_day_timestamp(self):
+        with TemporaryDirectory() as tmp:
+            d = self.setup_dir(tmp)
+            (d / "backlog").mkdir()
+            (d / "backlog" / "001-older.md").write_text("# Older\n")
+            (d / "backlog" / "002-newer.md").write_text("# Newer\n")
+            self.write_index(d, [
+                {"id": 1, "slug": "older", "title": "Older", "kind": "task",
+                 "status": "backlog", "priority": "medium", "created": "2026-06-05"},
+                {"id": 2, "slug": "newer", "title": "Newer", "kind": "task",
+                 "status": "backlog", "priority": "medium",
+                 "created": "2026-06-05T09:00:00Z"},
+            ])
+            # Drive the real engine sort path rather than a reimplemented key.
+            # "2026-06-05" < "2026-06-05T09:00:00Z" lexicographically, so the
+            # legacy date-only row (#001 Older) must appear before #002 Newer.
+            buf = StringIO()
+            with redirect_stdout(buf):
+                self.t.cmd_list(ns(dir=str(d), status=None, kind=None,
+                                   priority=None, parent=None, label=None,
+                                   sort="created", flat=True))
+            out = buf.getvalue()
+            pos_older = out.index("Older")
+            pos_newer = out.index("Newer")
+            self.assertLess(pos_older, pos_newer)
+
+
 if __name__ == "__main__":
     unittest.main()
