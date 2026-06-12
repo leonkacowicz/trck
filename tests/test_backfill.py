@@ -24,5 +24,57 @@ class TestToUtc(unittest.TestCase):
         self.assertEqual(self.b.to_utc("2026-06-06T23:30:00-03:00"), "2026-06-07T02:30:00Z")
 
 
+class TestRewriteLines(unittest.TestCase):
+    def setUp(self):
+        self.b = load_backfill()
+
+    def canonical(self, **row):
+        return json.dumps(row, ensure_ascii=False)
+
+    def test_is_day_only(self):
+        self.assertTrue(self.b.is_day_only("2026-06-05"))
+        self.assertFalse(self.b.is_day_only("2026-06-05T00:00:00Z"))
+        self.assertFalse(self.b.is_day_only(None))
+        self.assertFalse(self.b.is_day_only(""))
+
+    def test_rewrite_replaces_day_only_and_leaves_others_byte_identical(self):
+        recovered = {
+            (1, "created"): "2026-06-05T09:00:00+00:00",
+            (1, "closed"): "2026-06-06T12:00:00-03:00",
+        }
+        line1 = self.canonical(id=1, slug="x", title="X", kind="task",
+                               status="done", priority="medium",
+                               created="2026-06-05", closed="2026-06-06")
+        line2 = self.canonical(id=2, slug="y", title="Y", kind="task",
+                               status="backlog", priority="low",
+                               created="2026-06-05T08:00:00Z")
+        new_lines, changes, warnings = self.b.rewrite_lines([line1, line2], recovered)
+        # issue 2 already timestamped -> untouched and byte-identical
+        self.assertEqual(new_lines[1], line2)
+        # issue 1's day-only fields converted to UTC
+        row1 = json.loads(new_lines[0])
+        self.assertEqual(row1["created"], "2026-06-05T09:00:00Z")
+        self.assertEqual(row1["closed"], "2026-06-06T15:00:00Z")
+        self.assertEqual(set(changes), {
+            (1, "created", "2026-06-05", "2026-06-05T09:00:00Z"),
+            (1, "closed", "2026-06-06", "2026-06-06T15:00:00Z"),
+        })
+        self.assertEqual(warnings, [])
+
+    def test_rewrite_warns_when_no_history_and_leaves_value(self):
+        line = self.canonical(id=3, slug="z", title="Z", kind="task",
+                              status="done", priority="medium", created="2026-06-05")
+        new_lines, changes, warnings = self.b.rewrite_lines([line], {})
+        self.assertEqual(new_lines[0], line)  # unchanged
+        self.assertEqual(changes, [])
+        self.assertEqual(warnings, [(3, "created", "2026-06-05")])
+
+    def test_rewrite_preserves_blank_lines(self):
+        new_lines, changes, warnings = self.b.rewrite_lines(["", "  "], {})
+        self.assertEqual(new_lines, ["", "  "])
+        self.assertEqual(changes, [])
+        self.assertEqual(warnings, [])
+
+
 if __name__ == "__main__":
     unittest.main()

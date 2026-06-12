@@ -27,3 +27,43 @@ def to_utc(author_iso: str) -> str:
     """Convert a git author date (ISO 8601 with offset) to the engine's
     canonical UTC stamp: second-precision, 'Z'-suffixed, no microseconds."""
     return datetime.fromisoformat(author_iso).astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def is_day_only(value) -> bool:
+    """True iff value is a bare YYYY-MM-DD string (a legacy date to backfill)."""
+    return isinstance(value, str) and DAY_ONLY_RE.match(value) is not None
+
+
+def rewrite_lines(lines, recovered):
+    """Rewrite a list of raw index.jsonl text lines.
+
+    `recovered` maps (id, field) -> git author-date ISO string. For each row,
+    each day-only date field is converted to a UTC timestamp if a recovered time
+    exists; otherwise it is left untouched and reported as a warning. Lines whose
+    fields are all already-timestamped (or non-date) round-trip byte-identically,
+    because the input is canonical and dict key order is preserved.
+
+    Returns (new_lines, changes, warnings) where
+      changes  = list of (id, field, old, new)
+      warnings = list of (id, field, old).
+    """
+    new_lines, changes, warnings = [], [], []
+    for line in lines:
+        if not line.strip():
+            new_lines.append(line)
+            continue
+        row = json.loads(line)
+        iid = row.get("id")
+        for f in DATE_FIELDS:
+            v = row.get(f)
+            if not is_day_only(v):
+                continue
+            key = (iid, f)
+            if key in recovered:
+                new = to_utc(recovered[key])
+                row[f] = new
+                changes.append((iid, f, v, new))
+            else:
+                warnings.append((iid, f, v))
+        new_lines.append(json.dumps(row, ensure_ascii=False))
+    return new_lines, changes, warnings
