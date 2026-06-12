@@ -1234,10 +1234,10 @@ def move_issue(ctx: Ctx, row: Issue, new_status: str) -> None:
 
     init = initial_status(ctx.cfg)
     if old_status == init and new_status != init and not row.started:
-        row.started = today()
+        row.started = now_utc()
     if is_terminal(ctx.cfg, new_status):
         if not row.closed:
-            row.closed = today()
+            row.closed = now_utc()
     else:
         row.closed = None
         row.resolution = None
@@ -1271,7 +1271,7 @@ def cmd_new(args) -> None:
     row = Issue(
         id=iid, slug=slug, title=args.title, kind=kind,
         status=initial_status(ctx.cfg), priority=priority, points=points,
-        parent=parent, depends_on=deps, spec=args.spec, created=today(),
+        parent=parent, depends_on=deps, spec=args.spec, created=now_utc(),
     )
     path = issue_path(ctx, row)
     if path.exists():
