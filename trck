@@ -885,9 +885,17 @@ def graph_components(g: "Graph", ids) -> list[list[int]]:
 
 
 def _graph_topo(g: "Graph", ids) -> tuple[list[int], dict[int, list[int]]]:
-    """Topological order over depends_on within `ids`, prerequisites first, ties by
-    id. Returns (order, dependents) where dependents[i] is i's id-sorted in-set
-    dependents — the lanes node i opens downward."""
+    """Topological order over depends_on within `ids`, prerequisites first. Returns
+    (order, dependents) where dependents[i] is i's id-sorted in-set dependents — the
+    lanes node i opens downward.
+
+    Tie-break is DFS by locality: among nodes that are ready, take the one unblocked
+    MOST recently (a dependent of the node just placed) so a branch is drawn to its
+    end before the next one starts — its lane closes on the next row instead of
+    lingering open beside a parallel branch. This keeps bullets in a single column
+    per branch (fewer crossings, shorter edges) versus an id-priority queue, which
+    interleaves branches breadth-first. Siblings unblocked together are visited in
+    ascending id order, so the layout stays fully deterministic."""
     idset = set(ids)
     requires = {i: [d for d in g.by_id[i].depends_on if d in idset] for i in idset}
     dependents: dict[int, list[int]] = {i: [] for i in idset}
@@ -897,16 +905,19 @@ def _graph_topo(g: "Graph", ids) -> tuple[list[int], dict[int, list[int]]]:
     for i in idset:
         dependents[i].sort()
     indeg = {i: len(requires[i]) for i in idset}
-    ready = sorted(i for i in idset if indeg[i] == 0)
+    # LIFO stack = depth-first; push newly-ready nodes high-id-first so the lowest
+    # id is on top and popped next (ascending order within a freshly-unblocked set).
+    stack = sorted((i for i in idset if indeg[i] == 0), reverse=True)
     order = []
-    while ready:
-        n = ready.pop(0)
+    while stack:
+        n = stack.pop()
         order.append(n)
+        newly = []
         for dep in dependents[n]:
             indeg[dep] -= 1
             if indeg[dep] == 0:
-                ready.append(dep)
-        ready.sort()
+                newly.append(dep)
+        stack.extend(sorted(newly, reverse=True))
     return order, dependents
 
 

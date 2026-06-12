@@ -132,6 +132,28 @@ class TestGraphRender(unittest.TestCase):
         # 3 lanes -> at most 3 glyph cells + 2 connectors = width 5
         self.assertEqual(max(len(g) for g in self.gutters(rows)), 5)
 
+    def test_tie_break_finishes_a_branch_before_starting_the_next(self):
+        # 1 forks to two independent chains: 1->2->4 and 1->3->5. Ids are laid
+        # out so id-priority would interleave them (1,2,3,4,5 = R,A1,B1,A2,B2),
+        # zig-zagging the bullets between columns. The DFS/locality tie-break
+        # instead finishes one chain fully before the other (1,2,4,3,5), so each
+        # chain's bullets stay in a single column — fewer crossings, shorter edges.
+        g = self.graph(self.issue(1),
+                       self.issue(2, depends=[1]), self.issue(3, depends=[1]),
+                       self.issue(4, depends=[2]), self.issue(5, depends=[3]))
+        rows = self.t.render_graph(g, [1, 2, 3, 4, 5])
+        self.assertEqual(self.order(rows), [1, 2, 4, 3, 5])
+        self.assertEqual(self.gutters(rows),
+                         ["●─╮", "● │", "● │", "  ●", "  ●"])
+
+    def test_tie_break_is_deterministic_by_id_within_a_branch(self):
+        # Siblings unblocked together are still visited in ascending id order,
+        # so the layout is fully deterministic (no reliance on dict/set order).
+        g = self.graph(self.issue(1),
+                       self.issue(2, depends=[1]), self.issue(3, depends=[1]))
+        order = self.order(self.t.render_graph(g, [1, 2, 3]))
+        self.assertEqual(order, [1, 2, 3])
+
     def test_order_is_prerequisites_first(self):
         # every requirement must be rendered above the issue that needs it
         g = self.graph(self.issue(1, depends=[2]), self.issue(2, depends=[3]),
