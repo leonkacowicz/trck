@@ -17,6 +17,5 @@ class TestSkeleton(unittest.TestCase):
         self.assertEqual(self.t.slugify("Hello, World! 2"), "hello-world-2")
         self.assertEqual(self.t.slugify("--Trim--"), "trim")
 
-    def test_today_isoformat(self):
-        import re
-        self.assertRegex(self.t.today(), r"^\d{4}-\d{2}-\d{2}$")
+    def test_now_utc_is_zsuffixed_second_precision(self):
+        self.assertRegex(self.t.now_utc(), r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
