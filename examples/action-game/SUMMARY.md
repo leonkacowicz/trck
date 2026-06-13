@@ -5,8 +5,8 @@
 
 | State | Count |
 |---|---:|
-| backlog | 21 |
-| ongoing | 9 |
+| backlog | 19 |
+| ongoing | 11 |
 | done | 5 |
 | **total** | **35** |
 
@@ -28,7 +28,7 @@
 - [ ] [#014 Dash i-frames not applied](ongoing/014-dash-i-frames-not-applied.md) [combat] _(ongoing)_
 - [ ] [#015 Hitbox persists after enemy death](backlog/015-hitbox-persists-after-enemy-death.md) [combat enemies tech-debt] _(backlog)_
 
-### [#003 Art & animation pipeline](backlog/003-art-animation-pipeline.md) — 11% (2/18 pts · 1/5 done) · _medium_ · backlog
+### [#003 Art & animation pipeline](ongoing/003-art-animation-pipeline.md) — 11% (2/18 pts · 1/5 done) · _medium_ · ongoing
 
 - [x] [#016 Sprite atlas build tool](done/016-sprite-atlas-build-tool.md) [art tooling]
 - [ ] [#017 Player sprite sheet](ongoing/017-player-sprite-sheet.md) [art] _(ongoing)_
@@ -49,7 +49,7 @@
 - [ ] [#026 Forest biome music](backlog/026-forest-biome-music.md) [audio] _(backlog)_
 - [ ] [#027 Audio mixer & volume settings](backlog/027-audio-mixer-volume-settings.md) [audio ux] _(backlog)_
 
-### [#006 UI, menus & HUD](backlog/006-ui-menus-hud.md) — 0% (0/9 pts · 0/3 done) · _medium_ · backlog
+### [#006 UI, menus & HUD](ongoing/006-ui-menus-hud.md) — 0% (0/9 pts · 0/3 done) · _medium_ · ongoing
 
 - [ ] [#028 Main menu](ongoing/028-main-menu.md) [ux] _(ongoing)_
 - [ ] [#029 HUD: health & ammo](backlog/029-hud-health-ammo.md) [ux] _(backlog)_

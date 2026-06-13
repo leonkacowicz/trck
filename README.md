@@ -69,7 +69,7 @@ Zero config works out of the box. To customize, edit `trck.json`:
 {
   "update":      { "repo": "leonkacowicz/trck", "channel": "stable" },
   "statuses":    [ {"name": "backlog", "role": "initial"},
-                   {"name": "ongoing"},
+                   {"name": "ongoing", "role": "active"},
                    {"name": "done",    "role": "terminal"} ],
   "aliases":     { "start": "ongoing", "done": "done" },
   "priorities":  ["urgent", "high", "medium", "low", "lowest"],
@@ -80,11 +80,19 @@ Zero config works out of the box. To customize, edit `trck.json`:
 ```
 
 Statuses are an **ordered, free-form list**; the folders are named after them and `SUMMARY.md`
-groups by that order. Semantics attach to **roles**, not names:
+groups by that order. Semantics attach to **roles**, not names. Exactly one status must carry
+each of the three roles (extra unroled statuses — e.g. a `review` lane — are fine):
 
 - `initial` — where `trck new` lands an issue (and the first move off it stamps `started`).
+- `active` — the "in progress" status a parent rolls up to (see below).
 - `terminal` — entering it stamps `closed` and permits a `--resolution`; leaving it (reopen)
-  clears both. Multiple terminal statuses are allowed.
+  clears both. "Didn't really finish" outcomes (wontfix/duplicate/…) are a `--resolution`,
+  not a separate status.
+
+A **parent's status is derived from its children**: all `initial` → `initial`, all `terminal`
+→ `terminal`, otherwise `active`. This rollup is maintained automatically on every move,
+recursively up to the root. To override it, `mv` the parent by hand — that pins its status;
+`set NNN --auto` returns it to derivation.
 
 The generic `trck mv NNN <status>` moves between any statuses; `start`/`done` are convenience
 aliases resolved through `aliases`. So a repo can use, say, `todo → doing → review → shipped`

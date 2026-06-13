@@ -1,9 +1,9 @@
 {"id": 1, "slug": "player-movement-combat", "title": "Player movement & combat", "kind": "epic", "status": "ongoing", "priority": "high", "created": "2026-06-10", "started": "2026-06-10"}
 {"id": 2, "slug": "combat-system", "title": "Combat system", "kind": "epic", "status": "ongoing", "priority": "high", "parent": 1, "created": "2026-06-10", "started": "2026-06-10"}
-{"id": 3, "slug": "art-animation-pipeline", "title": "Art & animation pipeline", "kind": "epic", "status": "backlog", "priority": "medium", "created": "2026-06-10"}
+{"id": 3, "slug": "art-animation-pipeline", "title": "Art & animation pipeline", "kind": "epic", "status": "ongoing", "priority": "medium", "created": "2026-06-10", "started": "2026-06-13T02:52:17Z"}
 {"id": 4, "slug": "world-building-levels", "title": "World building & levels", "kind": "epic", "status": "backlog", "priority": "medium", "created": "2026-06-10"}
 {"id": 5, "slug": "audio-music", "title": "Audio & music", "kind": "epic", "status": "backlog", "priority": "low", "created": "2026-06-10"}
-{"id": 6, "slug": "ui-menus-hud", "title": "UI, menus & HUD", "kind": "epic", "status": "backlog", "priority": "medium", "created": "2026-06-10"}
+{"id": 6, "slug": "ui-menus-hud", "title": "UI, menus & HUD", "kind": "epic", "status": "ongoing", "priority": "medium", "created": "2026-06-10", "started": "2026-06-13T02:52:17Z"}
 {"id": 7, "slug": "walk-run-jump-controller", "title": "Walk / run / jump controller", "kind": "task", "status": "done", "priority": "medium", "points": 3, "parent": 1, "labels": ["movement"], "created": "2026-06-10", "started": "2026-06-10", "closed": "2026-06-10"}
 {"id": 8, "slug": "dash-wall-jump", "title": "Dash & wall-jump", "kind": "task", "status": "ongoing", "priority": "medium", "points": 5, "parent": 1, "labels": ["combat", "movement"], "depends_on": [7], "created": "2026-06-10", "started": "2026-06-10"}
 {"id": 9, "slug": "crouch-slide", "title": "Crouch & slide", "kind": "task", "status": "backlog", "priority": "medium", "points": 2, "parent": 1, "labels": ["movement"], "depends_on": [7], "created": "2026-06-10"}

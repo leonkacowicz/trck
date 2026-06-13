@@ -9,7 +9,8 @@
       "role": "initial"
     },
     {
-      "name": "ongoing"
+      "name": "ongoing",
+      "role": "active"
     },
     {
       "name": "done",
