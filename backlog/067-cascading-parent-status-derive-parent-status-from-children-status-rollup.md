@@ -19,8 +19,11 @@ verb ends in `finalize`.
       through `move_issue` (file relocation + timestamp/resolution handling).
 - [ ] `manual_status: bool = False` field added to the model, `CANON_KEYS`, and
       `FIELD_DEFAULTS` (omitted from slim rows when false).
-- [ ] A manual `mv`/`start`/`done` on a node with children sets `manual_status`;
-      `set --auto` clears it and re-derives.
+- [ ] A manual `mv`/`start`/`done` on a node with children sets `manual_status`
+      **only when the requested status diverges from `reconcile(children)`** (a move
+      that agrees with derivation leaves the node unpinned); `set --auto` clears it and
+      re-derives. This conditional rule is what lets #18's `--recurse` compose without
+      special-casing — it closes the leaves first, so the target agrees and isn't pinned.
 - [ ] `check`: exactly one status of each role `initial`/`active`/`terminal`; every
       non-overridden parent satisfies `status == reconcile(children)`.
 - [ ] `show` displays a `manual_status` marker.
