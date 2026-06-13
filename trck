@@ -1782,6 +1782,40 @@ def select_shipped(cfg: dict, rows: list, since: str) -> list:
     return out
 
 
+def render_changelog(cfg: dict, shipped: list, since: str) -> str:
+    """Render the shipped set as nested markdown. Issues nest under their
+    in-set parent; an issue whose parent is outside the set is a root. Siblings
+    (and roots) are ordered by `closed` descending, id ascending on ties. The
+    header counts the whole set regardless of nesting depth. Returns the markdown
+    string (ends with a single trailing newline)."""
+    n = len(shipped)
+    header = f"## Shipped since {since} — {n} issue{'s' if n != 1 else ''}"
+    if not shipped:
+        return f"{header}\n\n_none_\n"
+
+    g = Graph(cfg, shipped)
+    out = [header, ""]
+
+    def sib_sorted(items: list) -> list:
+        xs = sorted(items, key=lambda r: r.id)            # id ascending
+        xs.sort(key=lambda r: (r.closed or ""), reverse=True)  # closed desc, stable
+        return xs
+
+    def walk(node, depth: int, seen: set) -> None:
+        comp = node.extra.get("component")
+        tag = f" ({comp})" if comp else ""
+        out.append("  " * depth + f"- #{node.id:03d} {node.title}{tag}")
+        if node.id in seen:
+            return
+        for child in sib_sorted(g.children_of(node)):
+            walk(child, depth + 1, seen | {node.id})
+
+    roots = [r for r in shipped if r.parent is None or r.parent not in g.by_id]
+    for root in sib_sorted(roots):
+        walk(root, 0, set())
+    return "\n".join(out) + "\n"
+
+
 def cmd_version(args) -> None:
     print(__version__)
     tracker_dir = resolve_tracker_dir(args.dir, required=False)
