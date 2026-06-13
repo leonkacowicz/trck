@@ -1816,6 +1816,13 @@ def render_changelog(cfg: dict, shipped: list, since: str) -> str:
     return "\n".join(out) + "\n"
 
 
+def cmd_changelog(args) -> None:
+    ctx = build_ctx_or_die(args)
+    since = parse_since(args.since)
+    shipped = select_shipped(ctx.cfg, load_index(ctx), since)
+    print(render_changelog(ctx.cfg, shipped, since), end="")
+
+
 def cmd_version(args) -> None:
     print(__version__)
     tracker_dir = resolve_tracker_dir(args.dir, required=False)
@@ -2174,6 +2181,16 @@ def build_parser() -> argparse.ArgumentParser:
                          "included), not just the directed dependency line")
     dz.add_argument("--graph", action="store_true", help=argparse.SUPPRESS)  # now default; kept as a no-op
     dz.set_defaults(func=cmd_deps)
+
+    cl = sub.add_parser("changelog",
+                        help="list issues shipped since a date/timestamp (release notes)",
+                        description="Print, as nested markdown, the issues completed "
+                                    "on or after the cutoff: closed in a terminal status, "
+                                    "excluding wontfix/duplicate/superseded. Children "
+                                    "nest under their shipped parent.")
+    cl.add_argument("--since", required=True, metavar="DATE|TIMESTAMP",
+                    help="cutoff (inclusive): a date (2026-06-10) or timestamp (2026-06-10T14:00:00Z)")
+    cl.set_defaults(func=cmd_changelog)
 
     ck = sub.add_parser("check", help="validate consistency (nonzero exit on error)",
                         description="Validate index/file/graph consistency; nonzero "

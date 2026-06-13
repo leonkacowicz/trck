@@ -160,5 +160,54 @@ class TestRenderChangelog(unittest.TestCase):
         self.assertEqual(out, "## Shipped since 2026-06-10 — 0 issues\n\n_none_\n")
 
 
+class TestCmdChangelog(unittest.TestCase):
+    def setUp(self):
+        self.t = load_trck()
+
+    def load(self, tmp, rows_json):
+        d = make_tracker(tmp, {})
+        (d / "index.jsonl").write_text("".join(r + "\n" for r in rows_json))
+        return d
+
+    def run_cmd(self, d, since):
+        buf = StringIO()
+        with redirect_stdout(buf):
+            self.t.cmd_changelog(ns(dir=str(d), since=since))
+        return buf.getvalue()
+
+    def test_end_to_end(self):
+        with TemporaryDirectory() as tmp:
+            d = self.load(tmp, [
+                row(1, closed="2026-06-11T10:00:00Z", kind="epic", title="Parent", component="cli"),
+                row(2, closed="2026-06-12T10:00:00Z", parent=1, title="Child", component="cli"),
+                row(3, status="ongoing", title="Open"),                       # excluded
+                row(4, closed="2026-06-11T10:00:00Z", resolution="wontfix"),   # excluded
+            ])
+            out = self.run_cmd(d, "2026-06-10")
+            self.assertTrue(out.startswith("## Shipped since 2026-06-10 — 2 issues\n"))
+            self.assertIn("- #001 Parent (cli)\n  - #002 Child (cli)\n", out)
+            self.assertNotIn("Open", out)
+            self.assertNotIn("#004", out)
+
+    def test_empty_window(self):
+        with TemporaryDirectory() as tmp:
+            d = self.load(tmp, [row(1, closed="2026-06-01T10:00:00Z")])
+            out = self.run_cmd(d, "2026-06-10")
+            self.assertIn("— 0 issues", out)
+            self.assertIn("_none_", out)
+
+    def test_malformed_since_dies(self):
+        with TemporaryDirectory() as tmp:
+            d = self.load(tmp, [row(1, closed="2026-06-11T10:00:00Z")])
+            with self.assertRaises(SystemExit):
+                self.run_cmd(d, "last-tuesday")
+
+    def test_changelog_is_a_registered_subcommand(self):
+        p = self.t.build_parser()
+        args = p.parse_args(["changelog", "--since", "2026-06-10"])
+        self.assertIs(args.func, self.t.cmd_changelog)
+        self.assertEqual(args.since, "2026-06-10")
+
+
 if __name__ == "__main__":
     unittest.main()
