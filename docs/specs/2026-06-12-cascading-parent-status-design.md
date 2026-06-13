@@ -111,12 +111,21 @@ hatch is an explicit, recorded opt-out.
   and `FIELD_DEFAULTS` (`"manual_status": False`) so it is omitted from slim
   `index.jsonl` rows when false, following the existing optional-field convention.
 
-- **Setting it:** a manual `trck mv` / `start` / `done` on a node **that has
-  children** sets `manual_status = True` and keeps the user's chosen status.
-  `normalize_statuses` skips nodes with `manual_status == True`, so the override
-  sticks. The overridden node's status still feeds *its own* parent's `reconcile`
-  like any other child. Leaves are never given the flag — they have no derivation
-  to opt out of.
+- **Setting it:** a manual `trck mv` / `start` / `done` on a node that has children
+  sets `manual_status = True` **only when the requested status differs from
+  `reconcile(children)` at that moment** — i.e. only when the move is a genuine
+  override of what derivation would produce. A manual move that *agrees* with the
+  derived status leaves `manual_status` false (there is nothing to override), so no
+  sticky pin is left behind. `normalize_statuses` skips nodes with
+  `manual_status == True`, so a real override sticks; the overridden node's status
+  still feeds *its own* parent's `reconcile` like any other child. Leaves never get
+  the flag — they have no derivation to opt out of.
+
+  This conditional rule is what lets the downward bulk-close in #18 compose with no
+  special-casing: `mv X <terminal> --recurse` closes `X`'s leaf descendants *first*,
+  so by the time the pin decision is evaluated `reconcile(X.children)` already equals
+  the requested terminal status — they agree, so `X` is **not** pinned and instead
+  derives to terminal like any compliant parent.
 
 - **Clearing it:** `trck set <id> --auto` sets `manual_status = False`; the
   `finalize` that follows re-derives the node's status from its children and
@@ -141,8 +150,9 @@ hatch is an explicit, recorded opt-out.
   New flag on the existing `set` subparser; composes with other `set` fields.
 - `trck show <id>` — display a `manual_status` marker when set, so an opted-out
   node is visibly distinct from a derived one.
-- No change to `mv` / `start` / `done` invocation; their behavior on a node with
-  children now additionally records the override.
+- No change to `mv` / `start` / `done` invocation; on a node with children they now
+  additionally record the override — but only when the requested status diverges from
+  `reconcile(children)` (a move that agrees with derivation records nothing).
 - tree/list markers for overridden parents: **out of scope for v1** (YAGNI).
 
 ## `trck.json` change (this repo)
@@ -193,9 +203,11 @@ Out of scope:
 - De-activation: moving all children back to initial returns parent to initial.
 - `new --parent <terminal-parent>` reopens that parent.
 - `set --parent` reparenting reconciles both the old and the new parent spine.
-- `manual_status`: a manual `mv` on a parent sets the flag and survives `finalize`;
-  the overridden status still feeds its own parent's rollup; `set --auto` clears the
-  flag and re-derives + cascades.
+- `manual_status`: a manual `mv` on a parent whose target **diverges** from
+  `reconcile(children)` sets the flag and survives `finalize`; a manual `mv` whose
+  target **agrees** with `reconcile(children)` leaves the flag false and the node stays
+  derived; the overridden status still feeds its own parent's rollup; `set --auto`
+  clears the flag and re-derives + cascades.
 - Timestamps/resolution on cascaded moves match a manual move (`started` on first
   leaving initial; `closed` set, no resolution, on auto-completion).
 - `check`: config missing/duplicating any role fails; a non-overridden parent whose
