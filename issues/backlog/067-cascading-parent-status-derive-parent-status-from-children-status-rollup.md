@@ -32,10 +32,12 @@ verb ends in `finalize`.
 - Design discussion resolved: the engine stays vocabulary-agnostic by reasoning
   only about the three roles (never the `start`/`done` aliases, which are pure
   `mv` synonyms). "Not really done" stays a resolution, not a status.
-- **Supersedes the approach in #018** (guard + `--recurse` to cascade a manually-set
-  terminal status *down* to descendants). This issue inverts that: status is derived
-  *up* from children, so a parent can't read terminal while descendants are open in
-  the first place — and reopen is included rather than deliberately omitted. #018
-  should likely be closed (`wontfix`/`superseded`) once this lands; decision left to
-  the owner.
+- **Complementary to #018**, not a replacement. #018 is a *downward* bulk op:
+  `mv parent done --recurse` pushes a terminal status + resolution down across a
+  whole subtree in one command. #67 is the *upward* derivation: the parent reflects
+  its children. They compose — once #67 lands, #018's `--recurse` only needs to close
+  the leaf descendants and the parent's terminal status follows from rollup. The one
+  part of #018 that #67 subsumes is its original *guard* rationale (a parent reading
+  "done" while descendants are open) — that state can't arise organically once status
+  is derived, so a guard is unnecessary except on an explicit `manual_status` override.
 - Out of scope: multiple in-progress statuses; tree/list override markers.
