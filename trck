@@ -1766,6 +1766,22 @@ def parse_since(value: str) -> str:
     return value
 
 
+def select_shipped(cfg: dict, rows: list, since: str) -> list:
+    """Issues that 'shipped' on/after `since`: in a terminal status, with a
+    `closed` value >= since (plain ISO string compare), and no resolution
+    (so wontfix/duplicate/superseded are excluded). All kinds are included."""
+    out = []
+    for r in rows:
+        if not is_terminal(cfg, r.status):
+            continue
+        if not r.closed or r.closed < since:
+            continue
+        if r.resolution:
+            continue
+        out.append(r)
+    return out
+
+
 def cmd_version(args) -> None:
     print(__version__)
     tracker_dir = resolve_tracker_dir(args.dir, required=False)
