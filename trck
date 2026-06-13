@@ -28,6 +28,7 @@ SELF_PATH = Path(__file__).resolve()  # the running engine file; tests may overr
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 FILENAME_RE = re.compile(r"^(\d{3,})-([a-z0-9][a-z0-9-]*)\.md$")
 FIELD_KEY_RE = re.compile(r"^[a-z][a-z0-9_-]*$")
+SINCE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}Z)?$")
 
 
 def die(msg: str) -> NoReturn:
@@ -1753,6 +1754,16 @@ def cmd_install_hook(args) -> None:
     hook.write_text(body)
     hook.chmod(0o755)
     print(f"installed {hook}")
+
+
+
+def parse_since(value: str) -> str:
+    """Validate a --since cutoff: a bare date (YYYY-MM-DD) or a full UTC
+    timestamp (YYYY-MM-DDTHH:MM:SSZ). Returns it unchanged, or dies."""
+    if not SINCE_RE.match(value):
+        die(f"--since must be a date (YYYY-MM-DD) or timestamp "
+            f"(YYYY-MM-DDTHH:MM:SSZ), got {value!r}")
+    return value
 
 
 def cmd_version(args) -> None:
