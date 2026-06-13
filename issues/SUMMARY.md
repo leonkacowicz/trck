@@ -5,14 +5,14 @@
 
 | State | Count |
 |---|---:|
-| backlog | 22 |
-| ongoing | 0 |
+| backlog | 20 |
+| ongoing | 2 |
 | done | 45 |
 | **total** | **67** |
 
 ## Hierarchies
 
-### [#002 Part D: richer tracker features](backlog/002-part-d-richer-tracker-features.md) — 55% (12/22 pts · 12/22 done) · _medium_ · backlog
+### [#002 Part D: richer tracker features](ongoing/002-part-d-richer-tracker-features.md) — 55% (12/22 pts · 12/22 done) · _medium_ · ongoing
 
 - [x] [#003 Add labels/tags to issues](done/003-add-labels-tags-to-issues.md)
 - [ ] [#004 Support configurable custom fields](backlog/004-support-configurable-custom-fields.md) _(backlog)_
@@ -70,7 +70,6 @@ Spec: [`docs/specs/2026-06-11-custom-fields-design.md`](../docs/specs/2026-06-11
 - [#055 deps: select graph seeds by predicate (union of per-seed cones)](backlog/055-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#056 deps: graph display filters (--omit-completed, --depth N)](backlog/056-deps-graph-display-filters-omit-completed-depth-n.md) — _medium_
 - [#057 mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](backlog/057-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
-- [#067 Cascading parent status: derive parent status from children (status rollup)](backlog/067-cascading-parent-status-derive-parent-status-from-children-status-rollup.md) — _medium_
 - [#001 Part C: curses TUI for browsing and quick actions](backlog/001-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
 - [#007 summary: include foreign/unknown statuses in the counts table](backlog/007-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
 - [#009 validate: suppress redundant bad-slug error when filename-slug mismatch already reported](backlog/009-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
@@ -79,7 +78,7 @@ Spec: [`docs/specs/2026-06-11-custom-fields-design.md`](../docs/specs/2026-06-11
 
 ## Ongoing
 
-_none_
+- [#067 Cascading parent status: derive parent status from children (status rollup)](ongoing/067-cascading-parent-status-derive-parent-status-from-children-status-rollup.md) — _medium_
 
 ## Done
 
