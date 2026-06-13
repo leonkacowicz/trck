@@ -6,48 +6,48 @@
 <circle cx="52" cy="17" r="6" fill="#61c454"/>
 <text x="371" y="21" fill="#8b93a1" text-anchor="middle">$ trck show 21</text>
 <text y="63" xml:space="preserve">
-<tspan x="16.0" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">        id</tspan>
-<tspan x="94.0" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9">  21</tspan>
+<tspan x="16.0" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">           id</tspan>
+<tspan x="117.4" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9">  21</tspan>
 </text>
 <text y="77" xml:space="preserve">
-<tspan x="16.0" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">      slug</tspan>
-<tspan x="94.0" textLength="195.0" lengthAdjust="spacing" fill="#c5cdd9">  level-1-forest-entrance</tspan>
+<tspan x="16.0" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">         slug</tspan>
+<tspan x="117.4" textLength="195.0" lengthAdjust="spacing" fill="#c5cdd9">  level-1-forest-entrance</tspan>
 </text>
 <text y="91" xml:space="preserve">
-<tspan x="16.0" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">     title</tspan>
-<tspan x="94.0" textLength="210.6" lengthAdjust="spacing" fill="#c5cdd9">  Level 1 - Forest entrance</tspan>
+<tspan x="16.0" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">        title</tspan>
+<tspan x="117.4" textLength="210.6" lengthAdjust="spacing" fill="#c5cdd9">  Level 1 - Forest entrance</tspan>
 </text>
 <text y="105" xml:space="preserve">
-<tspan x="16.0" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">      kind</tspan>
-<tspan x="94.0" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9">  story</tspan>
+<tspan x="16.0" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">         kind</tspan>
+<tspan x="117.4" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9">  story</tspan>
 </text>
 <text y="119" xml:space="preserve">
-<tspan x="16.0" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">    status</tspan>
-<tspan x="94.0" textLength="70.2" lengthAdjust="spacing" fill="#c5cdd9">  backlog</tspan>
+<tspan x="16.0" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">       status</tspan>
+<tspan x="117.4" textLength="70.2" lengthAdjust="spacing" fill="#c5cdd9">  backlog</tspan>
 </text>
 <text y="133" xml:space="preserve">
-<tspan x="16.0" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">  priority</tspan>
-<tspan x="94.0" textLength="62.4" lengthAdjust="spacing" fill="#c5cdd9">  medium</tspan>
+<tspan x="16.0" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">     priority</tspan>
+<tspan x="117.4" textLength="62.4" lengthAdjust="spacing" fill="#c5cdd9">  medium</tspan>
 </text>
 <text y="147" xml:space="preserve">
-<tspan x="16.0" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">    points</tspan>
-<tspan x="94.0" textLength="23.4" lengthAdjust="spacing" fill="#c5cdd9">  5</tspan>
+<tspan x="16.0" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">       points</tspan>
+<tspan x="117.4" textLength="23.4" lengthAdjust="spacing" fill="#c5cdd9">  5</tspan>
 </text>
 <text y="161" xml:space="preserve">
-<tspan x="16.0" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">    parent</tspan>
-<tspan x="94.0" textLength="23.4" lengthAdjust="spacing" fill="#c5cdd9">  4</tspan>
+<tspan x="16.0" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">       parent</tspan>
+<tspan x="117.4" textLength="23.4" lengthAdjust="spacing" fill="#c5cdd9">  4</tspan>
 </text>
 <text y="175" xml:space="preserve">
-<tspan x="16.0" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">    labels</tspan>
-<tspan x="94.0" textLength="140.4" lengthAdjust="spacing" fill="#c5cdd9">  ['level-design']</tspan>
+<tspan x="16.0" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">       labels</tspan>
+<tspan x="117.4" textLength="140.4" lengthAdjust="spacing" fill="#c5cdd9">  ['level-design']</tspan>
 </text>
 <text y="189" xml:space="preserve">
-<tspan x="16.0" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">depends_on</tspan>
-<tspan x="94.0" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9">  [8, 17, 19]</tspan>
+<tspan x="16.0" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">   depends_on</tspan>
+<tspan x="117.4" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9">  [8, 17, 19]</tspan>
 </text>
 <text y="203" xml:space="preserve">
-<tspan x="16.0" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">   created</tspan>
-<tspan x="94.0" textLength="93.6" lengthAdjust="spacing" fill="#c5cdd9">  2026-06-10</tspan>
+<tspan x="16.0" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">      created</tspan>
+<tspan x="117.4" textLength="93.6" lengthAdjust="spacing" fill="#c5cdd9">  2026-06-10</tspan>
 </text>
 <text y="217" xml:space="preserve">
 </text>

@@ -114,11 +114,11 @@
 <tspan x="335.8" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [movement]</tspan>
 </text>
 <text y="217" xml:space="preserve">
-<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
 <tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
 <tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#003</tspan>
 <tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
-<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#d19a66">ongoing</tspan>
 <tspan x="125.2" textLength="265.2" lengthAdjust="spacing" fill="#c5cdd9">  medium  Art &amp; animation pipeline</tspan>
 <tspan x="390.4" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [EPIC]</tspan>
 </text>
@@ -257,11 +257,11 @@
 <tspan x="452.8" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [audio ux]</tspan>
 </text>
 <text y="427" xml:space="preserve">
-<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
 <tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
 <tspan x="31.6" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">#006</tspan>
 <tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
-<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">backlog</tspan>
+<tspan x="70.6" textLength="54.6" lengthAdjust="spacing" fill="#d19a66">ongoing</tspan>
 <tspan x="125.2" textLength="195.0" lengthAdjust="spacing" fill="#c5cdd9">  medium  UI, menus &amp; HUD</tspan>
 <tspan x="320.2" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [EPIC]</tspan>
 </text>
