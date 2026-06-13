@@ -6,8 +6,8 @@
 | State | Count |
 |---|---:|
 | backlog | 20 |
-| ongoing | 2 |
-| done | 45 |
+| ongoing | 1 |
+| done | 46 |
 | **total** | **67** |
 
 ## Hierarchies
@@ -78,7 +78,7 @@ Spec: [`docs/specs/2026-06-11-custom-fields-design.md`](../docs/specs/2026-06-11
 
 ## Ongoing
 
-- [#067 Cascading parent status: derive parent status from children (status rollup)](ongoing/067-cascading-parent-status-derive-parent-status-from-children-status-rollup.md) — _medium_
+_none_
 
 ## Done
 
@@ -99,6 +99,7 @@ Spec: [`docs/specs/2026-06-11-custom-fields-design.md`](../docs/specs/2026-06-11
 - [#046 deps --graph: lazygit-style dependency DAG renderer](done/046-deps-graph-lazygit-style-dependency-dag-renderer.md) — _medium_ (closed 2026-06-10)
 - [#047 deps --graph <id>: scope to the focal issue's directed dependency line](done/047-deps-graph-id-scope-to-the-focal-issue-s-directed-dependency-line.md) — _medium_ (closed 2026-06-10)
 - [#058 deps: shorter edges / fewer crossings in the graph layout](done/058-deps-shorter-edges-fewer-crossings-in-the-graph-layout.md) — _medium_ (closed 2026-06-12)
+- [#067 Cascading parent status: derive parent status from children (status rollup)](done/067-cascading-parent-status-derive-parent-status-from-children-status-rollup.md) — _medium_ (closed 2026-06-13)
 - [#008 validate: report one error per parent cycle, not one per node](done/008-validate-report-one-error-per-parent-cycle-not-one-per-node.md) — _low_ (closed 2026-06-10)
 - [#011 version/update: suppress no-tracker stderr noise when run outside a tracker](done/011-version-update-suppress-no-tracker-stderr-noise-when-run-outside-a-tracker.md) — _low_ (closed 2026-06-05)
 - [#017 summary: sort status sections by priority (highest first)](done/017-summary-sort-status-sections-by-priority-highest-first.md) — _low_ (closed 2026-06-05)
