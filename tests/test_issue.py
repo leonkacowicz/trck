@@ -35,6 +35,24 @@ class TestIssueModel(unittest.TestCase):
         self.assertIsNone(i.resolution)
         self.assertEqual(i.extra, {})
 
+    def test_manual_status_defaults_false_and_omits_when_false(self):
+        i = self.minimal()
+        self.assertFalse(i.manual_status)
+        self.assertNotIn("manual_status", i.to_canonical())
+
+    def test_manual_status_true_round_trips(self):
+        i = self.minimal(manual_status=True)
+        self.assertIn("manual_status", i.to_canonical())
+        self.assertEqual(i.to_canonical()["manual_status"], True)
+        again = self.Issue.from_dict(i.to_canonical())
+        self.assertTrue(again.manual_status)
+
+    def test_from_dict_rejects_non_bool_manual_status(self):
+        with self.assertRaises(ValueError):
+            self.Issue.from_dict(dict(id=1, slug="a", title="A", kind="task",
+                                      status="backlog", priority="high",
+                                      manual_status="yes"))
+
     def test_mutable_defaults_are_not_shared(self):
         a, b = self.minimal(), self.minimal()
         a.labels.append("x")

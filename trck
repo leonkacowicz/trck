@@ -55,7 +55,7 @@ DEFAULT_CONFIG = {
     "update": {"repo": DEFAULT_UPDATE_REPO, "channel": "stable"},
     "statuses": [
         {"name": "backlog", "role": "initial"},
-        {"name": "ongoing"},
+        {"name": "ongoing", "role": "active"},
         {"name": "done", "role": "terminal"},
     ],
     "aliases": {"start": "ongoing", "done": "done"},
@@ -136,11 +136,32 @@ def check_points(value: int) -> str | None:
     return f"bad points {value} (must be a non-negative integer)"
 
 
+def check_status_roles(cfg: dict) -> list[str]:
+    """The status vocabulary must name exactly one `initial`, one `active`, and one
+    `terminal` status — the three lifecycle anchors the rollup (#67) reasons about.
+    Returns one message per role that is missing or duplicated."""
+    out = []
+    for role in ("initial", "active", "terminal"):
+        n = sum(1 for s in cfg["statuses"] if s.get("role") == role)
+        if n != 1:
+            out.append(f"config: exactly one status must carry role '{role}' (found {n})")
+    return out
+
+
 def initial_status(cfg: dict) -> str:
     for s in cfg["statuses"]:
         if s.get("role") == "initial":
             return s["name"]
     return cfg["statuses"][0]["name"]
+
+
+def active_status(cfg: dict) -> str | None:
+    """The status a parent rolls up to while work is in progress (the one status
+    carrying `role: active`), or None if the vocabulary declares no active role."""
+    for s in cfg["statuses"]:
+        if s.get("role") == "active":
+            return s["name"]
+    return None
 
 
 def terminal_statuses(cfg: dict) -> list[str]:
@@ -149,6 +170,20 @@ def terminal_statuses(cfg: dict) -> list[str]:
 
 def is_terminal(cfg: dict, name: str) -> bool:
     return status_role(cfg, name) == "terminal"
+
+
+def reconcile(cfg: dict, child_statuses: list[str]) -> str | None:
+    """The status a parent should carry given its children's statuses (#67):
+    all children initial -> initial, all terminal -> terminal, otherwise active
+    (any active child, or a partial mix of initial + terminal). Returns None only
+    when the vocabulary has no `active` role and the children force the active case;
+    a well-formed config (checked by `validate`) never hits that."""
+    init = initial_status(cfg)
+    if all(s == init for s in child_statuses):
+        return init
+    if all(is_terminal(cfg, s) for s in child_statuses):
+        return terminal_statuses(cfg)[0]
+    return active_status(cfg)
 
 
 def is_blocked(cfg: dict, row, by_id: dict[int, Issue]) -> bool:
@@ -219,7 +254,7 @@ def resolve_tracker_dir_or_die(dir_opt, env=None) -> Path:
 CANON_KEYS = [
     "id", "slug", "title", "kind", "status", "priority", "points", "parent",
     "labels", "depends_on", "spec", "created", "started", "closed",
-    "resolution",
+    "resolution", "manual_status",
 ]
 
 # Per-field defaults for the optional trck-owned fields. A field whose value
@@ -238,6 +273,7 @@ FIELD_DEFAULTS = {
     "started": None,
     "closed": None,
     "resolution": None,
+    "manual_status": False,
 }
 
 
@@ -283,6 +319,7 @@ class Issue:
     started: str | None = None
     closed: str | None = None
     resolution: str | None = None
+    manual_status: bool = False
     extra: dict = field(default_factory=dict)
 
     @classmethod
@@ -330,6 +367,8 @@ class Issue:
         for k in ("spec", "created", "started", "closed", "resolution"):
             if d.get(k) is not None and not isinstance(d[k], str):
                 bad(k, f"must be a string, got {d[k]!r}")
+        if "manual_status" in d and not isinstance(d["manual_status"], bool):
+            bad("manual_status", f"must be a boolean, got {d['manual_status']!r}")
 
         known = {k: v for k, v in d.items() if k in CANON_KEYS}
         extra = {k: v for k, v in d.items() if k not in CANON_KEYS}
@@ -614,6 +653,39 @@ def normalize_points(g: Graph) -> None:
             r.points = DEFAULT_POINTS
 
 
+def _postorder(g: Graph) -> list[Issue]:
+    """Rows ordered children-before-parents, so a bottom-up pass sees each node's
+    descendants already settled. A `seen` guard makes it safe on a malformed parent
+    cycle (which `validate` reports separately)."""
+    order, seen = [], set()
+    def visit(r: Issue) -> None:
+        if r.id in seen:
+            return
+        seen.add(r.id)
+        for c in g.children_of(r):
+            visit(c)
+        order.append(r)
+    for r in g.rows:
+        visit(r)
+    return order
+
+
+def normalize_statuses(ctx: Ctx, g: Graph) -> None:
+    """A parent's status is a rollup of its children's (#67): all-initial -> initial,
+    all-terminal -> terminal, otherwise active. Like `normalize_points`, this derives
+    the rollup on every index write via finalize — so cascade is uniform across mv /
+    start / done / new --parent / reparent with no per-command hooks. Walks bottom-up
+    and relocates changed parents through `move_issue` (file move + date stamping).
+    Nodes flagged `manual_status` are an explicit opt-out and are left untouched."""
+    for r in _postorder(g):
+        kids = g.children_of(r)
+        if not kids or r.manual_status:
+            continue
+        desired = reconcile(ctx.cfg, [k.status for k in kids])
+        if desired and desired != r.status:
+            move_issue(ctx, r, desired)
+
+
 def next_id(ctx: Ctx) -> int:
     ids = {r.id for r in load_index(ctx)}
     for name in status_names(ctx.cfg):
@@ -654,6 +726,7 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
     filesystem-vs-index consistency check is unaffected. Omit `rows` to validate the
     persisted index as loaded from disk."""
     errors, warnings = [], []
+    errors.extend(check_status_roles(ctx.cfg))
     if rows is None:
         rows = load_index(ctx)
     files = scan_files(ctx)
@@ -714,17 +787,21 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
         chain = " -> ".join(f"#{c:03d}" for c in (*cyc, cyc[0]))
         errors.append(f"dependency cycle: {chain}")
 
+    # A non-overridden parent's status must equal the rollup of its children (#67);
+    # normalize_statuses maintains this after every verb, so a violation here means a
+    # hand-edited index (or a `manual_status` opt-out, which is exempt).
     for parent_row in rows:
         kids = g.children_of(parent_row)
-        if kids and all(g.is_terminal(k) for k in kids) and not g.is_terminal(parent_row):
-            warnings.append(
-                f"#{parent_row.id:03d} has all children terminal but is still "
-                f"{parent_row.status} (run `trck done {parent_row.id}` or `trck mv …`)"
+        if not kids or parent_row.manual_status:
+            continue
+        desired = reconcile(ctx.cfg, [k.status for k in kids])
+        if desired and parent_row.status != desired:
+            errors.append(
+                f"#{parent_row.id:03d} status '{parent_row.status}' should be "
+                f"'{desired}' (derived from its children; pin it with a manual `mv` "
+                f"to override)"
             )
     for r in rows:
-        p = r.parent
-        if p is not None and p in by_id and g.is_terminal(by_id[p]) and not g.is_terminal(r):
-            warnings.append(f"#{r.id:03d} is {r.status} but its parent #{p:03d} is terminal")
         if g.is_terminal(r):
             for dep in r.depends_on:
                 if dep in by_id and not g.is_terminal(by_id[dep]):
@@ -735,7 +812,7 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
 # --------------------------------------------------------------------------- #
 # tree rendering helpers (used by SUMMARY, tree, deps)
 # --------------------------------------------------------------------------- #
-STATUS_ICON = {"terminal": "●", "initial": "○", None: "◐"}  # all single-width, for alignment
+STATUS_ICON = {"terminal": "●", "initial": "○", "active": "◐", None: "◐"}  # single-width, aligned
 
 
 def status_icon(ctx: Ctx, name: str) -> str:
@@ -1120,7 +1197,9 @@ def write_summary(ctx: Ctx) -> None:
 # finalize: persist + regenerate + validate after every mutation
 # --------------------------------------------------------------------------- #
 def finalize(ctx: Ctx, rows: list[Issue]) -> None:
-    normalize_points(Graph(ctx.cfg, rows))
+    g = Graph(ctx.cfg, rows)
+    normalize_points(g)
+    normalize_statuses(ctx, g)
     save_index(ctx, rows)
     write_summary(ctx)
     errors, warnings = validate(ctx, rows)  # reuse the rows we just wrote
@@ -1301,6 +1380,13 @@ def cmd_mv(args) -> None:
     move_issue(ctx, row, args.status)
     if resolution is not None:
         row.resolution = resolution
+    # Moving a node that has children is an override of the rollup (#67) — but only
+    # when the requested status differs from what derivation would produce. A move
+    # that agrees with the children leaves the node unpinned (nothing to override),
+    # which is what lets #18's `--recurse` compose without a special case.
+    kids = Graph(ctx.cfg, rows).children_of(row)
+    if kids:
+        row.manual_status = (row.status != reconcile(ctx.cfg, [k.status for k in kids]))
     finalize(ctx, rows)
     print(issue_path(ctx, row))
 
@@ -1311,6 +1397,8 @@ def cmd_set(args) -> None:
     g = Graph(ctx.cfg, rows)
     by_id = g.by_id
     row = get_row(rows, args.id)
+    if getattr(args, "auto", False):
+        row.manual_status = False  # return to derivation; finalize re-derives + cascades
     if args.priority:
         if (m := check_priority(ctx.cfg, args.priority)):
             die(m)
@@ -1420,8 +1508,8 @@ def cmd_show(args) -> None:
         w = max(len(k) for k in keys)
         for k in keys:
             v = full.get(k)
-            if v is None or v == []:
-                continue  # skip empty fields in the human view
+            if v is None or v == [] or v is False:
+                continue  # skip empty fields (and an unset manual_status) in the human view
             if k in ("created", "started", "closed"):
                 v = date_slice(v)
             print(f"{paint(f'{k:>{w}}', 'dim')}  {v}")
@@ -2064,6 +2152,8 @@ def build_parser() -> argparse.ArgumentParser:
                     help="set a custom field (repeatable); empty value clears it")
     se.add_argument("--unset", action="append", metavar="KEY",
                     help="remove a custom field (repeatable)")
+    se.add_argument("--auto", action="store_true",
+                    help="clear a manual status override; let status derive from children")
     se.set_defaults(func=cmd_set)
 
     dp = sub.add_parser(

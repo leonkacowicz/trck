@@ -62,6 +62,50 @@ class TestValidate(unittest.TestCase):
             errors, _ = self.t.validate(ctx)
             self.assertTrue(any("does not exist" in e for e in errors))
 
+    def test_missing_active_role_is_config_error(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp, {"statuses": [
+                {"name": "backlog", "role": "initial"},
+                {"name": "done", "role": "terminal"}]})
+            row = self.base()
+            self.write(ctx, row)
+            self.t.save_index(ctx, [row])
+            errors, _ = self.t.validate(ctx)
+            self.assertTrue(any("active" in e and "role" in e for e in errors))
+
+    def test_duplicate_initial_role_is_config_error(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp, {"statuses": [
+                {"name": "backlog", "role": "initial"},
+                {"name": "triage", "role": "initial"},
+                {"name": "ongoing", "role": "active"},
+                {"name": "done", "role": "terminal"}]})
+            row = self.base()
+            self.write(ctx, row)
+            self.t.save_index(ctx, [row])
+            errors, _ = self.t.validate(ctx)
+            self.assertTrue(any("initial" in e and "role" in e for e in errors))
+
+    def test_non_pinned_parent_off_its_rollup_is_error(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            p = self.base(id=1, slug="p", status="done")        # claims done...
+            c = self.base(id=2, slug="c", parent=1, status="backlog")  # ...child still open
+            self.write(ctx, p); self.write(ctx, c)
+            self.t.save_index(ctx, [p, c])
+            errors, _ = self.t.validate(ctx)
+            self.assertTrue(any("#001" in e and "derived" in e for e in errors))
+
+    def test_pinned_parent_off_its_rollup_is_allowed(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            p = self.base(id=1, slug="p", status="done", manual_status=True)
+            c = self.base(id=2, slug="c", parent=1, status="backlog")
+            self.write(ctx, p); self.write(ctx, c)
+            self.t.save_index(ctx, [p, c])
+            errors, _ = self.t.validate(ctx)
+            self.assertEqual(errors, [])  # explicit override is exempt
+
     def test_negative_leaf_points_is_error(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
@@ -92,15 +136,18 @@ class TestValidate(unittest.TestCase):
             errors, _ = self.t.validate(ctx)
             self.assertTrue(any("points" in e for e in errors))
 
-    def test_terminal_role_drives_warnings(self):
+    def test_parent_behind_its_completed_children_is_error(self):
+        # an unpinned parent left `ongoing` while all its children are `done` now
+        # violates the rollup invariant (#67) — it should be `done`.
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
             epic = self.base(id=1, slug="e", kind="epic", status="ongoing")
             child = self.base(id=2, slug="c", parent=1, status="done")
             self.write(ctx, epic); self.write(ctx, child)
             self.t.save_index(ctx, [epic, child])
-            _, warnings = self.t.validate(ctx)
-            self.assertTrue(any("all children" in w for w in warnings))
+            errors, _ = self.t.validate(ctx)
+            self.assertTrue(any("#001" in e and "'done'" in e and "derived" in e
+                                for e in errors))
 
     def test_two_node_dependency_cycle_is_error(self):
         with TemporaryDirectory() as tmp:

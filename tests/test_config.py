@@ -26,6 +26,17 @@ class TestConfigDefaults(unittest.TestCase):
             self.assertEqual(cfg["kinds"],
                              ["task", "epic", "bug", "story", "investigation"])
 
+    def test_active_status_from_role(self):
+        # the shipped default marks `ongoing` as the active-role status
+        self.assertEqual(self.t.active_status(self.t.DEFAULT_CONFIG), "ongoing")
+        # honoured under a custom vocabulary
+        cfg = {"statuses": [{"name": "todo", "role": "initial"},
+                            {"name": "wip", "role": "active"},
+                            {"name": "shipped", "role": "terminal"}]}
+        self.assertEqual(self.t.active_status(cfg), "wip")
+        # absent role -> None (no active status configured)
+        self.assertIsNone(self.t.active_status({"statuses": [{"name": "a"}]}))
+
     def test_default_priority_explicit_invalid_and_fallback(self):
         dp = self.t.default_priority
         # explicit, valid -> wins
