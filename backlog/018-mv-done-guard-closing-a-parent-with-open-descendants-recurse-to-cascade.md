@@ -44,3 +44,24 @@ Design context (from discussion):
   parent will not reopen children. Deliberate omission.
 - Touchpoints: `cmd_mv` / `move_issue` / the `done` alias path, argparse for `mv` and
   `done`, and the children/descendant walk (reuse a subtree walk with a cycle guard).
+
+### Reconciled with #67 (status rollup)
+
+#67 derives a parent's status *up* from its children. This issue is the *downward*
+bulk-close convenience and is **fully compatible** — built on top of #67, it gets
+simpler:
+
+- **`--recurse` targets leaves only.** It moves the non-terminal *leaf* descendants to
+  the terminal status (with `--resolution`); intermediate parents and the target node
+  itself are then derived to terminal by #67's `normalize_statuses`. The target ends
+  terminal because its subtree genuinely is — **not** as a `manual_status` override.
+- **The guard becomes a warning, not a block.** A plain `mv X <terminal>` (no
+  `--recurse`) on a node with open descendants is #67's manual override: it pins `X`
+  (`manual_status = true`) and leaves descendants alone. The guard's job is now just to
+  *warn* — "X has N open descendants; this pins it as a manual override; use `--recurse`
+  to close them" — resolving the old block-vs-warn open question in favour of warn.
+- **Supersedes two earlier notes above:** the "independent of the points rollup" framing
+  and the "no cascade-reopen (deliberate omission)" asymmetry no longer hold — #67
+  provides upward derivation including reopen. `--recurse` remains downward-only and
+  one-shot; reopen is #67's job, not this flag's.
+- **Order:** depends on #67 (this design assumes rollup is in place).
