@@ -124,7 +124,7 @@ away from its parent. `tree` is an alias for `list` (`trck tree 4` == `trck list
 
 <p align="center">
   <img src="docs/img/tree.svg" alt="trck tree — the nested issue forest" width="900"><br>
-  <sub><code>trck tree</code> — the whole forest, children nested under their parent</sub>
+  <sub><code>trck tree</code> — the active forest; done items show as context under open epics (settled subtrees are hidden; <code>--all</code> shows them)</sub>
 </p>
 
 `ready` lists issues whose dependencies are all satisfied (add `--next` for just the top

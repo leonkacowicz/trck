@@ -13,7 +13,8 @@ vocabulary, cross-cutting labels, and all three resolutions on closed work. 35 i
 Run everything against it with `--dir examples/action-game` (from the repo root):
 
 ```bash
-./trck --dir examples/action-game tree        # the whole forest, nested
+./trck --dir examples/action-game tree        # the active forest (settled subtrees hidden)
+./trck --dir examples/action-game tree --all   # ...including done/settled work
 ./trck --dir examples/action-game ready        # what you could pick up right now
 ./trck --dir examples/action-game next         # the single best next task
 ./trck --dir examples/action-game deps         # the dependency DAG, lazygit-style
@@ -35,7 +36,8 @@ Run everything against it with `--dir examples/action-game` (from the repo root)
 | **Priorities (soft order)** | `list --status '!done' --sort priority`. |
 | **Labels (the cross-cutting axis)** | `list --label combat` — labels categorize *across* the hierarchy. |
 | **Statuses** | `list --status ongoing`; folders `backlog/ ongoing/ done/` mirror them. |
-| **Resolutions on closed work** | `show 33` (superseded), `show 34` (duplicate), `show 35` (wontfix). |
+| **Resolutions on closed work** | `show 33` (superseded), `show 34` (duplicate), `show 35` (wontfix) — settled standalone tasks, so hidden from the default `tree` (`tree --all` to see them). |
+| **Default view hides settled work** | `tree` vs `tree --all` — done items under open epics (`#007`, `#016`) stay as context; fully-settled tasks (`#033`–`#035`) drop off. |
 
 ### How it was built
 
