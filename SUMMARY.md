@@ -7,12 +7,12 @@
 |---|---:|
 | backlog | 21 |
 | ongoing | 1 |
-| done | 47 |
-| **total** | **69** |
+| done | 48 |
+| **total** | **70** |
 
 ## Hierarchies
 
-### [#002 Part D: richer tracker features](ongoing/002-part-d-richer-tracker-features.md) — 55% (12/22 pts · 12/22 done) · _medium_ · ongoing
+### [#002 Part D: richer tracker features](ongoing/002-part-d-richer-tracker-features.md) — 57% (13/23 pts · 13/23 done) · _medium_ · ongoing
 
 - [x] [#003 Add labels/tags to issues](done/003-add-labels-tags-to-issues.md)
 - [ ] [#004 Support configurable custom fields](backlog/004-support-configurable-custom-fields.md) _(backlog)_
@@ -27,6 +27,7 @@
 - [ ] [#064 Reconcile id collisions when branches concurrently create issues](backlog/064-reconcile-id-collisions-when-branches-concurrently-create-issues.md) [conflict-resolution] _(backlog)_
 - [ ] [#065 Use random alphanumeric ids to make concurrent creation collision-free](backlog/065-use-random-alphanumeric-ids-to-make-concurrent-creation-collision-free.md) [conflict-resolution] _(backlog)_
 - [ ] [#066 Auto-resolve index.jsonl and SUMMARY.md merge conflicts via git merge drivers](backlog/066-auto-resolve-index-jsonl-and-summary-md-merge-conflicts-via-git-merge-drivers.md) [conflict-resolution] _(backlog)_
+- [x] [#070 list: hide settled work by default (keep done children under open parents)](done/070-list-hide-settled-work-by-default-keep-done-children-under-open-parents.md)
 
 ### [#022 Introduce an Issue class instead of dict-oriented code](done/022-introduce-an-issue-class-instead-of-dict-oriented-code.md) — 100% (1/1 pts · 1/1 done) · _medium_ · done
 
