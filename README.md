@@ -127,9 +127,10 @@ pick); `next` prints the single best issue to work on next; `normalize` rewrites
 `index.jsonl` in canonical slim form.
 
 Epics: create an epic with `--kind epic`, attach children with `--parent NNN`; the epic's
-rollup `%` is computed from its children and shown in `SUMMARY.md`. (Any issue can be a
-parent — `kind: epic` is just a display label.) Filter a list to one epic's children with
-`trck list --parent NNN`.
+points-weighted rollup `%` is computed from its children and shown after the title on every
+parent row in `trck list`/`tree` (leaf rows carry none) as well as in `SUMMARY.md`. (Any
+issue can be a parent — `kind: epic` is just a display label.) Filter a list to one epic's
+children with `trck list --parent NNN`.
 
 Labels: tag issues with a flat, multi-valued set of free-text labels via
 `trck label NNN --add X --remove Y`, then filter with `trck list --label X`. Labels show

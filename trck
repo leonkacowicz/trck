@@ -1120,6 +1120,17 @@ def leaf_rollup(g: "Graph", row, seen=frozenset()) -> tuple[int, int, int, int]:
     return pdone, ptotal, ndone, ntotal
 
 
+def progress_pct(g: "Graph", row) -> str:
+    """A ` NN%` points-weighted completion suffix for parent rows (issues with children),
+    derived from leaf descendants via `leaf_rollup` — the same number `summary` reports.
+    Empty for leaves, which have nothing to roll up; `ptotal == 0` falls back to `0%`."""
+    if g.is_leaf(row):
+        return ""
+    pdone, ptotal, _, _ = leaf_rollup(g, row)
+    pct = round(100 * pdone / ptotal) if ptotal else 0
+    return f" {pct}%"
+
+
 def generate_summary(ctx: Ctx) -> str:
     g = load_graph(ctx)
     rows = g.rows
@@ -1597,6 +1608,7 @@ def cmd_list(args) -> None:
                 "(choices: id, priority, points, created, field:NAME)")
         key = sort_keys[sort]
     annotate = lambda r: block_annotations(g, r)
+    progress = lambda r: progress_pct(g, r)
 
     if getattr(args, "paths", False):
         for r in sorted((r for r in g.rows if keep(r)), key=key):
@@ -1605,7 +1617,8 @@ def cmd_list(args) -> None:
 
     if getattr(args, "flat", False):
         rows = sorted([r for r in g.rows if keep(r)], key=key)
-        print_rows(ctx, rows, annotate=annotate, show_fields=show_fields)
+        print_rows(ctx, rows, annotate=annotate, show_fields=show_fields,
+                   progress=progress)
         return
 
     # nested forest: show a node iff it matches or has a matching descendant; the
@@ -1621,24 +1634,26 @@ def cmd_list(args) -> None:
     ordered, prefix_of = forest_layout(g, roots, shown, key)
     print_rows(ctx, ordered, annotate=annotate,
                prefix=lambda r: prefix_of[r.id], dim=lambda r: r.id in dim,
-               show_fields=show_fields)
+               show_fields=show_fields, progress=progress)
 
 
 def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None,
-               show_fields=None) -> None:
+               show_fields=None, progress=None) -> None:
     """Render issues as aligned one-line summaries (shared by `list` and `ready`).
     `annotate`, if given, maps a row to a trailing suffix (e.g. the blocking graph);
     callers that want terse output (`ready`/`next`) simply omit it. `prefix`, if given,
     maps a row to a connector string placed immediately before the title — empty for the
     flat view, `walk_tree`-style connectors (`├─ `/`└─ `) for the nested forest. `dim`,
     if given, marks rows shown only as ancestor context (in a filtered forest); their
-    whole line is dimmed instead of per-field colored."""
+    whole line is dimmed instead of per-field colored. `progress`, if given, maps a row
+    to a dim completion suffix placed right after the title (empty for leaves)."""
     if not rows:
         return
     sw = max(len(r.status) for r in rows)
     pw = max(len(r.priority) for r in rows)
     for r in rows:
         pre = prefix(r) if prefix else ""
+        prog = progress(r) if progress else ""
         tags = []
         if r.kind == "epic":
             tags.append("EPIC")
@@ -1653,7 +1668,7 @@ def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None
             if segs:
                 fsuf = "  " + paint(" ".join(segs), "dim")
         if dim and dim(r):  # ancestor context: whole line dimmed, no per-field color
-            body = f"{status_icon(ctx, r.status)} #{r.id:03d} {r.status:<{sw}}  {r.priority:<{pw}}  {pre}{r.title}{plain_tags}"
+            body = f"{status_icon(ctx, r.status)} #{r.id:03d} {r.status:<{sw}}  {r.priority:<{pw}}  {pre}{r.title}{prog}{plain_tags}"
             print(paint(body, "dim") + ann + fsuf)
             continue
         codes = status_codes(ctx.cfg, r.status)
@@ -1661,8 +1676,9 @@ def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None
         iid = paint(f"#{r.id:03d}", "bold")
         status = paint(f"{r.status:<{sw}}", *codes)
         prio = paint(f"{r.priority:<{pw}}", *priority_codes(ctx.cfg, r.priority))
+        progstr = paint(prog, "dim") if prog else ""
         tagstr = paint(plain_tags, "dim") if tags else ""
-        print(f"{icon} {iid} {status}  {prio}  {pre}{r.title}{tagstr}{ann}{fsuf}")
+        print(f"{icon} {iid} {status}  {prio}  {pre}{r.title}{progstr}{tagstr}{ann}{fsuf}")
 
 
 def cmd_which(args) -> None:
@@ -2207,6 +2223,8 @@ def build_parser() -> argparse.ArgumentParser:
                                     "under their parent. Pass an id to root the forest at one issue's "
                                     "subtree; --flat for a flat, globally-sorted list. Filters select "
                                     "the matches; their ancestor spine is kept as dimmed context. "
+                                    "Parent rows show a dim points-weighted completion '% ' after the "
+                                    "title (rolled up from leaf descendants, as in SUMMARY.md). "
                                     "Rows carry a dim blocking note: 'needs #NNN' for each open "
                                     "(non-terminal) dependency, and 'blocks #NNN' for the issues "
                                     "waiting on this one. A note clears once the blocker is done. "
