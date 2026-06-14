@@ -32,7 +32,8 @@ trck init                       # scaffold ./issues (config + a vendored copy of
 trck new "Fix login bug" --priority high
 trck start 1                    # move to the configured 'start' status (default: ongoing)
 trck done 1 --resolution wontfix
-trck list                       # nested forest: every issue, children under their parent
+trck list                       # nested forest of active work (settled subtrees hidden)
+trck list --all                 # include settled (done) work too
 trck list --flat                # flat, globally-sorted list
 trck tree 1                     # alias for `list 1`: root the forest at one issue's subtree
 ```
@@ -109,13 +110,17 @@ falls back to the middle of the list.
 `next` · `tree` · `deps` · `path` · `which` · `check` · `summary` · `normalize` ·
 `install-hook` · `init` · `update` · `version`. Run `trck --help` (or `trck <verb> --help`) for details.
 
-`list` is the structure-aware browse verb. By default it prints a **nested forest** — every
+`list` is the structure-aware browse verb. By default it prints a **nested forest** — each
 issue, with children nested under their parent and siblings ordered by `--sort` (default id).
-`--flat` gives a flat, globally-sorted list instead; a positional id (`trck list 4`) roots the
-forest at that issue's subtree. Filters (`--status`, `--kind`, `--priority`, `--label`,
-`--match`, `--parent`, `--blocked`, `--orphan`) select the matches and the forest fills in
-their **ancestor spine** as dimmed context, so a matched child never floats away from its
-parent. `tree` is an alias for `list` (`trck tree 4` == `trck list 4`).
+By default it also **hides settled work**: a terminal (done) issue is shown only while it is
+still open or sits directly under a non-terminal parent — so an open epic keeps its done
+children as progress context, but a fully-done subtree and standalone done tasks drop off.
+`--all` shows everything; an explicit `--status` bypasses the prune (e.g. `--status done`
+lists every done issue). `--flat` gives a flat, globally-sorted list instead; a positional id
+(`trck list 4`) roots the forest at that issue's subtree. Filters (`--status`, `--kind`,
+`--priority`, `--label`, `--match`, `--parent`, `--blocked`, `--orphan`) select the matches and
+the forest fills in their **ancestor spine** as dimmed context, so a matched child never floats
+away from its parent. `tree` is an alias for `list` (`trck tree 4` == `trck list 4`).
 
 <p align="center">
   <img src="docs/img/tree.svg" alt="trck tree — the nested issue forest" width="900"><br>

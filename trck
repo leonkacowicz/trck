@@ -1567,6 +1567,19 @@ def cmd_list(args) -> None:
     only_blocked = getattr(args, "blocked", False)
     only_orphan = getattr(args, "orphan", False)
 
+    # Default view hides settled work: a terminal issue is dropped unless it is
+    # still open *or* sits directly under a non-terminal parent (so an open epic
+    # keeps its done children as progress context). `--all` and an explicit
+    # `--status` both bypass this prune. The forest's match_closure still pulls
+    # open ancestors back as dimmed context, so a done parent of open work shows.
+    prune_settled = args.status is None and not getattr(args, "all", False)
+
+    def settled(r):
+        if not g.is_terminal(r):
+            return False
+        parent = g.by_id.get(r.parent) if r.parent is not None else None
+        return parent is None or g.is_terminal(parent)
+
     field_filters = {}
     for spec in (getattr(args, "field", None) or []):
         if "=" not in spec:
@@ -1587,6 +1600,7 @@ def cmd_list(args) -> None:
                 and (not match or match in r.title.lower())
                 and (not only_blocked or g.is_blocked(r))
                 and (not only_orphan or r.parent is None)
+                and (not prune_settled or not settled(r))
                 and all(r.extra.get(k) == v for k, v in field_filters.items()))
 
     sort = getattr(args, "sort", None) or "id"
@@ -2093,6 +2107,8 @@ TYPICAL FLOW
   trck start 7                                   # -> ongoing
   trck done 7 --resolution superseded            # -> done (resolution optional)
   trck ready         /  trck next                # unblocked work / the top pick
+  trck list                                      # active forest (settled subtrees hidden)
+  trck list --all                                # include settled (done) work too
   trck list --status ongoing                     # what's in flight
   trck list --status '!done' --sort priority     # open work, hottest first
   trck list --match parser --orphan              # title search, top-level only
@@ -2228,10 +2244,17 @@ def build_parser() -> argparse.ArgumentParser:
                                     "Rows carry a dim blocking note: 'needs #NNN' for each open "
                                     "(non-terminal) dependency, and 'blocks #NNN' for the issues "
                                     "waiting on this one. A note clears once the blocker is done. "
+                                    "By default settled work is hidden: a terminal issue shows only "
+                                    "while it is still open or sits under a non-terminal parent (so "
+                                    "open epics keep their done children as context). Use --all to "
+                                    "show everything; an explicit --status bypasses the prune. "
                                     "`tree` is an alias for this command.")
     ls.add_argument("id", type=int, nargs="?", help="root the forest at this issue's subtree")
     ls.add_argument("--flat", action="store_true",
                     help="flat, globally-sorted list instead of the nested forest")
+    ls.add_argument("--all", action="store_true",
+                    help="include settled work (terminal issues whose parent is also "
+                         "terminal); by default such issues are hidden")
     ls.add_argument("--status",
                     help="filter by status; comma-lists alternatives and a leading "
                          "'!' negates (e.g. 'ongoing,backlog' or '!done')")
