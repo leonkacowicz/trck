@@ -502,12 +502,20 @@ def save_index(ctx: Ctx, rows: list[Issue]) -> None:
 def resolve_ref(rows: list[Issue], token) -> Issue:
     """Resolve a CLI id token to exactly one issue, git-short-hash style. Tiers,
     tried in order; the first tier with matches decides (one match wins, more than
-    one is ambiguous): (1) exact id, (2) unique id prefix. `die`s on no match or an
-    ambiguous prefix, listing the candidates. (A later task inserts a legacy_id tier.)"""
+    one is ambiguous): (1) exact id, (2) exact legacy_id (numeric token only),
+    (3) unique id prefix. `die`s on no match or an ambiguous reference, listing
+    the candidates."""
     token = str(token)
     exact = [r for r in rows if r.id == token]
     if exact:
         return exact[0]
+    if token.isdigit():
+        legacy = [r for r in rows if r.legacy_id == int(token)]
+        if len(legacy) == 1:
+            return legacy[0]
+        if len(legacy) > 1:
+            cands = ", ".join(sorted(r.id for r in legacy))
+            die(f"ambiguous legacy id '{token}' matches: {cands}")
     pref = [r for r in rows if r.id.startswith(token)]
     if len(pref) == 1:
         return pref[0]

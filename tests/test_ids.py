@@ -53,6 +53,22 @@ class TestResolveRef(unittest.TestCase):
         with self.assertRaises(SystemExit):
             self.t.resolve_ref(self.rows, "zzz")
 
+    def test_legacy_id_alias_resolves(self):
+        t = self.t
+        rows = [t.Issue(id="k3m9x2a", slug="s", title="T", kind="task",
+                        status="backlog", priority="high", legacy_id=65)]
+        self.assertEqual(t.resolve_ref(rows, "65").id, "k3m9x2a")
+        self.assertEqual(t.resolve_ref(rows, 65).id, "k3m9x2a")
+
+    def test_legacy_id_alias_beats_prefix(self):
+        # a numeric token is read as the historical reference, not a prefix hit
+        t = self.t
+        rows = [t.Issue(id="65abcde", slug="s", title="T", kind="task",
+                        status="backlog", priority="high"),
+                t.Issue(id="k3m9x2a", slug="s2", title="T2", kind="task",
+                        status="backlog", priority="high", legacy_id=65)]
+        self.assertEqual(t.resolve_ref(rows, "65").id, "k3m9x2a")
+
 
 class TestMergeAndOrder(unittest.TestCase):
     def setUp(self):
