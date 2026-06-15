@@ -82,3 +82,12 @@ class TestLifecycle(unittest.TestCase):
             self.new(d)
             with self.assertRaises(SystemExit):
                 self.t.cmd_mv(ns(dir=str(d), id=1, status="ongoing", resolution="wontfix"))
+
+    def test_new_issue_id_is_string_and_sequential(self):
+        with TemporaryDirectory() as tmp:
+            d = self.setup_dir(tmp)
+            self.new(d)
+            ctx = self.t.Ctx(d, self.t.load_config(d))
+            rows = self.t.load_index(ctx)
+            self.assertEqual(rows[0].id, "1")
+            self.assertIsInstance(rows[0].id, str)

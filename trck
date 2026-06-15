@@ -714,7 +714,8 @@ def normalize_statuses(ctx: Ctx, g: Graph) -> None:
             move_issue(ctx, r, desired)
 
 
-def next_id(ctx: Ctx) -> int:
+def _existing_ids(ctx: Ctx) -> set[str]:
+    """Every id currently visible: index rows ∪ on-disk filenames."""
     ids = {r.id for r in load_index(ctx)}
     for name in status_names(ctx.cfg):
         d = ctx.dir / name
@@ -722,8 +723,13 @@ def next_id(ctx: Ctx) -> int:
             for p in d.glob("*.md"):
                 m = FILENAME_RE.match(p.name)
                 if m:
-                    ids.add(int(m.group(1)))
-    return (max(ids) + 1) if ids else 1
+                    ids.add(file_id(m))
+    return ids
+
+
+def next_id(ctx: Ctx) -> str:
+    nums = [int(i) for i in _existing_ids(ctx) if i.isdigit()]
+    return str((max(nums) + 1) if nums else 1)
 
 
 # --------------------------------------------------------------------------- #
@@ -1338,7 +1344,7 @@ or a `trck` installed on your `PATH`. See `CLAUDE.md` in this folder for the wor
 def parse_ids(spec):
     if not spec:
         return []
-    return [int(p.strip()) for p in spec.split(",") if p.strip()]
+    return [p.strip() for p in spec.split(",") if p.strip()]
 
 
 def move_issue(ctx: Ctx, row: Issue, new_status: str) -> None:
