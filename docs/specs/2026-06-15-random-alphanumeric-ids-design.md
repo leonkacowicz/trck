@@ -149,8 +149,12 @@ numeric ids remain):
 2. Rewrite each issue's `parent` and every `depends_on` entry through the map;
    set `legacy_id` to the issue's prior integer id.
 3. Rename each issue's file to the new `<id>-slug.md`.
-4. Write the new index. File renames + index write go through a
-   temp-then-swap path so a failure can't leave a half-renumbered tree.
+4. Write the new index (via `finalize`, which also re-derives rollups, regenerates
+   `SUMMARY.md`, and validates). Renames happen in place rather than through a
+   temp-then-swap dance: the operation is a one-shot migration run inside an
+   uncommitted git working tree, so a partial failure is fully recoverable with
+   `git checkout -- issues/` — git is the rollback boundary, and `finalize`'s
+   validate loudly reports any resulting inconsistency before the commit.
 5. Print a summary (`N issues renumbered`) and a reminder that `#NN` prose
    mentions in bodies are unchanged but still resolve via the `legacy_id` alias.
 

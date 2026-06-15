@@ -1913,7 +1913,8 @@ def cmd_renumber(args) -> None:
                 break
         mapping[r.id] = cand
 
-    # Rename files first (old id -> new id), then mutate the rows' identity.
+    # For each legacy row: snapshot its current path, switch it to the new id,
+    # then move the file to the new path.
     for r in legacy:
         old = issue_path(ctx, r)
         r.legacy_id = int(r.id)
