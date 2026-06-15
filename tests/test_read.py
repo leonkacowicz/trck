@@ -55,7 +55,7 @@ class TestRead(unittest.TestCase):
             d = make_tracker(tmp, {})
             self.seed(d, "Hello")
             out = self.cap(self.t.cmd_show, ns(dir=str(d), id=1, json=True))
-            self.assertIn('"id": 1', out)
+            self.assertIn('"id": "1"', out)
             self.assertIn("--- body ---", out)
 
     def test_list_filters_by_status(self):
@@ -67,8 +67,8 @@ class TestRead(unittest.TestCase):
             out = self.cap(self.t.cmd_list, ns(dir=str(d), status="ongoing",
                                                kind=None, priority=None, parent=None,
                                                flat=True, id=None))
-            self.assertIn("#002", out)
-            self.assertNotIn("#001", out)
+            self.assertIn("#2", out)
+            self.assertNotIn("#1", out)
 
     def test_list_filters_by_parent(self):
         with TemporaryDirectory() as tmp:
@@ -79,9 +79,9 @@ class TestRead(unittest.TestCase):
             out = self.cap(self.t.cmd_list, ns(dir=str(d), status=None,
                                                kind=None, priority=None, parent=1,
                                                flat=True, id=None))
-            self.assertIn("#002", out)
-            self.assertNotIn("#001", out)
-            self.assertNotIn("#003", out)
+            self.assertIn("#2", out)
+            self.assertNotIn("#1", out)
+            self.assertNotIn("#3", out)
 
     def test_list_status_multi_and_negated(self):
         with TemporaryDirectory() as tmp:
@@ -92,13 +92,13 @@ class TestRead(unittest.TestCase):
             self.t.cmd_mv(ns(dir=str(d), id=2, status="ongoing", resolution=None))
             self.t.cmd_mv(ns(dir=str(d), id=3, status="done", resolution=None))
             out = self.listing(d, status="backlog,ongoing")
-            self.assertIn("#001", out)
-            self.assertIn("#002", out)
-            self.assertNotIn("#003", out)
+            self.assertIn("#1", out)
+            self.assertIn("#2", out)
+            self.assertNotIn("#3", out)
             out = self.listing(d, status="!done")
-            self.assertIn("#001", out)
-            self.assertIn("#002", out)
-            self.assertNotIn("#003", out)
+            self.assertIn("#1", out)
+            self.assertIn("#2", out)
+            self.assertNotIn("#3", out)
 
     def test_list_match_is_case_insensitive_substring(self):
         with TemporaryDirectory() as tmp:
@@ -106,8 +106,8 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Fix the parser")
             self.seed(d, "Add a feature")
             out = self.listing(d, match="PARSER")
-            self.assertIn("#001", out)
-            self.assertNotIn("#002", out)
+            self.assertIn("#1", out)
+            self.assertNotIn("#2", out)
 
     def test_list_sort_by_priority(self):
         with TemporaryDirectory() as tmp:
@@ -116,8 +116,8 @@ class TestRead(unittest.TestCase):
             self.seed(d, "High one", priority="high")      # 2
             self.seed(d, "Mid one", priority="medium")     # 3
             out = self.listing(d, sort="priority")
-            self.assertLess(out.index("#002"), out.index("#003"))
-            self.assertLess(out.index("#003"), out.index("#001"))
+            self.assertLess(out.index("#2"), out.index("#3"))
+            self.assertLess(out.index("#3"), out.index("#1"))
 
     def test_list_sort_by_points(self):
         with TemporaryDirectory() as tmp:
@@ -126,8 +126,8 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Big", points=8)      # 2
             self.seed(d, "Mid", points=3)      # 3
             out = self.listing(d, sort="points")
-            self.assertLess(out.index("#002"), out.index("#003"))
-            self.assertLess(out.index("#003"), out.index("#001"))
+            self.assertLess(out.index("#2"), out.index("#3"))
+            self.assertLess(out.index("#3"), out.index("#1"))
 
     def test_list_blocked_only(self):
         with TemporaryDirectory() as tmp:
@@ -136,8 +136,8 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Blocked", depends="1")           # 2 depends on open #1
             self.seed(d, "Free")                           # 3 no deps
             out = self.listing(d, blocked=True)
-            self.assertIn("#002", out)
-            # only #002 is listed as a row; #001 appears only inside its `needs` note
+            self.assertIn("#2", out)
+            # only #2 is listed as a row; #1 appears only inside its `needs` note
             self.assertEqual("", self.row_for(out, 1))
             self.assertEqual("", self.row_for(out, 3))
             # once the dependency is terminal, nothing is blocked
@@ -148,9 +148,9 @@ class TestRead(unittest.TestCase):
     def row_for(out, issue_id):
         """The output line whose OWN id (the first #NNN on the line, the id column) is
         `issue_id` — not a line that merely mentions it in a needs/blocks annotation."""
-        tok = f"#{issue_id:03d}"
+        tok = f"#{issue_id}"
         for ln in out.splitlines():
-            m = re.search(r"#\d{3}", ln)
+            m = re.search(r"#\d+", ln)
             if m and m.group(0) == tok:
                 return ln
         return ""
@@ -161,7 +161,7 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Dep")                            # 1 backlog (non-terminal)
             self.seed(d, "Blocked", depends="1")           # 2 depends on open #1
             out = self.listing(d)
-            self.assertIn("needs #001", self.row_for(out, 2))
+            self.assertIn("needs #1", self.row_for(out, 2))
 
     def test_list_needs_omits_terminal_blocker(self):
         with TemporaryDirectory() as tmp:
@@ -181,8 +181,8 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Blocked", depends="1,2")         # 3 depends on both
             self.t.cmd_mv(ns(dir=str(d), id=1, status="done", resolution=None))
             line = self.row_for(self.listing(d), 3)
-            self.assertIn("needs #002", line)              # still open
-            self.assertNotIn("#001", line)                 # done -> dropped
+            self.assertIn("needs #2", line)               # still open
+            self.assertNotIn("#1", line)                  # done -> dropped
 
     def test_list_annotates_blocker_row_with_blocks(self):
         with TemporaryDirectory() as tmp:
@@ -190,7 +190,7 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Dep")                            # 1 (the blocker)
             self.seed(d, "Blocked", depends="1")           # 2 depends on #1
             line = self.row_for(self.listing(d), 1)
-            self.assertIn("blocks #002", line)
+            self.assertIn("blocks #2", line)
 
     def test_list_blocks_cleared_when_blocker_done(self):
         with TemporaryDirectory() as tmp:
@@ -209,7 +209,7 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Dep")                            # 1
             self.seed(d, "Blocked", depends="1")           # 2
             out = self.listing(d)
-            self.assertIn("needs #001", out)
+            self.assertIn("needs #1", out)
             self.assertNotIn("\x1b[", out)                 # no ANSI when color is off
 
     def test_ready_has_no_block_annotations(self):
@@ -218,7 +218,7 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Dep")                            # 1 ready, blocks #2
             self.seed(d, "Blocked", depends="1")           # 2 blocked (absent from ready)
             out = self.ready(d)
-            self.assertIn("#001", out)
+            self.assertIn("#1", out)
             self.assertNotIn("blocks", out)                # ready stays terse
             self.assertNotIn("needs", out)
 
@@ -228,8 +228,8 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Epic", kind="epic")              # 1 top-level
             self.seed(d, "Child", parent=1)                # 2 has parent
             out = self.listing(d, orphan=True)
-            self.assertIn("#001", out)
-            self.assertNotIn("#002", out)
+            self.assertIn("#1", out)
+            self.assertNotIn("#2", out)
 
     def test_list_filters_compose(self):
         with TemporaryDirectory() as tmp:
@@ -240,9 +240,9 @@ class TestRead(unittest.TestCase):
             self.t.cmd_mv(ns(dir=str(d), id=1, status="ongoing", resolution=None))
             self.t.cmd_mv(ns(dir=str(d), id=3, status="ongoing", resolution=None))
             out = self.listing(d, status="ongoing", match="match")
-            self.assertIn("#001", out)
-            self.assertNotIn("#002", out)     # filtered by status
-            self.assertNotIn("#003", out)     # filtered by match
+            self.assertIn("#1", out)
+            self.assertNotIn("#2", out)     # filtered by status
+            self.assertNotIn("#3", out)     # filtered by match
 
     def paths(self, d, **over):
         """cmd_list in --paths output mode; filters default as in `listing`."""
@@ -332,8 +332,8 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Epic", kind="epic")
             self.seed(d, "Child", parent=1)
             out = self.listing(d)                          # flat=True
-            self.assertIn("#001", out)
-            self.assertIn("#002", out)
+            self.assertIn("#1", out)
+            self.assertIn("#2", out)
             self.assertNotIn("└─", out)
             self.assertNotIn("├─", out)
 
@@ -351,7 +351,7 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Epic", kind="epic")
             self.seed(d, "Child", parent=1)
             out = self.listing(d)                          # flat: no indentation, so keep ↳
-            self.assertIn("↳001", self.row_for(out, 2))
+            self.assertIn("↳1", self.row_for(out, 2))
 
     def test_list_positional_id_roots_subtree(self):
         with TemporaryDirectory() as tmp:
@@ -360,8 +360,8 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Child", parent=1)               # 2
             self.seed(d, "Other")                         # 3 unrelated
             out = self.nested(d, id=1)
-            self.assertIn("#001", out)
-            self.assertIn("#002", out)
+            self.assertIn("#1", out)
+            self.assertIn("#2", out)
             self.assertEqual("", self.row_for(out, 3))    # outside the subtree
 
     def test_list_filter_keeps_ancestor_spine(self):
@@ -370,7 +370,7 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Epic", kind="epic")             # 1 ancestor (does not match)
             self.seed(d, "Child", parent=1)               # 2 matches
             out = self.nested(d, match="child")
-            self.assertIn("#001", self.row_for(out, 1))   # spine kept as context
+            self.assertIn("#1", self.row_for(out, 1))    # spine kept as context
             self.assertIn("Child", self.row_for(out, 2))
 
     def test_list_filter_dims_nonmatching_ancestor(self):
@@ -391,9 +391,9 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Low child", parent=1, priority="low")    # 2
             self.seed(d, "High child", parent=1, priority="high")  # 3
             out = self.nested(d)                              # default id
-            self.assertLess(out.index("#002"), out.index("#003"))
+            self.assertLess(out.index("#2"), out.index("#3"))
             out = self.nested(d, sort="priority")             # high before low among siblings
-            self.assertLess(out.index("#003"), out.index("#002"))
+            self.assertLess(out.index("#3"), out.index("#2"))
 
     def test_list_dangling_parent_renders_as_root(self):
         with TemporaryDirectory() as tmp:
@@ -402,7 +402,7 @@ class TestRead(unittest.TestCase):
                                  "kind": "task", "status": "backlog",
                                  "priority": "high", "parent": 99})
             out = self.nested(d)                              # parent 99 missing
-            self.assertIn("#002", out)                        # promoted to a root, no crash
+            self.assertIn("#2", out)                          # promoted to a root, no crash
             self.assertNotIn("└─", self.row_for(out, 2))
 
     def test_list_parent_cycle_does_not_crash(self):
@@ -421,7 +421,7 @@ class TestRead(unittest.TestCase):
         flat = parser.parse_args(["list"])
         treed = parser.parse_args(["tree", "5"])
         self.assertIs(treed.func, flat.func)                 # tree dispatches to cmd_list
-        self.assertEqual(treed.id, 5)                        # carries the positional id
+        self.assertEqual(treed.id, "5")                      # carries the positional id
 
     def test_tree_shows_children(self):
         with TemporaryDirectory() as tmp:
@@ -436,7 +436,7 @@ class TestRead(unittest.TestCase):
         parser = self.t.build_parser()
         a = parser.parse_args(["list", "--flat", "3"])
         self.assertTrue(a.flat)
-        self.assertEqual(a.id, 3)
+        self.assertEqual(a.id, "3")
         self.assertIs(a.func, self.t.cmd_list)
 
     def test_list_help_mentions_nested_and_flat(self):
@@ -457,7 +457,7 @@ class TestRead(unittest.TestCase):
             self.seed(d, "High grand", parent=2, priority="high")  # 4
             out = self.nested(d, sort="priority")
             # the sort reaches the grandchild sibling group, not just the top level
-            self.assertLess(out.index("#004"), out.index("#003"))
+            self.assertLess(out.index("#4"), out.index("#3"))
 
     def test_list_dependency_cycle_does_not_crash(self):
         with TemporaryDirectory() as tmp:
@@ -468,15 +468,15 @@ class TestRead(unittest.TestCase):
                 {"id": 2, "slug": "b", "title": "B", "kind": "task",
                  "status": "backlog", "priority": "high", "depends_on": [1]})
             out = self.nested(d)                              # dep cycle: must render, not hang
-            self.assertIn("#001", out)
-            self.assertIn("#002", out)
+            self.assertIn("#1", out)
+            self.assertIn("#2", out)
 
     def test_ready_lists_unblocked_not_done_leaves(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d, "Free")                           # 1 leaf, no deps
             out = self.ready(d)
-            self.assertIn("#001", out)
+            self.assertIn("#1", out)
 
     def test_ready_excludes_unmet_dep(self):
         with TemporaryDirectory() as tmp:
@@ -484,8 +484,8 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Dep")                            # 1 backlog (non-terminal)
             self.seed(d, "Blocked", depends="1")           # 2 unmet dep
             out = self.ready(d)
-            self.assertIn("#001", out)                     # the dep itself is ready
-            self.assertNotIn("#002", out)
+            self.assertIn("#1", out)                      # the dep itself is ready
+            self.assertNotIn("#2", out)
 
     def test_ready_includes_met_dep(self):
         with TemporaryDirectory() as tmp:
@@ -494,8 +494,8 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Unblocked", depends="1")         # 2
             self.t.cmd_mv(ns(dir=str(d), id=1, status="done", resolution=None))
             out = self.ready(d)
-            self.assertNotIn("#001", out)                  # done -> terminal, excluded
-            self.assertIn("#002", out)                     # its dep is now terminal
+            self.assertNotIn("#1", out)                   # done -> terminal, excluded
+            self.assertIn("#2", out)                      # its dep is now terminal
 
     def test_ready_excludes_parents(self):
         with TemporaryDirectory() as tmp:
@@ -503,8 +503,8 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Epic", kind="epic")              # 1 non-leaf (has child)
             self.seed(d, "Child", parent=1)                # 2 leaf
             out = self.ready(d)
-            self.assertNotIn("#001", out)
-            self.assertIn("#002", out)
+            self.assertNotIn("#1", out)
+            self.assertIn("#2", out)
 
     def test_ready_excludes_terminal(self):
         with TemporaryDirectory() as tmp:
@@ -520,8 +520,8 @@ class TestRead(unittest.TestCase):
             self.seed(d, "High big", priority="high", points=8)     # 2
             self.seed(d, "Low big", priority="low", points=8)       # 3
             out = self.ready(d)
-            self.assertLess(out.index("#002"), out.index("#001"))   # points within high
-            self.assertLess(out.index("#001"), out.index("#003"))   # priority over points
+            self.assertLess(out.index("#2"), out.index("#1"))    # points within high
+            self.assertLess(out.index("#1"), out.index("#3"))    # priority over points
 
     def test_next_prints_only_top_pick(self):
         with TemporaryDirectory() as tmp:
@@ -529,13 +529,14 @@ class TestRead(unittest.TestCase):
             self.seed(d, "High", priority="high")          # 1
             self.seed(d, "Low", priority="low")            # 2
             out = self.ready(d, next=True)
-            self.assertIn("#001", out)
-            self.assertNotIn("#002", out)
+            self.assertIn("#1", out)
+            self.assertNotIn("#2", out)
 
     def deps(self, d, issue_id=None, requires=False, blocks=False, full=False):
         """cmd_deps (graph is the only mode now); flags defaulted, override per test."""
+        sid = str(issue_id) if issue_id is not None else None
         return self.cap(self.t.cmd_deps,
-                        ns(dir=str(d), id=issue_id, requires=requires,
+                        ns(dir=str(d), id=sid, requires=requires,
                            blocks=blocks, full=full))
 
     def test_deps_default_shows_both_cones(self):
@@ -545,8 +546,8 @@ class TestRead(unittest.TestCase):
             self.seed(d, "B")
             self.t.cmd_dep(ns(dir=str(d), id=2, add=1, remove=None))
             out = self.deps(d, 2)                          # neither flag: full line
-            self.assertIn("#001", out)                     # its prerequisite
-            self.assertIn("#002", out)
+            self.assertIn("#1", out)                      # its prerequisite
+            self.assertIn("#2", out)
 
     def test_deps_default_includes_dependents(self):
         with TemporaryDirectory() as tmp:
@@ -555,8 +556,8 @@ class TestRead(unittest.TestCase):
             self.seed(d, "X", depends="1")                 # 2 depends on 1
             self.seed(d, "Y", depends="1")                 # 3 depends on 1
             out = self.deps(d, 1)                          # default: whole line
-            self.assertIn("#002", out)                     # dependents appear
-            self.assertIn("#003", out)
+            self.assertIn("#2", out)                      # dependents appear
+            self.assertIn("#3", out)
 
     def test_deps_requires_scopes_to_prerequisite_cone(self):
         with TemporaryDirectory() as tmp:
@@ -565,9 +566,9 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Mid", depends="1")               # 2 requires 1, blocks 3
             self.seed(d, "Top", depends="2")               # 3
             out = self.deps(d, 2, requires=True)
-            self.assertIn("#001", out)                     # its requirement (upstream)
-            self.assertIn("#002", out)
-            self.assertNotIn("#003", out)                  # dependent cone excluded
+            self.assertIn("#1", out)                      # its requirement (upstream)
+            self.assertIn("#2", out)
+            self.assertNotIn("#3", out)                   # dependent cone excluded
 
     def test_deps_blocks_scopes_to_dependent_cone(self):
         with TemporaryDirectory() as tmp:
@@ -576,9 +577,9 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Mid", depends="1")               # 2 requires 1, blocks 3
             self.seed(d, "Top", depends="2")               # 3
             out = self.deps(d, 2, blocks=True)
-            self.assertIn("#002", out)
-            self.assertIn("#003", out)                     # the dependent (downstream)
-            self.assertNotIn("#001", out)                  # prerequisite cone excluded
+            self.assertIn("#2", out)
+            self.assertIn("#3", out)                      # the dependent (downstream)
+            self.assertNotIn("#1", out)                   # prerequisite cone excluded
 
     def test_deps_requires_cone_is_transitive(self):
         with TemporaryDirectory() as tmp:
@@ -588,8 +589,8 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Top", depends="2")               # 3 requires 2 (-> 1)
             out = self.deps(d, 3, requires=True)
             # the cone is transitive: both the direct and transitive requirement appear
-            self.assertIn("#002", out)
-            self.assertIn("#001", out)
+            self.assertIn("#2", out)
+            self.assertIn("#1", out)
 
     def test_deps_requires_without_id_is_an_error(self):
         with TemporaryDirectory() as tmp:

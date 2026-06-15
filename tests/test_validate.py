@@ -94,7 +94,7 @@ class TestValidate(unittest.TestCase):
             self.write(ctx, p); self.write(ctx, c)
             self.t.save_index(ctx, [p, c])
             errors, _ = self.t.validate(ctx)
-            self.assertTrue(any("#001" in e and "derived" in e for e in errors))
+            self.assertTrue(any("#1" in e and "derived" in e for e in errors))
 
     def test_pinned_parent_off_its_rollup_is_allowed(self):
         with TemporaryDirectory() as tmp:
@@ -146,7 +146,7 @@ class TestValidate(unittest.TestCase):
             self.write(ctx, epic); self.write(ctx, child)
             self.t.save_index(ctx, [epic, child])
             errors, _ = self.t.validate(ctx)
-            self.assertTrue(any("#001" in e and "'done'" in e and "derived" in e
+            self.assertTrue(any("#1" in e and "'done'" in e and "derived" in e
                                 for e in errors))
 
     def test_two_node_dependency_cycle_is_error(self):
@@ -201,7 +201,7 @@ class TestValidate(unittest.TestCase):
             self.write(ctx, a)
             self.t.save_index(ctx, [a])
             errors, _ = self.t.validate(ctx)
-            self.assertIn("parent cycle: #001 -> #001", errors)
+            self.assertIn("parent cycle: #1 -> #1", errors)
 
     def test_two_node_parent_cycle_reported_once(self):
         with TemporaryDirectory() as tmp:

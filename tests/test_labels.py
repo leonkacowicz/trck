@@ -37,14 +37,14 @@ class TestLabels(unittest.TestCase):
             d = make_tracker(tmp, {})
             self.seed(d)
             self.label(d, 1, add=["backend"])
-            self.assertEqual(self.rows(d)[1].labels, ["backend"])
+            self.assertEqual(self.rows(d)["1"].labels, ["backend"])
 
     def test_label_add_multiple_dedups_and_sorts(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d)
             self.label(d, 1, add=["beta", "alpha", "beta"])
-            self.assertEqual(self.rows(d)[1].labels, ["alpha", "beta"])
+            self.assertEqual(self.rows(d)["1"].labels, ["alpha", "beta"])
 
     def test_label_remove_drops_label(self):
         with TemporaryDirectory() as tmp:
@@ -52,14 +52,14 @@ class TestLabels(unittest.TestCase):
             self.seed(d)
             self.label(d, 1, add=["x", "y"])
             self.label(d, 1, remove=["x"])
-            self.assertEqual(self.rows(d)[1].labels, ["y"])
+            self.assertEqual(self.rows(d)["1"].labels, ["y"])
 
     def test_label_remove_missing_is_noop(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d)
             self.label(d, 1, remove=["nope"])  # should not raise
-            self.assertEqual(self.rows(d)[1].labels, [])
+            self.assertEqual(self.rows(d)["1"].labels, [])
 
     def test_default_labels_stripped_from_index(self):
         with TemporaryDirectory() as tmp:
@@ -180,7 +180,7 @@ class TestLabels(unittest.TestCase):
             line = self.raw_lines(d)
             self.assertNotIn("milestone", line)
             self.assertIn("v1.0", line)
-            self.assertEqual(self.rows(d)[1].labels, ["v1.0"])
+            self.assertEqual(self.rows(d)["1"].labels, ["v1.0"])
 
     # -- validation ----------------------------------------------------------
     def test_non_string_labels_fail_loud_at_load(self):

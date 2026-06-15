@@ -38,7 +38,7 @@ class TestCustomFields(unittest.TestCase):
             d = make_tracker(tmp, {})
             self.seed(d)
             self.set_(d, 1, field=["assignee=leon"])
-            self.assertEqual(self.rows(d)[1].extra, {"assignee": "leon"})
+            self.assertEqual(self.rows(d)["1"].extra, {"assignee": "leon"})
 
     def test_field_overwrites(self):
         with TemporaryDirectory() as tmp:
@@ -46,14 +46,14 @@ class TestCustomFields(unittest.TestCase):
             self.seed(d)
             self.set_(d, 1, field=["assignee=leon"])
             self.set_(d, 1, field=["assignee=mara"])
-            self.assertEqual(self.rows(d)[1].extra, {"assignee": "mara"})
+            self.assertEqual(self.rows(d)["1"].extra, {"assignee": "mara"})
 
     def test_multiple_fields_one_call(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d)
             self.set_(d, 1, field=["assignee=leon", "component=ui"])
-            self.assertEqual(self.rows(d)[1].extra,
+            self.assertEqual(self.rows(d)["1"].extra,
                              {"assignee": "leon", "component": "ui"})
 
     def test_unset_removes(self):
@@ -62,7 +62,7 @@ class TestCustomFields(unittest.TestCase):
             self.seed(d)
             self.set_(d, 1, field=["assignee=leon"])
             self.set_(d, 1, unset=["assignee"])
-            self.assertEqual(self.rows(d)[1].extra, {})
+            self.assertEqual(self.rows(d)["1"].extra, {})
 
     def test_empty_value_clears(self):
         with TemporaryDirectory() as tmp:
@@ -70,7 +70,7 @@ class TestCustomFields(unittest.TestCase):
             self.seed(d)
             self.set_(d, 1, field=["assignee=leon"])
             self.set_(d, 1, field=["assignee="])
-            self.assertEqual(self.rows(d)[1].extra, {})
+            self.assertEqual(self.rows(d)["1"].extra, {})
 
     def test_reserved_key_rejected(self):
         with TemporaryDirectory() as tmp:
@@ -171,9 +171,9 @@ class TestCustomFields(unittest.TestCase):
             self.assertNotIn("Beta", out)
 
     def _order(self, out):
-        # the leading "#NNN" of each printed row, in print order
+        # the leading "#N" of each printed row, in print order
         import re
-        return re.findall(r"#(\d{3})", out)
+        return re.findall(r"#(\d+)", out)
 
     def test_sort_by_field_missing_last(self):
         with TemporaryDirectory() as tmp:
@@ -184,7 +184,7 @@ class TestCustomFields(unittest.TestCase):
             self.set_(d, 1, field=["owner=zebra"])
             self.set_(d, 2, field=["owner=alpha"])
             out = self.list_(d, sort="field:owner")
-            self.assertEqual(self._order(out), ["002", "001", "003"])
+            self.assertEqual(self._order(out), ["2", "1", "3"])
 
     def test_show_field_column(self):
         with TemporaryDirectory() as tmp:
@@ -193,8 +193,8 @@ class TestCustomFields(unittest.TestCase):
             self.seed(d, title="Beta")
             self.set_(d, 1, field=["component=ui"])
             out = self.list_(d, show_field=["component"])
-            line1 = next(l for l in out.splitlines() if "#001" in l)
-            line2 = next(l for l in out.splitlines() if "#002" in l)
+            line1 = next(l for l in out.splitlines() if "#1" in l)
+            line2 = next(l for l in out.splitlines() if "#2" in l)
             self.assertIn("component=ui", line1)
             self.assertNotIn("component=", line2)
 

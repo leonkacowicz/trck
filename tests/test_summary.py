@@ -62,7 +62,7 @@ class TestSummary(unittest.TestCase):
             text = self.t.generate_summary(ctx)
             self.assertIn("50% (1/2 pts · 1/2 done)", text)  # rollup for a non-epic parent
             # the parent appears once (its Hierarchies heading), not also as a standalone item
-            self.assertEqual(text.count("[#001"), 1)
+            self.assertEqual(text.count("[#1"), 1)
 
     def test_status_section_sorted_by_priority_then_id(self):
         with TemporaryDirectory() as tmp:
@@ -77,7 +77,7 @@ class TestSummary(unittest.TestCase):
                 self.write(ctx, r)
             self.t.save_index(ctx, rows)
             text = self.t.generate_summary(ctx)
-            order = [text.index(f"[#{i:03d}") for i in (2, 4, 3, 1)]
+            order = [text.index(f"[#{i}") for i in (2, 4, 3, 1)]
             self.assertEqual(order, sorted(order),
                              "expected high (id-asc), then medium, then low")
 
@@ -92,7 +92,7 @@ class TestSummary(unittest.TestCase):
                 self.write(ctx, r)
             self.t.save_index(ctx, rows)
             text = self.t.generate_summary(ctx)
-            self.assertLess(text.index("[#002"), text.index("[#001"))
+            self.assertLess(text.index("[#2"), text.index("[#1"))
 
     def test_rollup_weighted_by_points(self):
         with TemporaryDirectory() as tmp:
@@ -119,7 +119,7 @@ class TestSummary(unittest.TestCase):
                 self.write(ctx, r)
             self.t.save_index(ctx, [epic, sub, g1, g2, leaf])
             text = self.t.generate_summary(ctx)
-            epic_line = [ln for ln in text.splitlines() if ln.startswith("### [#001")][0]
+            epic_line = [ln for ln in text.splitlines() if ln.startswith("### [#1")][0]
             # epic's leaves: g1(2,done) g2(2) leaf(1,done) -> 3/5 pts, 2/3 done
             self.assertIn("60% (3/5 pts · 2/3 done)", epic_line)
 

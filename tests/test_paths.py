@@ -85,7 +85,7 @@ class TestWhich(unittest.TestCase):
             self.seed(d, "Alpha")                          # id 1
             p = self.issue_file(d, 1)
             out = self.which(d, [p])
-            self.assertIn("#001", out)
+            self.assertIn("#1", out)
             self.assertIn("Alpha", out)
 
     def test_which_ids_flag_prints_bare_id(self):
@@ -103,22 +103,22 @@ class TestWhich(unittest.TestCase):
             self.seed(d, "Beta")                           # id 2
             piped = self.issue_file(d, 1) + "\n" + self.issue_file(d, 2) + "\n"
             out = self.which(d, [], stdin=piped)
-            self.assertIn("#001", out)
-            self.assertIn("#002", out)
+            self.assertIn("#1", out)
+            self.assertIn("#2", out)
 
     def test_which_bare_filename_resolves_by_leading_id(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d, "Alpha")                          # id 1 -> 001-alpha.md
             out = self.which(d, ["issues/backlog/001-alpha.md"])
-            self.assertIn("#001", out)
+            self.assertIn("#1", out)
 
     def test_which_skips_non_issue_path(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d, "Alpha")                          # id 1
             out = self.which(d, [self.issue_file(d, 1), "issues/SUMMARY.md"])
-            self.assertIn("#001", out)                     # known one still rendered
+            self.assertIn("#1", out)                       # known one still rendered
             self.assertNotIn("SUMMARY", out)               # junk path dropped from stdout
 
     def test_which_unknown_id_is_skipped(self):
@@ -158,8 +158,8 @@ class TestWhich(unittest.TestCase):
             paths_out = self.cap(self.t.cmd_list, list_args)
             self.assertEqual(len(paths_out.splitlines()), 2)
             out = self.which(d, paths_out.splitlines())
-            self.assertIn("#001", out)
-            self.assertIn("#002", out)
+            self.assertIn("#1", out)
+            self.assertIn("#2", out)
             self.assertIn("Alpha", out)
             self.assertIn("Beta", out)
 
@@ -200,7 +200,7 @@ class TestWiring(unittest.TestCase):
 
     def test_path_verb_parses_id(self):
         a = self.t.build_parser().parse_args(["path", "7"])
-        self.assertEqual(a.id, 7)
+        self.assertEqual(a.id, "7")
         self.assertIs(a.func, self.t.cmd_path)
 
     def test_which_verb_parses_paths_and_ids(self):

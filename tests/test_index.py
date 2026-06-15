@@ -66,9 +66,9 @@ class TestIndexIO(unittest.TestCase):
                              created="2026-06-05", resolution="fixed")
             self.t.save_index(ctx, [row])
             obj = json.loads((ctx.dir / "index.jsonl").read_text().strip())
-            self.assertEqual(obj["parent"], 1)
+            self.assertEqual(obj["parent"], "1")
             self.assertEqual(obj["labels"], ["m1"])
-            self.assertEqual(obj["depends_on"], [1])
+            self.assertEqual(obj["depends_on"], ["1"])
             self.assertEqual(obj["resolution"], "fixed")
             self.assertNotIn("spec", obj)  # still default -> stripped
             self.assertEqual(list(obj.keys()),
@@ -103,7 +103,7 @@ class TestIndexIO(unittest.TestCase):
             self.t.save_index(ctx, [self.issue(id=3)])
             (ctx.dir / "backlog").mkdir()
             (ctx.dir / "backlog" / "010-x.md").write_text("# X")
-            self.assertEqual(self.t.next_id(ctx), 11)
+            self.assertEqual(self.t.next_id(ctx), "11")
 
     def test_get_row_missing_dies(self):
         with TemporaryDirectory() as tmp:

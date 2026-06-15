@@ -61,22 +61,22 @@ class TestSelectShipped(unittest.TestCase):
                 row(5, closed="2026-06-12T10:00:00Z", kind="epic"),          # in: epics included
                 row(6, closed="2026-06-12T10:00:00Z", kind="bug"),           # in: bugs included
             ])
-            self.assertEqual(self.ids(ctx, rows, "2026-06-10"), [1, 5, 6])
+            self.assertEqual(self.ids(ctx, rows, "2026-06-10"), ["1", "5", "6"])
 
     def test_bare_date_includes_same_day_timestamp(self):
         with TemporaryDirectory() as tmp:
             ctx, rows = self.load(tmp, [row(1, closed="2026-06-10T08:00:00Z")])
-            self.assertEqual(self.ids(ctx, rows, "2026-06-10"), [1])
+            self.assertEqual(self.ids(ctx, rows, "2026-06-10"), ["1"])
 
     def test_exact_timestamp_boundary_is_inclusive(self):
         with TemporaryDirectory() as tmp:
             ctx, rows = self.load(tmp, [row(1, closed="2026-06-10T08:00:00Z")])
-            self.assertEqual(self.ids(ctx, rows, "2026-06-10T08:00:00Z"), [1])
+            self.assertEqual(self.ids(ctx, rows, "2026-06-10T08:00:00Z"), ["1"])
 
     def test_legacy_day_only_closed_handled(self):
         with TemporaryDirectory() as tmp:
             ctx, rows = self.load(tmp, [row(1, closed="2026-06-11")])
-            self.assertEqual(self.ids(ctx, rows, "2026-06-10"), [1])
+            self.assertEqual(self.ids(ctx, rows, "2026-06-10"), ["1"])
             self.assertEqual(self.ids(ctx, rows, "2026-06-12"), [])
 
 
@@ -99,15 +99,15 @@ class TestRenderChangelog(unittest.TestCase):
             shipped = self.t.select_shipped(ctx.cfg, rows, "2026-06-10")
             out = self.t.render_changelog(ctx.cfg, shipped, "2026-06-10")
             self.assertTrue(out.startswith("## Shipped since 2026-06-10 — 2 issues\n\n"))
-            # newest closed first: #002 (06-12) before #001 (06-11)
-            self.assertLess(out.index("#002 Beta (deps)"), out.index("#001 Alpha (engine)"))
+            # newest closed first: #2 (06-12) before #1 (06-11)
+            self.assertLess(out.index("#2 Beta (deps)"), out.index("#1 Alpha (engine)"))
 
     def test_component_omitted_when_absent(self):
         with TemporaryDirectory() as tmp:
             ctx, rows = self.load(tmp, [row(1, closed="2026-06-11T10:00:00Z", title="NoComp")])
             shipped = self.t.select_shipped(ctx.cfg, rows, "2026-06-10")
             out = self.t.render_changelog(ctx.cfg, shipped, "2026-06-10")
-            self.assertIn("- #001 NoComp\n", out)
+            self.assertIn("- #1 NoComp\n", out)
             self.assertNotIn("NoComp (", out)
 
     def test_child_nests_under_shipped_parent(self):
@@ -118,7 +118,7 @@ class TestRenderChangelog(unittest.TestCase):
             ])
             shipped = self.t.select_shipped(ctx.cfg, rows, "2026-06-10")
             out = self.t.render_changelog(ctx.cfg, shipped, "2026-06-10")
-            self.assertIn("- #001 Parent\n  - #002 Child\n", out)
+            self.assertIn("- #1 Parent\n  - #2 Child\n", out)
 
     def test_orphan_child_renders_at_top_level(self):
         with TemporaryDirectory() as tmp:
@@ -130,7 +130,7 @@ class TestRenderChangelog(unittest.TestCase):
             shipped = self.t.select_shipped(ctx.cfg, rows, "2026-06-10")
             out = self.t.render_changelog(ctx.cfg, shipped, "2026-06-10")
             self.assertEqual(out.count("OldParent"), 0)       # parent not shown
-            self.assertIn("- #002 Child\n", out)              # child at top level (no indent)
+            self.assertIn("- #2 Child\n", out)              # child at top level (no indent)
 
     def test_grandchildren_nest_two_levels(self):
         with TemporaryDirectory() as tmp:
@@ -141,7 +141,7 @@ class TestRenderChangelog(unittest.TestCase):
             ])
             shipped = self.t.select_shipped(ctx.cfg, rows, "2026-06-10")
             out = self.t.render_changelog(ctx.cfg, shipped, "2026-06-10")
-            self.assertIn("- #001 A\n  - #002 B\n    - #003 C\n", out)
+            self.assertIn("- #1 A\n  - #2 B\n    - #3 C\n", out)
 
     def test_children_sorted_closed_descending_under_parent(self):
         with TemporaryDirectory() as tmp:
@@ -153,7 +153,7 @@ class TestRenderChangelog(unittest.TestCase):
             shipped = self.t.select_shipped(ctx.cfg, rows, "2026-06-01")
             out = self.t.render_changelog(ctx.cfg, shipped, "2026-06-01")
             # both children nest under #1, newest-closed child first
-            self.assertIn("- #001 P\n  - #003 Newer\n  - #002 Older\n", out)
+            self.assertIn("- #1 P\n  - #3 Newer\n  - #2 Older\n", out)
 
     def test_empty_renders_none(self):
         out = self.t.render_changelog({}, [], "2026-06-10")
@@ -185,7 +185,7 @@ class TestCmdChangelog(unittest.TestCase):
             ])
             out = self.run_cmd(d, "2026-06-10")
             self.assertTrue(out.startswith("## Shipped since 2026-06-10 — 2 issues\n"))
-            self.assertIn("- #001 Parent (cli)\n  - #002 Child (cli)\n", out)
+            self.assertIn("- #1 Parent (cli)\n  - #2 Child (cli)\n", out)
             self.assertNotIn("Open", out)
             self.assertNotIn("#004", out)
 

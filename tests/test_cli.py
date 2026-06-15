@@ -40,14 +40,14 @@ class TestAliases(unittest.TestCase):
             d = make_tracker(tmp, {})
             self.seed(d)
             self.t.cmd_start(ns(dir=str(d), id=1))
-            self.assertEqual(self.rows(d)[1].status, "ongoing")
+            self.assertEqual(self.rows(d)["1"].status, "ongoing")
 
     def test_done_alias_with_resolution(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d)
             self.t.cmd_done(ns(dir=str(d), id=1, resolution="duplicate"))
-            r = self.rows(d)[1]
+            r = self.rows(d)["1"]
             self.assertEqual(r.status, "done")
             self.assertEqual(r.resolution, "duplicate")
 

@@ -42,7 +42,7 @@ class TestPresentation(unittest.TestCase):
             self.seed(d, "Alpha")
             out = self.list_out(d)  # redirect_stdout -> StringIO is not a tty
             self.assertNotIn("\033[", out)  # no ANSI escapes
-            self.assertIn("#001", out)
+            self.assertIn("#1", out)
             self.assertIn("Alpha", out)
 
     def row(self, iid=1, title="Alpha", **over):

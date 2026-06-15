@@ -35,7 +35,7 @@ class TestListDefaultFilter(unittest.TestCase):
         return buf.getvalue()
 
     def shown(self, out, iid):
-        return any(f"#{iid:03d}" in ln for ln in out.splitlines())
+        return any(f"#{iid}" in ln for ln in out.splitlines())
 
     def test_settled_standalone_done_is_hidden(self):
         with TemporaryDirectory() as tmp:

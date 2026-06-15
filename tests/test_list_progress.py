@@ -33,7 +33,7 @@ class TestListProgress(unittest.TestCase):
 
     def line(self, out, iid):
         for ln in out.splitlines():
-            if f"#{iid:03d}" in ln:
+            if f"#{iid}" in ln:
                 return ln
         return ""
 
@@ -77,8 +77,8 @@ class TestListProgress(unittest.TestCase):
             self.seed(d, "A", parent=1)
             ctx = self.t.build_ctx_or_die(ns(dir=str(d)))
             g = self.t.load_graph(ctx)
-            self.assertEqual(self.t.progress_pct(g, g.row(2)), "")     # leaf
-            self.assertEqual(self.t.progress_pct(g, g.row(1)), " 0%")  # parent, nothing done
+            self.assertEqual(self.t.progress_pct(g, g.row("2")), "")     # leaf
+            self.assertEqual(self.t.progress_pct(g, g.row("1")), " 0%")  # parent, nothing done
 
     def test_pct_zero_when_no_leaf_points(self):
         # A degenerate self-parent yields a cycle-guarded empty rollup (ptotal == 0);

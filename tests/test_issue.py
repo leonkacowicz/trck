@@ -67,10 +67,10 @@ class TestIssueModel(unittest.TestCase):
         i = self.Issue.from_dict({"id": 7, "slug": "s", "title": "T", "kind": "task",
                                   "status": "done", "priority": "low", "parent": 3,
                                   "labels": ["x"], "depends_on": [1, 2]})
-        self.assertEqual(i.id, 7)
-        self.assertEqual(i.parent, 3)
+        self.assertEqual(i.id, "7")
+        self.assertEqual(i.parent, "3")
         self.assertEqual(i.labels, ["x"])
-        self.assertEqual(i.depends_on, [1, 2])
+        self.assertEqual(i.depends_on, ["1", "2"])
 
     def test_from_dict_routes_unknown_keys_to_extra(self):
         i = self.Issue.from_dict({"id": 1, "slug": "a", "title": "A", "kind": "task",
@@ -104,16 +104,16 @@ class TestIssueModel(unittest.TestCase):
         good = dict(id=1, slug="a", title="A", kind="task",
                     status="backlog", priority="high")
         cases = [
-            {"id": "1"},               # id must be int
-            {"id": True},              # bool is not a valid int id
+            {"id": True},              # bool is not a valid id
+            {"id": ""},               # empty string id rejected
             {"status": 7},             # required string field
             {"points": "lots"},        # points must be int
             {"points": None},          # points is non-nullable
-            {"parent": "x"},           # parent int or null
+            {"parent": True},          # bool is not a valid id
             {"labels": 5},             # labels must be a list
             {"labels": ["ok", 9]},     # labels must be all strings
             {"depends_on": "1,2"},     # depends_on must be a list
-            {"depends_on": [1, "two"]},  # depends_on must be all ints
+            {"depends_on": [True]},    # bool is not a valid id
             {"spec": 3},               # nullable string field
         ]
         for over in cases:
