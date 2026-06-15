@@ -2,6 +2,7 @@ import io
 import unittest
 from contextlib import redirect_stdout
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from tests.helpers import load_trck, make_tracker, ns
 
@@ -95,3 +96,34 @@ class TestPresentation(unittest.TestCase):
             line = t.node_label(ctx, row, focal=False)
             self.assertIn("#7", line)
             self.assertNotIn("#007", line)
+
+    # --- paint_lane with string ids ---------------------------------------- #
+
+    def test_paint_lane_numeric_string_id(self):
+        """paint_lane("x", "3") must use palette index 3, not raise TypeError."""
+        t = self.t
+        with patch.dict(__import__("os").environ, {"FORCE_COLOR": "1"}):
+            result = t.paint_lane("x", "3")
+            expected = t.paint("x", t._LANE_PALETTE[3 % len(t._LANE_PALETTE)])
+        self.assertEqual(result, expected)
+
+    def test_paint_lane_alphanumeric_string_id(self):
+        """paint_lane with an alphanumeric id must not raise and must return a string."""
+        t = self.t
+        with patch.dict(__import__("os").environ, {"FORCE_COLOR": "1"}):
+            result = t.paint_lane("x", "k3m9x2a")
+        self.assertIsInstance(result, str)
+        self.assertIn("x", result)
+
+    def test_paint_lane_none_sentinel(self):
+        """paint_lane with None owner returns text unchanged."""
+        t = self.t
+        self.assertEqual(t.paint_lane("x", None), "x")
+
+    def test_paint_lane_node_sentinel(self):
+        """paint_lane with 'node' owner bolds the text."""
+        t = self.t
+        with patch.dict(__import__("os").environ, {"FORCE_COLOR": "1"}):
+            result = t.paint_lane("●", "node")
+            expected = t.paint("●", "bold")
+        self.assertEqual(result, expected)

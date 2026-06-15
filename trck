@@ -889,7 +889,8 @@ def paint_lane(text, owner) -> str:
         return text
     if owner == "node":
         return paint(text, "bold")
-    return paint(text, _LANE_PALETTE[owner % len(_LANE_PALETTE)])
+    idx = int(owner) if owner.isdigit() else int.from_bytes(owner.encode(), "big")
+    return paint(text, _LANE_PALETTE[idx % len(_LANE_PALETTE)])
 
 
 def parse_status_filter(spec: str | None) -> tuple[set, set]:
