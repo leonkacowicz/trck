@@ -31,6 +31,18 @@ class TestGenId(unittest.TestCase):
                 gid = t.gen_id(ctx)
         self.assertEqual(gid, "bbbbbbb")
 
+    def test_generated_id_is_never_all_digits(self):
+        # all-digit ids are reserved for legacy integer ids; gen_id must avoid them
+        # so the "all-digit ⇔ legacy" discriminator (renumber/filename) stays sound.
+        t = self.t
+        # force an all-digit draw first, then a valid one; gen_id must skip the digits
+        with mock.patch.object(t, "_existing_ids", return_value=set()):
+            with mock.patch.object(t.secrets, "choice",
+                                   side_effect=list("2345678") + list("abcdefg")):
+                gid = t.gen_id(self._ctx())
+        self.assertFalse(gid.isdigit())
+        self.assertEqual(gid, "abcdefg")
+
 
 class TestResolveRef(unittest.TestCase):
     def setUp(self):

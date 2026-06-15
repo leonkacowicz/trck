@@ -420,7 +420,7 @@ class Issue:
         return ordered
 
 
-def get_id(issue: Issue) -> int:
+def get_id(issue: Issue) -> str:
     """The unique id of an issue. To be used as the key argument to sort."""
     return issue.id
 
@@ -761,11 +761,13 @@ def _existing_ids(ctx: Ctx) -> set[str]:
 def gen_id(ctx: Ctx) -> str:
     """A fresh random id. Within-branch guard: redraw if it collides with any id
     already visible in the index or on disk; the unseen cross-branch tail stays
-    optimistic (collision improbable, not impossible)."""
+    optimistic (collision improbable, not impossible). Also redraws all-digit
+    candidates (reserved for legacy integer ids so the all-digit ⇔ legacy
+    discriminator in renumber/filename stays sound)."""
     seen = _existing_ids(ctx)
     while True:
         cand = "".join(secrets.choice(ID_ALPHABET) for _ in range(ID_LEN))
-        if cand not in seen:
+        if cand not in seen and not cand.isdigit():
             return cand
 
 
