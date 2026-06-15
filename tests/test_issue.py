@@ -175,6 +175,35 @@ class TestIssueModel(unittest.TestCase):
         self.assertEqual(obj["custom_empty"], [])
         self.assertEqual(obj["custom_str"], "")
 
+    # -- string id coercion -------------------------------------------------
+    def test_int_id_is_coerced_to_str_on_construction(self):
+        i = self.minimal(id=7)
+        self.assertEqual(i.id, "7")
+        self.assertIsInstance(i.id, str)
+
+    def test_int_parent_and_depends_are_coerced_to_str(self):
+        i = self.minimal(id=1, parent=3, depends_on=[4, 5])
+        self.assertEqual(i.parent, "3")
+        self.assertEqual(i.depends_on, ["4", "5"])
+
+    def test_from_dict_coerces_legacy_int_ids_to_str(self):
+        i = self.Issue.from_dict({"id": 7, "slug": "s", "title": "T", "kind": "task",
+                                  "status": "done", "priority": "low", "parent": 3,
+                                  "depends_on": [1, 2]})
+        self.assertEqual(i.id, "7")
+        self.assertEqual(i.parent, "3")
+        self.assertEqual(i.depends_on, ["1", "2"])
+
+    def test_from_dict_accepts_string_ids(self):
+        i = self.Issue.from_dict({"id": "k3m9x2a", "slug": "s", "title": "T",
+                                  "kind": "task", "status": "done", "priority": "low"})
+        self.assertEqual(i.id, "k3m9x2a")
+
+    def test_from_dict_rejects_empty_id(self):
+        with self.assertRaises(ValueError):
+            self.Issue.from_dict({"id": "", "slug": "s", "title": "T", "kind": "task",
+                                  "status": "done", "priority": "low"})
+
     # -- round-trip ---------------------------------------------------------
     def test_round_trip_through_canonical_is_stable(self):
         i = self.minimal(status="done", priority="low", parent=1, labels=["m1"],

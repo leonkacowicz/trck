@@ -304,16 +304,16 @@ class Issue:
     is not a well-formed issue. Value/config/graph consistency (status in the
     configured vocabulary, points >= 0, parent exists, …) is left to `validate`.
     """
-    id: int
+    id: str
     slug: str
     title: str
     kind: str
     status: str
     priority: str
     points: int = 1
-    parent: int | None = None
+    parent: str | None = None
     labels: list[str] = field(default_factory=list)
-    depends_on: list[int] = field(default_factory=list)
+    depends_on: list[str] = field(default_factory=list)
     spec: str | None = None
     created: str | None = None
     started: str | None = None
@@ -321,6 +321,16 @@ class Issue:
     resolution: str | None = None
     manual_status: bool = False
     extra: dict = field(default_factory=dict)
+
+    def __post_init__(self):
+        # Ids are opaque strings. Coerce legacy integer ids (and the int ids that
+        # tests/handlers still pass) to str at the single construction choke point,
+        # so id/parent/depends_on are uniformly typed everywhere downstream.
+        if self.id is not None:
+            self.id = str(self.id)
+        if self.parent is not None:
+            self.parent = str(self.parent)
+        self.depends_on = [str(d) for d in (self.depends_on or [])]
 
     @classmethod
     def from_dict(cls, d: dict) -> "Issue":
@@ -345,17 +355,23 @@ class Issue:
             if not isinstance(v, int) or isinstance(v, bool):
                 bad(name, f"must be an integer, got {v!r}")
 
+        def want_id(name, v):
+            if isinstance(v, bool) or not isinstance(v, (int, str)):
+                bad(name, f"must be a string or integer id, got {v!r}")
+            if isinstance(v, str) and not v:
+                bad(name, "must not be empty")
+
         for k in ("id", "slug", "title", "kind", "status", "priority"):
             if d.get(k) is None:
                 bad(k, "is required")
-        want_int("id", d["id"])
+        want_id("id", d["id"])
         for k in ("slug", "title", "kind", "status", "priority"):
             if not isinstance(d[k], str):
                 bad(k, f"must be a string, got {d[k]!r}")
         if "points" in d:
             want_int("points", d["points"])
         if d.get("parent") is not None:
-            want_int("parent", d["parent"])
+            want_id("parent", d["parent"])
         for k in ("labels", "depends_on"):
             if k in d and d[k] is not None and not isinstance(d[k], list):
                 bad(k, f"must be a list, got {d[k]!r}")
@@ -363,7 +379,7 @@ class Issue:
             if not isinstance(lab, str):
                 bad("labels", f"must contain only strings, got {lab!r}")
         for dep in (d.get("depends_on") or []):
-            want_int("depends_on", dep)
+            want_id("depends_on", dep)
         for k in ("spec", "created", "started", "closed", "resolution"):
             if d.get(k) is not None and not isinstance(d[k], str):
                 bad(k, f"must be a string, got {d[k]!r}")
