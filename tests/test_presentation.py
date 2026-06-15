@@ -84,3 +84,14 @@ class TestPresentation(unittest.TestCase):
             # priority column starts at the same offset on every row (status padded to max width)
             offsets = [ln.index("high") for ln in lines]
             self.assertEqual(len(set(offsets)), 1)
+
+    def test_row_renders_id_without_zero_padding(self):
+        t = self.t
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            ctx = t.build_ctx_or_die(ns(dir=str(d)))
+            row = t.Issue(id="7", slug="s", title="T", kind="task",
+                          status="backlog", priority="high")
+            line = t.node_label(ctx, row, focal=False)
+            self.assertIn("#7", line)
+            self.assertNotIn("#007", line)

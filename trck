@@ -730,7 +730,7 @@ def scan_files(ctx: Ctx) -> dict:
                 continue
             iid = int(m.group(1))
             if iid in found:
-                die(f"duplicate issue id {iid:03d} on disk: {found[iid][0]} and {name}")
+                die(f"duplicate issue id {iid} on disk: {found[iid][0]} and {name}")
             found[iid] = (name, m.group(2), p.name)
     return found
 
@@ -752,55 +752,55 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
 
     for iid, r in by_id.items():
         if iid not in files:
-            errors.append(f"#{iid:03d} in index but no markdown file on disk")
+            errors.append(f"#{iid} in index but no markdown file on disk")
             continue
         folder, slug, fname = files[iid]
         if r.status != folder:
-            errors.append(f"#{iid:03d} index status '{r.status}' != folder '{folder}'")
+            errors.append(f"#{iid} index status '{r.status}' != folder '{folder}'")
         if r.slug != slug:
-            errors.append(f"#{iid:03d} index slug '{r.slug}' != filename slug '{slug}'")
+            errors.append(f"#{iid} index slug '{r.slug}' != filename slug '{slug}'")
         if fname != filename(r):
-            errors.append(f"#{iid:03d} filename '{fname}' != expected '{filename(r)}'")
+            errors.append(f"#{iid} filename '{fname}' != expected '{filename(r)}'")
         if not r.slug or not SLUG_RE.match(r.slug):
-            errors.append(f"#{iid:03d} bad slug '{r.slug}'")
+            errors.append(f"#{iid} bad slug '{r.slug}'")
         if r.status not in names:
-            errors.append(f"#{iid:03d} unknown status '{r.status}'")
+            errors.append(f"#{iid} unknown status '{r.status}'")
         if (m := check_kind(ctx.cfg, r.kind)):
-            errors.append(f"#{iid:03d} {m}")
+            errors.append(f"#{iid} {m}")
         if (m := check_priority(ctx.cfg, r.priority)):
-            errors.append(f"#{iid:03d} {m}")
+            errors.append(f"#{iid} {m}")
         pts = r.points  # parse guarantees an int; here we check the value/placement
         if not g.is_leaf(r):
             if pts != DEFAULT_POINTS:
-                errors.append(f"#{iid:03d} has children but carries points {pts!r} "
+                errors.append(f"#{iid} has children but carries points {pts!r} "
                               f"(derived from leaves, must be unset)")
         elif (m := check_points(pts)):
-            errors.append(f"#{iid:03d} {m}")
+            errors.append(f"#{iid} {m}")
         if r.resolution is not None and (m := check_resolution(ctx.cfg, r.resolution)):
-            errors.append(f"#{iid:03d} {m}")
+            errors.append(f"#{iid} {m}")
         for k, v in r.extra.items():
             if not FIELD_KEY_RE.match(k):
-                errors.append(f"#{iid:03d} bad custom field key '{k}'")
+                errors.append(f"#{iid} bad custom field key '{k}'")
             elif not isinstance(v, str):
-                errors.append(f"#{iid:03d} custom field '{k}' must be a string, got {v!r}")
+                errors.append(f"#{iid} custom field '{k}' must be a string, got {v!r}")
     for iid in files:
         if iid not in by_id:
-            errors.append(f"#{iid:03d} markdown file on disk but no index row")
+            errors.append(f"#{iid} markdown file on disk but no index row")
 
     for r in rows:
         if r.parent is not None:
             if r.parent not in by_id:
-                errors.append(f"#{r.id:03d} parent #{r.parent:03d} does not exist")
+                errors.append(f"#{r.id} parent #{r.parent} does not exist")
         for dep in r.depends_on:
             if dep not in by_id:
-                errors.append(f"#{r.id:03d} depends_on #{dep:03d} which does not exist")
+                errors.append(f"#{r.id} depends_on #{dep} which does not exist")
 
     for cyc in g.parent_cycles():  # one error per cycle, not one per node
-        chain = " -> ".join(f"#{c:03d}" for c in (*cyc, cyc[0]))
+        chain = " -> ".join(f"#{c}" for c in (*cyc, cyc[0]))
         errors.append(f"parent cycle: {chain}")
 
     for cyc in g.cycles():  # dependency cycles, one error per cycle
-        chain = " -> ".join(f"#{c:03d}" for c in (*cyc, cyc[0]))
+        chain = " -> ".join(f"#{c}" for c in (*cyc, cyc[0]))
         errors.append(f"dependency cycle: {chain}")
 
     # A non-overridden parent's status must equal the rollup of its children (#67);
@@ -813,7 +813,7 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
         desired = reconcile(ctx.cfg, [k.status for k in kids])
         if desired and parent_row.status != desired:
             errors.append(
-                f"#{parent_row.id:03d} status '{parent_row.status}' should be "
+                f"#{parent_row.id} status '{parent_row.status}' should be "
                 f"'{desired}' (derived from its children; pin it with a manual `mv` "
                 f"to override)"
             )
@@ -821,7 +821,7 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
         if g.is_terminal(r):
             for dep in r.depends_on:
                 if dep in by_id and not g.is_terminal(by_id[dep]):
-                    warnings.append(f"#{r.id:03d} is terminal but depends on non-terminal #{dep:03d}")
+                    warnings.append(f"#{r.id} is terminal but depends on non-terminal #{dep}")
     return errors, warnings
 
 
@@ -925,11 +925,11 @@ def block_annotations(g: Graph, r: Issue) -> str:
     parts = []
     needs = [d.id for d in g.requires_of(r) if not g.is_terminal(d)]
     if needs:
-        parts.append("needs " + " ".join(f"#{i:03d}" for i in needs))
+        parts.append("needs " + " ".join(f"#{i}" for i in needs))
     if not g.is_terminal(r):
         blocks = [d.id for d in g.dependents_of(r)]
         if blocks:
-            parts.append("blocks " + " ".join(f"#{i:03d}" for i in blocks))
+            parts.append("blocks " + " ".join(f"#{i}" for i in blocks))
     return paint(" " + "  ".join(parts), "dim") if parts else ""
 
 
@@ -938,7 +938,7 @@ def node_label(ctx: Ctx, r: Issue, focal: bool = False) -> str:
     icon = paint(status_icon(ctx, r.status), *status_codes(ctx.cfg, r.status))
     labels = paint(label_tag(r), "dim") if r.labels else ""  # dim, as in print_rows
     emph = ("bold",) if focal else ()                        # focal row of `deps NNN`
-    return f"{paint(f'#{r.id:03d}', *emph)} {icon} {paint(r.title, *emph)}{tag}{labels}"
+    return f"{paint(f'#{r.id}', *emph)} {icon} {paint(r.title, *emph)}{tag}{labels}"
 
 
 # --- depends_on DAG rendering (deps): lazygit-style one-row-per-node ---
@@ -1178,7 +1178,7 @@ def generate_summary(ctx: Ctx) -> str:
             pdone, ptotal, ndone, ntotal = leaf_rollup(g, parent)
             pct = round(100 * pdone / ptotal) if ptotal else 0
             out.append(
-                f"### [#{parent.id:03d} {parent.title}]({rel_link(parent)}) — "
+                f"### [#{parent.id} {parent.title}]({rel_link(parent)}) — "
                 f"{pct}% ({pdone}/{ptotal} pts · {ndone}/{ntotal} done) · "
                 f"_{parent.priority}_ · {parent.status}"
             )
@@ -1189,7 +1189,7 @@ def generate_summary(ctx: Ctx) -> str:
                 for k in kids:
                     box = "x" if g.is_terminal(k) else " "
                     tail = "" if g.is_terminal(k) else f" _({k.status})_"
-                    out.append(f"- [{box}] [#{k.id:03d} {k.title}]"
+                    out.append(f"- [{box}] [#{k.id} {k.title}]"
                                f"({rel_link(k)}){label_tag(k)}{tail}")
             out.append("")
 
@@ -1209,7 +1209,7 @@ def generate_summary(ctx: Ctx) -> str:
                 extra += f" · _{r.resolution}_"
             if is_terminal(ctx.cfg, status) and r.closed:
                 extra += f" (closed {date_slice(r.closed)})"
-            out.append(f"- [#{r.id:03d} {r.title}]({rel_link(r)}) — "
+            out.append(f"- [#{r.id} {r.title}]({rel_link(r)}) — "
                        f"_{r.priority}_{label_tag(r)}{extra}")
         out.append("")
 
@@ -1340,7 +1340,7 @@ def move_issue(ctx: Ctx, row: Issue, new_status: str) -> None:
     if old.resolve() != new.resolve():
         new.parent.mkdir(parents=True, exist_ok=True)
         if not old.exists():
-            die(f"file missing for #{row.id:03d}: {old}")
+            die(f"file missing for #{row.id}: {old}")
         shutil.move(str(old), str(new))
 
     init = initial_status(ctx.cfg)
@@ -1374,11 +1374,11 @@ def cmd_new(args) -> None:
         die(m)
     parent = args.parent
     if parent is not None and parent not in by_id:
-        die(f"--parent #{parent:03d} does not exist")
+        die(f"--parent #{parent} does not exist")
     deps = parse_ids(args.depends)
     for dep in deps:
         if dep not in by_id:
-            die(f"--depends references #{dep:03d} which does not exist")
+            die(f"--depends references #{dep} which does not exist")
     row = Issue(
         id=iid, slug=slug, title=args.title, kind=kind,
         status=initial_status(ctx.cfg), priority=priority, points=points,
@@ -1434,7 +1434,7 @@ def cmd_set(args) -> None:
         if (m := check_points(args.points)):
             die(m)
         if not g.is_leaf(row):
-            die(f"#{row.id:03d} has children; points is derived from them, not set")
+            die(f"#{row.id} has children; points is derived from them, not set")
         row.points = args.points
     if args.parent is not None:
         if args.parent == "none":
@@ -1442,7 +1442,7 @@ def cmd_set(args) -> None:
         else:
             pid = int(args.parent)
             if pid not in by_id:
-                die(f"--parent #{pid:03d} must be an existing issue")
+                die(f"--parent #{pid} must be an existing issue")
             row.parent = pid
     if args.spec is not None:
         row.spec = None if args.spec == "none" else args.spec
@@ -1479,7 +1479,7 @@ def cmd_set(args) -> None:
         text = re.sub(r"^# .*$", f"# {args.title}", text, count=1, flags=re.MULTILINE)
         new.write_text(text)
     finalize(ctx, rows)
-    print(f"#{row.id:03d} updated")
+    print(f"#{row.id} updated")
 
 
 def cmd_label(args) -> None:
@@ -1495,7 +1495,7 @@ def cmd_label(args) -> None:
             labels.remove(lab)
     row.labels = sorted(labels)
     finalize(ctx, rows)
-    print(f"#{row.id:03d} labels={row.labels}")
+    print(f"#{row.id} labels={row.labels}")
 
 
 def cmd_dep(args) -> None:
@@ -1507,18 +1507,18 @@ def cmd_dep(args) -> None:
     deps = list(row.depends_on)
     if args.add is not None:
         if args.add not in by_id:
-            die(f"#{args.add:03d} does not exist")
+            die(f"#{args.add} does not exist")
         if args.add == row.id:
-            die(f"#{row.id:03d} cannot depend on itself")
+            die(f"#{row.id} cannot depend on itself")
         if g.would_cycle(row.id, args.add):
-            die(f"#{row.id:03d} -> #{args.add:03d} would create a dependency cycle")
+            die(f"#{row.id} -> #{args.add} would create a dependency cycle")
         if args.add not in deps:
             deps.append(args.add)
     if args.remove is not None and args.remove in deps:
         deps.remove(args.remove)
     row.depends_on = sorted(deps)
     finalize(ctx, rows)
-    print(f"#{row.id:03d} depends_on={row.depends_on}")
+    print(f"#{row.id} depends_on={row.depends_on}")
 
 
 def cmd_show(args) -> None:
@@ -1688,7 +1688,7 @@ def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None
         if r.kind == "epic":
             tags.append("EPIC")
         if r.parent and not pre:  # the connector already shows parentage when nested
-            tags.append(f"↳{r.parent:03d}")
+            tags.append(f"↳{r.parent}")
         tags.extend(r.labels or [])
         plain_tags = " [" + " ".join(tags) + "]" if tags else ""
         ann = annotate(r) if annotate else ""
@@ -1698,12 +1698,12 @@ def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None
             if segs:
                 fsuf = "  " + paint(" ".join(segs), "dim")
         if dim and dim(r):  # ancestor context: whole line dimmed, no per-field color
-            body = f"{status_icon(ctx, r.status)} #{r.id:03d} {r.status:<{sw}}  {r.priority:<{pw}}  {pre}{r.title}{prog}{plain_tags}"
+            body = f"{status_icon(ctx, r.status)} #{r.id} {r.status:<{sw}}  {r.priority:<{pw}}  {pre}{r.title}{prog}{plain_tags}"
             print(paint(body, "dim") + ann + fsuf)
             continue
         codes = status_codes(ctx.cfg, r.status)
         icon = paint(status_icon(ctx, r.status), *codes)
-        iid = paint(f"#{r.id:03d}", "bold")
+        iid = paint(f"#{r.id}", "bold")
         status = paint(f"{r.status:<{sw}}", *codes)
         prio = paint(f"{r.priority:<{pw}}", *priority_codes(ctx.cfg, r.priority))
         progstr = paint(prog, "dim") if prog else ""
@@ -1734,7 +1734,7 @@ def cmd_which(args) -> None:
             continue
         iid = int(m.group(1))
         if iid not in by_id:
-            print(f"warning: no issue #{iid:03d} (from {p})", file=sys.stderr)
+            print(f"warning: no issue #{iid} (from {p})", file=sys.stderr)
             continue
         if iid in seen:
             continue
@@ -1938,7 +1938,7 @@ def render_changelog(cfg: dict, shipped: list, since: str) -> str:
     def walk(node, depth: int, seen: set) -> None:
         comp = node.extra.get("component")
         tag = f" ({comp})" if comp else ""
-        out.append("  " * depth + f"- #{node.id:03d} {node.title}{tag}")
+        out.append("  " * depth + f"- #{node.id} {node.title}{tag}")
         if node.id in seen:
             return
         for child in sib_sorted(g.children_of(node)):
