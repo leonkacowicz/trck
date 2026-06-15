@@ -5,78 +5,78 @@
 
 | State | Count |
 |---|---:|
-| backlog | 21 |
+| backlog | 20 |
 | ongoing | 1 |
-| done | 48 |
+| done | 49 |
 | **total** | **70** |
 
 ## Hierarchies
 
-### [#002 Part D: richer tracker features](ongoing/002-part-d-richer-tracker-features.md) — 57% (13/23 pts · 13/23 done) · _medium_ · ongoing
+### [#4vqukyy Part D: richer tracker features](ongoing/4vqukyy-part-d-richer-tracker-features.md) — 61% (14/23 pts · 14/23 done) · _medium_ · ongoing
 
-- [x] [#003 Add labels/tags to issues](done/003-add-labels-tags-to-issues.md)
-- [ ] [#004 Support configurable custom fields](backlog/004-support-configurable-custom-fields.md) _(backlog)_
-- [ ] [#005 Add reconfigure verb to rename/reorder statuses](backlog/005-add-reconfigure-verb-to-rename-reorder-statuses.md) _(backlog)_
-- [x] [#023 Add 'ready'/'next' command: list unblocked, not-done leaves](done/023-add-ready-next-command-list-unblocked-not-done-leaves.md)
-- [ ] [#024 Add --json output to list/show/deps/tree for scripting](backlog/024-add-json-output-to-list-show-deps-tree-for-scripting.md) _(backlog)_
-- [x] [#025 Add full-text search/grep across issue bodies](done/025-add-full-text-search-grep-across-issue-bodies.md)
-- [x] [#026 Enrich 'list' filters: multi/negated status, title match, sort, --blocked, --orphan](done/026-enrich-list-filters-multi-negated-status-title-match-sort-blocked-orphan.md)
-- [x] [#028 validate/dep: detect and prevent dependency cycles](done/028-validate-dep-detect-and-prevent-dependency-cycles.md)
-- [x] [#030 list: annotate blocked/blocker relationships and clear them when resolved](done/030-list-annotate-blocked-blocker-relationships-and-clear-them-when-resolved.md)
-- [x] [#048 Free-form custom fields: set/filter/sort arbitrary key→value](done/048-free-form-custom-fields-set-filter-sort-arbitrary-key-value.md)
-- [ ] [#064 Reconcile id collisions when branches concurrently create issues](backlog/064-reconcile-id-collisions-when-branches-concurrently-create-issues.md) [conflict-resolution] _(backlog)_
-- [ ] [#065 Use random alphanumeric ids to make concurrent creation collision-free](backlog/065-use-random-alphanumeric-ids-to-make-concurrent-creation-collision-free.md) [conflict-resolution] _(backlog)_
-- [ ] [#066 Auto-resolve index.jsonl and SUMMARY.md merge conflicts via git merge drivers](backlog/066-auto-resolve-index-jsonl-and-summary-md-merge-conflicts-via-git-merge-drivers.md) [conflict-resolution] _(backlog)_
-- [x] [#070 list: hide settled work by default (keep done children under open parents)](done/070-list-hide-settled-work-by-default-keep-done-children-under-open-parents.md)
+- [x] [#3x6mmhu list: annotate blocked/blocker relationships and clear them when resolved](done/3x6mmhu-list-annotate-blocked-blocker-relationships-and-clear-them-when-resolved.md)
+- [x] [#5wbwpjv Add full-text search/grep across issue bodies](done/5wbwpjv-add-full-text-search-grep-across-issue-bodies.md)
+- [ ] [#6ddksge Reconcile id collisions when branches concurrently create issues](backlog/6ddksge-reconcile-id-collisions-when-branches-concurrently-create-issues.md) [conflict-resolution] _(backlog)_
+- [x] [#9sevgpn Enrich 'list' filters: multi/negated status, title match, sort, --blocked, --orphan](done/9sevgpn-enrich-list-filters-multi-negated-status-title-match-sort-blocked-orphan.md)
+- [x] [#9wd4tkf list: hide settled work by default (keep done children under open parents)](done/9wd4tkf-list-hide-settled-work-by-default-keep-done-children-under-open-parents.md)
+- [x] [#cea683t validate/dep: detect and prevent dependency cycles](done/cea683t-validate-dep-detect-and-prevent-dependency-cycles.md)
+- [x] [#dscmxng Use random alphanumeric ids to make concurrent creation collision-free](done/dscmxng-use-random-alphanumeric-ids-to-make-concurrent-creation-collision-free.md) [conflict-resolution]
+- [ ] [#eemqu4g Support configurable custom fields](backlog/eemqu4g-support-configurable-custom-fields.md) _(backlog)_
+- [ ] [#ey2aruc Auto-resolve index.jsonl and SUMMARY.md merge conflicts via git merge drivers](backlog/ey2aruc-auto-resolve-index-jsonl-and-summary-md-merge-conflicts-via-git-merge-drivers.md) [conflict-resolution] _(backlog)_
+- [x] [#h7xp2dm Free-form custom fields: set/filter/sort arbitrary key→value](done/h7xp2dm-free-form-custom-fields-set-filter-sort-arbitrary-key-value.md)
+- [x] [#httj4xf Add labels/tags to issues](done/httj4xf-add-labels-tags-to-issues.md)
+- [x] [#qc48tds Add 'ready'/'next' command: list unblocked, not-done leaves](done/qc48tds-add-ready-next-command-list-unblocked-not-done-leaves.md)
+- [ ] [#r9zefup Add --json output to list/show/deps/tree for scripting](backlog/r9zefup-add-json-output-to-list-show-deps-tree-for-scripting.md) _(backlog)_
+- [ ] [#s3d6xyz Add reconfigure verb to rename/reorder statuses](backlog/s3d6xyz-add-reconfigure-verb-to-rename-reorder-statuses.md) _(backlog)_
 
-### [#022 Introduce an Issue class instead of dict-oriented code](done/022-introduce-an-issue-class-instead-of-dict-oriented-code.md) — 100% (1/1 pts · 1/1 done) · _medium_ · done
-
-- [x] [#027 Harden Issue.from_dict with a structural/type contract](done/027-harden-issue-from-dict-with-a-structural-type-contract.md)
-
-### [#024 Add --json output to list/show/deps/tree for scripting](backlog/024-add-json-output-to-list-show-deps-tree-for-scripting.md) — 0% (0/5 pts · 0/5 done) · _high_ · backlog
-
-- [ ] [#059 list/tree: drop the tree alias (nested forest is list's default)](backlog/059-list-tree-drop-the-tree-alias-nested-forest-is-list-s-default.md) _(backlog)_
-- [ ] [#060 json: shared emit_json stdout seam + --json flag plumbing](backlog/060-json-shared-emit-json-stdout-seam-json-flag-plumbing.md) _(backlog)_
-- [ ] [#061 list --json: nested hierarchy (and --flat --json flat array)](backlog/061-list-json-nested-hierarchy-and-flat-json-flat-array.md) _(backlog)_
-- [ ] [#062 show --json: single JSON document with body folded in](backlog/062-show-json-single-json-document-with-body-folded-in.md) _(backlog)_
-- [ ] [#063 deps --json: {requires, blocks} cones as JSON](backlog/063-deps-json-requires-blocks-cones-as-json.md) _(backlog)_
-
-### [#031 Merge tree into list: structure-aware browse verb](done/031-merge-tree-into-list-structure-aware-browse-verb.md) — 100% (4/4 pts · 4/4 done) · _high_ · done
-
-- [x] [#036 list: extract shared row renderer with connector prefix](done/036-list-extract-shared-row-renderer-with-connector-prefix.md)
-- [x] [#037 Graph: add ancestor-closure, match-set and sibling-sort traversal](done/037-graph-add-ancestor-closure-match-set-and-sibling-sort-traversal.md)
-- [x] [#038 list: nested forest default (--flat, positional id, dimmed ancestors, tree alias)](done/038-list-nested-forest-default-flat-positional-id-dimmed-ancestors-tree-alias.md)
-- [x] [#039 list: argparse/help/README and acceptance tests for the merged verb](done/039-list-argparse-help-readme-and-acceptance-tests-for-the-merged-verb.md)
-
-### [#032 Introduce a derived Graph view over the loaded index](done/032-introduce-a-derived-graph-view-over-the-loaded-index.md) — 100% (3/3 pts · 3/3 done) · _medium_ · done
+### [#ee2crq3 Introduce a derived Graph view over the loaded index](done/ee2crq3-introduce-a-derived-graph-view-over-the-loaded-index.md) — 100% (3/3 pts · 3/3 done) · _medium_ · done
 Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-06-09-graph-derived-view-design.md)
 
-- [x] [#033 Graph: add class and load_graph (maps, accessors, predicates)](done/033-graph-add-class-and-load-graph-maps-accessors-predicates.md)
-- [x] [#034 Graph: migrate ready/next and deps to the Graph view](done/034-graph-migrate-ready-next-and-deps-to-the-graph-view.md)
-- [x] [#035 Graph: absorb cycle/parent free functions; migrate validate and dep](done/035-graph-absorb-cycle-parent-free-functions-migrate-validate-and-dep.md)
+- [x] [#bt9pwy8 Graph: migrate ready/next and deps to the Graph view](done/bt9pwy8-graph-migrate-ready-next-and-deps-to-the-graph-view.md)
+- [x] [#chzay3q Graph: add class and load_graph (maps, accessors, predicates)](done/chzay3q-graph-add-class-and-load-graph-maps-accessors-predicates.md)
+- [x] [#n2gdhdd Graph: absorb cycle/parent free functions; migrate validate and dep](done/n2gdhdd-graph-absorb-cycle-parent-free-functions-migrate-validate-and-dep.md)
 
-### [#048 Free-form custom fields: set/filter/sort arbitrary key→value](done/048-free-form-custom-fields-set-filter-sort-arbitrary-key-value.md) — 100% (6/6 pts · 6/6 done) · _medium_ · done
+### [#evsw9tr Introduce an Issue class instead of dict-oriented code](done/evsw9tr-introduce-an-issue-class-instead-of-dict-oriented-code.md) — 100% (1/1 pts · 1/1 done) · _medium_ · done
+
+- [x] [#nddf6wg Harden Issue.from_dict with a structural/type contract](done/nddf6wg-harden-issue-from-dict-with-a-structural-type-contract.md)
+
+### [#h7xp2dm Free-form custom fields: set/filter/sort arbitrary key→value](done/h7xp2dm-free-form-custom-fields-set-filter-sort-arbitrary-key-value.md) — 100% (6/6 pts · 6/6 done) · _medium_ · done
 Spec: [`docs/specs/2026-06-11-custom-fields-design.md`](../docs/specs/2026-06-11-custom-fields-design.md)
 
-- [x] [#049 set: --field/--unset to write/clear free-form custom fields, with key-shape and reserved-key guards](done/049-set-field-unset-to-write-clear-free-form-custom-fields-with-key-shape-and-reserved-key-guards.md)
-- [x] [#050 validate/check: enforce extra keys are well-formed and values are strings](done/050-validate-check-enforce-extra-keys-are-well-formed-and-values-are-strings.md)
-- [x] [#051 list: --field key=value exact-match filter (repeatable, AND-ed, composes with existing filters)](done/051-list-field-key-value-exact-match-filter-repeatable-and-ed-composes-with-existing-filters.md)
-- [x] [#052 list: --sort field:NAME (string compare, missing-value rows sort last)](done/052-list-sort-field-name-string-compare-missing-value-rows-sort-last.md)
-- [x] [#053 list: --show-field NAME opt-in trailing column in print_rows](done/053-list-show-field-name-opt-in-trailing-column-in-print-rows.md)
-- [x] [#054 docs: help/epilog/README examples for custom fields; link the design spec](done/054-docs-help-epilog-readme-examples-for-custom-fields-link-the-design-spec.md)
+- [x] [#45mc92r set: --field/--unset to write/clear free-form custom fields, with key-shape and reserved-key guards](done/45mc92r-set-field-unset-to-write-clear-free-form-custom-fields-with-key-shape-and-reserved-key-guards.md)
+- [x] [#s27wb34 list: --sort field:NAME (string compare, missing-value rows sort last)](done/s27wb34-list-sort-field-name-string-compare-missing-value-rows-sort-last.md)
+- [x] [#wn45zbq list: --show-field NAME opt-in trailing column in print_rows](done/wn45zbq-list-show-field-name-opt-in-trailing-column-in-print-rows.md)
+- [x] [#ytk73m2 docs: help/epilog/README examples for custom fields; link the design spec](done/ytk73m2-docs-help-epilog-readme-examples-for-custom-fields-link-the-design-spec.md)
+- [x] [#z65knha list: --field key=value exact-match filter (repeatable, AND-ed, composes with existing filters)](done/z65knha-list-field-key-value-exact-match-filter-repeatable-and-ed-composes-with-existing-filters.md)
+- [x] [#zke8bhp validate/check: enforce extra keys are well-formed and values are strings](done/zke8bhp-validate-check-enforce-extra-keys-are-well-formed-and-values-are-strings.md)
+
+### [#qapvxpz Merge tree into list: structure-aware browse verb](done/qapvxpz-merge-tree-into-list-structure-aware-browse-verb.md) — 100% (4/4 pts · 4/4 done) · _high_ · done
+
+- [x] [#33frt7s list: extract shared row renderer with connector prefix](done/33frt7s-list-extract-shared-row-renderer-with-connector-prefix.md)
+- [x] [#sdun4vt list: argparse/help/README and acceptance tests for the merged verb](done/sdun4vt-list-argparse-help-readme-and-acceptance-tests-for-the-merged-verb.md)
+- [x] [#ub2ssg4 list: nested forest default (--flat, positional id, dimmed ancestors, tree alias)](done/ub2ssg4-list-nested-forest-default-flat-positional-id-dimmed-ancestors-tree-alias.md)
+- [x] [#uqtjp9p Graph: add ancestor-closure, match-set and sibling-sort traversal](done/uqtjp9p-graph-add-ancestor-closure-match-set-and-sibling-sort-traversal.md)
+
+### [#r9zefup Add --json output to list/show/deps/tree for scripting](backlog/r9zefup-add-json-output-to-list-show-deps-tree-for-scripting.md) — 0% (0/5 pts · 0/5 done) · _high_ · backlog
+
+- [ ] [#57kz6xp deps --json: {requires, blocks} cones as JSON](backlog/57kz6xp-deps-json-requires-blocks-cones-as-json.md) _(backlog)_
+- [ ] [#e75dysa show --json: single JSON document with body folded in](backlog/e75dysa-show-json-single-json-document-with-body-folded-in.md) _(backlog)_
+- [ ] [#k9snjz3 list --json: nested hierarchy (and --flat --json flat array)](backlog/k9snjz3-list-json-nested-hierarchy-and-flat-json-flat-array.md) _(backlog)_
+- [ ] [#kaqhtfc list/tree: drop the tree alias (nested forest is list's default)](backlog/kaqhtfc-list-tree-drop-the-tree-alias-nested-forest-is-list-s-default.md) _(backlog)_
+- [ ] [#v8tmkrt json: shared emit_json stdout seam + --json flag plumbing](backlog/v8tmkrt-json-shared-emit-json-stdout-seam-json-flag-plumbing.md) _(backlog)_
 
 ## Backlog
 
-- [#018 mv/done: guard closing a parent with open descendants (--recurse to cascade)](backlog/018-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
-- [#055 deps: select graph seeds by predicate (union of per-seed cones)](backlog/055-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
-- [#056 deps: graph display filters (--omit-completed, --depth N)](backlog/056-deps-graph-display-filters-omit-completed-depth-n.md) — _medium_
-- [#057 mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](backlog/057-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
-- [#069 Convert the #002 'richer tracker features' epic into a label](backlog/069-convert-the-002-richer-tracker-features-epic-into-a-label.md) — _medium_
-- [#001 Part C: curses TUI for browsing and quick actions](backlog/001-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
-- [#007 summary: include foreign/unknown statuses in the counts table](backlog/007-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
-- [#009 validate: suppress redundant bad-slug error when filename-slug mismatch already reported](backlog/009-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
-- [#010 config: friendly errors for empty statuses/priorities/kinds lists](backlog/010-config-friendly-errors-for-empty-statuses-priorities-kinds-lists.md) — _low_
-- [#012 update: add a minimum-size sanity check on the downloaded engine](backlog/012-update-add-a-minimum-size-sanity-check-on-the-downloaded-engine.md) — _low_
+- [#dbq2wqn deps: graph display filters (--omit-completed, --depth N)](backlog/dbq2wqn-deps-graph-display-filters-omit-completed-depth-n.md) — _medium_
+- [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](backlog/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
+- [#tfhhp8h mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](backlog/tfhhp8h-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
+- [#uydwa9h Convert the #002 'richer tracker features' epic into a label](backlog/uydwa9h-convert-the-002-richer-tracker-features-epic-into-a-label.md) — _medium_
+- [#wh3mv52 mv/done: guard closing a parent with open descendants (--recurse to cascade)](backlog/wh3mv52-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
+- [#5jhvpz4 update: add a minimum-size sanity check on the downloaded engine](backlog/5jhvpz4-update-add-a-minimum-size-sanity-check-on-the-downloaded-engine.md) — _low_
+- [#cbf4sxp config: friendly errors for empty statuses/priorities/kinds lists](backlog/cbf4sxp-config-friendly-errors-for-empty-statuses-priorities-kinds-lists.md) — _low_
+- [#kj2c95b validate: suppress redundant bad-slug error when filename-slug mismatch already reported](backlog/kj2c95b-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
+- [#m3z2ywb summary: include foreign/unknown statuses in the counts table](backlog/m3z2ywb-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
+- [#v9nyy42 Part C: curses TUI for browsing and quick actions](backlog/v9nyy42-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
 
 ## Ongoing
 
@@ -84,26 +84,26 @@ _none_
 
 ## Done
 
-- [#013 Write root README.md and CLAUDE.md](done/013-write-root-readme-md-and-claude-md.md) — _high_ (closed 2026-06-05)
-- [#014 Cut v0.1.0 release](done/014-cut-v0-1-0-release.md) — _high_ (closed 2026-06-05)
-- [#020 Strip null/empty fields from index.jsonl rows to reduce noise](done/020-strip-null-empty-fields-from-index-jsonl-rows-to-reduce-noise.md) — _high_ (closed 2026-06-06)
-- [#029 pre-commit hook never runs check when trck.json is at repo root](done/029-pre-commit-hook-never-runs-check-when-trck-json-is-at-repo-root.md) — _high_ (closed 2026-06-09)
-- [#040 Crash instead of clean error when no tracker is found](done/040-crash-instead-of-clean-error-when-no-tracker-is-found.md) — _high_ (closed 2026-06-10)
-- [#006 init: accept positional dir and add --no-vendor for self-hosting repos](done/006-init-accept-positional-dir-and-add-no-vendor-for-self-hosting-repos.md) — _medium_ (closed 2026-06-05)
-- [#015 Allow any issue to be a parent (rollup for any parent)](done/015-allow-any-issue-to-be-a-parent-rollup-for-any-parent.md) — _medium_ (closed 2026-06-05)
-- [#016 Improve CLI output presentation (align/icons, color, show, SUMMARY)](done/016-improve-cli-output-presentation-align-icons-color-show-summary.md) — _medium_ (closed 2026-06-05)
-- [#019 Add points field with leaves-only deep-recursive weighted rollup](done/019-add-points-field-with-leaves-only-deep-recursive-weighted-rollup.md) — _medium_ (closed 2026-06-06)
-- [#021 Add normalize command to rewrite index.jsonl in canonical slim form](done/021-add-normalize-command-to-rewrite-index-jsonl-in-canonical-slim-form.md) — _medium_ (closed 2026-06-06)
-- [#041 Consolidate parent-to-children map building onto Graph](done/041-consolidate-parent-to-children-map-building-onto-graph.md) — _medium_ (closed 2026-06-10)
-- [#042 Deduplicate parent-cycle detection via Graph.ancestors_of](done/042-deduplicate-parent-cycle-detection-via-graph-ancestors-of.md) — _medium_ (closed 2026-06-10)
-- [#043 Extract config-vocabulary validation helpers](done/043-extract-config-vocabulary-validation-helpers.md) — _medium_ (closed 2026-06-10)
-- [#045 Eliminate unnecessary index double-reads](done/045-eliminate-unnecessary-index-double-reads.md) — _medium_ (closed 2026-06-10)
-- [#046 deps --graph: lazygit-style dependency DAG renderer](done/046-deps-graph-lazygit-style-dependency-dag-renderer.md) — _medium_ (closed 2026-06-10)
-- [#047 deps --graph <id>: scope to the focal issue's directed dependency line](done/047-deps-graph-id-scope-to-the-focal-issue-s-directed-dependency-line.md) — _medium_ (closed 2026-06-10)
-- [#058 deps: shorter edges / fewer crossings in the graph layout](done/058-deps-shorter-edges-fewer-crossings-in-the-graph-layout.md) — _medium_ (closed 2026-06-12)
-- [#067 Cascading parent status: derive parent status from children (status rollup)](done/067-cascading-parent-status-derive-parent-status-from-children-status-rollup.md) — _medium_ (closed 2026-06-13)
-- [#068 list: show points-weighted percent-complete on parent rows](done/068-list-show-points-weighted-percent-complete-on-parent-rows.md) — _medium_ (closed 2026-06-14)
-- [#008 validate: report one error per parent cycle, not one per node](done/008-validate-report-one-error-per-parent-cycle-not-one-per-node.md) — _low_ (closed 2026-06-10)
-- [#011 version/update: suppress no-tracker stderr noise when run outside a tracker](done/011-version-update-suppress-no-tracker-stderr-noise-when-run-outside-a-tracker.md) — _low_ (closed 2026-06-05)
-- [#017 summary: sort status sections by priority (highest first)](done/017-summary-sort-status-sections-by-priority-highest-first.md) — _low_ (closed 2026-06-05)
-- [#044 Clean up minor lint and cruft in the engine](done/044-clean-up-minor-lint-and-cruft-in-the-engine.md) — _low_ (closed 2026-06-10)
+- [#dqmp5c5 Cut v0.1.0 release](done/dqmp5c5-cut-v0-1-0-release.md) — _high_ (closed 2026-06-05)
+- [#ejcxwmz pre-commit hook never runs check when trck.json is at repo root](done/ejcxwmz-pre-commit-hook-never-runs-check-when-trck-json-is-at-repo-root.md) — _high_ (closed 2026-06-09)
+- [#mur7gwd Crash instead of clean error when no tracker is found](done/mur7gwd-crash-instead-of-clean-error-when-no-tracker-is-found.md) — _high_ (closed 2026-06-10)
+- [#nhanp8c Strip null/empty fields from index.jsonl rows to reduce noise](done/nhanp8c-strip-null-empty-fields-from-index-jsonl-rows-to-reduce-noise.md) — _high_ (closed 2026-06-06)
+- [#y8asnbe Write root README.md and CLAUDE.md](done/y8asnbe-write-root-readme-md-and-claude-md.md) — _high_ (closed 2026-06-05)
+- [#3e3cn37 init: accept positional dir and add --no-vendor for self-hosting repos](done/3e3cn37-init-accept-positional-dir-and-add-no-vendor-for-self-hosting-repos.md) — _medium_ (closed 2026-06-05)
+- [#9pf42be Add points field with leaves-only deep-recursive weighted rollup](done/9pf42be-add-points-field-with-leaves-only-deep-recursive-weighted-rollup.md) — _medium_ (closed 2026-06-06)
+- [#b7t7d4q list: show points-weighted percent-complete on parent rows](done/b7t7d4q-list-show-points-weighted-percent-complete-on-parent-rows.md) — _medium_ (closed 2026-06-14)
+- [#bpwuedw Deduplicate parent-cycle detection via Graph.ancestors_of](done/bpwuedw-deduplicate-parent-cycle-detection-via-graph-ancestors-of.md) — _medium_ (closed 2026-06-10)
+- [#ge5jt9s Cascading parent status: derive parent status from children (status rollup)](done/ge5jt9s-cascading-parent-status-derive-parent-status-from-children-status-rollup.md) — _medium_ (closed 2026-06-13)
+- [#gwcr9qd deps: shorter edges / fewer crossings in the graph layout](done/gwcr9qd-deps-shorter-edges-fewer-crossings-in-the-graph-layout.md) — _medium_ (closed 2026-06-12)
+- [#kd8ngqv Improve CLI output presentation (align/icons, color, show, SUMMARY)](done/kd8ngqv-improve-cli-output-presentation-align-icons-color-show-summary.md) — _medium_ (closed 2026-06-05)
+- [#nu939p9 Add normalize command to rewrite index.jsonl in canonical slim form](done/nu939p9-add-normalize-command-to-rewrite-index-jsonl-in-canonical-slim-form.md) — _medium_ (closed 2026-06-06)
+- [#rd6rk5e Allow any issue to be a parent (rollup for any parent)](done/rd6rk5e-allow-any-issue-to-be-a-parent-rollup-for-any-parent.md) — _medium_ (closed 2026-06-05)
+- [#tazdgkg deps --graph: lazygit-style dependency DAG renderer](done/tazdgkg-deps-graph-lazygit-style-dependency-dag-renderer.md) — _medium_ (closed 2026-06-10)
+- [#w8a87ky deps --graph <id>: scope to the focal issue's directed dependency line](done/w8a87ky-deps-graph-id-scope-to-the-focal-issue-s-directed-dependency-line.md) — _medium_ (closed 2026-06-10)
+- [#wwpsa3f Extract config-vocabulary validation helpers](done/wwpsa3f-extract-config-vocabulary-validation-helpers.md) — _medium_ (closed 2026-06-10)
+- [#x5dcpmw Eliminate unnecessary index double-reads](done/x5dcpmw-eliminate-unnecessary-index-double-reads.md) — _medium_ (closed 2026-06-10)
+- [#yvbgt53 Consolidate parent-to-children map building onto Graph](done/yvbgt53-consolidate-parent-to-children-map-building-onto-graph.md) — _medium_ (closed 2026-06-10)
+- [#3qsk26v version/update: suppress no-tracker stderr noise when run outside a tracker](done/3qsk26v-version-update-suppress-no-tracker-stderr-noise-when-run-outside-a-tracker.md) — _low_ (closed 2026-06-05)
+- [#8xdzmr4 summary: sort status sections by priority (highest first)](done/8xdzmr4-summary-sort-status-sections-by-priority-highest-first.md) — _low_ (closed 2026-06-05)
+- [#dkbmmrr Clean up minor lint and cruft in the engine](done/dkbmmrr-clean-up-minor-lint-and-cruft-in-the-engine.md) — _low_ (closed 2026-06-10)
+- [#g76mtuw validate: report one error per parent cycle, not one per node](done/g76mtuw-validate-report-one-error-per-parent-cycle-not-one-per-node.md) — _low_ (closed 2026-06-10)
