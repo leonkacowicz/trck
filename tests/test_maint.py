@@ -1,6 +1,7 @@
 import io
 import unittest
 from contextlib import redirect_stdout
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from tests.helpers import load_trck, make_tracker, ns
@@ -11,8 +12,12 @@ class TestMaint(unittest.TestCase):
         self.t = load_trck()
 
     def seed(self, d, title="Item"):
-        self.t.cmd_new(ns(dir=str(d), title=title, priority="high", kind=None,
-                          parent=None, depends=None, spec=None, slug=None))
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.t.cmd_new(ns(dir=str(d), title=title, priority="high", kind=None,
+                              parent=None, depends=None, spec=None, slug=None))
+        prefix = Path(buf.getvalue().strip()).name.split("-")[0]
+        return str(int(prefix)) if prefix.isdigit() else prefix
 
     def test_check_passes_clean_tracker(self):
         with TemporaryDirectory() as tmp:
@@ -44,9 +49,11 @@ class TestMaint(unittest.TestCase):
     def test_check_exits_nonzero_on_error(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d)
+            id1 = self.seed(d)
             # corrupt: index row whose file we delete
-            (d / "backlog" / "001-item.md").unlink()
+            ctx = self.t.Ctx(d, self.t.load_config(d))
+            row = self.t.get_row(self.t.load_index(ctx), id1)
+            self.t.issue_path(ctx, row).unlink()
             with self.assertRaises(SystemExit) as cm:
                 with redirect_stdout(io.StringIO()):
                     self.t.cmd_check(ns(dir=str(d)))

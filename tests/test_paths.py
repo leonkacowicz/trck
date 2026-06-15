@@ -16,7 +16,10 @@ class TestPath(unittest.TestCase):
         a = dict(dir=str(d), title=title, priority="high", kind=None, parent=None,
                  points=None, depends=None, spec=None, slug=None)
         a.update(over)
-        self.t.cmd_new(ns(**a))
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.t.cmd_new(ns(**a))
+        return Path(buf.getvalue().strip()).name.split("-")[0]
 
     def cap(self, fn, args):
         buf = io.StringIO()
@@ -27,10 +30,10 @@ class TestPath(unittest.TestCase):
     def test_path_prints_absolute_path_for_id(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Alpha")                          # id 1
-            out = self.cap(self.t.cmd_path, ns(dir=str(d), id=1)).strip()
+            id1 = self.seed(d, "Alpha")
+            out = self.cap(self.t.cmd_path, ns(dir=str(d), id=id1)).strip()
             self.assertTrue(out.startswith("/"))
-            self.assertTrue(out.endswith("001-alpha.md"))
+            self.assertTrue(out.endswith("-alpha.md"))
             self.assertTrue(Path(out).is_file())
 
     def test_path_unknown_id_dies(self):
@@ -49,7 +52,10 @@ class TestWhich(unittest.TestCase):
         a = dict(dir=str(d), title=title, priority="high", kind=None, parent=None,
                  points=None, depends=None, spec=None, slug=None)
         a.update(over)
-        self.t.cmd_new(ns(**a))
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.t.cmd_new(ns(**a))
+        return Path(buf.getvalue().strip()).name.split("-")[0]
 
     def cap(self, fn, args):
         buf = io.StringIO()
@@ -82,65 +88,72 @@ class TestWhich(unittest.TestCase):
     def test_which_maps_path_to_list_row(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Alpha")                          # id 1
-            p = self.issue_file(d, 1)
+            id1 = self.seed(d, "Alpha")
+            p = self.issue_file(d, id1)
             out = self.which(d, [p])
-            self.assertIn("#1", out)
+            self.assertIn(f"#{id1}", out)
             self.assertIn("Alpha", out)
 
     def test_which_ids_flag_prints_bare_id(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Alpha")                          # id 1
-            p = self.issue_file(d, 1)
+            id1 = self.seed(d, "Alpha")
+            p = self.issue_file(d, id1)
             out = self.which(d, [p], ids=True).strip()
-            self.assertEqual(out, "1")
+            self.assertEqual(out, id1)
 
     def test_which_reads_paths_from_stdin(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Alpha")                          # id 1
-            self.seed(d, "Beta")                           # id 2
-            piped = self.issue_file(d, 1) + "\n" + self.issue_file(d, 2) + "\n"
+            id1 = self.seed(d, "Alpha")
+            id2 = self.seed(d, "Beta")
+            piped = self.issue_file(d, id1) + "\n" + self.issue_file(d, id2) + "\n"
             out = self.which(d, [], stdin=piped)
-            self.assertIn("#1", out)
-            self.assertIn("#2", out)
+            self.assertIn(f"#{id1}", out)
+            self.assertIn(f"#{id2}", out)
 
     def test_which_bare_filename_resolves_by_leading_id(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Alpha")                          # id 1 -> 001-alpha.md
-            out = self.which(d, ["issues/backlog/001-alpha.md"])
-            self.assertIn("#1", out)
+            id1 = self.seed(d, "Alpha")
+            ctx = self.t.build_ctx_or_die(ns(dir=str(d)))
+            row = self.t.get_row(self.t.load_index(ctx), id1)
+            fname = self.t.filename(row)
+            rel = f"issues/backlog/{fname}"
+            out = self.which(d, [rel])
+            self.assertIn(f"#{id1}", out)
 
     def test_which_skips_non_issue_path(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Alpha")                          # id 1
-            out = self.which(d, [self.issue_file(d, 1), "issues/SUMMARY.md"])
-            self.assertIn("#1", out)                       # known one still rendered
-            self.assertNotIn("SUMMARY", out)               # junk path dropped from stdout
+            id1 = self.seed(d, "Alpha")
+            out = self.which(d, [self.issue_file(d, id1), "issues/SUMMARY.md"])
+            self.assertIn(f"#{id1}", out)              # known one still rendered
+            self.assertNotIn("SUMMARY", out)           # junk path dropped from stdout
 
     def test_which_unknown_id_is_skipped(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Alpha")                          # only id 1 exists
+            self.seed(d, "Alpha")                      # only one issue exists
             out = self.which(d, ["someplace/777-ghost.md"])
-            self.assertEqual(out.strip(), "")              # no row, no crash
+            self.assertEqual(out.strip(), "")          # no row, no crash
 
     def test_which_dedupes_and_orders_by_id(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Alpha")                          # 1
-            self.seed(d, "Beta")                           # 2
-            ps = [self.issue_file(d, 2), self.issue_file(d, 1), self.issue_file(d, 2)]
+            id1 = self.seed(d, "Alpha")
+            id2 = self.seed(d, "Beta")
+            ps = [self.issue_file(d, id2), self.issue_file(d, id1), self.issue_file(d, id2)]
             out = self.which(d, ps, ids=True)
-            self.assertEqual(out.split(), ["1", "2"])
+            ids = out.split()
+            self.assertEqual(len(ids), 2)              # deduped
+            self.assertIn(id1, ids)
+            self.assertIn(id2, ids)
 
     def test_which_warns_on_non_issue_path(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Alpha")                          # id 1
+            self.seed(d, "Alpha")
             args = ns(dir=str(d), paths=["issues/SUMMARY.md"], ids=False)
             err = self.cap_err(self.t.cmd_which, args)
             self.assertIn("warning:", err)
@@ -149,8 +162,8 @@ class TestWhich(unittest.TestCase):
     def test_list_paths_round_trips_through_which(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Alpha")                          # 1
-            self.seed(d, "Beta")                           # 2
+            id1 = self.seed(d, "Alpha")
+            id2 = self.seed(d, "Beta")
             # capture `list --paths` output, then feed it straight into `which`
             list_args = ns(dir=str(d), status=None, kind=None, priority=None, label=None,
                            parent=None, match=None, sort=None, blocked=False, orphan=False,
@@ -158,8 +171,8 @@ class TestWhich(unittest.TestCase):
             paths_out = self.cap(self.t.cmd_list, list_args)
             self.assertEqual(len(paths_out.splitlines()), 2)
             out = self.which(d, paths_out.splitlines())
-            self.assertIn("#1", out)
-            self.assertIn("#2", out)
+            self.assertIn(f"#{id1}", out)
+            self.assertIn(f"#{id2}", out)
             self.assertIn("Alpha", out)
             self.assertIn("Beta", out)
 

@@ -97,13 +97,18 @@ class TestIndexIO(unittest.TestCase):
             self.t.save_index(ctx, self.t.load_index(ctx))
             self.assertEqual((ctx.dir / "index.jsonl").read_bytes(), first)
 
-    def test_next_id_counts_index_and_disk(self):
+    def test_gen_id_avoids_existing_ids(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
             self.t.save_index(ctx, [self.issue(id=3)])
             (ctx.dir / "backlog").mkdir()
             (ctx.dir / "backlog" / "010-x.md").write_text("# X")
-            self.assertEqual(self.t.next_id(ctx), "11")
+            existing = {"3", "010", "10"}
+            # gen_id must return an id not in the seen set
+            for _ in range(20):
+                new_id = self.t.gen_id(ctx)
+                self.assertNotIn(new_id, existing)
+                self.assertTrue(self.t.ID_RE.match(new_id))
 
     def test_get_row_missing_dies(self):
         with TemporaryDirectory() as tmp:

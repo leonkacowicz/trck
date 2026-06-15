@@ -1,6 +1,7 @@
 import io
 import unittest
 from contextlib import redirect_stdout
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from tests.helpers import load_trck, make_tracker, ns
@@ -20,8 +21,10 @@ class TestListDefaultFilter(unittest.TestCase):
                depends=None, spec=None, slug=None, points=None)
         for k, v in over.items():
             setattr(a, k, v)
-        with redirect_stdout(io.StringIO()):
+        buf = io.StringIO()
+        with redirect_stdout(buf):
             self.t.cmd_new(a)
+        return Path(buf.getvalue().strip()).name.split("-")[0]
 
     def done(self, d, iid):
         with redirect_stdout(io.StringIO()):
@@ -40,79 +43,79 @@ class TestListDefaultFilter(unittest.TestCase):
     def test_settled_standalone_done_is_hidden(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Open task")     # #001 stays open
-            self.seed(d, "Old task")      # #002
-            self.done(d, 2)               # settled, no parent
+            id1 = self.seed(d, "Open task")
+            id2 = self.seed(d, "Old task")
+            self.done(d, id2)               # settled, no parent
             out = self.list_out(d)
-            self.assertTrue(self.shown(out, 1))   # open work stays
-            self.assertFalse(self.shown(out, 2))  # settled subject pruned
+            self.assertTrue(self.shown(out, id1))   # open work stays
+            self.assertFalse(self.shown(out, id2))  # settled subject pruned
 
     def test_done_child_of_open_epic_is_shown(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Epic")              # #001
-            self.seed(d, "A", parent=1)       # #002
-            self.seed(d, "B", parent=1)       # #003 keeps the epic open
-            self.done(d, 2)                   # done under a still-open epic
+            id1 = self.seed(d, "Epic")
+            id2 = self.seed(d, "A", parent=id1)
+            id3 = self.seed(d, "B", parent=id1)      # keeps the epic open
+            self.done(d, id2)                         # done under a still-open epic
             out = self.list_out(d)
-            self.assertTrue(self.shown(out, 1))   # epic (non-terminal rollup)
-            self.assertTrue(self.shown(out, 2))   # done child kept as context
-            self.assertTrue(self.shown(out, 3))
+            self.assertTrue(self.shown(out, id1))     # epic (non-terminal rollup)
+            self.assertTrue(self.shown(out, id2))     # done child kept as context
+            self.assertTrue(self.shown(out, id3))
 
     def test_done_child_of_fully_done_epic_collapses(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Epic")              # #001
-            self.seed(d, "A", parent=1)       # #002
-            self.seed(d, "Other")             # #003 standalone, open
-            self.done(d, 2)                   # all children done -> epic rolls terminal
+            id1 = self.seed(d, "Epic")
+            id2 = self.seed(d, "A", parent=id1)
+            id3 = self.seed(d, "Other")               # standalone, open
+            self.done(d, id2)                         # all children done -> epic rolls terminal
             out = self.list_out(d)
-            self.assertFalse(self.shown(out, 1))  # settled epic gone
-            self.assertFalse(self.shown(out, 2))  # its done child gone
-            self.assertTrue(self.shown(out, 3))   # unrelated open work remains
+            self.assertFalse(self.shown(out, id1))    # settled epic gone
+            self.assertFalse(self.shown(out, id2))    # its done child gone
+            self.assertTrue(self.shown(out, id3))     # unrelated open work remains
 
     def test_deep_done_leaves_collapse_but_done_subepic_stays(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Epic")              # #001
-            self.seed(d, "Mid", parent=1)     # #002
-            self.seed(d, "g1", parent=2)      # #003
-            self.seed(d, "g2", parent=2)      # #004
-            self.seed(d, "Open", parent=1)    # #005 keeps the epic open
-            self.done(d, 3)
-            self.done(d, 4)                   # Mid's children all done -> Mid terminal
+            id1 = self.seed(d, "Epic")
+            id2 = self.seed(d, "Mid", parent=id1)
+            id3 = self.seed(d, "g1", parent=id2)
+            id4 = self.seed(d, "g2", parent=id2)
+            id5 = self.seed(d, "Open", parent=id1)   # keeps the epic open
+            self.done(d, id3)
+            self.done(d, id4)                         # Mid's children all done -> Mid terminal
             out = self.list_out(d)
-            self.assertTrue(self.shown(out, 1))   # open epic
-            self.assertTrue(self.shown(out, 2))   # done sub-epic: parent open -> context
-            self.assertFalse(self.shown(out, 3))  # done leaf under done parent collapses
-            self.assertFalse(self.shown(out, 4))
-            self.assertTrue(self.shown(out, 5))
+            self.assertTrue(self.shown(out, id1))     # open epic
+            self.assertTrue(self.shown(out, id2))     # done sub-epic: parent open -> context
+            self.assertFalse(self.shown(out, id3))    # done leaf under done parent collapses
+            self.assertFalse(self.shown(out, id4))
+            self.assertTrue(self.shown(out, id5))
 
     def test_all_flag_shows_settled_work(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Old task")          # #001
-            self.done(d, 1)
-            self.assertFalse(self.shown(self.list_out(d), 1))
-            self.assertTrue(self.shown(self.list_out(d, all=True), 1))
+            id1 = self.seed(d, "Old task")
+            self.done(d, id1)
+            self.assertFalse(self.shown(self.list_out(d), id1))
+            self.assertTrue(self.shown(self.list_out(d, all=True), id1))
 
     def test_explicit_status_bypasses_default_prune(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Old task")          # #001 settled standalone
-            self.done(d, 1)
+            id1 = self.seed(d, "Old task")            # settled standalone
+            self.done(d, id1)
             out = self.list_out(d, status="done")
-            self.assertTrue(self.shown(out, 1))   # explicit --status lists it
+            self.assertTrue(self.shown(out, id1))     # explicit --status lists it
 
     def test_prune_applies_in_flat_view_too(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Open")              # #001
-            self.seed(d, "Settled")           # #002
-            self.done(d, 2)
+            id1 = self.seed(d, "Open")
+            id2 = self.seed(d, "Settled")
+            self.done(d, id2)
             out = self.list_out(d, flat=True)
-            self.assertTrue(self.shown(out, 1))
-            self.assertFalse(self.shown(out, 2))
+            self.assertTrue(self.shown(out, id1))
+            self.assertFalse(self.shown(out, id2))
 
 
 if __name__ == "__main__":

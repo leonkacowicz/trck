@@ -11,6 +11,7 @@ import argparse
 import json
 import os
 import re
+import secrets
 import shutil
 import subprocess
 import sys
@@ -27,6 +28,9 @@ SELF_PATH = Path(__file__).resolve()  # the running engine file; tests may overr
 
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 FILENAME_RE = re.compile(r"^([0-9a-z]+)-([a-z0-9][a-z0-9-]*)\.md$")
+ID_ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz"  # base32 minus 0/1/o/l/i, lowercase for typeability
+ID_LEN = 7                                        # 31**7 ≈ 2.75e10 id space
+ID_RE = re.compile(rf"^[{ID_ALPHABET}]+$")
 FIELD_KEY_RE = re.compile(r"^[a-z][a-z0-9_-]*$")
 SINCE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}Z)?$")
 
@@ -728,9 +732,15 @@ def _existing_ids(ctx: Ctx) -> set[str]:
     return ids
 
 
-def next_id(ctx: Ctx) -> str:
-    nums = [int(i) for i in _existing_ids(ctx) if i.isdigit()]
-    return str((max(nums) + 1) if nums else 1)
+def gen_id(ctx: Ctx) -> str:
+    """A fresh random id. Within-branch guard: redraw if it collides with any id
+    already visible in the index or on disk; the unseen cross-branch tail stays
+    optimistic (collision improbable, not impossible)."""
+    seen = _existing_ids(ctx)
+    while True:
+        cand = "".join(secrets.choice(ID_ALPHABET) for _ in range(ID_LEN))
+        if cand not in seen:
+            return cand
 
 
 # --------------------------------------------------------------------------- #
@@ -1378,7 +1388,7 @@ def cmd_new(args) -> None:
     ctx = build_ctx_or_die(args)
     rows = load_index(ctx)
     by_id = {r.id: r for r in rows}
-    iid = next_id(ctx)
+    iid = gen_id(ctx)
     slug = args.slug or slugify(args.title)
     if not SLUG_RE.match(slug):
         die(f"computed slug '{slug}' is invalid; pass --slug")

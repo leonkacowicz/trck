@@ -65,10 +65,14 @@ class TestInit(unittest.TestCase):
             repo = Path(tmp) / "repo"; repo.mkdir()
             self.init(repo)
             d = repo / "issues"
-            self.t.cmd_new(ns(dir=str(d), title="X", priority="high", kind=None,
-                              parent=None, depends=None,
-                              spec=None, slug=None))
-            self.assertTrue((d / "backlog" / "001-x.md").exists())
+            with redirect_stdout(io.StringIO()):
+                self.t.cmd_new(ns(dir=str(d), title="X", priority="high", kind=None,
+                                  parent=None, depends=None,
+                                  spec=None, slug=None))
+            # verify at least one issue file exists in backlog with slug "x"
+            backlog = d / "backlog"
+            self.assertTrue(backlog.is_dir())
+            self.assertTrue(any(f.name.endswith("-x.md") for f in backlog.iterdir()))
 
     def test_init_positional_dir(self):
         with TemporaryDirectory() as tmp:

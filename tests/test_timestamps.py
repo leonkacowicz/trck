@@ -2,6 +2,7 @@ import json
 import unittest
 from io import StringIO
 from contextlib import redirect_stdout
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from tests.helpers import load_trck, make_tracker, ns
@@ -15,8 +16,11 @@ class TestTimestampDisplay(unittest.TestCase):
         return make_tracker(tmp, {})
 
     def new(self, d, title="First"):
-        self.t.cmd_new(ns(dir=str(d), title=title, priority="high", kind=None,
-                          parent=None, depends=None, spec=None, slug=None))
+        buf = StringIO()
+        with redirect_stdout(buf):
+            self.t.cmd_new(ns(dir=str(d), title=title, priority="high", kind=None,
+                              parent=None, depends=None, spec=None, slug=None))
+        return Path(buf.getvalue().strip()).name.split("-")[0]
 
     def rows(self, d):
         ctx = self.t.Ctx(d, self.t.load_config(d))
@@ -35,8 +39,8 @@ class TestTimestampDisplay(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = self.setup_dir(tmp)
             self.t.now_utc = lambda: "2026-06-12T10:00:00Z"
-            self.new(d)
-            self.t.cmd_mv(ns(dir=str(d), id=1, status="done", resolution=None))
+            iid = self.new(d)
+            self.t.cmd_mv(ns(dir=str(d), id=iid, status="done", resolution=None))
             text = (d / "SUMMARY.md").read_text()
             self.assertIn("(closed 2026-06-12)", text)
             self.assertNotIn("2026-06-12T10:00:00Z", text)
@@ -45,11 +49,11 @@ class TestTimestampDisplay(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = self.setup_dir(tmp)
             self.t.now_utc = lambda: "2026-06-12T10:00:00Z"
-            self.new(d)
+            iid = self.new(d)
             # human view: bare date
             buf = StringIO()
             with redirect_stdout(buf):
-                self.t.cmd_show(ns(dir=str(d), id=1, json=False))
+                self.t.cmd_show(ns(dir=str(d), id=iid, json=False))
             human = buf.getvalue()
             self.assertRegex(human, r"created\s+2026-06-12\b")
             self.assertNotIn("2026-06-12T10:00:00Z", human)
@@ -57,7 +61,7 @@ class TestTimestampDisplay(unittest.TestCase):
             # precedes the body section that show always appends)
             buf = StringIO()
             with redirect_stdout(buf):
-                self.t.cmd_show(ns(dir=str(d), id=1, json=True))
+                self.t.cmd_show(ns(dir=str(d), id=iid, json=True))
             jtext = buf.getvalue().split("\n--- body ---", 1)[0]
             payload = json.loads(jtext)
             self.assertEqual(payload["created"], "2026-06-12T10:00:00Z")

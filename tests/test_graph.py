@@ -212,15 +212,21 @@ class TestGraph(unittest.TestCase):
     # --- loader ----------------------------------------------------------- #
 
     def test_load_graph_parallels_load_index(self):
+        import io
+        from contextlib import redirect_stdout
+        from pathlib import Path
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.t.cmd_new(ns(dir=str(d), title="A", priority="high", kind=None,
-                              parent=None, points=None, depends=None, spec=None,
-                              slug=None))
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                self.t.cmd_new(ns(dir=str(d), title="A", priority="high", kind=None,
+                                  parent=None, points=None, depends=None, spec=None,
+                                  slug=None))
+            iid = Path(buf.getvalue().strip()).name.split("-")[0]
             ctx = self.t.build_ctx_or_die(ns(dir=str(d)))
             g = self.t.load_graph(ctx)
-            self.assertEqual([r.id for r in g.rows], ["1"])
-            self.assertIn("1", g.by_id)
+            self.assertEqual([r.id for r in g.rows], [iid])
+            self.assertIn(iid, g.by_id)
 
 
 if __name__ == "__main__":

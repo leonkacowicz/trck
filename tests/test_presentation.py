@@ -1,6 +1,7 @@
 import io
 import unittest
 from contextlib import redirect_stdout
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
@@ -16,8 +17,10 @@ class TestPresentation(unittest.TestCase):
                depends=None, spec=None, slug=None)
         for k, v in over.items():
             setattr(a, k, v)
-        with redirect_stdout(io.StringIO()):
+        buf = io.StringIO()
+        with redirect_stdout(buf):
             self.t.cmd_new(a)
+        return Path(buf.getvalue().strip()).name.split("-")[0]
 
     def list_out(self, d):
         buf = io.StringIO()
@@ -40,10 +43,10 @@ class TestPresentation(unittest.TestCase):
     def test_list_is_plain_when_not_a_tty(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Alpha")
+            id1 = self.seed(d, "Alpha")
             out = self.list_out(d)  # redirect_stdout -> StringIO is not a tty
             self.assertNotIn("\033[", out)  # no ANSI escapes
-            self.assertIn("#1", out)
+            self.assertIn(f"#{id1}", out)
             self.assertIn("Alpha", out)
 
     def row(self, iid=1, title="Alpha", **over):
@@ -79,8 +82,8 @@ class TestPresentation(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, cfg)
             self.seed(d, "A")
-            self.seed(d, "B")
-            self.t.cmd_mv(ns(dir=str(d), id=2, status="in-progress", resolution=None))
+            id2 = self.seed(d, "B")
+            self.t.cmd_mv(ns(dir=str(d), id=id2, status="in-progress", resolution=None))
             lines = [ln for ln in self.list_out(d).splitlines() if ln.strip()]
             # priority column starts at the same offset on every row (status padded to max width)
             offsets = [ln.index("high") for ln in lines]

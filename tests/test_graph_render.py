@@ -181,9 +181,13 @@ class TestGraphRender(unittest.TestCase):
     # --- command: deps ---------------------------------------------------- #
 
     def seed(self, d, title="Item", depends=None):
-        self.t.cmd_new(ns(dir=str(d), title=title, priority="high", kind=None,
-                          parent=None, points=None, depends=depends, spec=None,
-                          slug=None))
+        from pathlib import Path
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.t.cmd_new(ns(dir=str(d), title=title, priority="high", kind=None,
+                              parent=None, points=None, depends=depends, spec=None,
+                              slug=None))
+        return Path(buf.getvalue().strip()).name.split("-")[0]
 
     def deps_graph(self, d, issue_id=None, full=False):
         buf = io.StringIO()
@@ -198,83 +202,83 @@ class TestGraphRender(unittest.TestCase):
     def test_deps_graph_renders_whole_dag_without_an_id(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Base")                        # 1
-            self.seed(d, "Mid", depends="1")            # 2
+            id1 = self.seed(d, "Base")
+            id2 = self.seed(d, "Mid", depends=id1)
             out = self.deps_graph(d)                    # no id
             self.assertIn("●", out)
-            self.assertIn("#1", out)
-            self.assertIn("#2", out)
+            self.assertIn(f"#{id1}", out)
+            self.assertIn(f"#{id2}", out)
 
     def test_deps_graph_scopes_to_the_component_of_a_given_id(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "A-base")                      # 1
-            self.seed(d, "A-top", depends="1")          # 2  (component A)
-            self.seed(d, "B-base")                      # 3
-            self.seed(d, "B-top", depends="3")          # 4  (component B)
-            out = self.deps_graph(d, 1)                 # ask for component A
-            self.assertIn("#1", out)
-            self.assertIn("#2", out)
-            self.assertNotIn("#3", out)                 # component B excluded
-            self.assertNotIn("#4", out)
+            id1 = self.seed(d, "A-base")
+            id2 = self.seed(d, "A-top", depends=id1)   # component A
+            id3 = self.seed(d, "B-base")
+            id4 = self.seed(d, "B-top", depends=id3)   # component B
+            out = self.deps_graph(d, id1)               # ask for component A
+            self.assertIn(f"#{id1}", out)
+            self.assertIn(f"#{id2}", out)
+            self.assertNotIn(f"#{id3}", out)            # component B excluded
+            self.assertNotIn(f"#{id4}", out)
 
     def test_deps_graph_excludes_cousins_by_default(self):
         # A blocks B, A blocks C, B blocks D: B's graph is A, B, D — not C.
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "A")                           # 1
-            self.seed(d, "B", depends="1")              # 2
-            self.seed(d, "C", depends="1")              # 3  (cousin of B)
-            self.seed(d, "D", depends="2")              # 4
-            out = self.deps_graph(d, 2)                 # focus on B
-            self.assertIn("#1", out)                    # ancestor A
-            self.assertIn("#2", out)                    # B itself
-            self.assertIn("#4", out)                    # descendant D
-            self.assertNotIn("#3", out)                 # cousin C excluded
+            id1 = self.seed(d, "A")
+            id2 = self.seed(d, "B", depends=id1)
+            id3 = self.seed(d, "C", depends=id1)        # cousin of B
+            id4 = self.seed(d, "D", depends=id2)
+            out = self.deps_graph(d, id2)               # focus on B
+            self.assertIn(f"#{id1}", out)               # ancestor A
+            self.assertIn(f"#{id2}", out)               # B itself
+            self.assertIn(f"#{id4}", out)               # descendant D
+            self.assertNotIn(f"#{id3}", out)            # cousin C excluded
 
     def test_deps_graph_full_includes_the_whole_component(self):
         # --full restores the weakly-connected-component view (cousin included).
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "A")                           # 1
-            self.seed(d, "B", depends="1")              # 2
-            self.seed(d, "C", depends="1")              # 3  (cousin of B)
-            self.seed(d, "D", depends="2")              # 4
-            out = self.deps_graph(d, 2, full=True)      # focus on B, whole cluster
-            self.assertIn("#1", out)
-            self.assertIn("#2", out)
-            self.assertIn("#3", out)                    # cousin now present
-            self.assertIn("#4", out)
+            id1 = self.seed(d, "A")
+            id2 = self.seed(d, "B", depends=id1)
+            id3 = self.seed(d, "C", depends=id1)        # cousin of B
+            id4 = self.seed(d, "D", depends=id2)
+            out = self.deps_graph(d, id2, full=True)    # focus on B, whole cluster
+            self.assertIn(f"#{id1}", out)
+            self.assertIn(f"#{id2}", out)
+            self.assertIn(f"#{id3}", out)               # cousin now present
+            self.assertIn(f"#{id4}", out)
 
     def test_deps_graph_reports_isolated_issue(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Lonely")                      # 1, no deps either way
-            out = self.deps_graph(d, 1)
-            self.assertIn("#1", out)
+            id1 = self.seed(d, "Lonely")                # no deps either way
+            out = self.deps_graph(d, id1)
+            self.assertIn(f"#{id1}", out)
             self.assertIn("no dependencies", out.lower())
 
     def test_deps_without_id_renders_the_whole_graph_by_default(self):
         # graph is the default mode now: no --graph flag, no id needed.
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Base")                        # 1
-            self.seed(d, "Top", depends="1")            # 2
+            id1 = self.seed(d, "Base")
+            id2 = self.seed(d, "Top", depends=id1)
             buf = io.StringIO()
             with redirect_stdout(buf):
                 self.t.cmd_deps(ns(dir=str(d), id=None, requires=False,
                                    blocks=False, full=False))
             out = buf.getvalue()
             self.assertIn("●", out)
-            self.assertIn("#1", out)
-            self.assertIn("#2", out)
+            self.assertIn(f"#{id1}", out)
+            self.assertIn(f"#{id2}", out)
 
     def test_deps_graph_gutter_is_plain_when_color_is_off(self):
         # captured (non-tty) output must carry no ANSI escapes
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Base")                        # 1
-            self.seed(d, "Top", depends="1")            # 2
+            id1 = self.seed(d, "Base")
+            self.seed(d, "Top", depends=id1)
             out = self.deps_graph(d)
             self.assertNotIn("\033[", out)
 
@@ -287,32 +291,32 @@ class TestGraphRender(unittest.TestCase):
         # color off: the ▸ marker (color-independent) sits on the focal row only
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Base")                        # 1
-            self.seed(d, "Top", depends="1")            # 2
-            out = self.deps_graph(d, 2)                 # focus on 2
-            self.assertTrue(self.row_with(out, "#2").startswith("▸"))
-            self.assertFalse(self.row_with(out, "#1").startswith("▸"))
+            id1 = self.seed(d, "Base")
+            id2 = self.seed(d, "Top", depends=id1)
+            out = self.deps_graph(d, id2)               # focus on id2
+            self.assertTrue(self.row_with(out, f"#{id2}").startswith("▸"))
+            self.assertFalse(self.row_with(out, f"#{id1}").startswith("▸"))
             # context rows keep their columns aligned under the marker gutter
-            self.assertTrue(self.row_with(out, "#1").startswith("  "))
+            self.assertTrue(self.row_with(out, f"#{id1}").startswith("  "))
 
     def test_deps_whole_graph_has_no_focal_marker(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Base")                        # 1
-            self.seed(d, "Top", depends="1")            # 2
+            id1 = self.seed(d, "Base")
+            self.seed(d, "Top", depends=id1)
             out = self.deps_graph(d)                    # no id -> no focal row
             self.assertNotIn("▸", out)
 
     def test_deps_focal_row_id_and_title_are_bold(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Base")                        # 1
-            self.seed(d, "Top", depends="1")            # 2
+            id1 = self.seed(d, "Base")
+            id2 = self.seed(d, "Top", depends=id1)
             self.t._use_color = lambda: True
-            out = self.deps_graph(d, 2)
-            self.assertIn(self.t.paint("#2", "bold"), out)   # focal id bold
-            self.assertIn(self.t.paint("Top", "bold"), out)  # focal title bold
-            self.assertNotIn(self.t.paint("#1", "bold"), out)  # context id plain
+            out = self.deps_graph(d, id2)
+            self.assertIn(self.t.paint(f"#{id2}", "bold"), out)  # focal id bold
+            self.assertIn(self.t.paint("Top", "bold"), out)       # focal title bold
+            self.assertNotIn(self.t.paint(f"#{id1}", "bold"), out)  # context id plain
 
     # --- label dimming (node_label, the shared `deps` row renderer) -------- #
 

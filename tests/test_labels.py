@@ -19,7 +19,11 @@ class TestLabels(unittest.TestCase):
                   spec=None, slug=None, points=None)
         for k, v in over.items():
             setattr(args, k, v)
-        self.t.cmd_new(args)
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.t.cmd_new(args)
+        prefix = Path(buf.getvalue().strip()).name.split("-")[0]
+        return str(int(prefix)) if prefix.isdigit() else prefix
 
     def rows(self, d):
         ctx = self.t.Ctx(d, self.t.load_config(d))
@@ -35,31 +39,31 @@ class TestLabels(unittest.TestCase):
     def test_label_add_records_label(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d)
-            self.label(d, 1, add=["backend"])
-            self.assertEqual(self.rows(d)["1"].labels, ["backend"])
+            id1 = self.seed(d)
+            self.label(d, id1, add=["backend"])
+            self.assertEqual(self.rows(d)[id1].labels, ["backend"])
 
     def test_label_add_multiple_dedups_and_sorts(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d)
-            self.label(d, 1, add=["beta", "alpha", "beta"])
-            self.assertEqual(self.rows(d)["1"].labels, ["alpha", "beta"])
+            id1 = self.seed(d)
+            self.label(d, id1, add=["beta", "alpha", "beta"])
+            self.assertEqual(self.rows(d)[id1].labels, ["alpha", "beta"])
 
     def test_label_remove_drops_label(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d)
-            self.label(d, 1, add=["x", "y"])
-            self.label(d, 1, remove=["x"])
-            self.assertEqual(self.rows(d)["1"].labels, ["y"])
+            id1 = self.seed(d)
+            self.label(d, id1, add=["x", "y"])
+            self.label(d, id1, remove=["x"])
+            self.assertEqual(self.rows(d)[id1].labels, ["y"])
 
     def test_label_remove_missing_is_noop(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d)
-            self.label(d, 1, remove=["nope"])  # should not raise
-            self.assertEqual(self.rows(d)["1"].labels, [])
+            id1 = self.seed(d)
+            self.label(d, id1, remove=["nope"])  # should not raise
+            self.assertEqual(self.rows(d)[id1].labels, [])
 
     def test_default_labels_stripped_from_index(self):
         with TemporaryDirectory() as tmp:
@@ -71,9 +75,9 @@ class TestLabels(unittest.TestCase):
     def test_list_filters_by_label(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, title="Has label")    # id 1
-            self.seed(d, title="No label")     # id 2
-            self.label(d, 1, add=["urgent"])
+            id1 = self.seed(d, title="Has label")
+            self.seed(d, title="No label")
+            self.label(d, id1, add=["urgent"])
             buf = io.StringIO()
             with redirect_stdout(buf):
                 self.t.cmd_list(ns(dir=str(d), status=None, kind=None,
@@ -85,8 +89,8 @@ class TestLabels(unittest.TestCase):
     def test_list_shows_labels_as_tags(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d)
-            self.label(d, 1, add=["backend"])
+            id1 = self.seed(d)
+            self.label(d, id1, add=["backend"])
             buf = io.StringIO()
             with redirect_stdout(buf):
                 self.t.cmd_list(ns(dir=str(d), status=None, kind=None,
@@ -97,11 +101,11 @@ class TestLabels(unittest.TestCase):
     def test_show_displays_labels(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d)
-            self.label(d, 1, add=["docs"])
+            id1 = self.seed(d)
+            self.label(d, id1, add=["docs"])
             buf = io.StringIO()
             with redirect_stdout(buf):
-                self.t.cmd_show(ns(dir=str(d), id=1, json=False))
+                self.t.cmd_show(ns(dir=str(d), id=id1, json=False))
             out = buf.getvalue()
             self.assertIn("labels", out)
             self.assertIn("docs", out)

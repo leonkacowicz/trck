@@ -1,5 +1,7 @@
+import io
 import subprocess
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -28,8 +30,12 @@ class TestAliases(unittest.TestCase):
         self.t = load_trck()
 
     def seed(self, d):
-        self.t.cmd_new(ns(dir=str(d), title="Item", priority="high", kind=None,
-                          parent=None, depends=None, spec=None, slug=None))
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.t.cmd_new(ns(dir=str(d), title="Item", priority="high", kind=None,
+                              parent=None, depends=None, spec=None, slug=None))
+        prefix = Path(buf.getvalue().strip()).name.split("-")[0]
+        return str(int(prefix)) if prefix.isdigit() else prefix
 
     def rows(self, d):
         ctx = self.t.Ctx(d, self.t.load_config(d))
@@ -38,25 +44,25 @@ class TestAliases(unittest.TestCase):
     def test_start_alias_moves_to_ongoing(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d)
-            self.t.cmd_start(ns(dir=str(d), id=1))
-            self.assertEqual(self.rows(d)["1"].status, "ongoing")
+            id1 = self.seed(d)
+            self.t.cmd_start(ns(dir=str(d), id=id1))
+            self.assertEqual(self.rows(d)[id1].status, "ongoing")
 
     def test_done_alias_with_resolution(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d)
-            self.t.cmd_done(ns(dir=str(d), id=1, resolution="duplicate"))
-            r = self.rows(d)["1"]
+            id1 = self.seed(d)
+            self.t.cmd_done(ns(dir=str(d), id=id1, resolution="duplicate"))
+            r = self.rows(d)[id1]
             self.assertEqual(r.status, "done")
             self.assertEqual(r.resolution, "duplicate")
 
     def test_undefined_alias_dies(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {"aliases": {}})  # no start alias
-            self.seed(d)
+            id1 = self.seed(d)
             with self.assertRaises(SystemExit):
-                self.t.cmd_start(ns(dir=str(d), id=1))
+                self.t.cmd_start(ns(dir=str(d), id=id1))
 
 
 class TestDie(unittest.TestCase):

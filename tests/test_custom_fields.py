@@ -17,7 +17,10 @@ class TestCustomFields(unittest.TestCase):
         args = ns(dir=str(d), title=over.pop("title", "Item"),
                   priority=over.pop("priority", "high"), kind=over.pop("kind", None),
                   parent=None, depends=None, spec=None, slug=None, points=None)
-        self.t.cmd_new(args)
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.t.cmd_new(args)
+        return Path(buf.getvalue().strip()).name.split("-")[0]
 
     def set_(self, d, iid, **over):
         args = ns(dir=str(d), id=iid, priority=None, points=None, parent=None,
@@ -36,62 +39,62 @@ class TestCustomFields(unittest.TestCase):
     def test_field_sets_value(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d)
-            self.set_(d, 1, field=["assignee=leon"])
-            self.assertEqual(self.rows(d)["1"].extra, {"assignee": "leon"})
+            id1 = self.seed(d)
+            self.set_(d, id1, field=["assignee=leon"])
+            self.assertEqual(self.rows(d)[id1].extra, {"assignee": "leon"})
 
     def test_field_overwrites(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d)
-            self.set_(d, 1, field=["assignee=leon"])
-            self.set_(d, 1, field=["assignee=mara"])
-            self.assertEqual(self.rows(d)["1"].extra, {"assignee": "mara"})
+            id1 = self.seed(d)
+            self.set_(d, id1, field=["assignee=leon"])
+            self.set_(d, id1, field=["assignee=mara"])
+            self.assertEqual(self.rows(d)[id1].extra, {"assignee": "mara"})
 
     def test_multiple_fields_one_call(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d)
-            self.set_(d, 1, field=["assignee=leon", "component=ui"])
-            self.assertEqual(self.rows(d)["1"].extra,
+            id1 = self.seed(d)
+            self.set_(d, id1, field=["assignee=leon", "component=ui"])
+            self.assertEqual(self.rows(d)[id1].extra,
                              {"assignee": "leon", "component": "ui"})
 
     def test_unset_removes(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d)
-            self.set_(d, 1, field=["assignee=leon"])
-            self.set_(d, 1, unset=["assignee"])
-            self.assertEqual(self.rows(d)["1"].extra, {})
+            id1 = self.seed(d)
+            self.set_(d, id1, field=["assignee=leon"])
+            self.set_(d, id1, unset=["assignee"])
+            self.assertEqual(self.rows(d)[id1].extra, {})
 
     def test_empty_value_clears(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d)
-            self.set_(d, 1, field=["assignee=leon"])
-            self.set_(d, 1, field=["assignee="])
-            self.assertEqual(self.rows(d)["1"].extra, {})
+            id1 = self.seed(d)
+            self.set_(d, id1, field=["assignee=leon"])
+            self.set_(d, id1, field=["assignee="])
+            self.assertEqual(self.rows(d)[id1].extra, {})
 
     def test_reserved_key_rejected(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d)
+            id1 = self.seed(d)
             with self.assertRaises(SystemExit):
-                self.set_(d, 1, field=["status=foo"])
+                self.set_(d, id1, field=["status=foo"])
 
     def test_malformed_key_rejected(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d)
+            id1 = self.seed(d)
             for bad in ["Assignee=x", "1tag=x", "a b=x"]:
                 with self.assertRaises(SystemExit):
-                    self.set_(d, 1, field=[bad])
+                    self.set_(d, id1, field=[bad])
 
     def test_field_persists_in_index(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d)
-            self.set_(d, 1, field=["component=ui", "assignee=leon"])
+            id1 = self.seed(d)
+            self.set_(d, id1, field=["component=ui", "assignee=leon"])
             line = json.loads(self.raw(d).splitlines()[0])
             self.assertEqual(line["assignee"], "leon")
             self.assertEqual(line["component"], "ui")
@@ -101,22 +104,22 @@ class TestCustomFields(unittest.TestCase):
     def test_field_missing_equals_rejected(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d)
+            id1 = self.seed(d)
             with self.assertRaises(SystemExit):
-                self.set_(d, 1, field=["justkey"])
+                self.set_(d, id1, field=["justkey"])
 
     def test_unset_bad_key_rejected(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d)
+            id1 = self.seed(d)
             with self.assertRaises(SystemExit):
-                self.set_(d, 1, unset=["status"])
+                self.set_(d, id1, unset=["status"])
 
     def test_check_passes_with_custom_fields(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d)
-            self.set_(d, 1, field=["assignee=leon"])
+            id1 = self.seed(d)
+            self.set_(d, id1, field=["assignee=leon"])
             ctx = self.t.Ctx(d, self.t.load_config(d))
             errors, _ = self.t.validate(ctx)
             self.assertEqual(errors, [])
@@ -151,10 +154,10 @@ class TestCustomFields(unittest.TestCase):
     def test_field_filter(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, title="Alpha")
-            self.seed(d, title="Beta")
-            self.set_(d, 1, field=["assignee=leon"])
-            self.set_(d, 2, field=["assignee=mara"])
+            id1 = self.seed(d, title="Alpha")
+            id2 = self.seed(d, title="Beta")
+            self.set_(d, id1, field=["assignee=leon"])
+            self.set_(d, id2, field=["assignee=mara"])
             out = self.list_(d, field=["assignee=leon"])
             self.assertIn("Alpha", out)
             self.assertNotIn("Beta", out)
@@ -162,39 +165,39 @@ class TestCustomFields(unittest.TestCase):
     def test_field_filter_anded(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, title="Alpha")
-            self.seed(d, title="Beta")
-            self.set_(d, 1, field=["assignee=leon", "component=ui"])
-            self.set_(d, 2, field=["assignee=leon", "component=api"])
+            id1 = self.seed(d, title="Alpha")
+            id2 = self.seed(d, title="Beta")
+            self.set_(d, id1, field=["assignee=leon", "component=ui"])
+            self.set_(d, id2, field=["assignee=leon", "component=api"])
             out = self.list_(d, field=["assignee=leon", "component=ui"])
             self.assertIn("Alpha", out)
             self.assertNotIn("Beta", out)
 
     def _order(self, out):
-        # the leading "#N" of each printed row, in print order
+        # the leading "#<id>" of each printed row, in print order
         import re
-        return re.findall(r"#(\d+)", out)
+        return re.findall(r"#([a-z0-9]+)", out)
 
     def test_sort_by_field_missing_last(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, title="One")    # #1 -> zebra
-            self.seed(d, title="Two")    # #2 -> alpha
-            self.seed(d, title="Three")  # #3 -> (unset)
-            self.set_(d, 1, field=["owner=zebra"])
-            self.set_(d, 2, field=["owner=alpha"])
+            id1 = self.seed(d, title="One")    # -> zebra
+            id2 = self.seed(d, title="Two")    # -> alpha
+            id3 = self.seed(d, title="Three")  # -> (unset)
+            self.set_(d, id1, field=["owner=zebra"])
+            self.set_(d, id2, field=["owner=alpha"])
             out = self.list_(d, sort="field:owner")
-            self.assertEqual(self._order(out), ["2", "1", "3"])
+            self.assertEqual(self._order(out), [id2, id1, id3])
 
     def test_show_field_column(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, title="Alpha")
-            self.seed(d, title="Beta")
-            self.set_(d, 1, field=["component=ui"])
+            id1 = self.seed(d, title="Alpha")
+            id2 = self.seed(d, title="Beta")
+            self.set_(d, id1, field=["component=ui"])
             out = self.list_(d, show_field=["component"])
-            line1 = next(l for l in out.splitlines() if "#1" in l)
-            line2 = next(l for l in out.splitlines() if "#2" in l)
+            line1 = next(l for l in out.splitlines() if f"#{id1}" in l)
+            line2 = next(l for l in out.splitlines() if f"#{id2}" in l)
             self.assertIn("component=ui", line1)
             self.assertNotIn("component=", line2)
 
@@ -208,11 +211,11 @@ class TestCustomFields(unittest.TestCase):
     def test_show_displays_custom_field(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d)
-            self.set_(d, 1, field=["assignee=leon"])
+            id1 = self.seed(d)
+            self.set_(d, id1, field=["assignee=leon"])
             buf = io.StringIO()
             with redirect_stdout(buf):
-                self.t.cmd_show(ns(dir=str(d), id=1, json=False))
+                self.t.cmd_show(ns(dir=str(d), id=id1, json=False))
             out = buf.getvalue()
             self.assertIn("assignee", out)
             self.assertIn("leon", out)
@@ -220,11 +223,11 @@ class TestCustomFields(unittest.TestCase):
     def test_field_filter_composes_with_status(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, title="Alpha")
-            self.seed(d, title="Beta")
-            self.set_(d, 1, field=["assignee=leon"])
-            self.set_(d, 2, field=["assignee=leon"])
-            self.t.cmd_mv(ns(dir=str(d), id=1, status="ongoing", resolution=None))
+            id1 = self.seed(d, title="Alpha")
+            id2 = self.seed(d, title="Beta")
+            self.set_(d, id1, field=["assignee=leon"])
+            self.set_(d, id2, field=["assignee=leon"])
+            self.t.cmd_mv(ns(dir=str(d), id=id1, status="ongoing", resolution=None))
             out = self.list_(d, field=["assignee=leon"], status="ongoing")
             self.assertIn("Alpha", out)
             self.assertNotIn("Beta", out)
