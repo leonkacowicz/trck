@@ -491,11 +491,12 @@ def save_index(ctx: Ctx, rows: list[Issue]) -> None:
     ctx.index_path.write_text("\n".join(lines) + ("\n" if lines else ""))
 
 
-def get_row(rows: list[Issue], issue_id: int) -> Issue:
+def get_row(rows: list[Issue], issue_id) -> Issue:
+    token = str(issue_id)
     for r in rows:
-        if r.id == issue_id:
+        if r.id == token:
             return r
-    die(f"no issue with id {issue_id}")
+    die(f"no issue with id {token}")
 
 
 # --------------------------------------------------------------------------- #
@@ -1390,7 +1391,7 @@ def cmd_new(args) -> None:
     kind = args.kind or ctx.cfg["kinds"][0]
     if (m := check_kind(ctx.cfg, kind)):
         die(m)
-    parent = args.parent
+    parent = None if args.parent is None else str(args.parent)
     if parent is not None and parent not in by_id:
         die(f"--parent #{parent} does not exist")
     deps = parse_ids(args.depends)
@@ -1458,7 +1459,7 @@ def cmd_set(args) -> None:
         if args.parent == "none":
             row.parent = None
         else:
-            pid = int(args.parent)
+            pid = str(args.parent)
             if pid not in by_id:
                 die(f"--parent #{pid} must be an existing issue")
             row.parent = pid
@@ -1522,18 +1523,20 @@ def cmd_dep(args) -> None:
     g = Graph(ctx.cfg, rows)
     by_id = g.by_id
     row = get_row(rows, args.id)
+    add = None if args.add is None else str(args.add)
+    rem = None if args.remove is None else str(args.remove)
     deps = list(row.depends_on)
-    if args.add is not None:
-        if args.add not in by_id:
-            die(f"#{args.add} does not exist")
-        if args.add == row.id:
+    if add is not None:
+        if add not in by_id:
+            die(f"#{add} does not exist")
+        if add == row.id:
             die(f"#{row.id} cannot depend on itself")
-        if g.would_cycle(row.id, args.add):
-            die(f"#{row.id} -> #{args.add} would create a dependency cycle")
-        if args.add not in deps:
-            deps.append(args.add)
-    if args.remove is not None and args.remove in deps:
-        deps.remove(args.remove)
+        if g.would_cycle(row.id, add):
+            die(f"#{row.id} -> #{add} would create a dependency cycle")
+        if add not in deps:
+            deps.append(add)
+    if rem is not None and rem in deps:
+        deps.remove(rem)
     row.depends_on = sorted(deps)
     finalize(ctx, rows)
     print(f"#{row.id} depends_on={row.depends_on}")
@@ -1600,6 +1603,7 @@ def cmd_list(args) -> None:
     match = (getattr(args, "match", None) or "").lower()
     only_blocked = getattr(args, "blocked", False)
     only_orphan = getattr(args, "orphan", False)
+    parent_filter = None if args.parent is None else str(args.parent)
 
     # Default view hides settled work: a terminal issue is dropped unless it is
     # still open *or* sits directly under a non-terminal parent (so an open epic
@@ -1630,7 +1634,7 @@ def cmd_list(args) -> None:
                 and (not args.kind or r.kind == args.kind)
                 and (not args.priority or r.priority == args.priority)
                 and (not getattr(args, "label", None) or args.label in (r.labels or []))
-                and (args.parent is None or r.parent == args.parent)
+                and (parent_filter is None or r.parent == parent_filter)
                 and (not match or match in r.title.lower())
                 and (not only_blocked or g.is_blocked(r))
                 and (not only_orphan or r.parent is None)
@@ -2176,7 +2180,7 @@ def build_parser() -> argparse.ArgumentParser:
     n.add_argument("--priority", help="configured priority (default: first in trck.json)")
     n.add_argument("--points", type=int, help="leaf weight for rollups (default 1)")
     n.add_argument("--kind", help="configured kind (default: first in trck.json, e.g. task)")
-    n.add_argument("--parent", type=int, help="id of the epic to nest this under")
+    n.add_argument("--parent", help="id of the epic to nest this under")
     n.add_argument("--depends", help="comma-separated ids this issue depends on (must be done first)")
     n.add_argument("--spec", help="path to a spec/design doc")
     n.add_argument("--slug", help="override the auto-derived filename slug")
@@ -2184,7 +2188,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     mv = sub.add_parser("mv", help="move an issue to a status (vocabulary-agnostic)",
                         description="Move an issue to any configured status (vocabulary-agnostic).")
-    mv.add_argument("id", type=int, help="issue id")
+    mv.add_argument("id", help="issue id")
     mv.add_argument("status", help="target status (must be configured)")
     mv.add_argument("--resolution",
                     help="resolution label; only valid when moving to a terminal status")
@@ -2192,12 +2196,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     st = sub.add_parser("start", help="alias: move to the configured 'start' status",
                         description="Alias: move an issue to the status configured as the 'start' alias.")
-    st.add_argument("id", type=int, help="issue id")
+    st.add_argument("id", help="issue id")
     st.set_defaults(func=cmd_start)
 
     dn = sub.add_parser("done", help="alias: move to the configured 'done' status",
                         description="Alias: move an issue to the status configured as the 'done' alias.")
-    dn.add_argument("id", type=int, help="issue id")
+    dn.add_argument("id", help="issue id")
     dn.add_argument("--resolution", help="resolution label (from the configured set)")
     dn.set_defaults(func=cmd_done)
 
@@ -2206,7 +2210,7 @@ def build_parser() -> argparse.ArgumentParser:
         description="Edit an issue's metadata in place. Pass 'none' to clear "
                     "parent/spec. Changing --slug renames the file; changing "
                     "--title also rewrites the body's H1.")
-    se.add_argument("id", type=int, help="issue id")
+    se.add_argument("id", help="issue id")
     se.add_argument("--priority", help="configured priority")
     se.add_argument("--points", type=int, help="leaf weight (error if the issue has children)")
     se.add_argument("--parent", help="epic id, or 'none' to clear")
@@ -2227,9 +2231,9 @@ def build_parser() -> argparse.ArgumentParser:
         description="Add or remove a dependency edge: make <id> depend on "
                     "another issue (which must be done first).",
         epilog="examples:\n  trck dep 7 --add 5    # 7 now waits on 5")
-    dp.add_argument("id", type=int, help="issue id")
-    dp.add_argument("--add", type=int, help="id this issue should depend on")
-    dp.add_argument("--remove", type=int, help="id to remove from this issue's dependencies")
+    dp.add_argument("id", help="issue id")
+    dp.add_argument("--add", help="id this issue should depend on")
+    dp.add_argument("--remove", help="id to remove from this issue's dependencies")
     dp.set_defaults(func=cmd_dep)
 
     lb = sub.add_parser(
@@ -2237,7 +2241,7 @@ def build_parser() -> argparse.ArgumentParser:
         description="Add or remove free-text labels on an issue. Labels are a "
                     "flat, unordered set; both flags are repeatable.",
         epilog="examples:\n  trck label 7 --add backend --add urgent --remove stale")
-    lb.add_argument("id", type=int, help="issue id")
+    lb.add_argument("id", help="issue id")
     lb.add_argument("--add", action="append", metavar="LABEL",
                     help="label to add (repeatable)")
     lb.add_argument("--remove", action="append", metavar="LABEL",
@@ -2246,14 +2250,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     sh = sub.add_parser("show", help="print an issue's metadata + body",
                         description="Print an issue's metadata, then its markdown body.")
-    sh.add_argument("id", type=int, help="issue id")
+    sh.add_argument("id", help="issue id")
     sh.add_argument("--json", action="store_true", help="raw JSON metadata (machine-readable)")
     sh.set_defaults(func=cmd_show)
 
     pa = sub.add_parser("path", help="print the absolute file path of one issue",
                         description="Print the absolute path to an issue's markdown "
                                     "file (e.g. $(trck path 25) to open or grep it).")
-    pa.add_argument("id", type=int, help="issue id")
+    pa.add_argument("id", help="issue id")
     pa.set_defaults(func=cmd_path)
 
     wh = sub.add_parser(
@@ -2283,7 +2287,7 @@ def build_parser() -> argparse.ArgumentParser:
                                     "open epics keep their done children as context). Use --all to "
                                     "show everything; an explicit --status bypasses the prune. "
                                     "`tree` is an alias for this command.")
-    ls.add_argument("id", type=int, nargs="?", help="root the forest at this issue's subtree")
+    ls.add_argument("id", nargs="?", help="root the forest at this issue's subtree")
     ls.add_argument("--flat", action="store_true",
                     help="flat, globally-sorted list instead of the nested forest")
     ls.add_argument("--all", action="store_true",
@@ -2295,7 +2299,7 @@ def build_parser() -> argparse.ArgumentParser:
     ls.add_argument("--kind", help="filter by kind")
     ls.add_argument("--priority", help="filter by priority")
     ls.add_argument("--label", help="filter to issues carrying this label")
-    ls.add_argument("--parent", type=int, help="filter to children of this epic/parent id")
+    ls.add_argument("--parent", help="filter to children of this epic/parent id")
     ls.add_argument("--match", help="case-insensitive substring filter on the title")
     ls.add_argument("--field", action="append", metavar="KEY=VALUE",
                     help="filter to issues whose custom field KEY equals VALUE "
@@ -2336,7 +2340,7 @@ def build_parser() -> argparse.ArgumentParser:
                     "its prerequisites and dependents. --requires/--blocks scope to one "
                     "cone (prerequisites only / dependents only); --full instead widens "
                     "to the issue's whole connected cluster (cousins included).")
-    dz.add_argument("id", type=int, nargs="?", help="issue id (omit for the whole graph)")
+    dz.add_argument("id", nargs="?", help="issue id (omit for the whole graph)")
     dz.add_argument("--requires", action="store_true",
                     help="with an id, show only its prerequisite cone (what it needs)")
     dz.add_argument("--blocks", action="store_true",

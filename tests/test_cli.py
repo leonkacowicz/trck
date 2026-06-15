@@ -6,6 +6,23 @@ from tempfile import TemporaryDirectory
 from tests.helpers import load_trck, make_tracker, ns, TRCK_PATH
 
 
+class TestIdArgs(unittest.TestCase):
+    def setUp(self):
+        self.t = load_trck()
+
+    def test_id_args_accept_string_tokens(self):
+        p = self.t.build_parser()
+        args = p.parse_args(["show", "k3m9x2a"])
+        self.assertEqual(args.id, "k3m9x2a")
+
+    def test_get_row_coerces_int_token(self):
+        t = self.t
+        row = t.Issue(id="5", slug="s", title="T", kind="task",
+                      status="backlog", priority="high")
+        self.assertIs(t.get_row([row], 5), row)    # int token still resolves
+        self.assertIs(t.get_row([row], "5"), row)
+
+
 class TestAliases(unittest.TestCase):
     def setUp(self):
         self.t = load_trck()
