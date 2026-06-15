@@ -30,3 +30,25 @@ class TestGenId(unittest.TestCase):
                                    side_effect=list("aaaaaaa") + list("bbbbbbb")):
                 gid = t.gen_id(ctx)
         self.assertEqual(gid, "bbbbbbb")
+
+
+class TestResolveRef(unittest.TestCase):
+    def setUp(self):
+        self.t = load_trck()
+        mk = lambda i: self.t.Issue(id=i, slug="s", title="T", kind="task",
+                                    status="backlog", priority="high")
+        self.rows = [mk("k3m9x2a"), mk("k7zzzzz"), mk("p4abcde")]
+
+    def test_exact_id_wins(self):
+        self.assertEqual(self.t.resolve_ref(self.rows, "p4abcde").id, "p4abcde")
+
+    def test_unique_prefix_resolves(self):
+        self.assertEqual(self.t.resolve_ref(self.rows, "p4").id, "p4abcde")
+
+    def test_ambiguous_prefix_dies(self):
+        with self.assertRaises(SystemExit):
+            self.t.resolve_ref(self.rows, "k")     # matches k3m9x2a and k7zzzzz
+
+    def test_no_match_dies(self):
+        with self.assertRaises(SystemExit):
+            self.t.resolve_ref(self.rows, "zzz")

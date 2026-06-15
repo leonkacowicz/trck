@@ -495,12 +495,26 @@ def save_index(ctx: Ctx, rows: list[Issue]) -> None:
     ctx.index_path.write_text("\n".join(lines) + ("\n" if lines else ""))
 
 
+def resolve_ref(rows: list[Issue], token) -> Issue:
+    """Resolve a CLI id token to exactly one issue, git-short-hash style. Tiers,
+    tried in order; the first tier with matches decides (one match wins, more than
+    one is ambiguous): (1) exact id, (2) unique id prefix. `die`s on no match or an
+    ambiguous prefix, listing the candidates. (A later task inserts a legacy_id tier.)"""
+    token = str(token)
+    exact = [r for r in rows if r.id == token]
+    if exact:
+        return exact[0]
+    pref = [r for r in rows if r.id.startswith(token)]
+    if len(pref) == 1:
+        return pref[0]
+    if len(pref) > 1:
+        cands = ", ".join(sorted(r.id for r in pref))
+        die(f"ambiguous id prefix '{token}' matches: {cands}")
+    die(f"no issue matching '{token}'")
+
+
 def get_row(rows: list[Issue], issue_id) -> Issue:
-    token = str(issue_id)
-    for r in rows:
-        if r.id == token:
-            return r
-    die(f"no issue with id {token}")
+    return resolve_ref(rows, issue_id)
 
 
 # --------------------------------------------------------------------------- #
@@ -1402,13 +1416,8 @@ def cmd_new(args) -> None:
     kind = args.kind or ctx.cfg["kinds"][0]
     if (m := check_kind(ctx.cfg, kind)):
         die(m)
-    parent = None if args.parent is None else str(args.parent)
-    if parent is not None and parent not in by_id:
-        die(f"--parent #{parent} does not exist")
-    deps = parse_ids(args.depends)
-    for dep in deps:
-        if dep not in by_id:
-            die(f"--depends references #{dep} which does not exist")
+    parent = None if args.parent is None else resolve_ref(rows, args.parent).id
+    deps = [resolve_ref(rows, tok).id for tok in parse_ids(args.depends)]
     row = Issue(
         id=iid, slug=slug, title=args.title, kind=kind,
         status=initial_status(ctx.cfg), priority=priority, points=points,
@@ -1470,10 +1479,7 @@ def cmd_set(args) -> None:
         if args.parent == "none":
             row.parent = None
         else:
-            pid = str(args.parent)
-            if pid not in by_id:
-                die(f"--parent #{pid} must be an existing issue")
-            row.parent = pid
+            row.parent = resolve_ref(rows, args.parent).id
     if args.spec is not None:
         row.spec = None if args.spec == "none" else args.spec
     if args.kind:
@@ -1534,12 +1540,10 @@ def cmd_dep(args) -> None:
     g = Graph(ctx.cfg, rows)
     by_id = g.by_id
     row = get_row(rows, args.id)
-    add = None if args.add is None else str(args.add)
-    rem = None if args.remove is None else str(args.remove)
+    add = None if args.add is None else resolve_ref(rows, args.add).id
+    rem = None if args.remove is None else resolve_ref(rows, args.remove).id
     deps = list(row.depends_on)
     if add is not None:
-        if add not in by_id:
-            die(f"#{add} does not exist")
         if add == row.id:
             die(f"#{row.id} cannot depend on itself")
         if g.would_cycle(row.id, add):
@@ -1614,7 +1618,7 @@ def cmd_list(args) -> None:
     match = (getattr(args, "match", None) or "").lower()
     only_blocked = getattr(args, "blocked", False)
     only_orphan = getattr(args, "orphan", False)
-    parent_filter = None if args.parent is None else str(args.parent)
+    parent_filter = None if args.parent is None else resolve_ref(g.rows, args.parent).id
 
     # Default view hides settled work: a terminal issue is dropped unless it is
     # still open *or* sits directly under a non-terminal parent (so an open epic
