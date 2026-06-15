@@ -258,7 +258,7 @@ def resolve_tracker_dir_or_die(dir_opt, env=None) -> Path:
 CANON_KEYS = [
     "id", "slug", "title", "kind", "status", "priority", "points", "parent",
     "labels", "depends_on", "spec", "created", "started", "closed",
-    "resolution", "manual_status",
+    "resolution", "manual_status", "legacy_id",
 ]
 
 # Per-field defaults for the optional trck-owned fields. A field whose value
@@ -278,6 +278,7 @@ FIELD_DEFAULTS = {
     "closed": None,
     "resolution": None,
     "manual_status": False,
+    "legacy_id": None,
 }
 
 
@@ -324,6 +325,7 @@ class Issue:
     closed: str | None = None
     resolution: str | None = None
     manual_status: bool = False
+    legacy_id: int | None = None
     extra: dict = field(default_factory=dict)
 
     def __post_init__(self):
@@ -389,6 +391,8 @@ class Issue:
                 bad(k, f"must be a string, got {d[k]!r}")
         if "manual_status" in d and not isinstance(d["manual_status"], bool):
             bad("manual_status", f"must be a boolean, got {d['manual_status']!r}")
+        if d.get("legacy_id") is not None:
+            want_int("legacy_id", d["legacy_id"])
 
         known = {k: v for k, v in d.items() if k in CANON_KEYS}
         extra = {k: v for k, v in d.items() if k not in CANON_KEYS}

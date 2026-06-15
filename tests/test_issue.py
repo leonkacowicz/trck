@@ -204,6 +204,24 @@ class TestIssueModel(unittest.TestCase):
             self.Issue.from_dict({"id": "", "slug": "s", "title": "T", "kind": "task",
                                   "status": "done", "priority": "low"})
 
+    # -- legacy_id ----------------------------------------------------------
+    def test_legacy_id_defaults_none_and_omitted(self):
+        i = self.minimal()
+        self.assertIsNone(i.legacy_id)
+        self.assertNotIn("legacy_id", i.to_canonical())
+
+    def test_legacy_id_round_trips_as_int(self):
+        i = self.minimal(legacy_id=65)
+        self.assertEqual(i.to_canonical()["legacy_id"], 65)
+        again = self.Issue.from_dict(i.to_canonical())
+        self.assertEqual(again.legacy_id, 65)
+
+    def test_from_dict_rejects_non_int_legacy_id(self):
+        with self.assertRaises(ValueError):
+            self.Issue.from_dict(dict(id="a", slug="s", title="T", kind="task",
+                                      status="backlog", priority="high",
+                                      legacy_id="65"))
+
     # -- round-trip ---------------------------------------------------------
     def test_round_trip_through_canonical_is_stable(self):
         i = self.minimal(status="done", priority="low", parent=1, labels=["m1"],
