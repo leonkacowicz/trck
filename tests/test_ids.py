@@ -91,3 +91,53 @@ class TestMergeAndOrder(unittest.TestCase):
         # to "created" order.
         t = self.t
         self.assertIsNone(t.build_parser().parse_args(["list"]).sort)
+
+
+class TestRenumber(unittest.TestCase):
+    def setUp(self):
+        self.t = load_trck()
+
+    def _tracker_with_int_ids(self):
+        import tempfile
+        t = self.t
+        d = make_tracker(tempfile.mkdtemp())
+        ctx = t.Ctx(d, t.load_config(d))
+        parent = t.Issue(id="1", slug="epic", title="Epic", kind="epic",
+                         status="backlog", priority="high", created=t.now_utc())
+        child = t.Issue(id="2", slug="task", title="Task", kind="task",
+                        status="backlog", priority="high", parent="1",
+                        depends_on=[], created=t.now_utc())
+        for r in (parent, child):
+            p = t.issue_path(ctx, r)
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(t.TEMPLATE.format(title=r.title))
+        t.save_index(ctx, [parent, child])
+        return t, ctx
+
+    def test_renumber_assigns_random_ids_and_rewrites_crossrefs(self):
+        t, ctx = self._tracker_with_int_ids()
+        t.cmd_renumber(ns(dir=str(ctx.dir)))
+        rows = {r.legacy_id: r for r in t.load_index(ctx)}
+        self.assertTrue(t.ID_RE.match(rows[1].id))
+        self.assertTrue(t.ID_RE.match(rows[2].id))
+        self.assertEqual(rows[2].parent, rows[1].id)          # parent rewritten
+        self.assertEqual(rows[1].legacy_id, 1)
+        self.assertTrue(t.issue_path(ctx, rows[1]).exists())   # file renamed to new id
+
+    def test_renumber_is_idempotent(self):
+        t, ctx = self._tracker_with_int_ids()
+        t.cmd_renumber(ns(dir=str(ctx.dir)))
+        first = sorted(r.id for r in t.load_index(ctx))
+        t.cmd_renumber(ns(dir=str(ctx.dir)))                  # no numeric ids left
+        self.assertEqual(sorted(r.id for r in t.load_index(ctx)), first)
+
+    def test_renumber_leaves_existing_random_ids_untouched(self):
+        t, ctx = self._tracker_with_int_ids()
+        r = t.Issue(id="k3m9x2a", slug="r", title="R", kind="task",
+                    status="backlog", priority="high", created=t.now_utc())
+        p = t.issue_path(ctx, r); p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(t.TEMPLATE.format(title="R"))
+        rows = t.load_index(ctx); rows.append(r); t.save_index(ctx, rows)
+        t.cmd_renumber(ns(dir=str(ctx.dir)))
+        ids = {x.id for x in t.load_index(ctx)}
+        self.assertIn("k3m9x2a", ids)
