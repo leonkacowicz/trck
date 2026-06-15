@@ -2176,11 +2176,16 @@ def cmd_update(args) -> None:
 TOP_EPILOG = """\
 MODEL
   Each issue is a markdown file under the tracker dir plus one line in
-  index.jsonl, keyed by a zero-padded integer id (#001). index.jsonl and
+  index.jsonl, keyed by a short random alphanumeric id (e.g. k3m9x2a). index.jsonl and
   SUMMARY.md are GENERATED -- never hand-edit them, and never move or rename
   issue files by hand; the verbs do that. The only thing you edit by hand is
   an issue's prose body (Summary / Acceptance criteria / Notes).
 
+  ids         short random alphanumeric strings (7 chars from a base32 alphabet
+              with look-alike chars removed). Any unambiguous prefix works in
+              place of a full id: `trck show k3m` matches k3m9x2a. An ambiguous
+              prefix is an error that lists the candidates. Legacy integer-id
+              trackers keep working; `trck renumber` migrates them.
   status      every issue has exactly one; move it with mv / start / done.
   metadata    priority, points, parent, spec, kind, title, slug -- change
               with `trck set` (NOT by editing index.jsonl). labels -- a flat

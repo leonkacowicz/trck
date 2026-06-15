@@ -29,13 +29,13 @@ Then, in any repo:
 ```bash
 trck init                       # scaffold ./issues (config + a vendored copy of trck)
                                 # `trck init <dir>` for a custom dir; `--no-vendor` skips the engine copy
-trck new "Fix login bug" --priority high
-trck start 1                    # move to the configured 'start' status (default: ongoing)
-trck done 1 --resolution wontfix
+trck new "Fix login bug" --priority high   # prints the new id, e.g. k3m9x2a
+trck start k3m                  # any unambiguous prefix works (git-style)
+trck done k3m9x2a --resolution wontfix
 trck list                       # nested forest of active work (settled subtrees hidden)
 trck list --all                 # include settled (done) work too
 trck list --flat                # flat, globally-sorted list
-trck tree 1                     # alias for `list 1`: root the forest at one issue's subtree
+trck tree k3m                   # alias for `list k3m`: root the forest at one issue's subtree
 ```
 
 `trck` finds its tracker by walking up from your current directory to the folder containing
@@ -104,14 +104,42 @@ and either define its own aliases or just use `mv`.
 pass `--priority` is set separately by `default_priority` (default `medium`); if omitted it
 falls back to the middle of the list.
 
+## Issue ids
+
+Each issue gets a **short random alphanumeric id** — 7 characters drawn from a base32
+alphabet with look-alike characters (`0/1/o/l/i`) removed, e.g. `k3m9x2a`. Random ids
+make concurrent `trck new` on two branches collision-free (the old sequential scheme
+caused merge conflicts).
+
+Wherever a command takes an id, **any unambiguous prefix works** (git-short-hash style):
+`trck show k3m` resolves to `k3m9x2a` as long as no other id starts with `k3m`. An
+ambiguous prefix is an error that lists all matching candidates.
+
+### Migrating an existing integer-id tracker
+
+If you started with integer ids (the old default), run `trck renumber` once from the
+repo. It replaces every integer id with a random alphanumeric id, rewrites
+`parent`/`depends_on` links, renames issue files, and records each issue's prior integer
+in a new `legacy_id` field. After migration, old numeric references still resolve —
+`trck show 65` finds the issue whose `legacy_id` is 65, so historical `#NN` mentions in
+commit messages or issue bodies stay reachable. `renumber` is idempotent: issues that
+already have random ids are left untouched.
+
+```bash
+trck renumber   # one-shot; review the diff and commit the result
+```
+
+Integer-id trackers that are not migrated continue to work — integer ids are valid
+opaque string ids and are tolerated on read.
+
 ## Common verbs
 
 `new` · `mv` · `start` · `done` · `set` · `dep` · `label` · `show` · `list` · `ready` ·
-`next` · `tree` · `deps` · `path` · `which` · `check` · `summary` · `normalize` ·
+`next` · `tree` · `deps` · `path` · `which` · `check` · `summary` · `normalize` · `renumber` ·
 `install-hook` · `init` · `update` · `version`. Run `trck --help` (or `trck <verb> --help`) for details.
 
 `list` is the structure-aware browse verb. By default it prints a **nested forest** — each
-issue, with children nested under their parent and siblings ordered by `--sort` (default id).
+issue, with children nested under their parent and siblings ordered by `--sort` (default `created`).
 By default it also **hides settled work**: a terminal (done) issue is shown only while it is
 still open or sits directly under a non-terminal parent — so an open epic keeps its done
 children as progress context, but a fully-done subtree and standalone done tasks drop off.
