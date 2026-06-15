@@ -26,7 +26,7 @@ DEFAULT_UPDATE_REPO = "leonkacowicz/trck"
 SELF_PATH = Path(__file__).resolve()  # the running engine file; tests may override
 
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
-FILENAME_RE = re.compile(r"^(\d{3,})-([a-z0-9][a-z0-9-]*)\.md$")
+FILENAME_RE = re.compile(r"^([0-9a-z]+)-([a-z0-9][a-z0-9-]*)\.md$")
 FIELD_KEY_RE = re.compile(r"^[a-z][a-z0-9_-]*$")
 SINCE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}Z)?$")
 
@@ -442,8 +442,20 @@ def build_ctx_or_die(args) -> Ctx:
     d = resolve_tracker_dir_or_die(getattr(args, "dir", None))
     return Ctx(d, load_config(d))
 
+def file_id(m: "re.Match") -> str:
+    """The issue id from a FILENAME_RE match. A legacy zero-padded numeric name
+    (064) normalizes to its bare integer string (64) so it matches the index's
+    coerced string id; a random alphanumeric id is returned unchanged."""
+    g = m.group(1)
+    return str(int(g)) if g.isdigit() else g
+
+
 def filename(row: Issue) -> str:
-    return f"{row.id:03d}-{row.slug}.md"
+    # Numeric ids keep the historical 3-wide zero padding (so existing on-disk
+    # names are byte-identical and `check` stays green with no rename); random
+    # alphanumeric ids are written bare.
+    head = f"{int(row.id):03d}" if row.id.isdigit() else row.id
+    return f"{head}-{row.slug}.md"
 
 
 def rel_link(row: Issue) -> str:
@@ -728,7 +740,7 @@ def scan_files(ctx: Ctx) -> dict:
             m = FILENAME_RE.match(p.name)
             if not m:
                 continue
-            iid = int(m.group(1))
+            iid = file_id(m)
             if iid in found:
                 die(f"duplicate issue id {iid} on disk: {found[iid][0]} and {name}")
             found[iid] = (name, m.group(2), p.name)
@@ -1732,7 +1744,7 @@ def cmd_which(args) -> None:
         if not m:
             print(f"warning: not an issue path: {p}", file=sys.stderr)
             continue
-        iid = int(m.group(1))
+        iid = file_id(m)
         if iid not in by_id:
             print(f"warning: no issue #{iid} (from {p})", file=sys.stderr)
             continue

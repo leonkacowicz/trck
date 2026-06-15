@@ -164,6 +164,30 @@ class TestWhich(unittest.TestCase):
             self.assertIn("Beta", out)
 
 
+class TestFilename(unittest.TestCase):
+    def setUp(self):
+        self.t = load_trck()
+
+    def test_filename_pads_numeric_ids_but_not_random(self):
+        t = self.t
+        numeric = t.Issue(id="7", slug="s", title="T", kind="task",
+                          status="backlog", priority="high")
+        rand = t.Issue(id="k3m9x2a", slug="s", title="T", kind="task",
+                       status="backlog", priority="high")
+        self.assertEqual(t.filename(numeric), "007-s.md")
+        self.assertEqual(t.filename(rand), "k3m9x2a-s.md")
+
+    def test_filename_re_matches_legacy_and_random(self):
+        t = self.t
+        self.assertTrue(t.FILENAME_RE.match("007-foo.md"))
+        self.assertTrue(t.FILENAME_RE.match("k3m9x2a-foo.md"))
+
+    def test_file_id_normalizes_legacy_padding(self):
+        t = self.t
+        self.assertEqual(t.file_id(t.FILENAME_RE.match("007-foo.md")), "7")
+        self.assertEqual(t.file_id(t.FILENAME_RE.match("k3m9x2a-foo.md")), "k3m9x2a")
+
+
 class TestWiring(unittest.TestCase):
     def setUp(self):
         self.t = load_trck()
