@@ -525,6 +525,32 @@ def resolve_ref(rows: list[Issue], token) -> Issue:
     die(f"no issue matching '{token}'")
 
 
+def unique_prefix_lens(ids) -> dict:
+    """Map each id to the length of its shortest prefix that uniquely identifies it
+    among `ids` (git-short-hash style: the fewest characters you'd have to type for
+    `resolve_ref` to land on it by prefix). When an id is itself a prefix of another
+    (e.g. '1' vs '10'), no shorter unique prefix exists, so its full length is used.
+    Duplicates in the input collapse; a lone id needs one character."""
+    uniq = sorted(set(ids))
+
+    def shared(a: str, b: str) -> int:
+        n = 0
+        for ca, cb in zip(a, b):
+            if ca != cb:
+                break
+            n += 1
+        return n
+
+    out = {}
+    for i, s in enumerate(uniq):
+        left = shared(s, uniq[i - 1]) if i > 0 else 0
+        right = shared(s, uniq[i + 1]) if i + 1 < len(uniq) else 0
+        # one char past the longest prefix shared with a sorted neighbour (the only
+        # ids that can share a long prefix are adjacent once sorted), capped at len.
+        out[s] = min(max(left, right) + 1, len(s))
+    return out
+
+
 def get_row(rows: list[Issue], issue_id) -> Issue:
     return resolve_ref(rows, issue_id)
 
@@ -1687,6 +1713,9 @@ def cmd_list(args) -> None:
         key = sort_keys[sort]
     annotate = lambda r: block_annotations(g, r)
     progress = lambda r: progress_pct(g, r)
+    # Bold the shortest prefix that uniquely identifies each id across the whole
+    # tracker (what you'd type for `show`/`set`/…); the rest of the id is dimmed.
+    abbrev = unique_prefix_lens([r.id for r in g.rows])
 
     if getattr(args, "paths", False):
         for r in sorted((r for r in g.rows if keep(r)), key=key):
@@ -1696,7 +1725,7 @@ def cmd_list(args) -> None:
     if getattr(args, "flat", False):
         rows = sorted([r for r in g.rows if keep(r)], key=key)
         print_rows(ctx, rows, annotate=annotate, show_fields=show_fields,
-                   progress=progress)
+                   progress=progress, abbrev=abbrev)
         return
 
     # nested forest: show a node iff it matches or has a matching descendant; the
@@ -1712,11 +1741,11 @@ def cmd_list(args) -> None:
     ordered, prefix_of = forest_layout(g, roots, shown, key)
     print_rows(ctx, ordered, annotate=annotate,
                prefix=lambda r: prefix_of[r.id], dim=lambda r: r.id in dim,
-               show_fields=show_fields, progress=progress)
+               show_fields=show_fields, progress=progress, abbrev=abbrev)
 
 
 def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None,
-               show_fields=None, progress=None) -> None:
+               show_fields=None, progress=None, abbrev=None) -> None:
     """Render issues as aligned one-line summaries (shared by `list` and `ready`).
     `annotate`, if given, maps a row to a trailing suffix (e.g. the blocking graph);
     callers that want terse output (`ready`/`next`) simply omit it. `prefix`, if given,
@@ -1724,7 +1753,10 @@ def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None
     flat view, `walk_tree`-style connectors (`├─ `/`└─ `) for the nested forest. `dim`,
     if given, marks rows shown only as ancestor context (in a filtered forest); their
     whole line is dimmed instead of per-field colored. `progress`, if given, maps a row
-    to a dim completion suffix placed right after the title (empty for leaves)."""
+    to a dim completion suffix placed right after the title (empty for leaves).
+    `abbrev`, if given, maps an id to its shortest-unique-prefix length (see
+    `unique_prefix_lens`); that prefix is bolded and the rest of the id dimmed
+    (git-short-hash style). Without it, the whole id is bolded."""
     if not rows:
         return
     sw = max(len(r.status) for r in rows)
@@ -1751,7 +1783,12 @@ def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None
             continue
         codes = status_codes(ctx.cfg, r.status)
         icon = paint(status_icon(ctx, r.status), *codes)
-        iid = paint(f"#{r.id}", "bold")
+        if abbrev and r.id in abbrev:
+            L = abbrev[r.id]
+            rest = r.id[L:]
+            iid = "#" + paint(r.id[:L], "bold") + (paint(rest, "dim") if rest else "")
+        else:
+            iid = paint(f"#{r.id}", "bold")
         status = paint(f"{r.status:<{sw}}", *codes)
         prio = paint(f"{r.priority:<{pw}}", *priority_codes(ctx.cfg, r.priority))
         progstr = paint(prog, "dim") if prog else ""

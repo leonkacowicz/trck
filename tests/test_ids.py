@@ -44,6 +44,31 @@ class TestGenId(unittest.TestCase):
         self.assertEqual(gid, "abcdefg")
 
 
+class TestUniquePrefixLens(unittest.TestCase):
+    def setUp(self):
+        self.t = load_trck()
+
+    def test_distinguishes_at_first_differing_char(self):
+        m = self.t.unique_prefix_lens(["k3m9x2a", "k7zzzzz", "p4abcde"])
+        self.assertEqual(m["p4abcde"], 1)   # only id starting 'p'
+        self.assertEqual(m["k3m9x2a"], 2)   # shares 'k', diverges at index 1
+        self.assertEqual(m["k7zzzzz"], 2)
+
+    def test_single_id_needs_one_char(self):
+        self.assertEqual(self.t.unique_prefix_lens(["abcdefg"]), {"abcdefg": 1})
+
+    def test_prefix_subset_falls_back_to_full_length(self):
+        # "1" is a prefix of "10": no shorter unique prefix exists, so use full id
+        m = self.t.unique_prefix_lens(["1", "10"])
+        self.assertEqual(m["1"], 1)
+        self.assertEqual(m["10"], 2)
+
+    def test_handles_duplicates_in_input(self):
+        m = self.t.unique_prefix_lens(["abc", "abc", "axy"])
+        self.assertEqual(m["abc"], 2)
+        self.assertEqual(m["axy"], 2)
+
+
 class TestResolveRef(unittest.TestCase):
     def setUp(self):
         self.t = load_trck()

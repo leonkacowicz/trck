@@ -75,6 +75,25 @@ class TestPresentation(unittest.TestCase):
             self.assertIn(" Alpha", out)
             self.assertNotIn("|-", out)
 
+    def test_print_rows_bolds_unique_prefix_and_dims_rest(self):
+        self.t._use_color = lambda: True
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            rows = [self.row(id="k3m9x2a", title="A"),
+                    self.row(id="k7zzzzz", title="B")]
+            abbrev = self.t.unique_prefix_lens([r.id for r in rows])  # both -> 2
+            out = self.render(d, rows, abbrev=abbrev)
+            self.assertIn(self.t.paint("k3", "bold"), out)      # unique prefix bold
+            self.assertIn(self.t.paint("m9x2a", "dim"), out)    # remainder dimmed
+            self.assertNotIn(self.t.paint("k3m9x2a", "bold"), out)  # not whole-id bold
+
+    def test_print_rows_without_abbrev_bolds_whole_id(self):
+        self.t._use_color = lambda: True
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            out = self.render(d, [self.row(id="k3m9x2a", title="A")])
+            self.assertIn(self.t.paint("#k3m9x2a", "bold"), out)
+
     def test_list_columns_align_with_custom_statuses(self):
         cfg = {"statuses": [{"name": "todo", "role": "initial"},
                             {"name": "in-progress"},
