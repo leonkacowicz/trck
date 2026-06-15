@@ -1653,7 +1653,7 @@ def cmd_list(args) -> None:
                 and (not prune_settled or not settled(r))
                 and all(r.extra.get(k) == v for k, v in field_filters.items()))
 
-    sort = getattr(args, "sort", None) or "id"
+    sort = getattr(args, "sort", None) or "created"
     if sort.startswith("field:"):
         fname = sort[len("field:"):]
         if not fname:
@@ -2320,7 +2320,7 @@ def build_parser() -> argparse.ArgumentParser:
                     help="append a custom field's value as a trailing column "
                          "(repeatable); list is otherwise unchanged")
     ls.add_argument("--sort", metavar="FIELD",
-                    help="order by id (default), priority, points, created, or "
+                    help="order by created (default), id, priority, points, or "
                          "field:NAME for a custom field (missing values sort last)")
     ls.add_argument("--blocked", action="store_true",
                     help="only issues with an unmet (non-terminal) dependency")
