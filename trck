@@ -1401,7 +1401,6 @@ def move_issue(ctx: Ctx, row: Issue, new_status: str) -> None:
 def cmd_new(args) -> None:
     ctx = build_ctx_or_die(args)
     rows = load_index(ctx)
-    by_id = {r.id: r for r in rows}
     iid = gen_id(ctx)
     slug = args.slug or slugify(args.title)
     if not SLUG_RE.match(slug):
@@ -1461,7 +1460,6 @@ def cmd_set(args) -> None:
     ctx = build_ctx_or_die(args)
     rows = load_index(ctx)
     g = Graph(ctx.cfg, rows)
-    by_id = g.by_id
     row = get_row(rows, args.id)
     if getattr(args, "auto", False):
         row.manual_status = False  # return to derivation; finalize re-derives + cascades
@@ -1538,7 +1536,6 @@ def cmd_dep(args) -> None:
     ctx = build_ctx_or_die(args)
     rows = load_index(ctx)
     g = Graph(ctx.cfg, rows)
-    by_id = g.by_id
     row = get_row(rows, args.id)
     add = None if args.add is None else resolve_ref(rows, args.add).id
     rem = None if args.remove is None else resolve_ref(rows, args.remove).id

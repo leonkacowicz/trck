@@ -141,6 +141,14 @@ class TestMetadata(unittest.TestCase):
             self.t.cmd_dep(ns(dir=str(d), id=id3, add=id2, remove=None))  # 3 -> 2, still a DAG
             self.assertEqual(sorted(self.rows(d)[id3].depends_on), sorted([id1, id2]))
 
+    def test_dep_remove_unknown_id_dies(self):
+        """--remove now resolves via resolve_ref, so a non-existent token is a hard error."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            id1 = self.seed(d)
+            with self.assertRaises(SystemExit):
+                self.t.cmd_dep(ns(dir=str(d), id=id1, add=None, remove="zzzzzzz"))
+
     def test_new_points_defaults_to_one(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
