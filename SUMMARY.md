@@ -5,10 +5,10 @@
 
 | State | Count |
 |---|---:|
-| backlog | 20 |
+| backlog | 21 |
 | ongoing | 1 |
 | done | 49 |
-| **total** | **70** |
+| **total** | **71** |
 
 ## Hierarchies
 
@@ -77,6 +77,7 @@ Spec: [`docs/specs/2026-06-11-custom-fields-design.md`](../docs/specs/2026-06-11
 - [#kj2c95b validate: suppress redundant bad-slug error when filename-slug mismatch already reported](backlog/kj2c95b-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
 - [#m3z2ywb summary: include foreign/unknown statuses in the counts table](backlog/m3z2ywb-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
 - [#v9nyy42 Part C: curses TUI for browsing and quick actions](backlog/v9nyy42-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
+- [#xagqqgd deps: optimize node ordering to minimize edge span and crossings (local search)](backlog/xagqqgd-deps-optimize-node-ordering-to-minimize-edge-span-and-crossings-local-search.md) — _low_
 
 ## Ongoing
 
