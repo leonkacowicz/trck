@@ -307,16 +307,21 @@ class TestGraphRender(unittest.TestCase):
             out = self.deps_graph(d)                    # no id -> no focal row
             self.assertNotIn("▸", out)
 
-    def test_deps_focal_row_id_and_title_are_bold(self):
+    def test_deps_focal_row_marks_caret_bolds_title_and_highlights_id_prefix(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             id1 = self.seed(d, "Base")
             id2 = self.seed(d, "Top", depends=id1)
             self.t._use_color = lambda: True
             out = self.deps_graph(d, id2)
-            self.assertIn(self.t.paint(f"#{id2}", "bold"), out)  # focal id bold
-            self.assertIn(self.t.paint("Top", "bold"), out)       # focal title bold
-            self.assertNotIn(self.t.paint(f"#{id1}", "bold"), out)  # context id plain
+            self.assertIn(self.t.paint("▸", "bold"), out)          # focal marked by caret
+            self.assertIn(self.t.paint("Top", "bold"), out)         # focal title bold
+            # focal id is NOT wholly bold; it gets the shortest-unique-prefix highlight
+            self.assertNotIn(self.t.paint(f"#{id2}", "bold"), out)
+            L = self.t.unique_prefix_lens([id1, id2])[id2]
+            self.assertIn(self.t.paint(id2[:L], "bold"), out)       # unique prefix bold
+            if id2[L:]:
+                self.assertIn(self.t.paint(id2[L:], "dim"), out)    # remainder dimmed
 
     # --- label dimming (node_label, the shared `deps` row renderer) -------- #
 

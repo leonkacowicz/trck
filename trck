@@ -946,6 +946,19 @@ def paint(text, *codes) -> str:
     return "".join(_ANSI[c] for c in codes) + str(text) + _ANSI["reset"]
 
 
+def hl_id(iid: str, abbrev=None, hash_prefix: bool = True) -> str:
+    """Render an issue id with its shortest-unique-prefix bolded and the remainder
+    dimmed (git-short-hash style), per the `abbrev` length map from
+    `unique_prefix_lens`. With no abbrev entry, the whole id is bolded. `hash_prefix`
+    prepends '#' (the row/graph form); pass False for a bare id (e.g. `show`'s field)."""
+    head = "#" if hash_prefix else ""
+    if abbrev and iid in abbrev:
+        cut = abbrev[iid]
+        rest = iid[cut:]
+        return head + paint(iid[:cut], "bold") + (paint(rest, "dim") if rest else "")
+    return paint(f"{head}{iid}", "bold")
+
+
 def paint_lane(text, owner) -> str:
     """Colour one graph cell by its lane owner: an id picks a palette colour,
     the "node" sentinel bolds the bullet, None leaves it uncoloured."""
@@ -1017,12 +1030,14 @@ def block_annotations(g: Graph, r: Issue) -> str:
     return paint(" " + "  ".join(parts), "dim") if parts else ""
 
 
-def node_label(ctx: Ctx, r: Issue, focal: bool = False) -> str:
+def node_label(ctx: Ctx, r: Issue, focal: bool = False, abbrev=None) -> str:
     tag = " ·epic·" if r.kind == "epic" else ""
     icon = paint(status_icon(ctx, r.status), *status_codes(ctx.cfg, r.status))
     labels = paint(label_tag(r), "dim") if r.labels else ""  # dim, as in print_rows
     emph = ("bold",) if focal else ()                        # focal row of `deps NNN`
-    return f"{paint(f'#{r.id}', *emph)} {icon} {paint(r.title, *emph)}{tag}{labels}"
+    # id always gets the shortest-unique-prefix highlight (as in `list`); the focal
+    # node is set apart by the ▸ caret + bold title, not a wholly-bold id.
+    return f"{hl_id(r.id, abbrev)} {icon} {paint(r.title, *emph)}{tag}{labels}"
 
 
 # --- depends_on DAG rendering (deps): lazygit-style one-row-per-node ---
@@ -1605,6 +1620,7 @@ def cmd_show(args) -> None:
     if getattr(args, "json", False):
         print(json.dumps({k: full.get(k) for k in keys}, ensure_ascii=False, indent=2))
     else:
+        abbrev = unique_prefix_lens([r.id for r in rows])
         w = max(len(k) for k in keys)
         for k in keys:
             v = full.get(k)
@@ -1612,6 +1628,8 @@ def cmd_show(args) -> None:
                 continue  # skip empty fields (and an unset manual_status) in the human view
             if k in ("created", "started", "closed"):
                 v = date_slice(v)
+            elif k == "id":
+                v = hl_id(v, abbrev, hash_prefix=False)  # bold the shortest unique prefix, as in `list`
             print(f"{paint(f'{k:>{w}}', 'dim')}  {v}")
     print("\n--- body ---\n")
     print(issue_path(ctx, row).read_text())
@@ -1783,12 +1801,7 @@ def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None
             continue
         codes = status_codes(ctx.cfg, r.status)
         icon = paint(status_icon(ctx, r.status), *codes)
-        if abbrev and r.id in abbrev:
-            L = abbrev[r.id]
-            rest = r.id[L:]
-            iid = "#" + paint(r.id[:L], "bold") + (paint(rest, "dim") if rest else "")
-        else:
-            iid = paint(f"#{r.id}", "bold")
+        iid = hl_id(r.id, abbrev)
         status = paint(f"{r.status:<{sw}}", *codes)
         prio = paint(f"{r.priority:<{pw}}", *priority_codes(ctx.cfg, r.priority))
         progstr = paint(prog, "dim") if prog else ""
@@ -1841,7 +1854,7 @@ def cmd_ready(args) -> None:
                   key=lambda r: (priority_rank(ctx.cfg, r.priority), -r.points, r.id))
     if getattr(args, "next", False):
         rows = rows[:1]
-    print_rows(ctx, rows)
+    print_rows(ctx, rows, abbrev=unique_prefix_lens([r.id for r in g.rows]))
 
 
 def cmd_next(args) -> None:
@@ -1856,6 +1869,7 @@ def _print_deps_graph(ctx: Ctx, g: Graph, root_id, full: bool = False,
     dependency line — its transitive prerequisites (`up`) and dependents (`down`); pass
     one of `up`/`down` to scope to a single cone. `full` widens an id's view to its whole
     weakly-connected component (cousins included) and ignores the cone gating."""
+    abbrev = unique_prefix_lens([r.id for r in g.rows])
     edged = set()
     for r in g.rows:
         for dep in r.depends_on:
@@ -1863,7 +1877,7 @@ def _print_deps_graph(ctx: Ctx, g: Graph, root_id, full: bool = False,
                 edged.add(r.id); edged.add(dep)
     if root_id is not None:
         if root_id not in edged:
-            print(node_label(ctx, g.row(root_id), focal=True) + "  (no dependencies)")
+            print(node_label(ctx, g.row(root_id), focal=True, abbrev=abbrev) + "  (no dependencies)")
             return
         ids = (next(c for c in graph_components(g, edged) if root_id in set(c))
                if full else g.dependency_line(g.row(root_id), up=up, down=down))
@@ -1886,7 +1900,7 @@ def _print_deps_graph(ctx: Ctx, g: Graph, root_id, full: bool = False,
         marker = "" if root_id is None else (paint("▸", "bold") + " " if focal else "  ")
         painted = "".join(paint_lane(ch, ow) for ch, ow in zip(gutter, owners))
         print(f"{marker}{painted}{' ' * (width - len(gutter))}  "
-              f"{node_label(ctx, g.row(iid), focal=focal)}")
+              f"{node_label(ctx, g.row(iid), focal=focal, abbrev=abbrev)}")
 
 
 def cmd_deps(args) -> None:

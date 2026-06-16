@@ -242,3 +242,54 @@ class TestDepsRootResolution(unittest.TestCase):
         rows = t.load_index(ctx); rows.append(iso); t.save_index(ctx, rows)
         out = self._deps(ctx, "zzz")
         self.assertIn("(no dependencies)", out)
+
+
+class TestPrefixHighlightVerbs(unittest.TestCase):
+    """The shortest-unique-prefix highlight (from `list`) also applies to
+    `ready`/`next`, `deps`, and `show`."""
+    def setUp(self):
+        self.t = load_trck()
+        self.t._use_color = lambda: True   # force ANSI so the highlight is observable
+
+    def _tracker(self):
+        t = self.t
+        d = make_tracker(tempfile.mkdtemp())
+        ctx = t.Ctx(d, t.load_config(d))
+        # two ids sharing the first char -> unique prefix length 2 each
+        a = t.Issue(id="k3aaaab", slug="a", title="Alpha", kind="task",
+                    status="backlog", priority="high", created=t.now_utc())
+        b = t.Issue(id="k9bbbbb", slug="b", title="Beta", kind="task",
+                    status="backlog", priority="high", created=t.now_utc())
+        for r in (a, b):
+            p = t.issue_path(ctx, r)
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(t.TEMPLATE.format(title=r.title))
+        t.save_index(ctx, [a, b])
+        return ctx
+
+    def _capture(self, fn, args):
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            fn(args)
+        return buf.getvalue()
+
+    def test_ready_highlights_unique_prefix(self):
+        ctx = self._tracker()
+        out = self._capture(self.t.cmd_ready, ns(dir=str(ctx.dir), next=False))
+        self.assertIn(self.t.paint("k3", "bold"), out)     # prefix bold
+        self.assertIn(self.t.paint("aaaab", "dim"), out)   # remainder dimmed
+        self.assertNotIn(self.t.paint("#k3aaaab", "bold"), out)  # not whole-id bold
+
+    def test_show_highlights_id_prefix(self):
+        ctx = self._tracker()
+        out = self._capture(self.t.cmd_show,
+                            ns(dir=str(ctx.dir), id="k3aaaab", json=False))
+        self.assertIn(self.t.paint("k3", "bold"), out)
+        self.assertIn(self.t.paint("aaaab", "dim"), out)
+
+    def test_show_json_is_unstyled(self):
+        ctx = self._tracker()
+        out = self._capture(self.t.cmd_show,
+                            ns(dir=str(ctx.dir), id="k3aaaab", json=True))
+        self.assertNotIn("\033[", out)                     # raw JSON carries no ANSI
+        self.assertIn('"id": "k3aaaab"', out)
