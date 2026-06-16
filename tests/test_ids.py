@@ -1,6 +1,8 @@
 """Random id generation, prefix/alias resolution, and the renumber migration (#65)."""
+import io
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from unittest import mock
 
 from tests.helpers import load_trck, make_tracker, ns
@@ -178,3 +180,65 @@ class TestRenumber(unittest.TestCase):
         t.cmd_renumber(ns(dir=str(ctx.dir)))
         ids = {x.id for x in t.load_index(ctx)}
         self.assertIn("k3m9x2a", ids)
+
+
+class TestDepsRootResolution(unittest.TestCase):
+    """`deps <id>` must resolve a prefix / legacy-id token like every other id arg,
+    not compare the raw token against resolved ids (regression: a prefix wrongly
+    printed '(no dependencies)')."""
+    def setUp(self):
+        self.t = load_trck()
+
+    def _tracker(self):
+        t = self.t
+        d = make_tracker(tempfile.mkdtemp())
+        ctx = t.Ctx(d, t.load_config(d))
+        a = t.Issue(id="aabbcc2", slug="a", title="Prereq", kind="task",
+                    status="backlog", priority="high", created=t.now_utc())
+        b = t.Issue(id="ddee3f4", slug="b", title="Dependent", kind="task",
+                    status="backlog", priority="high", depends_on=["aabbcc2"],
+                    created=t.now_utc(), legacy_id=21)
+        for r in (a, b):
+            p = t.issue_path(ctx, r)
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(t.TEMPLATE.format(title=r.title))
+        t.save_index(ctx, [a, b])
+        return ctx
+
+    def _deps(self, ctx, token):
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.t.cmd_deps(ns(dir=str(ctx.dir), id=token,
+                               requires=False, blocks=False, full=False))
+        return buf.getvalue()
+
+    def test_prefix_root_shows_the_cone(self):
+        ctx = self._tracker()
+        out = self._deps(ctx, "ddee")          # prefix of ddee3f4
+        self.assertNotIn("(no dependencies)", out)
+        self.assertIn("aabbcc2", out)          # its prerequisite is drawn
+
+    def test_legacy_alias_root_shows_the_cone(self):
+        ctx = self._tracker()
+        out = self._deps(ctx, "21")            # legacy_id alias for ddee3f4
+        self.assertNotIn("(no dependencies)", out)
+        self.assertIn("aabbcc2", out)
+
+    def test_exact_root_still_works(self):
+        ctx = self._tracker()
+        out = self._deps(ctx, "ddee3f4")
+        self.assertNotIn("(no dependencies)", out)
+        self.assertIn("aabbcc2", out)
+
+    def test_genuinely_depless_issue_still_reports_no_dependencies(self):
+        ctx = self._tracker()
+        out = self._deps(ctx, "aabbcc2")       # a has no deps and nothing depends-cone via prefix
+        # a IS depended-on by b, so its down-cone is non-empty; use a 3rd isolated issue:
+        t = self.t
+        iso = t.Issue(id="zzz9k8m", slug="iso", title="Lonely", kind="task",
+                      status="backlog", priority="high", created=t.now_utc())
+        p = t.issue_path(ctx, iso); p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(t.TEMPLATE.format(title="Lonely"))
+        rows = t.load_index(ctx); rows.append(iso); t.save_index(ctx, rows)
+        out = self._deps(ctx, "zzz")
+        self.assertIn("(no dependencies)", out)

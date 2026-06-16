@@ -1893,6 +1893,8 @@ def cmd_deps(args) -> None:
     ctx = build_ctx_or_die(args)
     g = load_graph(ctx)
     root_id = getattr(args, "id", None)
+    if root_id is not None:
+        root_id = resolve_ref(g.rows, root_id).id  # accept prefix / legacy-id, like every other id arg
     requires, blocks = getattr(args, "requires", False), getattr(args, "blocks", False)
     if (requires or blocks) and root_id is None:
         die("deps: --requires/--blocks scope one issue's graph — pass an issue id")
