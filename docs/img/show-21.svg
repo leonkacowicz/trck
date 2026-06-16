@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="742" height="472" viewBox="0 0 742 472" font-family="ui-monospace, 'DejaVu Sans Mono', 'Cascadia Code', 'Menlo', 'Consolas', monospace" font-size="13">
-<rect width="742" height="472" rx="8" fill="#1b1e24"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="742" height="486" viewBox="0 0 742 486" font-family="ui-monospace, 'DejaVu Sans Mono', 'Cascadia Code', 'Menlo', 'Consolas', monospace" font-size="13">
+<rect width="742" height="486" rx="8" fill="#1b1e24"/>
 <path d="M0,8 A8,8 0 0 1 8,0 L734,0 A8,8 0 0 1 742,8 L742,34 L0,34 Z" fill="#23272e"/>
 <circle cx="16" cy="17" r="6" fill="#ec6a5e"/>
 <circle cx="34" cy="17" r="6" fill="#f4bf4f"/>
@@ -7,7 +7,7 @@
 <text x="371" y="21" fill="#8b93a1" text-anchor="middle">$ trck show 21</text>
 <text y="63" xml:space="preserve">
 <tspan x="16.0" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">           id</tspan>
-<tspan x="117.4" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9">  21</tspan>
+<tspan x="117.4" textLength="70.2" lengthAdjust="spacing" fill="#c5cdd9">  exg4e3b</tspan>
 </text>
 <text y="77" xml:space="preserve">
 <tspan x="16.0" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">         slug</tspan>
@@ -35,7 +35,7 @@
 </text>
 <text y="161" xml:space="preserve">
 <tspan x="16.0" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">       parent</tspan>
-<tspan x="117.4" textLength="23.4" lengthAdjust="spacing" fill="#c5cdd9">  4</tspan>
+<tspan x="117.4" textLength="70.2" lengthAdjust="spacing" fill="#c5cdd9">  qw3rnfb</tspan>
 </text>
 <text y="175" xml:space="preserve">
 <tspan x="16.0" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">       labels</tspan>
@@ -43,58 +43,62 @@
 </text>
 <text y="189" xml:space="preserve">
 <tspan x="16.0" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">   depends_on</tspan>
-<tspan x="117.4" textLength="148.2" lengthAdjust="spacing" fill="#c5cdd9">  ['8', '17', '19']</tspan>
+<tspan x="117.4" textLength="273.0" lengthAdjust="spacing" fill="#c5cdd9">  ['e6mpzcj', 'fb8zz9c', 'r4c8ajk']</tspan>
 </text>
 <text y="203" xml:space="preserve">
 <tspan x="16.0" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">      created</tspan>
 <tspan x="117.4" textLength="93.6" lengthAdjust="spacing" fill="#c5cdd9">  2026-06-10</tspan>
 </text>
 <text y="217" xml:space="preserve">
+<tspan x="16.0" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">    legacy_id</tspan>
+<tspan x="117.4" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9">  21</tspan>
 </text>
 <text y="231" xml:space="preserve">
-<tspan x="16.0" textLength="93.6" lengthAdjust="spacing" fill="#c5cdd9">--- body ---</tspan>
 </text>
 <text y="245" xml:space="preserve">
+<tspan x="16.0" textLength="93.6" lengthAdjust="spacing" fill="#c5cdd9">--- body ---</tspan>
 </text>
 <text y="259" xml:space="preserve">
-<tspan x="16.0" textLength="210.6" lengthAdjust="spacing" fill="#c5cdd9"># Level 1 - Forest entrance</tspan>
 </text>
 <text y="273" xml:space="preserve">
+<tspan x="16.0" textLength="210.6" lengthAdjust="spacing" fill="#c5cdd9"># Level 1 - Forest entrance</tspan>
 </text>
 <text y="287" xml:space="preserve">
-<tspan x="16.0" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9">## Summary</tspan>
 </text>
 <text y="301" xml:space="preserve">
-<tspan x="16.0" textLength="709.8" lengthAdjust="spacing" fill="#c5cdd9">Level 1, the forest entrance and tutorial-ish opener: teaches walking, jumping, and dashing</tspan>
+<tspan x="16.0" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9">## Summary</tspan>
 </text>
 <text y="315" xml:space="preserve">
-<tspan x="16.0" textLength="374.4" lengthAdjust="spacing" fill="#c5cdd9">through gentle gating, ending at the cave mouth.</tspan>
+<tspan x="16.0" textLength="709.8" lengthAdjust="spacing" fill="#c5cdd9">Level 1, the forest entrance and tutorial-ish opener: teaches walking, jumping, and dashing</tspan>
 </text>
 <text y="329" xml:space="preserve">
+<tspan x="16.0" textLength="374.4" lengthAdjust="spacing" fill="#c5cdd9">through gentle gating, ending at the cave mouth.</tspan>
 </text>
 <text y="343" xml:space="preserve">
-<tspan x="16.0" textLength="171.6" lengthAdjust="spacing" fill="#c5cdd9">## Acceptance criteria</tspan>
 </text>
 <text y="357" xml:space="preserve">
-<tspan x="16.0" textLength="327.6" lengthAdjust="spacing" fill="#c5cdd9">- [ ] Level is completable start to finish</tspan>
+<tspan x="16.0" textLength="171.6" lengthAdjust="spacing" fill="#c5cdd9">## Acceptance criteria</tspan>
 </text>
 <text y="371" xml:space="preserve">
-<tspan x="16.0" textLength="343.2" lengthAdjust="spacing" fill="#c5cdd9">- [ ] Introduces dash via an unavoidable gap</tspan>
+<tspan x="16.0" textLength="327.6" lengthAdjust="spacing" fill="#c5cdd9">- [ ] Level is completable start to finish</tspan>
 </text>
 <text y="385" xml:space="preserve">
-<tspan x="16.0" textLength="397.8" lengthAdjust="spacing" fill="#c5cdd9">- [ ] Has a clear entrance and an exit into Level 2</tspan>
+<tspan x="16.0" textLength="343.2" lengthAdjust="spacing" fill="#c5cdd9">- [ ] Introduces dash via an unavoidable gap</tspan>
 </text>
 <text y="399" xml:space="preserve">
+<tspan x="16.0" textLength="397.8" lengthAdjust="spacing" fill="#c5cdd9">- [ ] Has a clear entrance and an exit into Level 2</tspan>
 </text>
 <text y="413" xml:space="preserve">
-<tspan x="16.0" textLength="62.4" lengthAdjust="spacing" fill="#c5cdd9">## Notes</tspan>
 </text>
 <text y="427" xml:space="preserve">
-<tspan x="16.0" textLength="702.0" lengthAdjust="spacing" fill="#c5cdd9">The big fan-in: depends on dash #008, the player sprite #017, and the forest tileset #019.</tspan>
+<tspan x="16.0" textLength="62.4" lengthAdjust="spacing" fill="#c5cdd9">## Notes</tspan>
 </text>
 <text y="441" xml:space="preserve">
-<tspan x="16.0" textLength="335.4" lengthAdjust="spacing" fill="#c5cdd9">Blocks Level 2 #022 and the world map #023.</tspan>
+<tspan x="16.0" textLength="702.0" lengthAdjust="spacing" fill="#c5cdd9">The big fan-in: depends on dash #008, the player sprite #017, and the forest tileset #019.</tspan>
 </text>
 <text y="455" xml:space="preserve">
+<tspan x="16.0" textLength="335.4" lengthAdjust="spacing" fill="#c5cdd9">Blocks Level 2 #022 and the world map #023.</tspan>
+</text>
+<text y="469" xml:space="preserve">
 </text>
 </svg>

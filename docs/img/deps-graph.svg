@@ -1,415 +1,338 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="711" height="416" viewBox="0 0 711 416" font-family="ui-monospace, 'DejaVu Sans Mono', 'Cascadia Code', 'Menlo', 'Consolas', monospace" font-size="13">
-<rect width="711" height="416" rx="8" fill="#1b1e24"/>
-<path d="M0,8 A8,8 0 0 1 8,0 L703,0 A8,8 0 0 1 711,8 L711,34 L0,34 Z" fill="#23272e"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="687" height="416" viewBox="0 0 687 416" font-family="ui-monospace, 'DejaVu Sans Mono', 'Cascadia Code', 'Menlo', 'Consolas', monospace" font-size="13">
+<rect width="687" height="416" rx="8" fill="#1b1e24"/>
+<path d="M0,8 A8,8 0 0 1 8,0 L679,0 A8,8 0 0 1 687,8 L687,34 L0,34 Z" fill="#23272e"/>
 <circle cx="16" cy="17" r="6" fill="#ec6a5e"/>
 <circle cx="34" cy="17" r="6" fill="#f4bf4f"/>
 <circle cx="52" cy="17" r="6" fill="#61c454"/>
-<text x="355" y="21" fill="#8b93a1" text-anchor="middle">$ trck deps</text>
+<text x="343" y="21" fill="#8b93a1" text-anchor="middle">$ trck deps</text>
 <text y="63" xml:space="preserve">
 <tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
-<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#e6c08a">─</tspan>
-<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#e6c08a">┬</tspan>
-<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#e6c08a">─</tspan>
-<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff">┬</tspan>
-<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff">─</tspan>
-<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">╮</tspan>
-<tspan x="70.6" textLength="140.4" lengthAdjust="spacing" fill="#c5cdd9">              #16 </tspan>
-<tspan x="211.0" textLength="7.8" lengthAdjust="spacing" fill="#98c379">●</tspan>
-<tspan x="218.8" textLength="187.2" lengthAdjust="spacing" fill="#c5cdd9"> Sprite atlas build tool</tspan>
-<tspan x="406.0" textLength="109.2" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [art tooling]</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">─</tspan>
+<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">┬</tspan>
+<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">─</tspan>
+<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">┬</tspan>
+<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">─</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#56b6c2">╮</tspan>
+<tspan x="70.6" textLength="117.0" lengthAdjust="spacing" fill="#c5cdd9">      #5qmdpg6 </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#98c379">●</tspan>
+<tspan x="195.4" textLength="226.2" lengthAdjust="spacing" fill="#c5cdd9"> Walk / run / jump controller</tspan>
+<tspan x="421.6" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [movement]</tspan>
 </text>
 <text y="77" xml:space="preserve">
 <tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
-<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
-<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#e6c08a">│</tspan>
-<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#e6c08a"> </tspan>
-<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff">│</tspan>
-<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff"> </tspan>
-<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">│</tspan>
-<tspan x="70.6" textLength="140.4" lengthAdjust="spacing" fill="#c5cdd9">              #17 </tspan>
-<tspan x="211.0" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
-<tspan x="218.8" textLength="156.0" lengthAdjust="spacing" fill="#c5cdd9"> Player sprite sheet</tspan>
-<tspan x="374.8" textLength="46.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [art]</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#56b6c2">─</tspan>
+<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">┼</tspan>
+<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">─</tspan>
+<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">┼</tspan>
+<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">─</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#56b6c2">┼</tspan>
+<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#56b6c2">─</tspan>
+<tspan x="78.4" textLength="7.8" lengthAdjust="spacing" fill="#56b6c2">┬</tspan>
+<tspan x="86.2" textLength="7.8" lengthAdjust="spacing" fill="#56b6c2">─</tspan>
+<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">╮</tspan>
+<tspan x="101.8" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9">  #2sg3uhd </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
+<tspan x="195.4" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9"> Melee combos</tspan>
+<tspan x="296.8" textLength="70.2" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [combat]</tspan>
 </text>
 <text y="91" xml:space="preserve">
-<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
-<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
-<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff">│</tspan>
-<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff"> </tspan>
-<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">│</tspan>
-<tspan x="70.6" textLength="140.4" lengthAdjust="spacing" fill="#c5cdd9">              #18 </tspan>
-<tspan x="211.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
-<tspan x="218.8" textLength="156.0" lengthAdjust="spacing" fill="#c5cdd9"> Enemy sprite sheets</tspan>
-<tspan x="374.8" textLength="109.2" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [art enemies]</tspan>
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">│</tspan>
+<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
+<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">│</tspan>
+<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8"> </tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#56b6c2">│</tspan>
+<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#56b6c2"> </tspan>
+<tspan x="78.4" textLength="7.8" lengthAdjust="spacing" fill="#56b6c2">│</tspan>
+<tspan x="86.2" textLength="7.8" lengthAdjust="spacing" fill="#56b6c2"> </tspan>
+<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">│</tspan>
+<tspan x="101.8" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9">  #gbnvvsc </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="195.4" textLength="195.0" lengthAdjust="spacing" fill="#c5cdd9"> Enemy AI: patrol &amp; aggro</tspan>
+<tspan x="390.4" textLength="132.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [combat enemies]</tspan>
 </text>
 <text y="105" xml:space="preserve">
-<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="31.6" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
-<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
-<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
-<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">│</tspan>
-<tspan x="70.6" textLength="140.4" lengthAdjust="spacing" fill="#c5cdd9">              #19 </tspan>
-<tspan x="211.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
-<tspan x="218.8" textLength="117.0" lengthAdjust="spacing" fill="#c5cdd9"> Forest tileset</tspan>
-<tspan x="335.8" textLength="46.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [art]</tspan>
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">│</tspan>
+<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
+<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">│</tspan>
+<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8"> </tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#56b6c2">│</tspan>
+<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#56b6c2"> </tspan>
+<tspan x="78.4" textLength="7.8" lengthAdjust="spacing" fill="#56b6c2">│</tspan>
+<tspan x="86.2" textLength="7.8" lengthAdjust="spacing" fill="#56b6c2"> </tspan>
+<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">│</tspan>
+<tspan x="101.8" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9">  #r3m4yz9 </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="195.4" textLength="265.2" lengthAdjust="spacing" fill="#c5cdd9"> Hitbox persists after enemy death</tspan>
+<tspan x="460.6" textLength="210.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [combat enemies tech-debt]</tspan>
 </text>
 <text y="119" xml:space="preserve">
-<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="31.6" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
+<tspan x="16.0" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
+<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">│</tspan>
+<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
+<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">│</tspan>
+<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8"> </tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#56b6c2">│</tspan>
+<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#56b6c2"> </tspan>
+<tspan x="78.4" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
+<tspan x="86.2" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">│</tspan>
+<tspan x="101.8" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9">  #m9n7pn6 </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="195.4" textLength="218.4" lengthAdjust="spacing" fill="#c5cdd9"> Ranged / projectile attacks</tspan>
+<tspan x="413.8" textLength="171.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [combat needs-design]</tspan>
+</text>
+<text y="133" xml:space="preserve">
+<tspan x="16.0" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
+<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">│</tspan>
+<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
+<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">│</tspan>
+<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8"> </tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#56b6c2">│</tspan>
+<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#56b6c2"> </tspan>
+<tspan x="78.4" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
+<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
+<tspan x="101.8" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9">  #nv76h2p </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="195.4" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9"> Combat SFX</tspan>
+<tspan x="281.2" textLength="117.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [audio combat]</tspan>
+</text>
+<text y="147" xml:space="preserve">
+<tspan x="16.0" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
+<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
+<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">│</tspan>
+<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8"> </tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#56b6c2">│</tspan>
+<tspan x="70.6" textLength="117.0" lengthAdjust="spacing" fill="#c5cdd9">      #3msf24b </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="195.4" textLength="117.0" lengthAdjust="spacing" fill="#c5cdd9"> Crouch &amp; slide</tspan>
+<tspan x="312.4" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [movement]</tspan>
+</text>
+<text y="161" xml:space="preserve">
+<tspan x="16.0" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
+<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#98c379">╭</tspan>
+<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#98c379">─</tspan>
+<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
+<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#98c379"> </tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#56b6c2">│</tspan>
+<tspan x="70.6" textLength="117.0" lengthAdjust="spacing" fill="#c5cdd9">      #7qax2vu </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
+<tspan x="195.4" textLength="179.4" lengthAdjust="spacing" fill="#c5cdd9"> Damage &amp; health system</tspan>
+<tspan x="374.8" textLength="70.2" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [combat]</tspan>
+</text>
+<text y="175" xml:space="preserve">
+<tspan x="16.0" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
+<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#98c379">│</tspan>
+<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#98c379"> </tspan>
+<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
+<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#56b6c2">│</tspan>
+<tspan x="70.6" textLength="117.0" lengthAdjust="spacing" fill="#c5cdd9">      #xzyw9wm </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="195.4" textLength="163.8" lengthAdjust="spacing" fill="#c5cdd9"> Checkpoint &amp; respawn</tspan>
+<tspan x="359.2" textLength="156.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [level-design tech]</tspan>
+</text>
+<text y="189" xml:space="preserve">
+<tspan x="16.0" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
+<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
+<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
+<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#56b6c2">│</tspan>
+<tspan x="70.6" textLength="117.0" lengthAdjust="spacing" fill="#c5cdd9">      #z8be3ac </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="195.4" textLength="148.2" lengthAdjust="spacing" fill="#c5cdd9"> HUD: health &amp; ammo</tspan>
+<tspan x="343.6" textLength="39.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [ux]</tspan>
+</text>
+<text y="203" xml:space="preserve">
+<tspan x="16.0" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
+<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">╭</tspan>
+<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">─</tspan>
+<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">┼</tspan>
+<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">─</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
+<tspan x="70.6" textLength="117.0" lengthAdjust="spacing" fill="#c5cdd9">      #e6mpzcj </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
+<tspan x="195.4" textLength="132.6" lengthAdjust="spacing" fill="#c5cdd9"> Dash &amp; wall-jump</tspan>
+<tspan x="328.0" textLength="140.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [combat movement]</tspan>
+</text>
+<text y="217" xml:space="preserve">
+<tspan x="16.0" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
+<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">│</tspan>
+<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
 <tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
 <tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
 <tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
-<tspan x="70.6" textLength="140.4" lengthAdjust="spacing" fill="#c5cdd9">              #20 </tspan>
-<tspan x="211.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
-<tspan x="218.8" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9"> Cave tileset</tspan>
-<tspan x="320.2" textLength="46.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [art]</tspan>
+<tspan x="70.6" textLength="117.0" lengthAdjust="spacing" fill="#c5cdd9">      #adgus46 </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
+<tspan x="195.4" textLength="202.8" lengthAdjust="spacing" fill="#c5cdd9"> Dash i-frames not applied</tspan>
+<tspan x="398.2" textLength="70.2" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [combat]</tspan>
 </text>
-<text y="133" xml:space="preserve">
-<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
-<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<text y="231" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#61afef">─</tspan>
+<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">┼</tspan>
+<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">─</tspan>
+<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">┼</tspan>
+<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">─</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#61afef">┬</tspan>
+<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#61afef">─</tspan>
+<tspan x="78.4" textLength="7.8" lengthAdjust="spacing" fill="#61afef">┬</tspan>
+<tspan x="86.2" textLength="7.8" lengthAdjust="spacing" fill="#61afef">─</tspan>
+<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#98c379">╮</tspan>
+<tspan x="101.8" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9">  #adejzqs </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#98c379">●</tspan>
+<tspan x="195.4" textLength="187.2" lengthAdjust="spacing" fill="#c5cdd9"> Sprite atlas build tool</tspan>
+<tspan x="382.6" textLength="109.2" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [art tooling]</tspan>
+</text>
+<text y="245" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">│</tspan>
+<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
 <tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
 <tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">│</tspan>
-<tspan x="70.6" textLength="140.4" lengthAdjust="spacing" fill="#c5cdd9">              #31 </tspan>
-<tspan x="211.0" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
-<tspan x="218.8" textLength="187.2" lengthAdjust="spacing" fill="#c5cdd9"> Pick a save-data format</tspan>
-<tspan x="406.0" textLength="156.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [needs-design tech]</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#61afef">│</tspan>
+<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#61afef"> </tspan>
+<tspan x="78.4" textLength="7.8" lengthAdjust="spacing" fill="#61afef">│</tspan>
+<tspan x="86.2" textLength="7.8" lengthAdjust="spacing" fill="#61afef"> </tspan>
+<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#98c379">│</tspan>
+<tspan x="101.8" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9">  #fb8zz9c </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
+<tspan x="195.4" textLength="156.0" lengthAdjust="spacing" fill="#c5cdd9"> Player sprite sheet</tspan>
+<tspan x="351.4" textLength="46.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [art]</tspan>
 </text>
-<text y="147" xml:space="preserve">
-<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
+<text y="259" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">│</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
+<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">│</tspan>
+<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
 <tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
 <tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">│</tspan>
-<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
-<tspan x="78.4" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
-<tspan x="86.2" textLength="7.8" lengthAdjust="spacing" fill="#98c379">─</tspan>
-<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#98c379">┬</tspan>
-<tspan x="101.8" textLength="7.8" lengthAdjust="spacing" fill="#98c379">─</tspan>
-<tspan x="109.6" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff">┬</tspan>
-<tspan x="117.4" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff">─</tspan>
-<tspan x="125.2" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">╮</tspan>
-<tspan x="133.0" textLength="70.2" lengthAdjust="spacing" fill="#c5cdd9">      #7 </tspan>
-<tspan x="203.2" textLength="7.8" lengthAdjust="spacing" fill="#98c379">●</tspan>
-<tspan x="211.0" textLength="226.2" lengthAdjust="spacing" fill="#c5cdd9"> Walk / run / jump controller</tspan>
-<tspan x="437.2" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [movement]</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
+<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="78.4" textLength="7.8" lengthAdjust="spacing" fill="#61afef">│</tspan>
+<tspan x="86.2" textLength="7.8" lengthAdjust="spacing" fill="#61afef"> </tspan>
+<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#98c379">│</tspan>
+<tspan x="101.8" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9">  #fd34m5t </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="195.4" textLength="156.0" lengthAdjust="spacing" fill="#c5cdd9"> Enemy sprite sheets</tspan>
+<tspan x="351.4" textLength="109.2" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [art enemies]</tspan>
 </text>
-<text y="161" xml:space="preserve">
-<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
+<text y="273" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">│</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
+<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">│</tspan>
+<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
 <tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
 <tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">│</tspan>
-<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
-<tspan x="78.4" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
-<tspan x="86.2" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">─</tspan>
-<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#98c379">┼</tspan>
-<tspan x="101.8" textLength="7.8" lengthAdjust="spacing" fill="#98c379">─</tspan>
-<tspan x="109.6" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff">┼</tspan>
-<tspan x="117.4" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff">─</tspan>
-<tspan x="125.2" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">┼</tspan>
-<tspan x="133.0" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">─</tspan>
-<tspan x="140.8" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">┬</tspan>
-<tspan x="148.6" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">─</tspan>
-<tspan x="156.4" textLength="7.8" lengthAdjust="spacing" fill="#61afef">╮</tspan>
-<tspan x="164.2" textLength="46.8" lengthAdjust="spacing" fill="#c5cdd9">  #10 </tspan>
-<tspan x="211.0" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
-<tspan x="218.8" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9"> Melee combos</tspan>
-<tspan x="320.2" textLength="70.2" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [combat]</tspan>
-</text>
-<text y="175" xml:space="preserve">
-<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">│</tspan>
-<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
+<tspan x="62.8" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
 <tspan x="78.4" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
 <tspan x="86.2" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
 <tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#98c379">│</tspan>
-<tspan x="101.8" textLength="7.8" lengthAdjust="spacing" fill="#98c379"> </tspan>
-<tspan x="109.6" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff">│</tspan>
-<tspan x="117.4" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff"> </tspan>
-<tspan x="125.2" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">│</tspan>
-<tspan x="133.0" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8"> </tspan>
-<tspan x="140.8" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">│</tspan>
-<tspan x="148.6" textLength="7.8" lengthAdjust="spacing" fill="#d19a66"> </tspan>
-<tspan x="156.4" textLength="7.8" lengthAdjust="spacing" fill="#61afef">│</tspan>
-<tspan x="164.2" textLength="46.8" lengthAdjust="spacing" fill="#c5cdd9">  #11 </tspan>
-<tspan x="211.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
-<tspan x="218.8" textLength="218.4" lengthAdjust="spacing" fill="#c5cdd9"> Ranged / projectile attacks</tspan>
-<tspan x="437.2" textLength="171.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [combat needs-design]</tspan>
-</text>
-<text y="189" xml:space="preserve">
-<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">│</tspan>
-<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
-<tspan x="78.4" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
-<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#98c379">│</tspan>
-<tspan x="101.8" textLength="7.8" lengthAdjust="spacing" fill="#98c379"> </tspan>
-<tspan x="109.6" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff">│</tspan>
-<tspan x="117.4" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff"> </tspan>
-<tspan x="125.2" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">│</tspan>
-<tspan x="133.0" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8"> </tspan>
-<tspan x="140.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
-<tspan x="148.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
-<tspan x="156.4" textLength="7.8" lengthAdjust="spacing" fill="#61afef">│</tspan>
-<tspan x="164.2" textLength="46.8" lengthAdjust="spacing" fill="#c5cdd9">  #13 </tspan>
-<tspan x="211.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
-<tspan x="218.8" textLength="195.0" lengthAdjust="spacing" fill="#c5cdd9"> Enemy AI: patrol &amp; aggro</tspan>
-<tspan x="413.8" textLength="132.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [combat enemies]</tspan>
-</text>
-<text y="203" xml:space="preserve">
-<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">│</tspan>
-<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
-<tspan x="78.4" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
-<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#98c379">│</tspan>
-<tspan x="101.8" textLength="7.8" lengthAdjust="spacing" fill="#98c379"> </tspan>
-<tspan x="109.6" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff">│</tspan>
-<tspan x="117.4" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff"> </tspan>
-<tspan x="125.2" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">│</tspan>
-<tspan x="133.0" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8"> </tspan>
-<tspan x="140.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
-<tspan x="148.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
-<tspan x="156.4" textLength="7.8" lengthAdjust="spacing" fill="#61afef">│</tspan>
-<tspan x="164.2" textLength="46.8" lengthAdjust="spacing" fill="#c5cdd9">  #15 </tspan>
-<tspan x="211.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
-<tspan x="218.8" textLength="265.2" lengthAdjust="spacing" fill="#c5cdd9"> Hitbox persists after enemy death</tspan>
-<tspan x="484.0" textLength="210.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [combat enemies tech-debt]</tspan>
-</text>
-<text y="217" xml:space="preserve">
-<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">│</tspan>
-<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
-<tspan x="78.4" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
-<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#98c379">│</tspan>
-<tspan x="101.8" textLength="7.8" lengthAdjust="spacing" fill="#98c379"> </tspan>
-<tspan x="109.6" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff">│</tspan>
-<tspan x="117.4" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff"> </tspan>
-<tspan x="125.2" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">│</tspan>
-<tspan x="133.0" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8"> </tspan>
-<tspan x="140.8" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
-<tspan x="156.4" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
-<tspan x="164.2" textLength="46.8" lengthAdjust="spacing" fill="#c5cdd9">  #25 </tspan>
-<tspan x="211.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
-<tspan x="218.8" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9"> Combat SFX</tspan>
-<tspan x="304.6" textLength="117.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [audio combat]</tspan>
-</text>
-<text y="231" xml:space="preserve">
-<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">│</tspan>
-<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
-<tspan x="78.4" textLength="7.8" lengthAdjust="spacing" fill="#e6c08a">╭</tspan>
-<tspan x="86.2" textLength="7.8" lengthAdjust="spacing" fill="#e6c08a">─</tspan>
-<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
-<tspan x="101.8" textLength="7.8" lengthAdjust="spacing" fill="#e6c08a"> </tspan>
-<tspan x="109.6" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff">│</tspan>
-<tspan x="117.4" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff"> </tspan>
-<tspan x="125.2" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">│</tspan>
-<tspan x="133.0" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9">      #12 </tspan>
-<tspan x="211.0" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
-<tspan x="218.8" textLength="179.4" lengthAdjust="spacing" fill="#c5cdd9"> Damage &amp; health system</tspan>
-<tspan x="398.2" textLength="70.2" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [combat]</tspan>
-</text>
-<text y="245" xml:space="preserve">
-<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">│</tspan>
-<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
-<tspan x="78.4" textLength="7.8" lengthAdjust="spacing" fill="#e6c08a">│</tspan>
-<tspan x="86.2" textLength="7.8" lengthAdjust="spacing" fill="#e6c08a"> </tspan>
-<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
-<tspan x="101.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
-<tspan x="109.6" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff">│</tspan>
-<tspan x="117.4" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff"> </tspan>
-<tspan x="125.2" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">│</tspan>
-<tspan x="133.0" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9">      #24 </tspan>
-<tspan x="211.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
-<tspan x="218.8" textLength="163.8" lengthAdjust="spacing" fill="#c5cdd9"> Checkpoint &amp; respawn</tspan>
-<tspan x="382.6" textLength="156.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [level-design tech]</tspan>
-</text>
-<text y="259" xml:space="preserve">
-<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
-<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">─</tspan>
-<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">┼</tspan>
-<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">─</tspan>
-<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">┼</tspan>
-<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">─</tspan>
-<tspan x="78.4" textLength="7.8" lengthAdjust="spacing" fill="#e6c08a">┼</tspan>
-<tspan x="86.2" textLength="7.8" lengthAdjust="spacing" fill="#e6c08a">─</tspan>
-<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">╯</tspan>
-<tspan x="101.8" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="109.6" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff">│</tspan>
-<tspan x="117.4" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff"> </tspan>
-<tspan x="125.2" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">│</tspan>
-<tspan x="133.0" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9">      #32 </tspan>
-<tspan x="211.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
-<tspan x="218.8" textLength="148.2" lengthAdjust="spacing" fill="#c5cdd9"> Save / load system</tspan>
-<tspan x="367.0" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [tech]</tspan>
-</text>
-<text y="273" xml:space="preserve">
-<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="31.6" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
-<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">│</tspan>
-<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
-<tspan x="78.4" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
-<tspan x="86.2" textLength="23.4" lengthAdjust="spacing" fill="#c5cdd9">   </tspan>
-<tspan x="109.6" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff">│</tspan>
-<tspan x="117.4" textLength="7.8" lengthAdjust="spacing" fill="#8cc7ff"> </tspan>
-<tspan x="125.2" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">│</tspan>
-<tspan x="133.0" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9">      #29 </tspan>
-<tspan x="211.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
-<tspan x="218.8" textLength="148.2" lengthAdjust="spacing" fill="#c5cdd9"> HUD: health &amp; ammo</tspan>
-<tspan x="367.0" textLength="39.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [ux]</tspan>
+<tspan x="101.8" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9">  #r4c8ajk </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="195.4" textLength="117.0" lengthAdjust="spacing" fill="#c5cdd9"> Forest tileset</tspan>
+<tspan x="312.4" textLength="46.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [art]</tspan>
 </text>
 <text y="287" xml:space="preserve">
-<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="31.6" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
-<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">│</tspan>
-<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
-<tspan x="78.4" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
-<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">╭</tspan>
-<tspan x="101.8" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">─</tspan>
-<tspan x="109.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
-<tspan x="117.4" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="125.2" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">│</tspan>
-<tspan x="133.0" textLength="70.2" lengthAdjust="spacing" fill="#c5cdd9">      #8 </tspan>
-<tspan x="203.2" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
-<tspan x="211.0" textLength="132.6" lengthAdjust="spacing" fill="#c5cdd9"> Dash &amp; wall-jump</tspan>
-<tspan x="343.6" textLength="140.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [combat movement]</tspan>
-</text>
-<text y="301" xml:space="preserve">
-<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="31.6" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
-<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">│</tspan>
-<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
-<tspan x="78.4" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
-<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
-<tspan x="101.8" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="109.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
-<tspan x="117.4" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
-<tspan x="125.2" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">│</tspan>
-<tspan x="133.0" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9">      #14 </tspan>
-<tspan x="211.0" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
-<tspan x="218.8" textLength="202.8" lengthAdjust="spacing" fill="#c5cdd9"> Dash i-frames not applied</tspan>
-<tspan x="421.6" textLength="70.2" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [combat]</tspan>
-</text>
-<text y="315" xml:space="preserve">
-<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
-<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">─</tspan>
-<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#98c379">┬</tspan>
-<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#98c379">─</tspan>
-<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">┴</tspan>
-<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">─</tspan>
-<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">┼</tspan>
-<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">─</tspan>
-<tspan x="78.4" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">─</tspan>
-<tspan x="86.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">─</tspan>
-<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">╯</tspan>
-<tspan x="101.8" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
-<tspan x="109.6" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
-<tspan x="125.2" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">│</tspan>
-<tspan x="133.0" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9">      #21 </tspan>
-<tspan x="211.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
-<tspan x="218.8" textLength="202.8" lengthAdjust="spacing" fill="#c5cdd9"> Level 1 - Forest entrance</tspan>
-<tspan x="421.6" textLength="117.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [level-design]</tspan>
-</text>
-<text y="329" xml:space="preserve">
 <tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
 <tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">─</tspan>
-<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#98c379">┼</tspan>
-<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#98c379">─</tspan>
-<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">─</tspan>
-<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">─</tspan>
-<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">╯</tspan>
-<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
-<tspan x="78.4" textLength="46.8" lengthAdjust="spacing" fill="#c5cdd9">      </tspan>
-<tspan x="125.2" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">│</tspan>
-<tspan x="133.0" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9">      #22 </tspan>
-<tspan x="211.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
-<tspan x="218.8" textLength="171.6" lengthAdjust="spacing" fill="#c5cdd9"> Level 2 - Cave depths</tspan>
-<tspan x="390.4" textLength="117.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [level-design]</tspan>
+<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">┼</tspan>
+<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">─</tspan>
+<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">┼</tspan>
+<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">─</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">─</tspan>
+<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">─</tspan>
+<tspan x="78.4" textLength="7.8" lengthAdjust="spacing" fill="#e06c75">╯</tspan>
+<tspan x="86.2" textLength="7.8" lengthAdjust="spacing" fill="#e06c75"> </tspan>
+<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#98c379">│</tspan>
+<tspan x="101.8" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9">  #exg4e3b </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="195.4" textLength="202.8" lengthAdjust="spacing" fill="#c5cdd9"> Level 1 - Forest entrance</tspan>
+<tspan x="398.2" textLength="117.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [level-design]</tspan>
 </text>
-<text y="343" xml:space="preserve">
+<text y="301" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9"> </tspan>
+<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">│</tspan>
+<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#d19a66"> </tspan>
+<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
+<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
+<tspan x="62.8" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9">    </tspan>
+<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#98c379">│</tspan>
+<tspan x="101.8" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9">  #5a6ka92 </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="195.4" textLength="187.2" lengthAdjust="spacing" fill="#c5cdd9"> World map &amp; fast travel</tspan>
+<tspan x="382.6" textLength="140.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [level-design ux]</tspan>
+</text>
+<text y="315" xml:space="preserve">
+<tspan x="16.0" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
+<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">│</tspan>
+<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#d19a66"> </tspan>
+<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
+<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db"> </tspan>
+<tspan x="62.8" textLength="31.2" lengthAdjust="spacing" fill="#c5cdd9">    </tspan>
+<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
+<tspan x="101.8" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9">  #sr4c37v </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="195.4" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9"> Cave tileset</tspan>
+<tspan x="296.8" textLength="46.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [art]</tspan>
+</text>
+<text y="329" xml:space="preserve">
 <tspan x="16.0" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
 <tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
-<tspan x="39.4" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9">           </tspan>
-<tspan x="125.2" textLength="7.8" lengthAdjust="spacing" fill="#d9a0e8">│</tspan>
-<tspan x="133.0" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9">      #23 </tspan>
-<tspan x="211.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
-<tspan x="218.8" textLength="187.2" lengthAdjust="spacing" fill="#c5cdd9"> World map &amp; fast travel</tspan>
-<tspan x="406.0" textLength="140.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [level-design ux]</tspan>
+<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">─</tspan>
+<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">┼</tspan>
+<tspan x="55.0" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">─</tspan>
+<tspan x="62.8" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">─</tspan>
+<tspan x="70.6" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">─</tspan>
+<tspan x="78.4" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">─</tspan>
+<tspan x="86.2" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">─</tspan>
+<tspan x="94.0" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">╯</tspan>
+<tspan x="101.8" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9">  #dm9t6h7 </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="195.4" textLength="171.6" lengthAdjust="spacing" fill="#c5cdd9"> Level 2 - Cave depths</tspan>
+<tspan x="367.0" textLength="117.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [level-design]</tspan>
+</text>
+<text y="343" xml:space="preserve">
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
+<tspan x="23.8" textLength="23.4" lengthAdjust="spacing" fill="#c5cdd9">   </tspan>
+<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">│</tspan>
+<tspan x="55.0" textLength="132.6" lengthAdjust="spacing" fill="#c5cdd9">        #h9chxqu </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
+<tspan x="195.4" textLength="187.2" lengthAdjust="spacing" fill="#c5cdd9"> Pick a save-data format</tspan>
+<tspan x="382.6" textLength="156.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [needs-design tech]</tspan>
 </text>
 <text y="357" xml:space="preserve">
-<tspan x="16.0" textLength="109.2" lengthAdjust="spacing" fill="#c5cdd9">              </tspan>
-<tspan x="125.2" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
-<tspan x="133.0" textLength="70.2" lengthAdjust="spacing" fill="#c5cdd9">      #9 </tspan>
-<tspan x="203.2" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
-<tspan x="211.0" textLength="117.0" lengthAdjust="spacing" fill="#c5cdd9"> Crouch &amp; slide</tspan>
-<tspan x="328.0" textLength="85.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [movement]</tspan>
+<tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
+<tspan x="23.8" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">─</tspan>
+<tspan x="31.6" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">─</tspan>
+<tspan x="39.4" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">─</tspan>
+<tspan x="47.2" textLength="7.8" lengthAdjust="spacing" fill="#7fd0db">╯</tspan>
+<tspan x="55.0" textLength="132.6" lengthAdjust="spacing" fill="#c5cdd9">        #nmde6ad </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="195.4" textLength="148.2" lengthAdjust="spacing" fill="#c5cdd9"> Save / load system</tspan>
+<tspan x="343.6" textLength="54.6" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [tech]</tspan>
 </text>
 <text y="371" xml:space="preserve">
 </text>
 <text y="385" xml:space="preserve">
 <tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
-<tspan x="23.8" textLength="187.2" lengthAdjust="spacing" fill="#c5cdd9">                    #28 </tspan>
-<tspan x="211.0" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
-<tspan x="218.8" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9"> Main menu</tspan>
-<tspan x="296.8" textLength="39.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [ux]</tspan>
+<tspan x="23.8" textLength="163.8" lengthAdjust="spacing" fill="#c5cdd9">            #br4e7qz </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#d19a66">◐</tspan>
+<tspan x="195.4" textLength="78.0" lengthAdjust="spacing" fill="#c5cdd9"> Main menu</tspan>
+<tspan x="273.4" textLength="39.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [ux]</tspan>
 </text>
 <text y="399" xml:space="preserve">
 <tspan x="16.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">●</tspan>
-<tspan x="23.8" textLength="187.2" lengthAdjust="spacing" fill="#c5cdd9">                    #30 </tspan>
-<tspan x="211.0" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
-<tspan x="218.8" textLength="171.6" lengthAdjust="spacing" fill="#c5cdd9"> Pause &amp; settings menu</tspan>
-<tspan x="390.4" textLength="39.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [ux]</tspan>
+<tspan x="23.8" textLength="163.8" lengthAdjust="spacing" fill="#c5cdd9">            #2v3w3zj </tspan>
+<tspan x="187.6" textLength="7.8" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">○</tspan>
+<tspan x="195.4" textLength="171.6" lengthAdjust="spacing" fill="#c5cdd9"> Pause &amp; settings menu</tspan>
+<tspan x="367.0" textLength="39.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55"> [ux]</tspan>
 </text>
 </svg>

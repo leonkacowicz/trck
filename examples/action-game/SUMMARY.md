@@ -12,59 +12,59 @@
 
 ## Hierarchies
 
-### [#001 Player movement & combat](ongoing/001-player-movement-combat.md) — 10% (3/30 pts · 1/9 done) · _high_ · ongoing
+### [#6ekkhbe Combat system](ongoing/6ekkhbe-combat-system.md) — 0% (0/20 pts · 0/6 done) · _high_ · ongoing
 
-- [ ] [#002 Combat system](ongoing/002-combat-system.md) _(ongoing)_
-- [x] [#007 Walk / run / jump controller](done/007-walk-run-jump-controller.md) [movement]
-- [ ] [#008 Dash & wall-jump](ongoing/008-dash-wall-jump.md) [combat movement] _(ongoing)_
-- [ ] [#009 Crouch & slide](backlog/009-crouch-slide.md) [movement] _(backlog)_
+- [ ] [#2sg3uhd Melee combos](ongoing/2sg3uhd-melee-combos.md) [combat] _(ongoing)_
+- [ ] [#7qax2vu Damage & health system](ongoing/7qax2vu-damage-health-system.md) [combat] _(ongoing)_
+- [ ] [#adgus46 Dash i-frames not applied](ongoing/adgus46-dash-i-frames-not-applied.md) [combat] _(ongoing)_
+- [ ] [#gbnvvsc Enemy AI: patrol & aggro](backlog/gbnvvsc-enemy-ai-patrol-aggro.md) [combat enemies] _(backlog)_
+- [ ] [#m9n7pn6 Ranged / projectile attacks](backlog/m9n7pn6-ranged-projectile-attacks.md) [combat needs-design] _(backlog)_
+- [ ] [#r3m4yz9 Hitbox persists after enemy death](backlog/r3m4yz9-hitbox-persists-after-enemy-death.md) [combat enemies tech-debt] _(backlog)_
 
-### [#002 Combat system](ongoing/002-combat-system.md) — 0% (0/20 pts · 0/6 done) · _high_ · ongoing
+### [#8ge7ef4 Audio & music](backlog/8ge7ef4-audio-music.md) — 0% (0/7 pts · 0/3 done) · _low_ · backlog
 
-- [ ] [#010 Melee combos](ongoing/010-melee-combos.md) [combat] _(ongoing)_
-- [ ] [#011 Ranged / projectile attacks](backlog/011-ranged-projectile-attacks.md) [combat needs-design] _(backlog)_
-- [ ] [#012 Damage & health system](ongoing/012-damage-health-system.md) [combat] _(ongoing)_
-- [ ] [#013 Enemy AI: patrol & aggro](backlog/013-enemy-ai-patrol-aggro.md) [combat enemies] _(backlog)_
-- [ ] [#014 Dash i-frames not applied](ongoing/014-dash-i-frames-not-applied.md) [combat] _(ongoing)_
-- [ ] [#015 Hitbox persists after enemy death](backlog/015-hitbox-persists-after-enemy-death.md) [combat enemies tech-debt] _(backlog)_
+- [ ] [#dcp3mjv Audio mixer & volume settings](backlog/dcp3mjv-audio-mixer-volume-settings.md) [audio ux] _(backlog)_
+- [ ] [#nv76h2p Combat SFX](backlog/nv76h2p-combat-sfx.md) [audio combat] _(backlog)_
+- [ ] [#vg35ftf Forest biome music](backlog/vg35ftf-forest-biome-music.md) [audio] _(backlog)_
 
-### [#003 Art & animation pipeline](ongoing/003-art-animation-pipeline.md) — 11% (2/18 pts · 1/5 done) · _medium_ · ongoing
+### [#9angn6c Art & animation pipeline](ongoing/9angn6c-art-animation-pipeline.md) — 11% (2/18 pts · 1/5 done) · _medium_ · ongoing
 
-- [x] [#016 Sprite atlas build tool](done/016-sprite-atlas-build-tool.md) [art tooling]
-- [ ] [#017 Player sprite sheet](ongoing/017-player-sprite-sheet.md) [art] _(ongoing)_
-- [ ] [#018 Enemy sprite sheets](backlog/018-enemy-sprite-sheets.md) [art enemies] _(backlog)_
-- [ ] [#019 Forest tileset](backlog/019-forest-tileset.md) [art] _(backlog)_
-- [ ] [#020 Cave tileset](backlog/020-cave-tileset.md) [art] _(backlog)_
+- [x] [#adejzqs Sprite atlas build tool](done/adejzqs-sprite-atlas-build-tool.md) [art tooling]
+- [ ] [#fb8zz9c Player sprite sheet](ongoing/fb8zz9c-player-sprite-sheet.md) [art] _(ongoing)_
+- [ ] [#fd34m5t Enemy sprite sheets](backlog/fd34m5t-enemy-sprite-sheets.md) [art enemies] _(backlog)_
+- [ ] [#r4c8ajk Forest tileset](backlog/r4c8ajk-forest-tileset.md) [art] _(backlog)_
+- [ ] [#sr4c37v Cave tileset](backlog/sr4c37v-cave-tileset.md) [art] _(backlog)_
 
-### [#004 World building & levels](backlog/004-world-building-levels.md) — 0% (0/21 pts · 0/4 done) · _medium_ · backlog
+### [#hqpjvhv UI, menus & HUD](ongoing/hqpjvhv-ui-menus-hud.md) — 0% (0/9 pts · 0/3 done) · _medium_ · ongoing
 
-- [ ] [#021 Level 1 - Forest entrance](backlog/021-level-1-forest-entrance.md) [level-design] _(backlog)_
-- [ ] [#022 Level 2 - Cave depths](backlog/022-level-2-cave-depths.md) [level-design] _(backlog)_
-- [ ] [#023 World map & fast travel](backlog/023-world-map-fast-travel.md) [level-design ux] _(backlog)_
-- [ ] [#024 Checkpoint & respawn](backlog/024-checkpoint-respawn.md) [level-design tech] _(backlog)_
+- [ ] [#2v3w3zj Pause & settings menu](backlog/2v3w3zj-pause-settings-menu.md) [ux] _(backlog)_
+- [ ] [#br4e7qz Main menu](ongoing/br4e7qz-main-menu.md) [ux] _(ongoing)_
+- [ ] [#z8be3ac HUD: health & ammo](backlog/z8be3ac-hud-health-ammo.md) [ux] _(backlog)_
 
-### [#005 Audio & music](backlog/005-audio-music.md) — 0% (0/7 pts · 0/3 done) · _low_ · backlog
+### [#j7n7grh Player movement & combat](ongoing/j7n7grh-player-movement-combat.md) — 10% (3/30 pts · 1/9 done) · _high_ · ongoing
 
-- [ ] [#025 Combat SFX](backlog/025-combat-sfx.md) [audio combat] _(backlog)_
-- [ ] [#026 Forest biome music](backlog/026-forest-biome-music.md) [audio] _(backlog)_
-- [ ] [#027 Audio mixer & volume settings](backlog/027-audio-mixer-volume-settings.md) [audio ux] _(backlog)_
+- [ ] [#3msf24b Crouch & slide](backlog/3msf24b-crouch-slide.md) [movement] _(backlog)_
+- [x] [#5qmdpg6 Walk / run / jump controller](done/5qmdpg6-walk-run-jump-controller.md) [movement]
+- [ ] [#6ekkhbe Combat system](ongoing/6ekkhbe-combat-system.md) _(ongoing)_
+- [ ] [#e6mpzcj Dash & wall-jump](ongoing/e6mpzcj-dash-wall-jump.md) [combat movement] _(ongoing)_
 
-### [#006 UI, menus & HUD](ongoing/006-ui-menus-hud.md) — 0% (0/9 pts · 0/3 done) · _medium_ · ongoing
+### [#qw3rnfb World building & levels](backlog/qw3rnfb-world-building-levels.md) — 0% (0/21 pts · 0/4 done) · _medium_ · backlog
 
-- [ ] [#028 Main menu](ongoing/028-main-menu.md) [ux] _(ongoing)_
-- [ ] [#029 HUD: health & ammo](backlog/029-hud-health-ammo.md) [ux] _(backlog)_
-- [ ] [#030 Pause & settings menu](backlog/030-pause-settings-menu.md) [ux] _(backlog)_
+- [ ] [#5a6ka92 World map & fast travel](backlog/5a6ka92-world-map-fast-travel.md) [level-design ux] _(backlog)_
+- [ ] [#dm9t6h7 Level 2 - Cave depths](backlog/dm9t6h7-level-2-cave-depths.md) [level-design] _(backlog)_
+- [ ] [#exg4e3b Level 1 - Forest entrance](backlog/exg4e3b-level-1-forest-entrance.md) [level-design] _(backlog)_
+- [ ] [#xzyw9wm Checkpoint & respawn](backlog/xzyw9wm-checkpoint-respawn.md) [level-design tech] _(backlog)_
 
 ## Backlog
 
-- [#032 Save / load system](backlog/032-save-load-system.md) — _medium_ [tech]
+- [#nmde6ad Save / load system](backlog/nmde6ad-save-load-system.md) — _medium_ [tech]
 
 ## Ongoing
 
-- [#031 Pick a save-data format](ongoing/031-pick-a-save-data-format.md) — _high_ [needs-design tech]
+- [#h9chxqu Pick a save-data format](ongoing/h9chxqu-pick-a-save-data-format.md) — _high_ [needs-design tech]
 
 ## Done
 
-- [#033 Prototype WASD movement](done/033-prototype-wasd-movement.md) — _medium_ [movement tech-debt] · _superseded_ (closed 2026-06-10)
-- [#035 Online co-op multiplayer](done/035-online-co-op-multiplayer.md) — _medium_ [multiplayer needs-design] · _wontfix_ (closed 2026-06-10)
-- [#034 Slope collision jitter](done/034-slope-collision-jitter.md) — _low_ [tech-debt] · _duplicate_ (closed 2026-06-10)
+- [#nnxgpen Prototype WASD movement](done/nnxgpen-prototype-wasd-movement.md) — _medium_ [movement tech-debt] · _superseded_ (closed 2026-06-10)
+- [#ypu9mn9 Online co-op multiplayer](done/ypu9mn9-online-co-op-multiplayer.md) — _medium_ [multiplayer needs-design] · _wontfix_ (closed 2026-06-10)
+- [#2xen4un Slope collision jitter](done/2xen4un-slope-collision-jitter.md) — _low_ [tech-debt] · _duplicate_ (closed 2026-06-10)
