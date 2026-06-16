@@ -7,7 +7,9 @@
 <text x="371" y="21" fill="#8b93a1" text-anchor="middle">$ trck show 21</text>
 <text y="63" xml:space="preserve">
 <tspan x="16.0" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">           id</tspan>
-<tspan x="117.4" textLength="70.2" lengthAdjust="spacing" fill="#c5cdd9">  exg4e3b</tspan>
+<tspan x="117.4" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9">  </tspan>
+<tspan x="133.0" textLength="15.6" lengthAdjust="spacing" fill="#c5cdd9" font-weight="bold">ex</tspan>
+<tspan x="148.6" textLength="39.0" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">g4e3b</tspan>
 </text>
 <text y="77" xml:space="preserve">
 <tspan x="16.0" textLength="101.4" lengthAdjust="spacing" fill="#c5cdd9" opacity="0.55">         slug</tspan>
