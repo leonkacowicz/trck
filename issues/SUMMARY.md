@@ -5,29 +5,12 @@
 
 | State | Count |
 |---|---:|
-| backlog | 21 |
-| ongoing | 1 |
-| done | 49 |
+| backlog | 20 |
+| ongoing | 0 |
+| done | 51 |
 | **total** | **71** |
 
 ## Hierarchies
-
-### [#4vqukyy Part D: richer tracker features](ongoing/4vqukyy-part-d-richer-tracker-features.md) — 61% (14/23 pts · 14/23 done) · _medium_ · ongoing
-
-- [x] [#3x6mmhu list: annotate blocked/blocker relationships and clear them when resolved](done/3x6mmhu-list-annotate-blocked-blocker-relationships-and-clear-them-when-resolved.md)
-- [x] [#5wbwpjv Add full-text search/grep across issue bodies](done/5wbwpjv-add-full-text-search-grep-across-issue-bodies.md)
-- [ ] [#6ddksge Reconcile id collisions when branches concurrently create issues](backlog/6ddksge-reconcile-id-collisions-when-branches-concurrently-create-issues.md) [conflict-resolution] _(backlog)_
-- [x] [#9sevgpn Enrich 'list' filters: multi/negated status, title match, sort, --blocked, --orphan](done/9sevgpn-enrich-list-filters-multi-negated-status-title-match-sort-blocked-orphan.md)
-- [x] [#9wd4tkf list: hide settled work by default (keep done children under open parents)](done/9wd4tkf-list-hide-settled-work-by-default-keep-done-children-under-open-parents.md)
-- [x] [#cea683t validate/dep: detect and prevent dependency cycles](done/cea683t-validate-dep-detect-and-prevent-dependency-cycles.md)
-- [x] [#dscmxng Use random alphanumeric ids to make concurrent creation collision-free](done/dscmxng-use-random-alphanumeric-ids-to-make-concurrent-creation-collision-free.md) [conflict-resolution]
-- [ ] [#eemqu4g Support configurable custom fields](backlog/eemqu4g-support-configurable-custom-fields.md) _(backlog)_
-- [ ] [#ey2aruc Auto-resolve index.jsonl and SUMMARY.md merge conflicts via git merge drivers](backlog/ey2aruc-auto-resolve-index-jsonl-and-summary-md-merge-conflicts-via-git-merge-drivers.md) [conflict-resolution] _(backlog)_
-- [x] [#h7xp2dm Free-form custom fields: set/filter/sort arbitrary key→value](done/h7xp2dm-free-form-custom-fields-set-filter-sort-arbitrary-key-value.md)
-- [x] [#httj4xf Add labels/tags to issues](done/httj4xf-add-labels-tags-to-issues.md)
-- [x] [#qc48tds Add 'ready'/'next' command: list unblocked, not-done leaves](done/qc48tds-add-ready-next-command-list-unblocked-not-done-leaves.md)
-- [ ] [#r9zefup Add --json output to list/show/deps/tree for scripting](backlog/r9zefup-add-json-output-to-list-show-deps-tree-for-scripting.md) _(backlog)_
-- [ ] [#s3d6xyz Add reconfigure verb to rename/reorder statuses](backlog/s3d6xyz-add-reconfigure-verb-to-rename-reorder-statuses.md) _(backlog)_
 
 ### [#ee2crq3 Introduce a derived Graph view over the loaded index](done/ee2crq3-introduce-a-derived-graph-view-over-the-loaded-index.md) — 100% (3/3 pts · 3/3 done) · _medium_ · done
 Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-06-09-graph-derived-view-design.md)
@@ -68,14 +51,17 @@ Spec: [`docs/specs/2026-06-11-custom-fields-design.md`](../docs/specs/2026-06-11
 ## Backlog
 
 - [#dbq2wqn deps: graph display filters (--omit-completed, --depth N)](backlog/dbq2wqn-deps-graph-display-filters-omit-completed-depth-n.md) — _medium_
+- [#ey2aruc Auto-resolve index.jsonl and SUMMARY.md merge conflicts via git merge drivers](backlog/ey2aruc-auto-resolve-index-jsonl-and-summary-md-merge-conflicts-via-git-merge-drivers.md) — _medium_ [conflict-resolution tracker-features]
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](backlog/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#tfhhp8h mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](backlog/tfhhp8h-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
-- [#uydwa9h Convert the #002 'richer tracker features' epic into a label](backlog/uydwa9h-convert-the-002-richer-tracker-features-epic-into-a-label.md) — _medium_
 - [#wh3mv52 mv/done: guard closing a parent with open descendants (--recurse to cascade)](backlog/wh3mv52-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
 - [#5jhvpz4 update: add a minimum-size sanity check on the downloaded engine](backlog/5jhvpz4-update-add-a-minimum-size-sanity-check-on-the-downloaded-engine.md) — _low_
+- [#6ddksge Reconcile id collisions when branches concurrently create issues](backlog/6ddksge-reconcile-id-collisions-when-branches-concurrently-create-issues.md) — _low_ [conflict-resolution tracker-features]
 - [#cbf4sxp config: friendly errors for empty statuses/priorities/kinds lists](backlog/cbf4sxp-config-friendly-errors-for-empty-statuses-priorities-kinds-lists.md) — _low_
+- [#eemqu4g Support configurable custom fields](backlog/eemqu4g-support-configurable-custom-fields.md) — _low_ [tracker-features]
 - [#kj2c95b validate: suppress redundant bad-slug error when filename-slug mismatch already reported](backlog/kj2c95b-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
 - [#m3z2ywb summary: include foreign/unknown statuses in the counts table](backlog/m3z2ywb-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
+- [#s3d6xyz Add reconfigure verb to rename/reorder statuses](backlog/s3d6xyz-add-reconfigure-verb-to-rename-reorder-statuses.md) — _low_ [tracker-features]
 - [#v9nyy42 Part C: curses TUI for browsing and quick actions](backlog/v9nyy42-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
 - [#xagqqgd deps: optimize node ordering to minimize edge span and crossings (local search)](backlog/xagqqgd-deps-optimize-node-ordering-to-minimize-edge-span-and-crossings-local-search.md) — _low_
 
@@ -89,17 +75,27 @@ _none_
 - [#ejcxwmz pre-commit hook never runs check when trck.json is at repo root](done/ejcxwmz-pre-commit-hook-never-runs-check-when-trck-json-is-at-repo-root.md) — _high_ (closed 2026-06-09)
 - [#mur7gwd Crash instead of clean error when no tracker is found](done/mur7gwd-crash-instead-of-clean-error-when-no-tracker-is-found.md) — _high_ (closed 2026-06-10)
 - [#nhanp8c Strip null/empty fields from index.jsonl rows to reduce noise](done/nhanp8c-strip-null-empty-fields-from-index-jsonl-rows-to-reduce-noise.md) — _high_ (closed 2026-06-06)
+- [#qc48tds Add 'ready'/'next' command: list unblocked, not-done leaves](done/qc48tds-add-ready-next-command-list-unblocked-not-done-leaves.md) — _high_ [tracker-features] (closed 2026-06-06)
 - [#y8asnbe Write root README.md and CLAUDE.md](done/y8asnbe-write-root-readme-md-and-claude-md.md) — _high_ (closed 2026-06-05)
 - [#3e3cn37 init: accept positional dir and add --no-vendor for self-hosting repos](done/3e3cn37-init-accept-positional-dir-and-add-no-vendor-for-self-hosting-repos.md) — _medium_ (closed 2026-06-05)
+- [#3x6mmhu list: annotate blocked/blocker relationships and clear them when resolved](done/3x6mmhu-list-annotate-blocked-blocker-relationships-and-clear-them-when-resolved.md) — _medium_ [tracker-features] (closed 2026-06-09)
+- [#4vqukyy Part D: richer tracker features](done/4vqukyy-part-d-richer-tracker-features.md) — _medium_ · _superseded_ (closed 2026-06-23)
+- [#5wbwpjv Add full-text search/grep across issue bodies](done/5wbwpjv-add-full-text-search-grep-across-issue-bodies.md) — _medium_ [tracker-features] (closed 2026-06-10)
 - [#9pf42be Add points field with leaves-only deep-recursive weighted rollup](done/9pf42be-add-points-field-with-leaves-only-deep-recursive-weighted-rollup.md) — _medium_ (closed 2026-06-06)
+- [#9sevgpn Enrich 'list' filters: multi/negated status, title match, sort, --blocked, --orphan](done/9sevgpn-enrich-list-filters-multi-negated-status-title-match-sort-blocked-orphan.md) — _medium_ [tracker-features] (closed 2026-06-06)
+- [#9wd4tkf list: hide settled work by default (keep done children under open parents)](done/9wd4tkf-list-hide-settled-work-by-default-keep-done-children-under-open-parents.md) — _medium_ [tracker-features] (closed 2026-06-14)
 - [#b7t7d4q list: show points-weighted percent-complete on parent rows](done/b7t7d4q-list-show-points-weighted-percent-complete-on-parent-rows.md) — _medium_ (closed 2026-06-14)
 - [#bpwuedw Deduplicate parent-cycle detection via Graph.ancestors_of](done/bpwuedw-deduplicate-parent-cycle-detection-via-graph-ancestors-of.md) — _medium_ (closed 2026-06-10)
+- [#cea683t validate/dep: detect and prevent dependency cycles](done/cea683t-validate-dep-detect-and-prevent-dependency-cycles.md) — _medium_ [tracker-features] (closed 2026-06-08)
+- [#dscmxng Use random alphanumeric ids to make concurrent creation collision-free](done/dscmxng-use-random-alphanumeric-ids-to-make-concurrent-creation-collision-free.md) — _medium_ [conflict-resolution tracker-features] (closed 2026-06-15)
 - [#ge5jt9s Cascading parent status: derive parent status from children (status rollup)](done/ge5jt9s-cascading-parent-status-derive-parent-status-from-children-status-rollup.md) — _medium_ (closed 2026-06-13)
 - [#gwcr9qd deps: shorter edges / fewer crossings in the graph layout](done/gwcr9qd-deps-shorter-edges-fewer-crossings-in-the-graph-layout.md) — _medium_ (closed 2026-06-12)
+- [#httj4xf Add labels/tags to issues](done/httj4xf-add-labels-tags-to-issues.md) — _medium_ [tracker-features] (closed 2026-06-06)
 - [#kd8ngqv Improve CLI output presentation (align/icons, color, show, SUMMARY)](done/kd8ngqv-improve-cli-output-presentation-align-icons-color-show-summary.md) — _medium_ (closed 2026-06-05)
 - [#nu939p9 Add normalize command to rewrite index.jsonl in canonical slim form](done/nu939p9-add-normalize-command-to-rewrite-index-jsonl-in-canonical-slim-form.md) — _medium_ (closed 2026-06-06)
 - [#rd6rk5e Allow any issue to be a parent (rollup for any parent)](done/rd6rk5e-allow-any-issue-to-be-a-parent-rollup-for-any-parent.md) — _medium_ (closed 2026-06-05)
 - [#tazdgkg deps --graph: lazygit-style dependency DAG renderer](done/tazdgkg-deps-graph-lazygit-style-dependency-dag-renderer.md) — _medium_ (closed 2026-06-10)
+- [#uydwa9h Convert the #002 'richer tracker features' epic into a label](done/uydwa9h-convert-the-002-richer-tracker-features-epic-into-a-label.md) — _medium_ (closed 2026-06-23)
 - [#w8a87ky deps --graph <id>: scope to the focal issue's directed dependency line](done/w8a87ky-deps-graph-id-scope-to-the-focal-issue-s-directed-dependency-line.md) — _medium_ (closed 2026-06-10)
 - [#wwpsa3f Extract config-vocabulary validation helpers](done/wwpsa3f-extract-config-vocabulary-validation-helpers.md) — _medium_ (closed 2026-06-10)
 - [#x5dcpmw Eliminate unnecessary index double-reads](done/x5dcpmw-eliminate-unnecessary-index-double-reads.md) — _medium_ (closed 2026-06-10)
