@@ -16,14 +16,23 @@ regenerates `SUMMARY.md`, and self-validates.
 | narrative | the issue markdown body |
 | rollup | `SUMMARY.md` (generated) |
 
+## IDs
+Each issue is keyed by a short **random alphanumeric** id (7 chars from a look-alike-free
+base32 alphabet, e.g. `k3m9x2a`) — **not** a sequential integer. Ids are random, so listing
+order is *creation* order, not id order. Anywhere a command wants an `ID`, **any unambiguous
+prefix works** (`trck show k3m` resolves `k3m9x2a`); an ambiguous prefix errors and lists the
+candidates. Legacy integer-id trackers keep working, and `trck renumber` migrates them — a
+renumbered issue records its old number in `legacy_id`, so stale `#NN` references still resolve.
+
 ## Common verbs (run `trck --help` for all)
-- `trck new "<title>" [--priority …] [--kind …] [--parent NNN] [--depends a,b]`
-- `trck mv NNN <status>` (vocabulary-agnostic); `trck start NNN` / `trck done NNN [--resolution …]` (aliases)
-- `trck set NNN [--priority …] [--parent …|none] [--kind …] [--title …]`
-- `trck dep NNN --add MMM | --remove MMM`
-- `trck label NNN --add X --remove Y`
-- `trck list` · `trck tree` · `trck deps NNN` · `trck show NNN` · `trck check` · `trck summary`
+- `trck new "<title>" [--priority …] [--kind …] [--parent ID] [--depends a,b]`
+- `trck mv ID <status>` (vocabulary-agnostic); `trck start ID` / `trck done ID [--resolution …]` (aliases)
+- `trck set ID [--priority …] [--parent …|none] [--kind …] [--title …]`
+- `trck dep ID --add ID2 | --remove ID2`
+- `trck label ID --add X --remove Y`
+- `trck list` · `trck tree` · `trck deps ID` · `trck show ID` · `trck check` · `trck summary`
 - `trck normalize` — rewrite `index.jsonl` in canonical slim form (no data change)
+- `trck renumber` — convert legacy integer ids to random alphanumeric ids
 - `trck update` — pull the latest engine from the canonical repo.
 
 Statuses, priorities, kinds, resolutions, and aliases are configured in `trck.json`.
