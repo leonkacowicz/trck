@@ -1415,12 +1415,12 @@ regenerates `SUMMARY.md`, and self-validates.
 > Never hand-edit `index.jsonl` or `SUMMARY.md`, and never move/rename issue files by hand.
 
 ## Where things live
-| Data | Source of truth |
-|---|---|
-| status | the folder the file is in (configured in `trck.json`) |
-| other metadata | `index.jsonl` (one JSON object per issue) |
-| narrative | the issue markdown body |
-| rollup | `SUMMARY.md` (generated) |
+| Data | Source of truth | Changed by |
+|---|---|---|
+| status | the folder the file is in (configured in `trck.json`) | `trck mv` / `start` / `done` (moves the file) |
+| other metadata | `index.jsonl` (one JSON object per issue) | `trck set` / `dep` / `label` |
+| narrative | the issue markdown body | **you** (hand-edited) |
+| rollup | `SUMMARY.md` (generated) | `trck` (auto, every mutating verb) |
 
 ## IDs
 Each issue is keyed by a short **random alphanumeric** id (7 chars from a look-alike-free
@@ -1431,6 +1431,9 @@ candidates. Legacy integer-id trackers keep working, and `trck renumber` migrate
 renumbered issue records its old number in `legacy_id`, so stale `#NN` references still resolve.
 
 ## Common verbs (run `trck --help` for all)
+Run from anywhere in the repo — `trck` finds the tracker by walking up to the folder
+holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
+
 - `trck new "<title>" [--priority …] [--kind …] [--parent ID] [--depends a,b]`
 - `trck mv ID <status>` (vocabulary-agnostic); `trck start ID` / `trck done ID [--resolution …]` (aliases)
 - `trck set ID [--priority …] [--parent …|none] [--kind …] [--title …] [--field k=v] [--unset k]`
@@ -1462,6 +1465,17 @@ each means something distinct. Pick the right one.
 
 Rule of thumb: decomposition → **parent/child**; "category of similar things" → **labels**;
 "must come first" → **dependency**; "ought to come first" → **priority**.
+
+## Commit hygiene
+Keep issue-tracker commits separate from code commits where reasonable. The moved file,
+`index.jsonl`, and `SUMMARY.md` are one tracker change and belong together.
+
+## What NOT to do
+- Never hand-edit `index.jsonl` or `SUMMARY.md`, and never move or rename issue files by
+  hand — the verbs do that.
+- Never delete an issue file — close it with `trck done ID --resolution …` so the outcome
+  is recorded without losing history.
+- Don't put status or priority into the markdown body — that metadata lives in the index.
 """
 
 README_TEMPLATE = """# Issues (managed by `trck`)
