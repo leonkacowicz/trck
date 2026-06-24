@@ -5,10 +5,10 @@
 
 | State | Count |
 |---|---:|
-| backlog | 20 |
+| backlog | 21 |
 | ongoing | 0 |
 | done | 51 |
-| **total** | **71** |
+| **total** | **72** |
 
 ## Hierarchies
 
@@ -50,7 +50,7 @@ Spec: [`docs/specs/2026-06-11-custom-fields-design.md`](../docs/specs/2026-06-11
 
 ## Backlog
 
-- [#dbq2wqn deps: graph display filters (--omit-completed, --depth N)](backlog/dbq2wqn-deps-graph-display-filters-omit-completed-depth-n.md) — _medium_
+- [#dbq2wqn deps: hide done work by default (fully-done chains + --omit-done)](backlog/dbq2wqn-deps-hide-done-by-default.md) — _medium_
 - [#ey2aruc Auto-resolve index.jsonl and SUMMARY.md merge conflicts via git merge drivers](backlog/ey2aruc-auto-resolve-index-jsonl-and-summary-md-merge-conflicts-via-git-merge-drivers.md) — _medium_ [conflict-resolution tracker-features]
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](backlog/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#tfhhp8h mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](backlog/tfhhp8h-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
@@ -64,6 +64,7 @@ Spec: [`docs/specs/2026-06-11-custom-fields-design.md`](../docs/specs/2026-06-11
 - [#s3d6xyz Add reconfigure verb to rename/reorder statuses](backlog/s3d6xyz-add-reconfigure-verb-to-rename-reorder-statuses.md) — _low_ [tracker-features]
 - [#v9nyy42 Part C: curses TUI for browsing and quick actions](backlog/v9nyy42-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
 - [#xagqqgd deps: optimize node ordering to minimize edge span and crossings (local search)](backlog/xagqqgd-deps-optimize-node-ordering-to-minimize-edge-span-and-crossings-local-search.md) — _low_
+- [#9ax2ny2 deps: --depth N to cut expansion N hops from the seed(s)](backlog/9ax2ny2-deps-depth-n-to-cut-expansion-n-hops-from-the-seed-s.md) — _lowest_
 
 ## Ongoing
 
