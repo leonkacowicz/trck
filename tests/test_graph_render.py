@@ -7,7 +7,7 @@ command tests drive `cmd_deps` (mirroring test_read.py).
 import io
 import re
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from tempfile import TemporaryDirectory
 
 from tests.helpers import load_trck, make_tracker, ns
@@ -189,14 +189,21 @@ class TestGraphRender(unittest.TestCase):
                               slug=None))
         return Path(buf.getvalue().strip()).name.split("-")[0]
 
-    def deps_graph(self, d, issue_id=None, full=False):
+    def done(self, d, issue_id):
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            self.t.cmd_mv(ns(dir=str(d), id=issue_id, status="done", resolution=None))
+
+    def deps_graph(self, d, issue_id=None, full=False, omit_done=False,
+                   include_done_chains=False):
         buf = io.StringIO()
         # Ensure id is passed as a string (or None) since cmd_deps uses it as a
         # key against g.by_id which holds string ids after Task 1.1 coercion.
         sid = str(issue_id) if issue_id is not None else None
         with redirect_stdout(buf):
             self.t.cmd_deps(ns(dir=str(d), id=sid, full=full,
-                               requires=False, blocks=False, graph=True))
+                               requires=False, blocks=False, graph=True,
+                               omit_done=omit_done,
+                               include_done_chains=include_done_chains))
         return buf.getvalue()
 
     def test_deps_graph_renders_whole_dag_without_an_id(self):
@@ -281,6 +288,112 @@ class TestGraphRender(unittest.TestCase):
             self.seed(d, "Top", depends=id1)
             out = self.deps_graph(d)
             self.assertNotIn("\033[", out)
+
+    # --- done filtering ---------------------------------------------------- #
+
+    def test_deps_whole_graph_hides_fully_done_chains_by_default(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            done_base = self.seed(d, "Done base")
+            done_top = self.seed(d, "Done top", depends=done_base)
+            live_base = self.seed(d, "Live base")
+            live_top = self.seed(d, "Live top", depends=live_base)
+            self.done(d, done_base)
+            self.done(d, done_top)
+
+            out = self.deps_graph(d)
+
+            self.assertNotIn(f"#{done_base}", out)
+            self.assertNotIn(f"#{done_top}", out)
+            self.assertIn(f"#{live_base}", out)
+            self.assertIn(f"#{live_top}", out)
+
+    def test_deps_include_done_chains_restores_fully_done_components(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            done_base = self.seed(d, "Done base")
+            done_top = self.seed(d, "Done top", depends=done_base)
+            self.done(d, done_base)
+            self.done(d, done_top)
+
+            out = self.deps_graph(d, include_done_chains=True)
+
+            self.assertIn(f"#{done_base}", out)
+            self.assertIn(f"#{done_top}", out)
+
+    def test_deps_keeps_done_nodes_in_mixed_chains_by_default(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            done_base = self.seed(d, "Done base")
+            live_top = self.seed(d, "Live top", depends=done_base)
+            self.done(d, done_base)
+
+            out = self.deps_graph(d)
+
+            self.assertIn(f"#{done_base}", out)
+            self.assertIn(f"#{live_top}", out)
+
+    def test_deps_omit_done_drops_done_nodes_without_bridging_edges(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            base = self.seed(d, "Base")
+            mid = self.seed(d, "Mid", depends=base)
+            top = self.seed(d, "Top", depends=mid)
+            self.done(d, mid)
+
+            out = self.deps_graph(d, omit_done=True)
+
+            self.assertIn(f"#{base}", out)
+            self.assertNotIn(f"#{mid}", out)
+            self.assertIn(f"#{top}", out)
+            self.assertEqual(out.count("●"), 2)
+            self.assertIn("\n\n", out)  # recomputed as two singleton components
+
+    def test_deps_omit_done_hides_even_included_done_chains(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            done_base = self.seed(d, "Done base")
+            done_top = self.seed(d, "Done top", depends=done_base)
+            self.done(d, done_base)
+            self.done(d, done_top)
+
+            out = self.deps_graph(d, omit_done=True, include_done_chains=True)
+
+            self.assertEqual(out, "")
+
+    def test_deps_single_id_keeps_done_chain_by_default(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            done_base = self.seed(d, "Done base")
+            done_top = self.seed(d, "Done top", depends=done_base)
+            self.done(d, done_base)
+            self.done(d, done_top)
+
+            out = self.deps_graph(d, done_base)
+
+            self.assertIn(f"#{done_base}", out)
+            self.assertIn(f"#{done_top}", out)
+
+    def test_deps_done_filter_uses_configured_terminal_role(self):
+        cfg = dict(self.t.DEFAULT_CONFIG)
+        cfg["statuses"] = [
+            {"name": "todo", "role": "initial"},
+            {"name": "doing", "role": "active"},
+            {"name": "shipped", "role": "terminal"},
+        ]
+        cfg["aliases"] = {"start": "doing", "done": "shipped"}
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, cfg)
+            done_base = self.seed(d, "Done base")
+            done_top = self.seed(d, "Done top", depends=done_base)
+            with redirect_stdout(io.StringIO()):
+                self.t.cmd_mv(ns(dir=str(d), id=done_base, status="shipped", resolution=None))
+                self.t.cmd_mv(ns(dir=str(d), id=done_top, status="shipped", resolution=None))
+
+            out = self.deps_graph(d)
+
+            self.assertNotIn(f"#{done_base}", out)
+            self.assertNotIn(f"#{done_top}", out)
 
     # --- focal-row highlight (deps NNN) ----------------------------------- #
 

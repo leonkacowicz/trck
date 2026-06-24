@@ -1232,6 +1232,26 @@ def render_graph(g: "Graph", ids) -> list:
     return rows
 
 
+def filter_deps_graph_ids(g: "Graph", ids, *, omit_done: bool = False,
+                          include_done_chains: bool = False,
+                          hide_done_chains: bool = True) -> set[int]:
+    """Apply display-only done filtering to a deps graph id set.
+
+    Fully terminal components are hidden only for the whole-graph view. Removing
+    done nodes happens by shrinking the id set; render_graph then recomputes
+    components over the remaining open-only subgraph, so no synthetic edges are
+    introduced across omitted terminal nodes.
+    """
+    kept = set(ids)
+    if hide_done_chains and not include_done_chains:
+        for comp in graph_components(g, kept):
+            if all(g.is_terminal(g.row(i)) for i in comp):
+                kept.difference_update(comp)
+    if omit_done:
+        kept = {i for i in kept if not g.is_terminal(g.row(i))}
+    return kept
+
+
 # --------------------------------------------------------------------------- #
 # SUMMARY.md generation
 # --------------------------------------------------------------------------- #
@@ -1928,7 +1948,9 @@ def cmd_next(args) -> None:
 
 
 def _print_deps_graph(ctx: Ctx, g: Graph, root_id, full: bool = False,
-                      up: bool = True, down: bool = True) -> None:
+                      up: bool = True, down: bool = True,
+                      omit_done: bool = False,
+                      include_done_chains: bool = False) -> None:
     """Render the depends_on DAG as a lazygit-style gutter, topologically sorted so a
     blocker always sits above what it blocks. With no id, the whole graph (every issue
     touching an edge), components separated; with an id, only that issue's directed
@@ -1943,6 +1965,8 @@ def _print_deps_graph(ctx: Ctx, g: Graph, root_id, full: bool = False,
                 edged.add(r.id); edged.add(dep)
     if root_id is not None:
         if root_id not in edged:
+            if omit_done and g.is_terminal(g.row(root_id)):
+                return
             print(node_label(ctx, g.row(root_id), focal=True, abbrev=abbrev) + "  (no dependencies)")
             return
         ids = (next(c for c in graph_components(g, edged) if root_id in set(c))
@@ -1952,6 +1976,9 @@ def _print_deps_graph(ctx: Ctx, g: Graph, root_id, full: bool = False,
         return
     else:
         ids = edged
+    ids = filter_deps_graph_ids(g, ids, omit_done=omit_done,
+                                include_done_chains=include_done_chains,
+                                hide_done_chains=root_id is None)
     rows = render_graph(g, ids)
     width = max((len(gut) for r in rows if r for (_i, gut, _o) in [r]), default=0)
     # When focused on one issue, mark its row with a left-margin caret (a blank
@@ -1982,7 +2009,9 @@ def cmd_deps(args) -> None:
     up = requires or not blocks
     down = blocks or not requires
     _print_deps_graph(ctx, g, root_id, full=getattr(args, "full", False),
-                      up=up, down=down)
+                      up=up, down=down,
+                      omit_done=getattr(args, "omit_done", False),
+                      include_done_chains=getattr(args, "include_done_chains", False))
 
 
 def cmd_check(args) -> None:
@@ -2591,6 +2620,10 @@ def build_parser() -> argparse.ArgumentParser:
     dz.add_argument("--full", action="store_true",
                     help="with an id, show the whole connected cluster (cousins "
                          "included), not just the directed dependency line")
+    dz.add_argument("--include-done-chains", action="store_true",
+                    help="in the whole graph, include components whose every issue is terminal")
+    dz.add_argument("--omit-done", action="store_true",
+                    help="omit terminal issues from the rendered graph")
     dz.add_argument("--graph", action="store_true", help=argparse.SUPPRESS)  # now default; kept as a no-op
     dz.set_defaults(func=cmd_deps)
 
