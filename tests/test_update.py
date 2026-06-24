@@ -120,3 +120,81 @@ class TestUpdate(unittest.TestCase):
                         self.t.cmd_update(ns(dir=None, check=False, ref=None))
             self.assertEqual(list(Path(tmp).glob("*.trck-update.tmp")), [])  # cleaned up
             self.assertIn("__version__ = '0.1.0'", p.read_text())  # original intact
+
+
+class TestUpdateRefreshesManagedDocs(unittest.TestCase):
+    """`trck update` also refreshes scaffolded docs (CLAUDE.md) the user hasn't edited."""
+
+    def setUp(self):
+        self.t = load_trck()
+
+    def make_self(self, tmp, version):
+        p = Path(tmp) / "trck"
+        p.write_text(f"#!/usr/bin/env python3\n__version__ = '{version}'\n")
+        p.chmod(0o755)
+        self.t.SELF_PATH = p.resolve()
+        return p
+
+    def new_source(self, version, claude_template):
+        """A minimal but valid engine source carrying a CLAUDE_MD_TEMPLATE literal."""
+        return (
+            "#!/usr/bin/env python3\n"
+            f"__version__ = '{version}'\n"
+            f"CLAUDE_MD_TEMPLATE = {claude_template!r}\n"
+        )
+
+    def run_update(self, tracker, source):
+        self.t.latest_release = lambda repo: ("v0.2.0", "")
+        self.t.fetch_url = lambda url, accept=None: source
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.t.cmd_update(ns(dir=str(tracker), check=False, ref=None))
+        return buf.getvalue()
+
+    def test_refreshes_when_doc_matches_current_template(self):
+        with TemporaryDirectory() as tmp:
+            self.make_self(tmp, "0.1.0")
+            tracker = make_tracker(tmp)
+            self.t.CLAUDE_MD_TEMPLATE = "OLD GUIDE\n"
+            (tracker / "CLAUDE.md").write_text("OLD GUIDE\n")  # untouched by user
+            out = self.run_update(tracker, self.new_source("0.2.0", "NEW GUIDE\n"))
+            self.assertEqual((tracker / "CLAUDE.md").read_text(), "NEW GUIDE\n")
+            self.assertIn("refreshed", out)
+
+    def test_keeps_doc_when_user_modified_it(self):
+        with TemporaryDirectory() as tmp:
+            self.make_self(tmp, "0.1.0")
+            tracker = make_tracker(tmp)
+            self.t.CLAUDE_MD_TEMPLATE = "OLD GUIDE\n"
+            (tracker / "CLAUDE.md").write_text("MY CUSTOM EDITS\n")  # diverged from template
+            out = self.run_update(tracker, self.new_source("0.2.0", "NEW GUIDE\n"))
+            self.assertEqual((tracker / "CLAUDE.md").read_text(), "MY CUSTOM EDITS\n")
+            self.assertIn("kept your modified", out)
+
+    def test_no_write_when_template_unchanged(self):
+        with TemporaryDirectory() as tmp:
+            self.make_self(tmp, "0.1.0")
+            tracker = make_tracker(tmp)
+            self.t.CLAUDE_MD_TEMPLATE = "SAME GUIDE\n"
+            (tracker / "CLAUDE.md").write_text("SAME GUIDE\n")
+            out = self.run_update(tracker, self.new_source("0.2.0", "SAME GUIDE\n"))
+            self.assertEqual((tracker / "CLAUDE.md").read_text(), "SAME GUIDE\n")
+            self.assertNotIn("refreshed", out)
+
+    def test_missing_doc_is_noop(self):
+        with TemporaryDirectory() as tmp:
+            self.make_self(tmp, "0.1.0")
+            tracker = make_tracker(tmp)  # no CLAUDE.md scaffolded
+            self.t.CLAUDE_MD_TEMPLATE = "OLD GUIDE\n"
+            self.run_update(tracker, self.new_source("0.2.0", "NEW GUIDE\n"))
+            self.assertFalse((tracker / "CLAUDE.md").exists())  # not created
+
+    def test_new_engine_without_template_is_noop(self):
+        with TemporaryDirectory() as tmp:
+            self.make_self(tmp, "0.1.0")
+            tracker = make_tracker(tmp)
+            self.t.CLAUDE_MD_TEMPLATE = "OLD GUIDE\n"
+            (tracker / "CLAUDE.md").write_text("OLD GUIDE\n")
+            # downloaded engine carries no CLAUDE_MD_TEMPLATE literal -> leave doc alone
+            self.run_update(tracker, "#!/usr/bin/env python3\n__version__ = '0.2.0'\n")
+            self.assertEqual((tracker / "CLAUDE.md").read_text(), "OLD GUIDE\n")

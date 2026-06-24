@@ -30,6 +30,7 @@ SUMMARY.md is generated. Python standard library only. See README.md.
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import os
 import re
@@ -2232,6 +2233,55 @@ def _current_version() -> str:
     return m.group(1) if m else __version__
 
 
+# Scaffolded docs that `init` writes from a template constant. On `update` we
+# refresh any copy the user hasn't customized (see _refresh_managed_docs).
+MANAGED_DOC_TEMPLATES = {"CLAUDE.md": "CLAUDE_MD_TEMPLATE"}
+
+
+def _template_literal(source: str, name: str) -> str | None:
+    """Extract the value of a top-level `name = "..."` string assignment from engine
+    source text, WITHOUT executing it. None if absent or not a plain string literal."""
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return None
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(
+            isinstance(t, ast.Name) and t.id == name for t in node.targets
+        ):
+            if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                return node.value.value
+    return None
+
+
+def _refresh_managed_docs(args, new_source: str) -> None:
+    """After the engine is replaced, bring scaffolded docs (CLAUDE.md) up to date.
+
+    A doc is rewritten only when its on-disk copy still equals THIS engine's template
+    -- i.e. the user never edited it; a customized copy is reported and left intact.
+    Best-effort and tracker-scoped: does nothing when run outside a tracker.
+
+    Note: the "unmodified" test compares against the running engine's template, so a
+    copy scaffolded by an older engine (whose template has since changed) reads as
+    modified and is left alone -- intentional, to never clobber possible edits."""
+    ctx = build_ctx(args, required=False)
+    if ctx is None:
+        return
+    for fname, const in MANAGED_DOC_TEMPLATES.items():
+        old = globals().get(const)
+        new = _template_literal(new_source, const)
+        if not old or not new or new == old:
+            continue  # template missing on one side, or unchanged -> nothing to do
+        path = ctx.dir / fname
+        if not path.exists():
+            continue
+        if path.read_text() == old:
+            path.write_text(new)
+            print(f"refreshed {path}")
+        else:
+            print(f"kept your modified {path} (template changed upstream)")
+
+
 def cmd_update(args) -> None:
     repo = _update_repo(args)
     cur_ver = _current_version()
@@ -2275,6 +2325,7 @@ def cmd_update(args) -> None:
         tmp.unlink(missing_ok=True)
         die(f"update failed (write): {e}")
     print(f"updated {target} to {ref}")
+    _refresh_managed_docs(args, source)
     if notes:
         print(f"\n{notes}")
 
