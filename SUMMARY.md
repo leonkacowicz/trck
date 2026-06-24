@@ -5,9 +5,9 @@
 
 | State | Count |
 |---|---:|
-| backlog | 21 |
+| backlog | 20 |
 | ongoing | 0 |
-| done | 51 |
+| done | 52 |
 | **total** | **72** |
 
 ## Hierarchies
@@ -50,7 +50,6 @@ Spec: [`docs/specs/2026-06-11-custom-fields-design.md`](../docs/specs/2026-06-11
 
 ## Backlog
 
-- [#dbq2wqn deps: hide done work by default (fully-done chains + --omit-done)](backlog/dbq2wqn-deps-hide-done-by-default.md) — _medium_
 - [#ey2aruc Auto-resolve index.jsonl and SUMMARY.md merge conflicts via git merge drivers](backlog/ey2aruc-auto-resolve-index-jsonl-and-summary-md-merge-conflicts-via-git-merge-drivers.md) — _medium_ [conflict-resolution tracker-features]
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](backlog/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#tfhhp8h mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](backlog/tfhhp8h-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
@@ -88,6 +87,7 @@ _none_
 - [#b7t7d4q list: show points-weighted percent-complete on parent rows](done/b7t7d4q-list-show-points-weighted-percent-complete-on-parent-rows.md) — _medium_ (closed 2026-06-14)
 - [#bpwuedw Deduplicate parent-cycle detection via Graph.ancestors_of](done/bpwuedw-deduplicate-parent-cycle-detection-via-graph-ancestors-of.md) — _medium_ (closed 2026-06-10)
 - [#cea683t validate/dep: detect and prevent dependency cycles](done/cea683t-validate-dep-detect-and-prevent-dependency-cycles.md) — _medium_ [tracker-features] (closed 2026-06-08)
+- [#dbq2wqn deps: hide done work by default (fully-done chains + --omit-done)](done/dbq2wqn-deps-hide-done-by-default.md) — _medium_ (closed 2026-06-24)
 - [#dscmxng Use random alphanumeric ids to make concurrent creation collision-free](done/dscmxng-use-random-alphanumeric-ids-to-make-concurrent-creation-collision-free.md) — _medium_ [conflict-resolution tracker-features] (closed 2026-06-15)
 - [#ge5jt9s Cascading parent status: derive parent status from children (status rollup)](done/ge5jt9s-cascading-parent-status-derive-parent-status-from-children-status-rollup.md) — _medium_ (closed 2026-06-13)
 - [#gwcr9qd deps: shorter edges / fewer crossings in the graph layout](done/gwcr9qd-deps-shorter-edges-fewer-crossings-in-the-graph-layout.md) — _medium_ (closed 2026-06-12)
