@@ -27,9 +27,10 @@ renumbered issue records its old number in `legacy_id`, so stale `#NN` reference
 ## Common verbs (run `trck --help` for all)
 - `trck new "<title>" [--priority …] [--kind …] [--parent ID] [--depends a,b]`
 - `trck mv ID <status>` (vocabulary-agnostic); `trck start ID` / `trck done ID [--resolution …]` (aliases)
-- `trck set ID [--priority …] [--parent …|none] [--kind …] [--title …]`
+- `trck set ID [--priority …] [--parent …|none] [--kind …] [--title …] [--field k=v] [--unset k]`
 - `trck dep ID --add ID2 | --remove ID2`
 - `trck label ID --add X --remove Y`
+- Custom fields: `trck set ID --field assignee=leon`; filter `trck list --field assignee=leon`; sort `--sort field:assignee`; show `--show-field assignee`.
 - `trck list` · `trck tree` · `trck deps ID` · `trck show ID` · `trck check` · `trck summary`
 - `trck normalize` — rewrite `index.jsonl` in canonical slim form (no data change)
 - `trck renumber` — convert legacy integer ids to random alphanumeric ids
