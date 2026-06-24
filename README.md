@@ -237,7 +237,11 @@ for just that issue's directed dependency line (its transitive prerequisites and
 dependents), where the focal issue's row is marked with a `▸` and bolded. Scope to one
 cone with `trck deps NNN --requires` (only what it needs) or
 `--blocks` (only what waits on it); add `--full` instead to widen to the issue's whole
-connected cluster, including cousins joined only through a shared neighbour.
+connected cluster, including cousins joined only through a shared neighbour. The whole-graph
+view hides fully done components by default so completed chains don't drown out active work;
+`--include-done-chains` restores them. Done nodes inside a still-active chain remain visible
+as useful context, and `--omit-done` drops terminal nodes from the rendered graph without
+inventing replacement edges between their neighbours.
 
 <p align="center">
   <img src="docs/img/deps-graph.svg" alt="trck deps — the dependency DAG as a coloured gutter" width="800"><br>
