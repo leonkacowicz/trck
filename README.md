@@ -248,6 +248,36 @@ inventing replacement edges between their neighbours.
   <sub><code>trck deps</code> — the dependency DAG, each lane traced in its own colour</sub>
 </p>
 
+#### Dependencies climb the parent hierarchy
+
+Dependencies compose with containment, so a single authored edge covers a whole subtree on
+both ends — you never restate it on each child. `ready`/`next` and the inline `needs #NNN`
+annotations honour these **effective** dependencies, not just the edges you typed.
+
+- **Depending on a parent depends on its whole subtree.** Because a parent is *done* only when
+  all its descendants are (status rolls up), `A depends on P` means A waits for every issue
+  under `P`, recursively — not just `P` itself.
+- **A parent's dependencies are inherited by its children.** If `P depends on B`, then every
+  issue under `P` is effectively blocked by `B` too: none of `P`'s work can start until `B` is
+  done.
+- **An issue and its own ancestor or descendant can never depend on each other** — that would
+  be a cycle (a child would wait for its parent, but the parent isn't done until the child is).
+  Siblings and cousins may depend on each other freely. Any edge that would close such a cycle,
+  directly or through the hierarchy, is rejected when you add it, and `trck check` flags one
+  that slips in via a hand-edit.
+
+**Put the arrow at the right altitude — be precise about who depends on what:**
+
+- If a parent **as a whole** can't proceed until another issue is done, put the edge on the
+  **parent**; every child inherits it automatically.
+- If **only specific children** need it, put the edge on **those children**, not the parent, so
+  you don't needlessly block their siblings.
+- On the depended-on side, likewise: depend on the **specific issue** you actually need — reach
+  for its parent only when you genuinely need the whole subtree done first.
+
+Precise edges keep `ready`/`next` honest: an over-broad dependency hides work that is actually
+actionable, and a missing one surfaces work that isn't.
+
 ### Priorities = soft ordering (SHOULD)
 
 A **priority** expresses that a task *should* be done before another — an ordering

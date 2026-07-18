@@ -54,6 +54,14 @@ each means something distinct. Pick the right one.
   If finishing the children wouldn't justify closing the parent, it's a label, not a parent.
 - **Dependencies = hard ordering (MUST).** `A depends on B` means B *must* be done before A —
   B **blocks** A. `trck ready`/`trck next` won't surface a task until its deps are satisfied.
+  Dependencies **climb the hierarchy**, so one edge covers a whole subtree on both ends:
+  depending on a parent depends on its **whole subtree** (recursively — a parent is done only
+  when its descendants are), and a parent's deps are **inherited by every child**. Put the
+  arrow at the right altitude — on the **parent** when the whole parent depends on something,
+  on the **specific children** when only they do — and depend on the specific issue you need,
+  not its parent unless you need the entire subtree. An issue and its own ancestor/descendant
+  can never depend on each other (a cycle; the mutating verbs and `trck check` reject it);
+  siblings and cousins can. **Be precise:** an over-broad edge blocks work that is actually ready.
 - **Priorities = soft ordering (SHOULD).** A task that *should* be done before another — a
   preference that influences what to pick up next, not a constraint. Nothing is blocked.
 
