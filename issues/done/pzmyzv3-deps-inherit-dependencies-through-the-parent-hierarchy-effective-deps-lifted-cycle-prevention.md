@@ -83,24 +83,24 @@ split into **one rule: an effective cycle is invalid.**
 **authored edges and parent links** responsible — the user never typed the implied loop.
 
 ## Acceptance criteria
-- [ ] `is_blocked` (`trck:216` / `Graph.is_blocked`, `trck:655`) blocks a node when it, **or
+- [x] `is_blocked` (`trck:216` / `Graph.is_blocked`, `trck:655`) blocks a node when it, **or
       any ancestor**, has a non-terminal authored dependency. Blocking is one-sided (no
       depended-on-side expansion; rollup covers the subtree of the dep).
-- [ ] A shared `effDeps`-based traversal exists and is reused by the blocking predicate and
+- [x] A shared `effDeps`-based traversal exists and is reused by the blocking predicate and
       the cycle guard (single source of truth for lifting).
-- [ ] A local **disjoint-subtree** precondition rejects any `s→d` where one is an
+- [x] A local **disjoint-subtree** precondition rejects any `s→d` where one is an
       ancestor/descendant of the other (generalizes and replaces the `add == self` guard),
       with a message naming the containment relationship.
-- [ ] A **lifted `would_cycle`** rejects edges that close a loop through other subtrees
+- [x] A **lifted `would_cycle`** rejects edges that close a loop through other subtrees
       (`child(P1)→child(P2)` when `P2→P1` exists).
-- [ ] Guards run before `finalize` in `cmd_dep`, `cmd_mv`, and `cmd_new` (any op that adds a
+- [x] Guards run before `finalize` in `cmd_dep`, `cmd_mv`, and `cmd_new` (any op that adds a
       dep edge or changes the hierarchy). `finalize` remains write-then-warn.
-- [ ] `validate` gains an effective-cycle check so `trck check` reports inherited cycles from
+- [x] `validate` gains an effective-cycle check so `trck check` reports inherited cycles from
       hand-edited/imported/`mv`-created data; the message names the authored edges + parent
       links responsible.
-- [ ] `ready` / `next` reflect effective blocking (a leaf under a blocked parent is not
+- [x] `ready` / `next` reflect effective blocking (a leaf under a blocked parent is not
       "ready").
-- [ ] Tests (TDD, add failing test first) cover, at minimum:
+- [x] Tests (TDD, add failing test first) cover, at minimum:
       - child of `P2` is blocked while `P1` (which `P2` depends on) is non-terminal; becomes
         ready once `P1`'s subtree is terminal.
       - siblings / cousins under a common parent may depend on each other (no false cycle).

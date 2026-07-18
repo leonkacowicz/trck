@@ -5,9 +5,9 @@
 
 | State | Count |
 |---|---:|
-| backlog | 21 |
+| backlog | 20 |
 | ongoing | 0 |
-| done | 52 |
+| done | 53 |
 | **total** | **73** |
 
 ## Hierarchies
@@ -52,7 +52,6 @@ Spec: [`docs/specs/2026-06-11-custom-fields-design.md`](../docs/specs/2026-06-11
 
 - [#ey2aruc Auto-resolve index.jsonl and SUMMARY.md merge conflicts via git merge drivers](backlog/ey2aruc-auto-resolve-index-jsonl-and-summary-md-merge-conflicts-via-git-merge-drivers.md) — _medium_ [conflict-resolution tracker-features]
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](backlog/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
-- [#pzmyzv3 deps: inherit dependencies through the parent hierarchy (effective deps) + lifted cycle prevention](backlog/pzmyzv3-deps-inherit-dependencies-through-the-parent-hierarchy-effective-deps-lifted-cycle-prevention.md) — _medium_
 - [#tfhhp8h mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](backlog/tfhhp8h-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
 - [#wh3mv52 mv/done: guard closing a parent with open descendants (--recurse to cascade)](backlog/wh3mv52-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
 - [#5jhvpz4 update: add a minimum-size sanity check on the downloaded engine](backlog/5jhvpz4-update-add-a-minimum-size-sanity-check-on-the-downloaded-engine.md) — _low_
@@ -95,6 +94,7 @@ _none_
 - [#httj4xf Add labels/tags to issues](done/httj4xf-add-labels-tags-to-issues.md) — _medium_ [tracker-features] (closed 2026-06-06)
 - [#kd8ngqv Improve CLI output presentation (align/icons, color, show, SUMMARY)](done/kd8ngqv-improve-cli-output-presentation-align-icons-color-show-summary.md) — _medium_ (closed 2026-06-05)
 - [#nu939p9 Add normalize command to rewrite index.jsonl in canonical slim form](done/nu939p9-add-normalize-command-to-rewrite-index-jsonl-in-canonical-slim-form.md) — _medium_ (closed 2026-06-06)
+- [#pzmyzv3 deps: inherit dependencies through the parent hierarchy (effective deps) + lifted cycle prevention](done/pzmyzv3-deps-inherit-dependencies-through-the-parent-hierarchy-effective-deps-lifted-cycle-prevention.md) — _medium_ (closed 2026-07-18)
 - [#rd6rk5e Allow any issue to be a parent (rollup for any parent)](done/rd6rk5e-allow-any-issue-to-be-a-parent-rollup-for-any-parent.md) — _medium_ (closed 2026-06-05)
 - [#tazdgkg deps --graph: lazygit-style dependency DAG renderer](done/tazdgkg-deps-graph-lazygit-style-dependency-dag-renderer.md) — _medium_ (closed 2026-06-10)
 - [#uydwa9h Convert the #002 'richer tracker features' epic into a label](done/uydwa9h-convert-the-002-richer-tracker-features-epic-into-a-label.md) — _medium_ (closed 2026-06-23)
