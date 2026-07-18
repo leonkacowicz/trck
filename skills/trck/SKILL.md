@@ -101,7 +101,9 @@ Each relation means something distinct. Using the right one is what keeps the tr
   can be marked *done* exactly when all its children are. A parent's status is **derived** from
   its children (all initial → initial, all terminal → terminal, otherwise active), so you never
   set a parent's status by hand. A generic bucket of similar work is **not** a parent — it's a
-  label.
+  label. **Children carry no order** — containment says only *what composes the parent*, not *in
+  what sequence*; to sequence sub-tasks, use dependencies (§5), never their position under the
+  parent.
 - **Dependency = hard ordering (MUST).** `A depends on B` means B must be done before A — B
   **blocks** A. `ready`/`next` hide a task until its deps are satisfied. Dependencies climb the
   hierarchy (see §5) — this is the subtle, high-value part.
@@ -185,6 +187,8 @@ follow them proactively, without being asked.
   splitting until each leaf is small enough to finish in one sitting, then stop. Points on leaves
   roll up into the parent's progress. Decomposition turns a vague, intimidating issue into a
   checklist you can actually burn down — and makes dependencies expressible at the right grain.
+  The sub-tasks are **unordered**; if they must run in sequence, chain them with dependencies
+  (2nd depends on 1st, 3rd on 2nd, …) — nesting under a parent implies nothing about order.
 - **Be precise about dependencies, at the right altitude** — see §5.
 
 ## 5. Dependency precision — put the arrow at the right height

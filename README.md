@@ -223,6 +223,9 @@ the parent into sub-tasks** — the parent *is* the sum of its children.
   needed to reach it.
 - **Litmus test:** the parent can be marked *done* exactly when all its children are done. If
   finishing the children wouldn't justify closing the parent, it isn't a parent — it's a label.
+- Children are **unordered.** A parent expresses *what* it decomposes into, not *when* each part
+  happens. If sub-tasks must be done in sequence, encode that with **dependencies** (chain them:
+  the second depends on the first, the third on the second, …) — never rely on their listed order.
 
 ### Dependencies = hard ordering (MUST)
 

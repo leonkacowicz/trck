@@ -52,6 +52,9 @@ each means something distinct. Pick the right one.
   **labels** for that); it's a single, clear, achievable goal split into the steps to reach
   it. **Litmus test:** the parent can be marked *done* exactly when all its children are done.
   If finishing the children wouldn't justify closing the parent, it's a label, not a parent.
+  Children carry **no order** — containment says *what* composes the parent, not *in what
+  sequence*; to sequence sub-tasks, chain them with **dependencies** (2nd depends on 1st, …),
+  not by their position under the parent.
 - **Dependencies = hard ordering (MUST).** `A depends on B` means B *must* be done before A —
   B **blocks** A. `trck ready`/`trck next` won't surface a task until its deps are satisfied.
   Dependencies **climb the hierarchy**, so one edge covers a whole subtree on both ends:
