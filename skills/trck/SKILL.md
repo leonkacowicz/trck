@@ -2,17 +2,19 @@
 name: trck
 description: >-
   Use trck, the single-file in-repo issue tracker, for ALL task and issue
-  bookkeeping in any repo that tracks work with it — signalled by an
-  `issues/index.jsonl`, a `trck.json`, or a `trck` executable in the repo.
-  Trigger this whenever you create, close, re-prioritize, or relate issues;
-  decide what to work on next; break work into sub-tasks; or realize during any
-  other task that follow-up work is needed — even when the user never says
-  "trck", "issue", or "ticket". Also trigger when the user invokes `/trck`: if
-  the repo isn't tracked yet (no `issues/index.jsonl`/`trck.json`), walk them
-  through initializing one. If a repo tracks work with trck, capturing and
-  updating that work through trck is not optional bookkeeping; it is how the repo
-  stays honest about what is done and what is left. Prefer this over ad-hoc TODO
-  comments, scratch notes, or mental tracking.
+  bookkeeping — and err toward using it. If ANYTHING suggests the repo tracks
+  work with trck — an `issues/index.jsonl`, a `trck.json`, a `trck` executable, a
+  vendored `issues/trck`, or an `issues/` dir with a generated `SUMMARY.md` —
+  treat this skill as in-scope. Trigger it whenever you create, close,
+  re-prioritize, or relate issues; decide what to work on next; break work into
+  sub-tasks; or realize during any other task that follow-up work is needed —
+  even when the user never says "trck", "issue", or "ticket". Also trigger on
+  `/trck`, and on any task-, todo-, backlog-, or "what should I work on next"-
+  flavored request in such a repo. When unsure whether it applies, invoke it
+  anyway: over-triggering here is cheap and intended, while a missed capture (a
+  dropped TODO, a stale tracker) costs more. If the repo isn't tracked yet and
+  the user invokes `/trck`, walk them through initializing one. Prefer this over
+  ad-hoc TODO comments, scratch notes, or mental tracking.
 ---
 
 # trck — in-repo issue tracker
@@ -25,6 +27,10 @@ discipline that keeps the tracker trustworthy.
 
 Read this once at the start of a session in a trck repo; you should rarely need `trck --help`
 afterward. For a per-verb option you don't find here, `trck <verb> -h` is the source of truth.
+
+> This skill is **intentionally biased toward over-triggering.** If there's any sign the repo
+> uses trck, use it — a needless activation is cheap, a missed one (a dropped follow-up, a
+> tracker that quietly falls out of date) is not. Don't narrow the description to reduce firing.
 
 ## 0. Is this repo tracked yet?
 
