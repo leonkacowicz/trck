@@ -11,8 +11,8 @@ authored edge, never materialized onto children.
 
 The same lifting must gate **cycle prevention**: an effective cycle is a real deadlock, so
 mutating verbs must refuse to create one. This is broader than today's `add == self` /
-`would_cycle` check on `cmd_dep` — re-parenting (`mv`) and creation (`new`) can also produce
-an effective cycle.
+`would_cycle` check on `cmd_dep` — re-parenting (`set --parent`) and creation (`new`) can
+also produce an effective cycle.
 
 ## Core model
 
@@ -64,8 +64,8 @@ create an effective cycle is **invalid and rejected** before anything is persist
   warns — `trck:1372–1381`); its "always persists" contract is untouched. This keeps the
   import/`check`/pull paths (`trck:2040`, `:2083`) able to *load* already-cyclic data in
   order to repair it, rather than being locked out by a hard refusal at the seam.
-- Interactive mutations `cmd_dep`, `cmd_mv`, `cmd_new` call a shared guard **before**
-  `finalize`, matching the existing `cmd_dep` pre-check pattern (`trck:1687`).
+- Interactive mutations `cmd_dep`, `cmd_set` (re-parent via `--parent`), and `cmd_new` call
+  a shared guard **before** `finalize`, matching the existing `cmd_dep` pre-check pattern.
 
 Two-tier guard, both sharing the `effDeps` traversal:
 1. **Disjoint-subtree check** (local, cheap): reject same-spine edges up front with a clear
@@ -75,7 +75,7 @@ Two-tier guard, both sharing the `effDeps` traversal:
    `child(P1) → child(P2)` deadlock when `P2 → P1` already exists.
 
 Additionally add effective-cycle **detection to `validate`** so `trck check` (and finalize's
-warn path) surfaces cyclic data that arrived via hand-edit/import/`mv` done before this
+warn path) surfaces cyclic data that arrived via hand-edit/import/re-parent done before this
 existed. This collapses the earlier "authored cycle = error, effective deadlock = warning"
 split into **one rule: an effective cycle is invalid.**
 
@@ -93,10 +93,11 @@ split into **one rule: an effective cycle is invalid.**
       with a message naming the containment relationship.
 - [x] A **lifted `would_cycle`** rejects edges that close a loop through other subtrees
       (`child(P1)→child(P2)` when `P2→P1` exists).
-- [x] Guards run before `finalize` in `cmd_dep`, `cmd_mv`, and `cmd_new` (any op that adds a
-      dep edge or changes the hierarchy). `finalize` remains write-then-warn.
+- [x] Guards run before `finalize` in `cmd_dep`, `cmd_set` (re-parent via `--parent`), and
+      `cmd_new` (any op that adds a dep edge or changes the hierarchy). `finalize` remains
+      write-then-warn.
 - [x] `validate` gains an effective-cycle check so `trck check` reports inherited cycles from
-      hand-edited/imported/`mv`-created data; the message names the authored edges + parent
+      hand-edited/imported/re-parented data; the message names the authored edges + parent
       links responsible.
 - [x] `ready` / `next` reflect effective blocking (a leaf under a blocked parent is not
       "ready").
@@ -107,7 +108,7 @@ split into **one rule: an effective cycle is invalid.**
       - `child → ancestor` and `ancestor → descendant` deps are both rejected (disjoint-
         subtree invariant); plain `s == d` still rejected.
       - `child(P1) → child(P2)` is rejected when `P2 → P1` exists (lifted deadlock).
-      - `mv` re-parent that would create an effective cycle is rejected.
+      - `set --parent` re-parent that would create an effective cycle is rejected.
       - `trck check` reports an effective cycle present in hand-edited data.
       - existing authored-only behavior (independent subtrees) unchanged.
 
@@ -130,11 +131,14 @@ Design context (from discussion):
   `child(P1)→child(P2)`. `child(P1) ⇒ child(P2)` (authored) and `child(P2) ⇒ child(P1)`
   (via `P2→P1` lifted) — a real mutual deadlock; nothing in either subtree can become ready.
   No false positives: an effective cycle is *always* a genuine deadlock.
-- **`mv` currently skips dep-cycle checks.** It only guards `parent_cycles` (`trck:742`); it
-  has no `would_cycle` call. Re-parenting changes the lifting, so `mv` must run the guard.
+- **Re-parenting is `set --parent`, not `mv`.** `cmd_mv` is status-only (moves the file
+  between status folders); the hierarchy edge is changed by `cmd_set` via `--parent`. A
+  status change can't create an effective cycle, so the hierarchy guard belongs in `cmd_set`
+  (which previously ran no dep-cycle check). Re-parenting changes the lifting, so it must run
+  the whole-graph `guard_effective_acyclic` before `finalize`.
 - **Sibling of #tfhhp8h** (out-of-order completion guard) and **#ge5jt9s** (status rollup).
   Reuse the ancestor walk (`Graph.ancestors_of`, `trck:623`) and `subtree` via
   `children_of` (`trck:614`).
 - **Touchpoints:** `is_blocked`/`Graph.is_blocked`, `Graph.would_cycle` (`trck:689`),
-  `validate`, `cmd_dep`/`cmd_mv`/`cmd_new`, and a new shared `effDeps`/lifting helper on
+  `validate`, `cmd_dep`/`cmd_set`/`cmd_new`, and a new shared `effDeps`/lifting helper on
   `Graph`.
