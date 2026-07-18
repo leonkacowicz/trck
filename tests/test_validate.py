@@ -194,6 +194,34 @@ class TestValidate(unittest.TestCase):
             errors, _ = self.t.validate(ctx)
             self.assertFalse(any("dependency cycle" in e for e in errors))
 
+    def test_effective_cycle_from_hand_edited_data_is_error(self):
+        # P2 -> P1 (authored) and C1(P1) -> C2(P2): an inherited deadlock that only
+        # exists once dependencies are lifted through the parent hierarchy.
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            p1 = self.base(id=1, slug="p1")
+            p2 = self.base(id=2, slug="p2", depends_on=[1])
+            c1 = self.base(id=3, slug="c1", parent=1, depends_on=[4])
+            c2 = self.base(id=4, slug="c2", parent=2)
+            for r in (p1, p2, c1, c2):
+                self.write(ctx, r)
+            self.t.save_index(ctx, [p1, p2, c1, c2])
+            errors, _ = self.t.validate(ctx)
+            cyc = [e for e in errors if "dependency cycle" in e]
+            self.assertTrue(cyc)
+            # the message must point at the authored edges responsible
+            self.assertTrue(any("effective" in e and "#2" in e for e in cyc))
+
+    def test_child_depends_on_parent_is_effective_cycle(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            p = self.base(id=1, slug="p")
+            c = self.base(id=2, slug="c", parent=1, depends_on=[1])
+            self.write(ctx, p); self.write(ctx, c)
+            self.t.save_index(ctx, [p, c])
+            errors, _ = self.t.validate(ctx)
+            self.assertTrue(any("dependency cycle" in e for e in errors))
+
     def test_self_parent_reported_as_parent_cycle(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)

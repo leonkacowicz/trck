@@ -213,16 +213,6 @@ def reconcile(cfg: dict, child_statuses: list[str]) -> str | None:
     return active_status(cfg)
 
 
-def is_blocked(cfg: dict, row, by_id: dict[int, Issue]) -> bool:
-    """True if `row` has at least one existing dependency that is not yet terminal.
-    The inverse of readiness; shared by `list --blocked` and the `ready`/`next` check."""
-    for dep in row.depends_on:
-        d = by_id.get(dep)
-        if d is not None and not is_terminal(cfg, d.status):
-            return True
-    return False
-
-
 def resolve_alias(cfg: dict, verb: str) -> str | None:
     return cfg.get("aliases", {}).get(verb)
 
@@ -648,12 +638,45 @@ class Graph:
                 shown.update(a.id for a in self.ancestors_of(r))
         return shown, shown - matched
 
+    def subtree(self, r: Issue) -> list[Issue]:
+        """`r` plus every descendant (the containment closure below `r`). A `seen`
+        guard makes it terminate on a malformed parent cycle (reported by
+        `validate`). This is the target-side of the dependency lifting rule."""
+        out, seen, stack = [], set(), [r]
+        while stack:
+            n = stack.pop()
+            if n.id in seen:
+                continue
+            seen.add(n.id)
+            out.append(n)
+            stack.extend(self._children.get(n.id, []))
+        return out
+
+    def lifted_deps(self, r: Issue) -> list[Issue]:
+        """The authored dependency targets visible to `r` through the parent
+        hierarchy: `r`'s own `depends_on` plus every ancestor's — the *source-side*
+        of the lifting rule (an authored edge a->b is inherited by all of
+        subtree(a)). This is the single shared lifting primitive: `is_blocked`
+        reads the target statuses one-sidedly, while the cycle traversal expands
+        each target's subtree."""
+        out = []
+        for a in (r, *self.ancestors_of(r)):
+            for d in a.depends_on:
+                b = self.by_id.get(d)
+                if b is not None:
+                    out.append(b)
+        return out
+
     # predicates
     def is_terminal(self, r: Issue) -> bool:
         return is_terminal(self.cfg, r.status)
 
     def is_blocked(self, r: Issue) -> bool:
-        return is_blocked(self.cfg, r, self.by_id)
+        """One-sided effective blocking: `r` is blocked iff it, or any ancestor,
+        has an authored dependency on a non-terminal issue. The depended-on side
+        needs no expansion — a parent's status is terminal only when its whole
+        subtree is (rollup), so "wait for b" already means "wait for subtree(b)"."""
+        return any(not self.is_terminal(b) for b in self.lifted_deps(r))
 
     def is_leaf(self, r: Issue) -> bool:
         return r.id not in self._parents
@@ -686,23 +709,105 @@ class Graph:
                         seen.add(dep.id); stack.append(dep.id)
         return seen
 
+    def containment(self, a: int, b: int) -> str | None:
+        """The parent-spine relationship between `a` and `b`, or None when their
+        subtrees are disjoint. `"same"` (a == b), `"descendant"` (a is a descendant
+        of b), `"ancestor"` (a is an ancestor of b). A dependency edge is admissible
+        only when this returns None — a shared subtree self-cycles under lifting. A
+        local O(depth) check (walks one spine)."""
+        if a == b:
+            return "same"
+        ra, rb = self.by_id.get(a), self.by_id.get(b)
+        if ra is None or rb is None:
+            return None
+        if any(x.id == b for x in self.ancestors_of(ra)):
+            return "descendant"
+        if any(x.id == a for x in self.ancestors_of(rb)):
+            return "ancestor"
+        return None
+
+    def _eff_reach(self, start_ids) -> set:
+        """The ids effectively depended-on (transitively) by any node in
+        `start_ids`, under the lifting rule: from each node climb its spine to
+        inherit authored deps (`lifted_deps`), then expand each dep's `subtree`.
+        Restarting from every target chains hops correctly."""
+        seen, stack = set(), list(start_ids)
+        while stack:
+            node = self.by_id.get(stack.pop())
+            if node is None:
+                continue
+            for b in self.lifted_deps(node):
+                for t in self.subtree(b):
+                    if t.id not in seen:
+                        seen.add(t.id)
+                        stack.append(t.id)
+        return seen
+
     def would_cycle(self, src: int, dep: int) -> bool:
-        """True if adding the edge src->dep (src depends_on dep) would create a cycle:
-        i.e. src == dep, or src is already reachable from dep along depends_on edges."""
+        """True if adding the edge src->dep (src depends_on dep) would create an
+        *effective* dependency cycle — one implied through the parent hierarchy, not
+        only the authored edges. The new edge lifts to subtree(src) ⇒ subtree(dep),
+        so it closes a loop iff some node in subtree(dep) already effectively reaches
+        some node in subtree(src). Generalizes the plain reachability check."""
         if src == dep:
             return True
-        seen, stack = set(), [dep]
-        while stack:
-            cur = stack.pop()
-            if cur == src:
-                return True
-            if cur in seen:
+        src_row, dep_row = self.by_id.get(src), self.by_id.get(dep)
+        if src_row is None or dep_row is None:
+            return False
+        src_ids = {n.id for n in self.subtree(src_row)}
+        reached = self._eff_reach(n.id for n in self.subtree(dep_row))
+        return bool(reached & src_ids)
+
+    def _effective_adj(self) -> dict:
+        """Every effective direct-dependency edge as `x -> [(target, (a, b)), …]`,
+        where `(a, b)` is the authored edge (a ∈ ancestors(x)+x, target ∈ subtree(b))
+        that induces it. The witness lets `validate`/guards name the authored edges +
+        parent links behind an implied cycle."""
+        adj: dict = {r.id: [] for r in self.rows}
+        for x in self.rows:
+            for a in (x, *self.ancestors_of(x)):
+                for d in a.depends_on:
+                    b = self.by_id.get(d)
+                    if b is None:
+                        continue
+                    for t in self.subtree(b):
+                        adj[x.id].append((t.id, (a.id, b.id)))
+        return adj
+
+    def effective_cycles(self) -> list[list[int]]:
+        """Every cycle in the *effective* dependency graph (authored edges lifted
+        through the parent hierarchy), each reported once. A superset of `cycles()`:
+        an authored cycle is also an effective one. Used by `validate`."""
+        adj = self._effective_adj()
+        succ = {i: [t for (t, _) in edges] for i, edges in adj.items()}
+        return self._find_cycles(lambda r: succ.get(r.id, ()))
+
+    def describe_effective_cycle(self, cyc: list[int]) -> str:
+        """A human-readable reason for an effective cycle `cyc`: the node loop plus
+        the authored edges and parent links that induce it (the loop itself is
+        implied, never typed by the user)."""
+        adj = self._effective_adj()
+        chain = " -> ".join(f"#{c}" for c in (*cyc, cyc[0]))
+        seq = [*cyc, cyc[0]]
+        authored, notes = [], []
+        for u, v in zip(seq, seq[1:]):
+            wit = next(((a, b) for (t, (a, b)) in adj.get(u, []) if t == v), None)
+            if wit is None:
                 continue
-            seen.add(cur)
-            node = self.by_id.get(cur)
-            if node:
-                stack.extend(node.depends_on)
-        return False
+            a, b = wit
+            edge = f"#{a} -> #{b}"
+            if edge not in authored:
+                authored.append(edge)
+            if a != u:
+                notes.append(f"#{u} inherits #{a}'s deps")
+            if b != v:
+                notes.append(f"#{v} is under #{b}")
+        reason = chain
+        if authored:
+            reason += "; authored: " + ", ".join(authored)
+        if notes:
+            reason += "; " + ", ".join(dict.fromkeys(notes))
+        return reason
 
     def _find_cycles(self, successors) -> list[list[int]]:
         """Every cycle reachable by following `successors(row)` (a list of next ids)
@@ -905,9 +1010,11 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
         chain = " -> ".join(f"#{c}" for c in (*cyc, cyc[0]))
         errors.append(f"parent cycle: {chain}")
 
-    for cyc in g.cycles():  # dependency cycles, one error per cycle
-        chain = " -> ".join(f"#{c}" for c in (*cyc, cyc[0]))
-        errors.append(f"dependency cycle: {chain}")
+    # Effective (lifted) dependency cycles — a superset of the authored ones. This
+    # surfaces inherited deadlocks that arrived via hand-edit / import / `mv`; the
+    # message names the authored edges + parent links behind the implied loop.
+    for cyc in g.effective_cycles():  # one error per cycle
+        errors.append(f"effective dependency cycle: {g.describe_effective_cycle(cyc)}")
 
     # A non-overridden parent's status must equal the rollup of its children (#67);
     # normalize_statuses maintains this after every verb, so a violation here means a
@@ -1514,6 +1621,36 @@ def parse_ids(spec):
     return [p.strip() for p in spec.split(",") if p.strip()]
 
 
+def guard_dep_edge(g: Graph, src: int, dep: int) -> None:
+    """Reject a candidate dependency edge src->dep that violates the disjoint-subtree
+    invariant or would close an effective (lifted) dependency cycle. Dies with a
+    message naming the offending relationship. Interactive mutators call this before
+    `finalize`, so nothing is persisted on rejection."""
+    rel = g.containment(src, dep)
+    if rel == "same":
+        die(f"#{src} cannot depend on itself")
+    if rel == "descendant":
+        die(f"#{src} is a descendant of #{dep}; a node can't depend on its own "
+            f"ancestor (their subtrees overlap)")
+    if rel == "ancestor":
+        die(f"#{src} is an ancestor of #{dep}; a node can't depend on its own "
+            f"descendant (their subtrees overlap)")
+    if g.would_cycle(src, dep):
+        die(f"#{src} -> #{dep} would create an effective dependency cycle "
+            f"(a dependency inherited through the parent hierarchy closes the loop)")
+
+
+def guard_effective_acyclic(ctx: Ctx, rows: list[Issue]) -> None:
+    """Reject a candidate state (rows already mutated in memory) whose effective
+    dependency graph has a cycle — the whole-graph source of truth used by hierarchy
+    changes, which have no single edge to check. Dies before `finalize` persists."""
+    g = Graph(ctx.cfg, rows)
+    cycles = g.effective_cycles()
+    if cycles:
+        die("this change would create an effective dependency cycle: "
+            + g.describe_effective_cycle(cycles[0]))
+
+
 def move_issue(ctx: Ctx, row: Issue, new_status: str) -> None:
     """Move the file between status folders and stamp dates from roles."""
     if new_status not in status_names(ctx.cfg):
@@ -1566,9 +1703,14 @@ def cmd_new(args) -> None:
     path = issue_path(ctx, row)
     if path.exists():
         die(f"{path} already exists")
+    rows.append(row)
+    # Guard the new node's dependency edges against the candidate graph (its parent
+    # is already set, so an inherited cousin cycle is caught) before writing anything.
+    g = Graph(ctx.cfg, rows)
+    for dep in row.depends_on:
+        guard_dep_edge(g, row.id, dep)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(TEMPLATE.format(title=args.title))
-    rows.append(row)
     finalize(ctx, rows)
     print(path)
 
@@ -1639,6 +1781,10 @@ def cmd_set(args) -> None:
         if (m := check_field_key(key)):
             die(m)
         row.extra.pop(key, None)
+    # Re-parenting changes the dependency lifting, so a reparent can introduce an
+    # effective cycle. Guard the candidate state before persisting (Option B).
+    if args.parent is not None:
+        guard_effective_acyclic(ctx, rows)
     old = issue_path(ctx, row)
     if args.slug:
         if not SLUG_RE.match(args.slug):
@@ -1682,10 +1828,7 @@ def cmd_dep(args) -> None:
     rem = None if args.remove is None else resolve_ref(rows, args.remove).id
     deps = list(row.depends_on)
     if add is not None:
-        if add == row.id:
-            die(f"#{row.id} cannot depend on itself")
-        if g.would_cycle(row.id, add):
-            die(f"#{row.id} -> #{add} would create a dependency cycle")
+        guard_dep_edge(g, row.id, add)
         if add not in deps:
             deps.append(add)
     if rem is not None and rem in deps:

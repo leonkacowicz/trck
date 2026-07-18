@@ -209,6 +209,111 @@ class TestGraph(unittest.TestCase):
         self.assertEqual([c.id for c in g.children_of(parent, key=lambda r: -int(r.id))],
                          ["3", "2"])                                                  # custom key
 
+    # --- effective (inherited) deps + lifted cycles (issue #pzmyzv3) ------- #
+
+    def test_subtree_includes_self_and_descendants(self):
+        g = self.graph(self.issue(1), self.issue(2, parent=1),
+                       self.issue(3, parent=2), self.issue(4))
+        self.assertEqual(sorted(n.id for n in g.subtree(g.row("1"))), ["1", "2", "3"])
+        self.assertEqual([n.id for n in g.subtree(g.row("4"))], ["4"])
+
+    def test_subtree_safe_on_parent_cycle(self):
+        g = self.graph(self.issue(1, parent=2), self.issue(2, parent=1))
+        # must terminate despite the 1<->2 parent cycle
+        self.assertEqual(sorted(n.id for n in g.subtree(g.row("1"))), ["1", "2"])
+
+    def test_child_blocked_when_ancestor_dep_nonterminal(self):
+        # P2 depends on P1; C2 (child of P2) inherits the block while P1 is open.
+        g = self.graph(
+            self.issue(1, status="ongoing"),      # P1 (non-terminal)
+            self.issue(2, depends=[1]),           # P2 -> P1
+            self.issue(3, parent=2),              # C2 under P2
+        )
+        self.assertTrue(g.is_blocked(g.row("3")))
+        self.assertFalse(g.is_ready(g.row("3")))
+
+    def test_child_ready_once_ancestor_dep_terminal(self):
+        # A terminal P1 means its whole subtree is terminal (rollup) -> C2 unblocked.
+        g = self.graph(
+            self.issue(1, status="done"),         # P1 terminal
+            self.issue(2, depends=[1]),           # P2 -> P1
+            self.issue(3, parent=2),              # C2 under P2
+        )
+        self.assertFalse(g.is_blocked(g.row("3")))
+        self.assertTrue(g.is_ready(g.row("3")))
+
+    def test_blocking_is_one_sided(self):
+        # A -> B: A is blocked by non-terminal B, but B is not blocked by A.
+        g = self.graph(self.issue(1), self.issue(2, depends=[1]))
+        self.assertTrue(g.is_blocked(g.row("2")))
+        self.assertFalse(g.is_blocked(g.row("1")))
+
+    def test_deep_ancestor_dep_still_blocks(self):
+        # grandparent depends on X; a grandchild inherits the block.
+        g = self.graph(
+            self.issue(1),                        # X (non-terminal)
+            self.issue(2, depends=[1]),           # GP -> X
+            self.issue(3, parent=2),              # P under GP
+            self.issue(4, parent=3),              # C under P
+        )
+        self.assertTrue(g.is_blocked(g.row("4")))
+
+    def test_containment_detects_spine_relationship(self):
+        # chain 1 <- 2 <- 3, plus a disjoint node 4.
+        g = self.graph(self.issue(1), self.issue(2, parent=1),
+                       self.issue(3, parent=2), self.issue(4))
+        self.assertEqual(g.containment("1", "1"), "same")
+        self.assertEqual(g.containment("3", "1"), "descendant")  # 3 descends 1
+        self.assertEqual(g.containment("1", "3"), "ancestor")    # 1 is ancestor of 3
+        self.assertEqual(g.containment("2", "3"), "ancestor")    # 2 is 3's parent
+        self.assertIsNone(g.containment("2", "4"))               # disjoint subtrees
+
+    def test_siblings_may_depend_no_false_cycle(self):
+        g = self.graph(self.issue(1), self.issue(2, parent=1), self.issue(3, parent=1))
+        self.assertIsNone(g.containment("2", "3"))
+        self.assertFalse(g.would_cycle("2", "3"))
+
+    def test_would_cycle_lifted_cousin_deadlock(self):
+        # P2 -> P1 authored; C1(P1) -> C2(P2) closes a lifted loop, but the
+        # with-the-grain edge C2 -> C1 does not.
+        g = self.graph(
+            self.issue(1),                        # P1
+            self.issue(2, depends=[1]),           # P2 -> P1
+            self.issue(3, parent=1),              # C1 under P1
+            self.issue(4, parent=2),              # C2 under P2
+        )
+        self.assertTrue(g.would_cycle("3", "4"))
+        self.assertFalse(g.would_cycle("4", "3"))
+
+    def test_effective_cycles_detects_lifted_deadlock(self):
+        g = self.graph(
+            self.issue(1),                        # P1
+            self.issue(2, depends=[1]),           # P2 -> P1
+            self.issue(3, parent=1, depends=[4]), # C1 -> C2 (against the grain)
+            self.issue(4, parent=2),              # C2
+        )
+        cycles = g.effective_cycles()
+        self.assertTrue(cycles)
+        involved = set().union(*[set(c) for c in cycles])
+        self.assertTrue({"3", "4"} <= involved)
+
+    def test_effective_cycles_flags_hand_edited_child_to_parent(self):
+        # child depends on its own parent -> effective self-cycle.
+        g = self.graph(self.issue(1), self.issue(2, parent=1, depends=[1]))
+        self.assertTrue(g.effective_cycles())
+
+    def test_effective_cycles_empty_for_independent_subtrees(self):
+        g = self.graph(
+            self.issue(1), self.issue(2, parent=1),
+            self.issue(3, depends=[1]),           # authored, acyclic
+            self.issue(4, parent=3),
+        )
+        self.assertEqual(g.effective_cycles(), [])
+
+    def test_effective_cycles_still_catches_plain_authored_cycle(self):
+        g = self.graph(self.issue(1, depends=[2]), self.issue(2, depends=[1]))
+        self.assertEqual(len(g.effective_cycles()), 1)
+
     # --- loader ----------------------------------------------------------- #
 
     def test_load_graph_parallels_load_index(self):

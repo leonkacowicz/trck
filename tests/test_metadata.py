@@ -141,6 +141,73 @@ class TestMetadata(unittest.TestCase):
             self.t.cmd_dep(ns(dir=str(d), id=id3, add=id2, remove=None))  # 3 -> 2, still a DAG
             self.assertEqual(sorted(self.rows(d)[id3].depends_on), sorted([id1, id2]))
 
+    def test_dep_add_rejects_child_to_ancestor(self):
+        # child cannot depend on its own parent/ancestor (disjoint-subtree invariant).
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            parent = self.seed(d, title="Epic")
+            child = self.seed(d, parent=parent)
+            with self.assertRaises(SystemExit):
+                self.t.cmd_dep(ns(dir=str(d), id=child, add=parent, remove=None))
+            self.assertEqual(self.rows(d)[child].depends_on, [])
+
+    def test_dep_add_rejects_ancestor_to_descendant(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            parent = self.seed(d, title="Epic")
+            child = self.seed(d, parent=parent)
+            with self.assertRaises(SystemExit):
+                self.t.cmd_dep(ns(dir=str(d), id=parent, add=child, remove=None))
+            self.assertEqual(self.rows(d)[parent].depends_on, [])
+
+    def test_dep_add_allows_siblings_under_common_parent(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            parent = self.seed(d, title="Epic")
+            a = self.seed(d, parent=parent)
+            b = self.seed(d, parent=parent)
+            self.t.cmd_dep(ns(dir=str(d), id=a, add=b, remove=None))  # sibling dep is fine
+            self.assertEqual(self.rows(d)[a].depends_on, [b])
+
+    def test_dep_add_rejects_lifted_cousin_cycle(self):
+        # P2 -> P1; then C1(P1) -> C2(P2) is an effective (inherited) deadlock.
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            p1 = self.seed(d, title="P1")
+            p2 = self.seed(d, title="P2")
+            c1 = self.seed(d, parent=p1)
+            c2 = self.seed(d, parent=p2)
+            self.t.cmd_dep(ns(dir=str(d), id=p2, add=p1, remove=None))  # P2 -> P1
+            with self.assertRaises(SystemExit):
+                self.t.cmd_dep(ns(dir=str(d), id=c1, add=c2, remove=None))  # C1 -> C2 deadlock
+            self.assertEqual(self.rows(d)[c1].depends_on, [])
+
+    def test_new_with_dep_on_ancestor_rejected(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            parent = self.seed(d, title="Epic")
+            with self.assertRaises(SystemExit):
+                self.seed(d, parent=parent, depends=parent)  # new child depending on parent
+
+    def test_set_reparent_creating_effective_cycle_rejected(self):
+        # P2 depends on P1; re-parenting P1 under P2 forms an effective cycle.
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            p1 = self.seed(d, title="P1")
+            p2 = self.seed(d, title="P2")
+            self.t.cmd_dep(ns(dir=str(d), id=p2, add=p1, remove=None))  # P2 -> P1
+            with self.assertRaises(SystemExit):
+                self.t.cmd_set(self.set_args(d, p1, parent=p2))         # P1 under P2 -> cycle
+            self.assertIsNone(self.rows(d)[p1].parent)                  # not written
+
+    def test_set_reparent_independent_subtree_still_allowed(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            p1 = self.seed(d, title="P1")
+            p2 = self.seed(d, title="P2")
+            self.t.cmd_set(self.set_args(d, p1, parent=p2))  # harmless reparent
+            self.assertEqual(self.rows(d)[p1].parent, p2)
+
     def test_dep_remove_unknown_id_dies(self):
         """--remove now resolves via resolve_ref, so a non-existent token is a hard error."""
         with TemporaryDirectory() as tmp:
