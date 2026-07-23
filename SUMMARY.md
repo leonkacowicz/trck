@@ -5,10 +5,10 @@
 
 | State | Count |
 |---|---:|
-| backlog | 20 |
+| backlog | 21 |
 | ongoing | 0 |
 | done | 53 |
-| **total** | **73** |
+| **total** | **74** |
 
 ## Hierarchies
 
@@ -40,7 +40,7 @@ Spec: [`docs/specs/2026-06-11-custom-fields-design.md`](../docs/specs/2026-06-11
 - [x] [#ub2ssg4 list: nested forest default (--flat, positional id, dimmed ancestors, tree alias)](done/ub2ssg4-list-nested-forest-default-flat-positional-id-dimmed-ancestors-tree-alias.md)
 - [x] [#uqtjp9p Graph: add ancestor-closure, match-set and sibling-sort traversal](done/uqtjp9p-graph-add-ancestor-closure-match-set-and-sibling-sort-traversal.md)
 
-### [#r9zefup Add --json output to list/show/deps/tree for scripting](backlog/r9zefup-add-json-output-to-list-show-deps-tree-for-scripting.md) — 0% (0/5 pts · 0/5 done) · _high_ · backlog
+### [#r9zefup Add --json output to list/show/deps/tree for scripting](backlog/r9zefup-add-json-output-to-list-show-deps-tree-for-scripting.md) — 0% (0/5 pts · 0/5 done) · _low_ · backlog
 
 - [ ] [#57kz6xp deps --json: {requires, blocks} cones as JSON](backlog/57kz6xp-deps-json-requires-blocks-cones-as-json.md) _(backlog)_
 - [ ] [#e75dysa show --json: single JSON document with body folded in](backlog/e75dysa-show-json-single-json-document-with-body-folded-in.md) _(backlog)_
@@ -50,6 +50,7 @@ Spec: [`docs/specs/2026-06-11-custom-fields-design.md`](../docs/specs/2026-06-11
 
 ## Backlog
 
+- [#9jgarpa list: 'needs' annotation ignores inherited deps, disagreeing with ready/is_blocked](backlog/9jgarpa-list-needs-annotation-ignores-inherited-deps-disagreeing-with-ready-is-blocked.md) — _urgent_
 - [#ey2aruc Auto-resolve index.jsonl and SUMMARY.md merge conflicts via git merge drivers](backlog/ey2aruc-auto-resolve-index-jsonl-and-summary-md-merge-conflicts-via-git-merge-drivers.md) — _medium_ [conflict-resolution tracker-features]
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](backlog/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#tfhhp8h mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](backlog/tfhhp8h-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
