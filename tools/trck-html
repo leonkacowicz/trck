@@ -1,0 +1,391 @@
+#!/usr/bin/env python3
+"""tools/trck-html — generate a static, self-contained HTML SPA to browse a trck tracker.
+
+A standalone accessory (NOT part of the amalgamated engine): it loads the generated
+`./trck` engine at runtime and reuses its Graph/config API, so no tracker logic is
+duplicated. Standard-library only. Output is one HTML file with an embedded JSON data
+island plus inline CSS/JS — no network needed to open it. Read-only; see epic #fkrp9dh.
+
+    ./tools/trck-html              # discover tracker -> <tracker>/issues.html
+    ./tools/trck-html -o out.html
+    ./tools/trck-html -o -         # stdout
+    ./tools/trck-html PATH         # point at a specific tracker/repo
+"""
+from __future__ import annotations
+
+import argparse
+import html as _html
+import importlib.machinery
+import importlib.util
+import json
+import os
+import shutil
+import sys
+from pathlib import Path
+
+
+# --------------------------------------------------------------------------- #
+# Engine loading — find the generated ./trck and import it as a module.
+# --------------------------------------------------------------------------- #
+def _load_engine():
+    """Locate and import the trck engine. Resolution order: $TRCK_ENGINE, a
+    committed copy beside a trck.json walking up from cwd, then a global `trck`."""
+    candidates = []
+    env = os.environ.get("TRCK_ENGINE")
+    if env:
+        candidates.append(Path(env))
+    d = Path.cwd().resolve()
+    while True:
+        has_cfg = (d / "issues" / "trck.json").exists() or (d / "trck.json").exists()
+        if has_cfg:
+            for c in (d / "issues" / "trck", d / "trck"):
+                if c.is_file():
+                    candidates.append(c)
+        if d.parent == d:
+            break
+        d = d.parent
+    on_path = shutil.which("trck")
+    if on_path:
+        candidates.append(Path(on_path))
+
+    for c in candidates:
+        if c and c.is_file():
+            loader = importlib.machinery.SourceFileLoader("trck_engine", str(c))
+            spec = importlib.util.spec_from_file_location("trck_engine", str(c), loader=loader)
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules["trck_engine"] = mod
+            spec.loader.exec_module(mod)
+            return mod
+    raise SystemExit(
+        "trck-html: could not locate the trck engine "
+        "(set $TRCK_ENGINE, or run inside a trck repo)"
+    )
+
+
+E = _load_engine()
+
+
+# --------------------------------------------------------------------------- #
+# Model — flatten the Graph into a plain, JSON-serialisable structure.
+# --------------------------------------------------------------------------- #
+def build_ctx_from(path=None):
+    """Resolve a tracker to a Ctx. `path` may be a tracker dir or a repo root
+    (walked/globbed by the engine); None discovers from cwd like `trck` itself."""
+    if path:
+        d = E.find_tracker(Path(path))
+    else:
+        d = E.resolve_tracker_dir(None)
+    return E.Ctx(d, E.load_config(d))
+
+
+def _body_text(ctx, r):
+    try:
+        return E.issue_path(ctx, r).read_text()
+    except OSError:
+        return ""
+
+
+def _progress(g, r):
+    if g.is_leaf(r):
+        return None
+    pdone, ptotal, ndone, ntotal = E.leaf_rollup(g, r)
+    return {
+        "pct": round(100 * pdone / ptotal) if ptotal else 0,
+        "done_points": pdone, "total_points": ptotal,
+        "done_count": ndone, "total_count": ntotal,
+    }
+
+
+def _issue_dict(g, ctx, r):
+    return {
+        "id": r.id,
+        "title": r.title,
+        "status": r.status,
+        "priority": r.priority,
+        "kind": r.kind,
+        "points": r.points,
+        "labels": list(r.labels),
+        "resolution": r.resolution,
+        "parent": r.parent,
+        "children": [c.id for c in g.children_of(r)],
+        "requires": [x.id for x in g.requires_of(r)],
+        "dependents": [x.id for x in g.dependents_of(r)],
+        "blocked": g.is_blocked(r),
+        "ready": g.is_ready(r),
+        "leaf": g.is_leaf(r),
+        "terminal": g.is_terminal(r),
+        "progress": _progress(g, r),
+        "created": r.created,
+        "started": r.started,
+        "closed": r.closed,
+        "spec": r.spec,
+        "body": _body_text(ctx, r),
+    }
+
+
+def build_model(ctx):
+    g = E.load_graph(ctx)
+    cfg = ctx.cfg
+    repo = (cfg.get("update") or {}).get("repo") or ctx.dir.parent.name
+    return {
+        "repo": repo,
+        "tracker": ctx.dir.name,
+        "config": {
+            "statuses": [{"name": s["name"], "role": s.get("role")} for s in cfg["statuses"]],
+            "priorities": list(cfg.get("priorities", [])),
+            "kinds": list(cfg.get("kinds", [])),
+        },
+        "issues": [_issue_dict(g, ctx, r) for r in g.rows],
+    }
+
+
+# --------------------------------------------------------------------------- #
+# Rendering — one self-contained document. The data island is `<`/`>`/`&`-escaped
+# so an issue body can never break out of the <script> tag (or inject markup).
+# --------------------------------------------------------------------------- #
+def _json_island(model):
+    raw = json.dumps(model, ensure_ascii=False)
+    return (
+        raw.replace("<", "\\u003c")
+           .replace(">", "\\u003e")
+           .replace("&", "\\u0026")
+           .replace("\u2028", "\\u2028")
+           .replace("\u2029", "\\u2029")
+    )
+
+
+def render_html(ctx):
+    """The reusable core: a Ctx -> one self-contained HTML SPA string."""
+    model = build_model(ctx)
+    island = _json_island(model)
+    title = _html.escape("trck · " + str(model["repo"]))
+    return "".join([
+        '<!doctype html>\n<html lang="en">\n<head>\n',
+        '<meta charset="utf-8">\n',
+        '<meta name="viewport" content="width=device-width, initial-scale=1">\n',
+        f"<title>{title}</title>\n",
+        "<style>\n", _CSS, "\n</style>\n</head>\n<body>\n",
+        _SHELL,
+        '<script type="application/json" id="trck-data">', island, "</script>\n",
+        "<script>\n", _APP_JS, "\n</script>\n",
+        "</body>\n</html>\n",
+    ])
+
+
+# --------------------------------------------------------------------------- #
+# CLI
+# --------------------------------------------------------------------------- #
+def main(argv=None):
+    ap = argparse.ArgumentParser(
+        prog="trck-html",
+        description="Generate a static HTML SPA to browse a trck tracker.",
+    )
+    ap.add_argument("path", nargs="?", help="tracker or repo path (default: discover from cwd)")
+    ap.add_argument("--dir", help="tracker dir (like `trck --dir`)")
+    ap.add_argument("-o", "--output",
+                    help="output file, or - for stdout (default: <tracker>/issues.html)")
+    args = ap.parse_args(argv)
+
+    ctx = build_ctx_from(args.dir or args.path)
+    doc = render_html(ctx)
+
+    if args.output == "-":
+        sys.stdout.write(doc)
+        return
+    out = Path(args.output) if args.output else (ctx.dir / "issues.html")
+    out.write_text(doc)
+    sys.stderr.write(f"trck-html: wrote {out} ({len(doc)} bytes)\n")
+
+
+# --------------------------------------------------------------------------- #
+# Inline assets
+# --------------------------------------------------------------------------- #
+_CSS = """\
+:root {
+  --bg: #ffffff; --fg: #1b1f24; --muted: #6a737d; --line: #e1e4e8;
+  --panel: #f6f8fa; --accent: #0969da; --sel: #ddf4ff; --done: #8b949e;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117; --fg: #e6edf3; --muted: #8b949e; --line: #30363d;
+    --panel: #161b22; --accent: #4493f8; --sel: #163356; --done: #6e7681;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+       color: var(--fg); background: var(--bg); }
+.topbar { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap;
+          padding: .7rem 1rem; border-bottom: 1px solid var(--line); }
+.topbar h1 { font-size: 1.05rem; margin: 0; }
+.counts { color: var(--muted); display: flex; gap: .9rem; flex-wrap: wrap; }
+.counts .count b { color: var(--fg); }
+.filters { display: flex; gap: .5rem; padding: .6rem 1rem; border-bottom: 1px solid var(--line);
+           flex-wrap: wrap; position: sticky; top: 0; background: var(--bg); z-index: 1; }
+.filters input, .filters select { font: inherit; padding: .35rem .5rem;
+           border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); }
+.filters input { flex: 1 1 16rem; }
+main { display: grid; grid-template-columns: minmax(20rem, 2fr) 3fr; gap: 0;
+       height: calc(100vh - 92px); }
+@media (max-width: 720px) { main { grid-template-columns: 1fr; height: auto; } }
+.list { list-style: none; margin: 0; padding: 0; overflow: auto; border-right: 1px solid var(--line); }
+.row { display: flex; align-items: center; gap: .5rem; padding: .45rem .8rem;
+       border-bottom: 1px solid var(--line); cursor: pointer; }
+.row:hover { background: var(--panel); }
+.row.sel { background: var(--sel); }
+.row.done .rtitle { color: var(--done); text-decoration: line-through; }
+.rid { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .82rem; }
+.rtitle { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pct { color: var(--muted); font-size: .8rem; }
+.badge { font-size: .72rem; padding: .05rem .4rem; border-radius: 999px;
+         border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.detail { overflow: auto; padding: 1rem 1.3rem; }
+.detail h2 { margin: .2rem 0 1rem; font-size: 1.15rem; }
+.detail .rid { font-size: .9rem; }
+.meta { display: grid; grid-template-columns: max-content 1fr; gap: .3rem .8rem; margin-bottom: 1rem; }
+.meta .m { display: contents; }
+.meta .mk { color: var(--muted); text-align: right; }
+.body { background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+        padding: .8rem 1rem; white-space: pre-wrap; word-wrap: break-word;
+        font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.ilink { color: var(--accent); text-decoration: none; }
+.ilink:hover { text-decoration: underline; }
+.empty { color: var(--muted); padding: 1rem; }
+"""
+
+_SHELL = """\
+<header class="topbar">
+  <h1 id="repo"></h1>
+  <div id="counts" class="counts"></div>
+</header>
+<div class="filters">
+  <input id="q" type="search" placeholder="Search id / title / body / label…" autocomplete="off">
+  <select id="fstatus"></select>
+  <select id="fpriority"></select>
+</div>
+<main>
+  <ul id="list" class="list"></ul>
+  <section id="detail" class="detail"><p class="empty">Select an issue.</p></section>
+</main>
+"""
+
+_APP_JS = """\
+const DATA = JSON.parse(document.getElementById('trck-data').textContent);
+const $ = (s, r = document) => r.querySelector(s);
+function el(tag, props = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (v == null) continue;
+    if (k === 'class') n.className = v;
+    else if (k === 'text') n.textContent = v;
+    else if (k.slice(0, 2) === 'on') n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const kid of kids) if (kid != null) n.append(kid);
+  return n;
+}
+
+const byId = Object.fromEntries(DATA.issues.map(i => [i.id, i]));
+const terminal = new Set(DATA.config.statuses.filter(s => s.role === 'terminal').map(s => s.name));
+const prio = DATA.config.priorities;
+const state = { q: '', status: '', priority: '', selected: null };
+
+function matches(i) {
+  if (state.status && i.status !== state.status) return false;
+  if (state.priority && i.priority !== state.priority) return false;
+  if (state.q) {
+    const hay = (i.id + ' ' + i.title + ' ' + (i.body || '') + ' ' + i.labels.join(' ')).toLowerCase();
+    if (!hay.includes(state.q.toLowerCase())) return false;
+  }
+  return true;
+}
+
+function renderCounts() {
+  const counts = {};
+  for (const s of DATA.config.statuses) counts[s.name] = 0;
+  for (const i of DATA.issues) counts[i.status] = (counts[i.status] || 0) + 1;
+  const c = $('#counts'); c.textContent = '';
+  for (const s of DATA.config.statuses)
+    c.append(el('span', { class: 'count' }, el('b', { text: String(counts[s.name] || 0) }), ' ' + s.name));
+  c.append(el('span', { class: 'count total' }, el('b', { text: String(DATA.issues.length) }), ' total'));
+}
+
+function link(id) {
+  const i = byId[id];
+  return el('a', { class: 'ilink', href: '#', text: '#' + id + (i ? ' ' + i.title : ''),
+    onclick: e => { e.preventDefault(); select(id); } });
+}
+function links(ids) {
+  const w = el('span');
+  ids.forEach((id, n) => { if (n) w.append(', '); w.append(link(id)); });
+  return w;
+}
+
+function row(i) {
+  const cls = 'row' + (terminal.has(i.status) ? ' done' : '') + (i.id === state.selected ? ' sel' : '');
+  const r = el('li', { class: cls, onclick: () => select(i.id) },
+    el('span', { class: 'rid', text: '#' + i.id }),
+    el('span', { class: 'rtitle', text: i.title }),
+    el('span', { class: 'badge', text: i.priority }),
+    el('span', { class: 'badge', text: i.status }));
+  if (i.progress) r.append(el('span', { class: 'pct', text: i.progress.pct + '%' }));
+  return r;
+}
+
+function renderList() {
+  const list = $('#list'); list.textContent = '';
+  const rows = DATA.issues.filter(matches).sort((a, b) =>
+    (prio.indexOf(a.priority) - prio.indexOf(b.priority)) || a.id.localeCompare(b.id));
+  if (!rows.length) { list.append(el('li', { class: 'empty', text: 'No matching issues.' })); return; }
+  for (const i of rows) list.append(row(i));
+}
+
+function meta(label, node) {
+  return node == null ? null
+    : el('div', { class: 'm' }, el('span', { class: 'mk', text: label }), node);
+}
+
+function renderDetail() {
+  const d = $('#detail'); d.textContent = '';
+  const i = byId[state.selected];
+  if (!i) { d.append(el('p', { class: 'empty', text: 'Select an issue.' })); return; }
+  d.append(el('h2', {}, el('span', { class: 'rid', text: '#' + i.id + ' ' }), i.title));
+  const m = el('div', { class: 'meta' });
+  m.append(meta('status', el('span', { class: 'badge', text: i.status })));
+  m.append(meta('priority', el('span', { class: 'badge', text: i.priority })));
+  m.append(meta('kind', i.kind));
+  if (i.resolution) m.append(meta('resolution', i.resolution));
+  if (i.labels.length) m.append(meta('labels', i.labels.join(', ')));
+  if (i.progress) m.append(meta('progress',
+    i.progress.pct + '% (' + i.progress.done_points + '/' + i.progress.total_points + ' pts)'));
+  if (i.parent) m.append(meta('parent', link(i.parent)));
+  if (i.children.length) m.append(meta('children', links(i.children)));
+  if (i.requires.length) m.append(meta('requires', links(i.requires)));
+  if (i.dependents.length) m.append(meta('blocks', links(i.dependents)));
+  d.append(m);
+  d.append(el('pre', { class: 'body', text: i.body || '' }));
+}
+
+function select(id) { state.selected = id; renderList(); renderDetail(); }
+
+function fill(sel, values, label) {
+  sel.append(el('option', { value: '', text: label }));
+  for (const v of values) sel.append(el('option', { value: v, text: v }));
+}
+
+function init() {
+  $('#repo').textContent = DATA.repo || 'trck';
+  renderCounts();
+  fill($('#fstatus'), DATA.config.statuses.map(s => s.name), 'all statuses');
+  fill($('#fpriority'), DATA.config.priorities, 'all priorities');
+  $('#q').addEventListener('input', e => { state.q = e.target.value; renderList(); });
+  $('#fstatus').addEventListener('change', e => { state.status = e.target.value; renderList(); });
+  $('#fpriority').addEventListener('change', e => { state.priority = e.target.value; renderList(); });
+  renderList();
+  renderDetail();
+}
+init();
+"""
+
+
+if __name__ == "__main__":
+    main()
