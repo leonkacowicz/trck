@@ -251,6 +251,16 @@ ones, and they are display-only — only `trck dep --add/--remove` ever changes 
 Since containment edges connect nearly the whole forest, the no-id view shows only components
 holding at least one authored edge, kept whole; pure hierarchy is what `trck list` is for.
 
+Dependencies are inherited downward too: an edge authored on a parent binds every issue beneath
+it. Where the ancestor carrying such an edge is itself on screen, it states the dependency once
+and its descendants stay quiet — the containment edges already connect them, and since inheritance
+reaches *every* descendant, restating it would replace one parent-level edge with a fan of `n`.
+Where that ancestor is **not** on screen — `trck deps NNN --requires` on a child, say — the child
+draws the inherited blocker itself, so a task blocked only through its parent never looks
+actionable. `--fanout` restates it under every child regardless; the parent's own edge then
+disappears as implied by its children, which is the ground truth about *which* work is blocked.
+(This mirrors how the `needs #NNN (via #AAA)` row note picks its moment to speak.)
+
 The graph is **transitively reduced**: an edge already implied by a longer path is not drawn. If
 `A` needs both `B` and `C` while `B` needs `C`, you see `A ← B ← C` and not the `A ← C` shortcut.
 On a DAG that reduction is unique and preserves reachability exactly, so nothing is lost — the

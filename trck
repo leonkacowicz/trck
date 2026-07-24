@@ -622,14 +622,28 @@ class Graph:
     # any authored edge that would close a loop in it, so authored + containment is
     # acyclic for any tracker that passes `check`.
 
+    def inherited_deps_of(self, r: Issue) -> list[tuple[Issue, Issue]]:
+        """`r`'s inherited dependencies as `(target, author)` — the lifting rule's
+        source side, minus what `r` authored itself. Targets always sit outside `r`'s
+        own subtree: an authored ancestor/descendant edge is rejected as a cycle, so
+        an inherited one can never point at something `r` contains."""
+        return [(b, a) for b, a in self.lifted_dep_sources(r) if a.id != r.id]
+
     def drawn_deps_of(self, r: Issue, hier: bool = True) -> list[tuple[Issue, str]]:
         """The targets `r` depends on *as drawn*, each paired with its edge kind:
         `"dep"` for an authored `depends_on`, `"child"` for an inferred containment
-        edge. Authored first, id-sorted within a kind, so the layout stays
-        deterministic. `hier=False` yields the authored graph untouched."""
+        edge, `"inherited"` for a dependency lifted from an ancestor. Authored first,
+        id-sorted within a kind, so the layout stays deterministic. `hier=False`
+        yields the authored graph untouched.
+
+        Inherited edges are included here so a cone expanded from a child reaches the
+        blocker it is actually waiting on. Whether they are *drawn* is a view
+        decision, made in `drawn_edges` — under a visible parent they are pure
+        fan-out."""
         out = [(self.by_id[d], "dep") for d in sorted(r.depends_on) if d in self.by_id]
         if hier:
             out += [(c, "child") for c in self.children_of(r)]
+            out += [(b, "inherited") for b, _a in self.inherited_deps_of(r)]
         return out
 
     def drawn_dependents_of(self, r: Issue, hier: bool = True) -> list[Issue]:
@@ -1270,16 +1284,41 @@ _GRAPH_GLYPH = {
 }
 
 
-def drawn_edges(g: "Graph", ids, hier: bool = True, reduce: bool = True) -> dict:
+def drawn_edges(g: "Graph", ids, hier: bool = True, reduce: bool = True,
+                fanout: bool = False) -> dict:
     """The drawn edge set restricted to `ids`, as `{source: [(target, kind), …]}`.
     With `reduce`, transitively reduced (see `transitive_reduction`).
 
     Callers pass the ids they are *about to draw* — already done-filtered — which is
     what keeps the reduction honest: an edge may only be dropped in favour of a path
-    that is itself on screen."""
+    that is itself on screen.
+
+    An inherited edge is dropped when an ancestor between this node and the issue
+    that authored it is on screen: that row already carries the dependency, and the
+    containment edges connect the two. Inheritance is uniform by construction — an
+    authored edge reaches *every* descendant — so restating it under each child would
+    replace one parent-altitude edge with a fan of n, and reduction would then delete
+    the parent's own edge as implied by its children. Suppressing the fan up front is
+    what keeps a dependency at the altitude it was authored. This mirrors how the
+    `needs #X (via #P)` row note picks its moment to speak. `fanout` keeps the fan."""
     idset = set(ids)
-    edges = {i: [(d.id, k) for d, k in g.drawn_deps_of(g.by_id[i], hier) if d.id in idset]
-             for i in idset}
+
+    def carried_above(r, author):
+        """Is a drawn row between `r` and `author` (inclusive) already saying it?"""
+        for a in g.ancestors_of(r):
+            if a.id in idset:
+                return True
+            if a.id == author.id:
+                break
+        return False
+
+    edges = {}
+    for i in idset:
+        r = g.by_id[i]
+        hidden = set() if fanout or not hier else {
+            b.id for b, author in g.inherited_deps_of(r) if carried_above(r, author)}
+        edges[i] = [(d.id, k) for d, k in g.drawn_deps_of(r, hier)
+                    if d.id in idset and not (k == "inherited" and d.id in hidden)]
     return transitive_reduction(edges) if reduce else edges
 
 
@@ -1470,7 +1509,8 @@ def _graph_component_rows(g: "Graph", comp, hier: bool = True,
     return rows
 
 
-def render_graph(g: "Graph", ids, hier: bool = True, reduce: bool = True) -> list:
+def render_graph(g: "Graph", ids, hier: bool = True, reduce: bool = True,
+                 fanout: bool = False) -> list:
     """Render the dependency DAG over `ids` as lazygit-style rows, grouped by
     weakly-connected component with a `None` separator between groups. Each
     non-separator row is (id, gutter, owners).
@@ -1480,7 +1520,7 @@ def render_graph(g: "Graph", ids, hier: bool = True, reduce: bool = True) -> lis
     ordering trap impossible: `ids` has already been done-filtered, so an edge can
     never be dropped in favour of a path through a node that isn't rendered — which
     would leave its endpoints looking unrelated."""
-    edges = drawn_edges(g, ids, hier, reduce)
+    edges = drawn_edges(g, ids, hier, reduce, fanout)
     rows = []
     for comp in graph_components(g, ids, hier, edges):
         if rows:
@@ -2279,7 +2319,8 @@ def cmd_next(args) -> None:
 def _print_deps_graph(ctx: Ctx, g: Graph, root_id, full: bool = False,
                       up: bool = True, down: bool = True,
                       omit_done: bool = False,
-                      include_done_chains: bool = False) -> None:
+                      include_done_chains: bool = False,
+                      fanout: bool = False) -> None:
     """Render the dependency DAG as a lazygit-style gutter, topologically sorted so a
     blocker always sits above what it blocks. Containment edges are drawn alongside
     authored ones, so a parent sits below the work it contains. With no id, every
@@ -2310,7 +2351,7 @@ def _print_deps_graph(ctx: Ctx, g: Graph, root_id, full: bool = False,
     ids = filter_deps_graph_ids(g, ids, omit_done=omit_done,
                                 include_done_chains=include_done_chains,
                                 hide_done_chains=root_id is None)
-    rows = render_graph(g, ids)
+    rows = render_graph(g, ids, fanout=fanout)
     width = max((len(gut) for r in rows if r for (_i, gut, _o) in [r]), default=0)
     # When focused on one issue, mark its row with a left-margin caret (a blank
     # 2-col gutter on every other row keeps the graph aligned); skipped for the
@@ -2342,7 +2383,8 @@ def cmd_deps(args) -> None:
     _print_deps_graph(ctx, g, root_id, full=getattr(args, "full", False),
                       up=up, down=down,
                       omit_done=getattr(args, "omit_done", False),
-                      include_done_chains=getattr(args, "include_done_chains", False))
+                      include_done_chains=getattr(args, "include_done_chains", False),
+                      fanout=getattr(args, "fanout", False))
 
 
 def cmd_check(args) -> None:
@@ -2953,6 +2995,10 @@ def build_parser() -> argparse.ArgumentParser:
                     "child' edge for each parent/child pair — a parent is done exactly "
                     "when its children are — so a parent renders below the work it "
                     "contains and `deps <epic>` answers what is left to finish it. "
+                    "A dependency authored on a parent binds every issue beneath it; "
+                    "a visible ancestor states it once and its descendants stay quiet, "
+                    "while a child shown without that ancestor draws the inherited "
+                    "blocker itself. --fanout restates it under every child. "
                     "Inferred edges are dimmed, and are display-only: only dep "
                     "--add/--remove ever changes stored dependencies. The graph is "
                     "transitively reduced — an edge already implied by a longer path "
@@ -2975,6 +3021,9 @@ def build_parser() -> argparse.ArgumentParser:
                     help="in the whole graph, include components whose every issue is terminal")
     dz.add_argument("--omit-done", action="store_true",
                     help="omit terminal issues from the rendered graph")
+    dz.add_argument("--fanout", action="store_true",
+                    help="restate an inherited dependency under every child, instead "
+                         "of letting the visible ancestor carry it once")
     dz.add_argument("--graph", action="store_true", help=argparse.SUPPRESS)  # now default; kept as a no-op
     dz.set_defaults(func=cmd_deps)
 

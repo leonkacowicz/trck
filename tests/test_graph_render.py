@@ -845,5 +845,170 @@ class TestTransitiveReduction(unittest.TestCase):
             self.assertEqual(sorted(stored[top]["depends_on"]), sorted([mid, base]))
 
 
+class TestInheritedEdges(unittest.TestCase):
+    """An authored edge is inherited by the author's whole subtree, so a child blocked
+    only through its parent must be able to show it. Drawn per-child only where the
+    ancestor carrying the edge isn't itself on screen — mirroring the `needs #X (via
+    #P)` note — because inheritance is uniform by construction: restating it under
+    every child of a visible parent is pure fan-out. `--fanout` restates it anyway."""
+
+    def setUp(self):
+        self.t = load_trck()
+        self.cfg = self.t.DEFAULT_CONFIG
+
+    def issue(self, iid, status="backlog", depends=None, parent=None):
+        return self.t.Issue(id=iid, slug=f"i{iid}", title=f"Item {iid}",
+                            kind="task", status=status, priority="medium",
+                            parent=parent, depends_on=list(depends or []))
+
+    def graph(self, *issues):
+        return self.t.Graph(self.cfg, list(issues))
+
+    def family(self):
+        """epic p needs x; children 1 and 2 inherit that need."""
+        return self.graph(self.issue("p", depends=["x"]), self.issue("1", parent="p"),
+                          self.issue("2", parent="p"), self.issue("x"))
+
+    def edges(self, g, ids, **over):
+        e = self.t.drawn_edges(g, ids, **over)
+        return {i: {t for t, _k in tv} for i, tv in e.items() if tv}
+
+    # --- the inferred edge ------------------------------------------------- #
+
+    def test_a_child_inherits_its_parents_dependency(self):
+        g = self.family()
+        self.assertIn(("x", "inherited"),
+                      [(b.id, k) for b, k in g.drawn_deps_of(g.row("1"))])
+
+    def test_an_own_edge_outranks_an_inherited_one(self):
+        # nearest author wins: a child that authored the edge itself is not inheriting
+        g = self.graph(self.issue("p", depends=["x"]), self.issue("1", parent="p", depends=["x"]),
+                       self.issue("x"))
+        self.assertEqual([(b.id, k) for b, k in g.drawn_deps_of(g.row("1"))], [("x", "dep")])
+
+    def test_inheritance_reaches_a_grandchild(self):
+        g = self.graph(self.issue("p", depends=["x"]), self.issue("1", parent="p"),
+                       self.issue("2", parent="1"), self.issue("x"))
+        self.assertIn(("x", "inherited"),
+                      [(b.id, k) for b, k in g.drawn_deps_of(g.row("2"))])
+
+    def test_no_inherited_edge_points_inside_the_childs_own_subtree(self):
+        # an authored ancestor/descendant edge is already rejected as a cycle, so an
+        # inherited target can never be a node the child contains
+        g = self.graph(self.issue("p", depends=["x"]), self.issue("1", parent="p"),
+                       self.issue("2", parent="1"), self.issue("x"))
+        for r in g.rows:
+            own = {n.id for n in g.subtree(r)}
+            for b, kind in g.drawn_deps_of(r):
+                if kind == "inherited":
+                    self.assertNotIn(b.id, own)
+
+    def test_the_cone_of_a_child_reaches_its_inherited_blocker(self):
+        g = self.family()
+        self.assertIn("x", g.dependency_line(g.row("1"), down=False))
+
+    # --- the on-screen rule (the hoist) ------------------------------------ #
+
+    def test_a_visible_parent_carries_the_edge_alone(self):
+        # p is on screen and already says it needs x; restating it under 1 and 2
+        # would replace one parent-altitude edge with a fan of n
+        g = self.family()
+        self.assertEqual(self.edges(g, ["p", "1", "2", "x"]),
+                         {"p": {"x", "1", "2"}})
+
+    def test_an_absent_parent_hands_the_edge_down(self):
+        # scoped below p: nothing on screen carries the need, so 1 must show it
+        g = self.family()
+        self.assertEqual(self.edges(g, ["1", "x"]), {"1": {"x"}})
+
+    def test_the_nearest_visible_ancestor_wins(self):
+        g = self.graph(self.issue("p", depends=["x"]), self.issue("1", parent="p"),
+                       self.issue("2", parent="1"), self.issue("x"))
+        # 1 is on screen and carries it, so the grandchild stays quiet
+        self.assertEqual(self.edges(g, ["1", "2", "x"]), {"1": {"x", "2"}})
+
+    def test_the_parents_authored_edge_survives_reduction(self):
+        # the whole point of suppressing the fan: without it p -> x is implied by
+        # p -> 1 -> x and reduction deletes it, demoting an epic-level dependency
+        g = self.family()
+        self.assertIn("x", self.edges(g, ["p", "1", "2", "x"])["p"])
+
+    # --- --fanout ---------------------------------------------------------- #
+
+    def test_fanout_restates_the_edge_under_every_child(self):
+        g = self.family()
+        self.assertEqual(self.edges(g, ["p", "1", "2", "x"], fanout=True),
+                         {"p": {"1", "2"}, "1": {"x"}, "2": {"x"}})
+
+    def test_fanout_costs_the_parent_its_own_edge(self):
+        # p -> x becomes implied by p -> 1 -> x, so reduction drops it. Nothing is
+        # lost: p still reaches x through the children, which is the ground truth
+        # about which specific work is blocked.
+        g = self.family()
+        self.assertNotIn("x", self.edges(g, ["p", "1", "2", "x"], fanout=True)["p"])
+
+    def test_fanout_keeps_reachability(self):
+        g = self.family()
+        for mode in (False, True):
+            e = self.t.drawn_edges(g, ["p", "1", "2", "x"], fanout=mode)
+            seen, stack = set(), ["p"]
+            while stack:
+                for t, _k in e.get(stack.pop(), []):
+                    if t not in seen:
+                        seen.add(t); stack.append(t)
+            self.assertEqual(seen, {"1", "2", "x"}, f"fanout={mode}")
+
+    # --- command level ------------------------------------------------------ #
+
+    def seed(self, d, title="Item", depends=None, parent=None):
+        from pathlib import Path
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.t.cmd_new(ns(dir=str(d), title=title, priority="high", kind=None,
+                              parent=parent, points=None, depends=depends, spec=None,
+                              slug=None))
+        return Path(buf.getvalue().strip()).name.split("-")[0]
+
+    def deps_graph(self, d, issue_id=None, **over):
+        args = dict(dir=str(d), id=str(issue_id) if issue_id is not None else None,
+                    full=False, requires=False, blocks=False, omit_done=False,
+                    include_done_chains=False, fanout=False)
+        args.update(over)
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.t.cmd_deps(ns(**args))
+        return buf.getvalue()
+
+    def test_a_child_scoped_to_its_requirements_shows_the_inherited_blocker(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            blocker = self.seed(d, "Blocker")
+            epic = self.seed(d, "Epic", depends=blocker)
+            kid = self.seed(d, "Kid", parent=epic)
+            out = self.deps_graph(d, kid, requires=True)
+            self.assertIn(f"#{blocker}", out)       # the epic is not in this cone
+            self.assertIn(f"#{kid}", out)
+
+    def test_fanout_is_off_by_default(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            blocker = self.seed(d, "Blocker")
+            epic = self.seed(d, "Epic", depends=blocker)
+            self.seed(d, "Kid one", parent=epic)
+            self.seed(d, "Kid two", parent=epic)
+            self.assertNotEqual(self.deps_graph(d, epic),
+                                self.deps_graph(d, epic, fanout=True))
+
+    def test_deps_never_writes_inherited_edges_to_the_index(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            blocker = self.seed(d, "Blocker")
+            epic = self.seed(d, "Epic", depends=blocker)
+            self.seed(d, "Kid", parent=epic)
+            before = (d / "index.jsonl").read_text()
+            self.deps_graph(d, epic, fanout=True)
+            self.assertEqual((d / "index.jsonl").read_text(), before)
+
+
 if __name__ == "__main__":
     unittest.main()
