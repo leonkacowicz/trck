@@ -5,18 +5,18 @@
 
 | State | Count |
 |---|---:|
-| backlog | 22 |
-| ongoing | 1 |
-| done | 58 |
+| backlog | 21 |
+| ongoing | 0 |
+| done | 60 |
 | **total** | **81** |
 
 ## Hierarchies
 
-### [#dj5b42j deps: infer hierarchy edges so the graph answers 'what is left to finish this parent'](ongoing/dj5b42j-deps-infer-hierarchy-edges-so-the-graph-answers-what-is-left-to-finish-this-parent.md) — 80% (4/5 pts · 4/5 done) · _high_ · ongoing
+### [#dj5b42j deps: infer hierarchy edges so the graph answers 'what is left to finish this parent'](done/dj5b42j-deps-infer-hierarchy-edges-so-the-graph-answers-what-is-left-to-finish-this-parent.md) — 100% (5/5 pts · 5/5 done) · _high_ · done
 
 - [x] [#atk4umk deps: transitive reduction of the rendered graph (display-only, after done-filtering)](done/atk4umk-deps-transitive-reduction-of-the-rendered-graph-display-only-after-done-filtering.md)
 - [x] [#wr8ybmk deps: hoist uniform inherited fanouts back to the parent; --fanout to opt out](done/wr8ybmk-deps-hoist-uniform-inherited-fanouts-back-to-the-parent-fanout-to-opt-out.md)
-- [ ] [#wsqfwc6 check: warn on authored dependency edges made redundant by another path](backlog/wsqfwc6-check-warn-on-authored-dependency-edges-made-redundant-by-another-path.md) _(backlog)_
+- [x] [#wsqfwc6 check: warn on authored dependency edges made redundant by another path](done/wsqfwc6-check-warn-on-authored-dependency-edges-made-redundant-by-another-path.md)
 - [x] [#zbkkc2a deps: draw inherited dependency edges (child -> ancestor's out-of-subtree deps)](done/zbkkc2a-deps-draw-inherited-dependency-edges-child-ancestor-s-out-of-subtree-deps.md)
 - [x] [#zhhxgcw deps: draw parent->child containment edges in the rendered graph](done/zhhxgcw-deps-draw-parent-child-containment-edges-in-the-rendered-graph.md)
 
