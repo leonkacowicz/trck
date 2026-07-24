@@ -5,20 +5,20 @@
 
 | State | Count |
 |---|---:|
-| backlog | 27 |
-| ongoing | 0 |
-| done | 54 |
+| backlog | 25 |
+| ongoing | 1 |
+| done | 55 |
 | **total** | **81** |
 
 ## Hierarchies
 
-### [#dj5b42j deps: infer hierarchy edges so the graph answers 'what is left to finish this parent'](backlog/dj5b42j-deps-infer-hierarchy-edges-so-the-graph-answers-what-is-left-to-finish-this-parent.md) — 0% (0/5 pts · 0/5 done) · _high_ · backlog
+### [#dj5b42j deps: infer hierarchy edges so the graph answers 'what is left to finish this parent'](ongoing/dj5b42j-deps-infer-hierarchy-edges-so-the-graph-answers-what-is-left-to-finish-this-parent.md) — 20% (1/5 pts · 1/5 done) · _high_ · ongoing
 
 - [ ] [#atk4umk deps: transitive reduction of the rendered graph (display-only, after done-filtering)](backlog/atk4umk-deps-transitive-reduction-of-the-rendered-graph-display-only-after-done-filtering.md) _(backlog)_
 - [ ] [#wr8ybmk deps: hoist uniform inherited fanouts back to the parent; --fanout to opt out](backlog/wr8ybmk-deps-hoist-uniform-inherited-fanouts-back-to-the-parent-fanout-to-opt-out.md) _(backlog)_
 - [ ] [#wsqfwc6 check: warn on authored dependency edges made redundant by another path](backlog/wsqfwc6-check-warn-on-authored-dependency-edges-made-redundant-by-another-path.md) _(backlog)_
 - [ ] [#zbkkc2a deps: draw inherited dependency edges (child -> ancestor's out-of-subtree deps)](backlog/zbkkc2a-deps-draw-inherited-dependency-edges-child-ancestor-s-out-of-subtree-deps.md) _(backlog)_
-- [ ] [#zhhxgcw deps: draw parent->child containment edges in the rendered graph](backlog/zhhxgcw-deps-draw-parent-child-containment-edges-in-the-rendered-graph.md) _(backlog)_
+- [x] [#zhhxgcw deps: draw parent->child containment edges in the rendered graph](done/zhhxgcw-deps-draw-parent-child-containment-edges-in-the-rendered-graph.md)
 
 ### [#ee2crq3 Introduce a derived Graph view over the loaded index](done/ee2crq3-introduce-a-derived-graph-view-over-the-loaded-index.md) — 100% (3/3 pts · 3/3 done) · _medium_ · done
 Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-06-09-graph-derived-view-design.md)
