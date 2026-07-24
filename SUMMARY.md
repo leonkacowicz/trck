@@ -7,8 +7,8 @@
 |---|---:|
 | backlog | 20 |
 | ongoing | 0 |
-| done | 67 |
-| **total** | **87** |
+| done | 68 |
+| **total** | **88** |
 
 ## Hierarchies
 
@@ -106,6 +106,7 @@ _none_
 - [#cea683t validate/dep: detect and prevent dependency cycles](done/cea683t-validate-dep-detect-and-prevent-dependency-cycles.md) — _medium_ [tracker-features] (closed 2026-06-08)
 - [#dbq2wqn deps: hide done work by default (fully-done chains + --omit-done)](done/dbq2wqn-deps-hide-done-by-default.md) — _medium_ (closed 2026-06-24)
 - [#dscmxng Use random alphanumeric ids to make concurrent creation collision-free](done/dscmxng-use-random-alphanumeric-ids-to-make-concurrent-creation-collision-free.md) — _medium_ [conflict-resolution tracker-features] (closed 2026-06-15)
+- [#fwxbrvc resolve_ref: accept a leading # on id args (paste-back from output)](done/fwxbrvc-resolve-ref-accept-a-leading-on-id-args-paste-back-from-output.md) — _medium_ (closed 2026-07-24)
 - [#ge5jt9s Cascading parent status: derive parent status from children (status rollup)](done/ge5jt9s-cascading-parent-status-derive-parent-status-from-children-status-rollup.md) — _medium_ (closed 2026-06-13)
 - [#gs3vd4w ready/next: scope to a subtree (what can I pick up on this parent now)](done/gs3vd4w-ready-next-scope-to-a-subtree-what-can-i-pick-up-on-this-parent-now.md) — _medium_ (closed 2026-07-24)
 - [#gwcr9qd deps: shorter edges / fewer crossings in the graph layout](done/gwcr9qd-deps-shorter-edges-fewer-crossings-in-the-graph-layout.md) — _medium_ (closed 2026-06-12)
