@@ -5,9 +5,9 @@
 
 | State | Count |
 |---|---:|
-| backlog | 24 |
+| backlog | 23 |
 | ongoing | 1 |
-| done | 71 |
+| done | 72 |
 | **total** | **96** |
 
 ## Hierarchies
@@ -39,10 +39,10 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 
 - [x] [#nddf6wg Harden Issue.from_dict with a structural/type contract](done/nddf6wg-harden-issue-from-dict-with-a-structural-type-contract.md)
 
-### [#fkrp9dh trck-html: static HTML SPA to browse issues in a browser](ongoing/fkrp9dh-trck-html-static-html-spa-to-browse-issues-in-a-browser.md) — 43% (3/7 pts · 3/7 done) · _medium_ · ongoing
+### [#fkrp9dh trck-html: static HTML SPA to browse issues in a browser](ongoing/fkrp9dh-trck-html-static-html-spa-to-browse-issues-in-a-browser.md) — 57% (4/7 pts · 4/7 done) · _medium_ · ongoing
 
 - [ ] [#2ytfth4 v5: board / kanban by status](backlog/2ytfth4-v5-board-kanban-by-status.md) _(backlog)_
-- [ ] [#4vbk79y v4: tree / hierarchy view with rolled-up progress %](backlog/4vbk79y-v4-tree-hierarchy-view-with-rolled-up-progress.md) _(backlog)_
+- [x] [#4vbk79y v4: tree / hierarchy view with rolled-up progress %](done/4vbk79y-v4-tree-hierarchy-view-with-rolled-up-progress.md)
 - [ ] [#4xh68fa v6: markdown bodies — JS subset renderer, then optional lib, <pre> fallback](backlog/4xh68fa-v6-markdown-bodies-js-subset-renderer-then-optional-lib-pre-fallback.md) _(backlog)_
 - [x] [#6yttx97 v3: dependency graph view (clickable, jump between blockers/blocked)](done/6yttx97-v3-dependency-graph-view-clickable-jump-between-blockers-blocked.md)
 - [x] [#99wkju8 v1 MVP: tools/trck-html — list + detail panel + filter/search, escaped bodies](done/99wkju8-v1-mvp-tools-trck-html-list-detail-panel-filter-search-escaped-bodies.md)
