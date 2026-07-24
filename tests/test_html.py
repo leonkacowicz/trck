@@ -66,6 +66,10 @@ class HtmlTestBase(unittest.TestCase):
         assert len(hits) == 1, f"expected one file for {iid}, got {hits}"
         return hits[0]
 
+    def mv(self, d, iid, status):
+        with redirect_stdout(io.StringIO()):
+            self.t.cmd_mv(ns(dir=str(d), id=iid, status=status, resolution=None))
+
     def render(self, d):
         ctx = self.h.build_ctx_from(str(d))
         return self.h.render_html(ctx)
@@ -209,6 +213,41 @@ class TestDependencyGraph(HtmlTestBase):
             html = self.render(d)
             self.assertIn('id="graph"', html)
             self.assertIn('data-view="graph"', html)
+
+
+class TestTreeView(HtmlTestBase):
+    def test_model_lists_roots(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            top = self.seed(d, "Top")
+            parent = self.seed(d, "Parent")
+            child = self.seed(d, "Child", parent=parent)
+            data = island(self.render(d))
+            self.assertIn("roots", data)
+            self.assertIn(top, data["roots"])
+            self.assertIn(parent, data["roots"])
+            self.assertNotIn(child, data["roots"])
+            self.assertEqual(data["roots"], sorted(data["roots"]))
+
+    def test_parent_progress_rolls_up_and_leaves_are_null(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            parent = self.seed(d, "Parent")
+            c1 = self.seed(d, "One", parent=parent)
+            self.seed(d, "Two", parent=parent)
+            self.mv(d, c1, "done")
+            data = island(self.render(d))
+            by_id = {i["id"]: i for i in data["issues"]}
+            self.assertEqual(by_id[parent]["progress"]["pct"], 50)
+            self.assertIsNone(by_id[c1]["progress"])
+
+    def test_tree_view_ui_is_present(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")
+            html = self.render(d)
+            self.assertIn('id="tree"', html)
+            self.assertIn('data-view="tree"', html)
 
 
 class TestBodyEscaping(HtmlTestBase):

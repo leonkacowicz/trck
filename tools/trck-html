@@ -158,6 +158,7 @@ def build_model(ctx, cmd=None):
         },
         "issues": issues,
         "edges": edges,
+        "roots": sorted(a["id"] for a in issues if a["parent"] is None),
     }
 
 
@@ -311,6 +312,17 @@ main { display: grid; grid-template-columns: minmax(20rem, 2fr) 3fr; gap: 0;
 .gnode text { fill: var(--fg); font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
 .gedge { stroke: var(--muted); stroke-width: 1.5; fill: none; }
 .gempty { color: var(--muted); padding: 1rem; }
+.tree { height: 100%; overflow: auto; padding: .3rem 0; }
+.trow { display: flex; align-items: center; gap: .4rem; padding: .3rem .6rem; cursor: pointer; }
+.trow:hover { background: var(--panel); }
+.trow.sel { background: var(--sel); }
+.trow.done .ttitle { color: var(--done); text-decoration: line-through; }
+.tcaret { width: 1.1em; flex: none; color: var(--muted); text-align: center; user-select: none; }
+.tcaret.leaf { visibility: hidden; }
+.ttitle { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tbar { flex: none; width: 46px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.tbar > i { display: block; height: 100%; background: var(--accent); }
+.tpct { flex: none; color: var(--muted); font-size: .78rem; width: 2.6em; text-align: right; }
 """
 
 _SHELL = """\
@@ -322,6 +334,7 @@ _SHELL = """\
   <div class="viewtoggle">
     <button data-view="list" class="on" type="button">list</button>
     <button data-view="graph" type="button">graph</button>
+    <button data-view="tree" type="button">tree</button>
   </div>
   <input id="q" type="search" placeholder="Search id / title / body / label…" autocomplete="off">
   <select id="fstatus"></select>
@@ -331,6 +344,7 @@ _SHELL = """\
   <div class="leftpane">
     <ul id="list" class="list"></ul>
     <div id="graph" class="graph" hidden></div>
+    <div id="tree" class="tree" hidden></div>
   </div>
   <section id="detail" class="detail"><p class="empty">Select an issue.</p></section>
 </main>
@@ -365,7 +379,7 @@ function el(tag, props = {}, ...kids) {
 const byId = Object.fromEntries(DATA.issues.map(i => [i.id, i]));
 const terminal = new Set(DATA.config.statuses.filter(s => s.role === 'terminal').map(s => s.name));
 const prio = DATA.config.priorities;
-const state = { q: '', status: '', priority: '', selected: null, edits: {}, view: 'list' };
+const state = { q: '', status: '', priority: '', selected: null, edits: {}, view: 'list', collapsed: new Set() };
 
 // --- staged edits (v2 command-copy): key `${id}::${field}` -> new value ------
 const editKey = (id, field) => id + '::' + field;
@@ -515,6 +529,7 @@ function select(id) {
   state.selected = id;
   renderList(); renderDetail();
   if (state.view === 'graph') renderGraph();
+  if (state.view === 'tree') renderTree();
 }
 
 // --- v3 dependency graph: SVG layered DAG from authored edges ----------------
@@ -592,9 +607,68 @@ function setView(v) {
   state.view = v;
   $('#list').hidden = v !== 'list';
   $('#graph').hidden = v !== 'graph';
+  $('#tree').hidden = v !== 'tree';
   for (const b of document.querySelectorAll('.viewtoggle button'))
     b.classList.toggle('on', b.dataset.view === v);
   if (v === 'graph') renderGraph();
+  if (v === 'tree') renderTree();
+}
+// --- v4 tree / hierarchy view: collapsible forest from roots -> children -----
+function toggleCollapse(id) {
+  if (state.collapsed.has(id)) state.collapsed.delete(id);
+  else state.collapsed.add(id);
+  renderTree();
+}
+const filterActive = () => !!(state.q || state.status || state.priority);
+// A node is visible when it matches the filter, or any descendant does — so a
+// matching leaf keeps its ancestor path. Post-order, cycle-guarded.
+function visibleNodes() {
+  const vis = new Set();
+  const walk = (id, seen) => {
+    const i = byId[id];
+    if (!i || seen.has(id)) return false;
+    seen.add(id);
+    let any = false;
+    for (const k of (i.children || [])) if (walk(k, seen)) any = true;
+    if (any || matches(i)) { vis.add(id); return true; }
+    return false;
+  };
+  for (const id of DATA.roots) walk(id, new Set());
+  return vis;
+}
+function renderTreeNode(container, id, depth, vis, active) {
+  const i = byId[id];
+  if (!i) return;
+  const kids = (i.children || []).filter(k => vis.has(k));
+  const hasKids = kids.length > 0;
+  const collapsed = !active && state.collapsed.has(id);   // active filter auto-expands
+  const cls = 'trow' + (terminal.has(i.status) ? ' done' : '') + (id === state.selected ? ' sel' : '');
+  const r = el('div', { class: cls, style: 'padding-left:' + (0.6 + depth * 1.1) + 'rem',
+    onclick: () => select(id) });
+  const caret = el('span', { class: 'tcaret' + (hasKids ? '' : ' leaf'),
+    text: hasKids ? (collapsed ? '▸' : '▾') : '·' });
+  if (hasKids) caret.addEventListener('click', e => { e.stopPropagation(); toggleCollapse(id); });
+  r.append(caret, el('span', { class: 'rid', text: '#' + id }), el('span', { class: 'ttitle', text: i.title }));
+  if (i.progress) {
+    r.append(el('span', { class: 'tbar' }, el('i', { style: 'width:' + i.progress.pct + '%' })),
+      el('span', { class: 'tpct', text: i.progress.pct + '%' }));
+  } else {
+    r.append(el('span', { class: 'badge', text: i.priority }),
+      el('span', { class: 'badge', text: i.status }));
+  }
+  container.append(r);
+  if (hasKids && !collapsed) for (const k of kids) renderTreeNode(container, k, depth + 1, vis, active);
+}
+function renderTree() {
+  const box = $('#tree'); box.textContent = '';
+  const active = filterActive();
+  const vis = visibleNodes();
+  const roots = DATA.roots.filter(id => vis.has(id));
+  if (!roots.length) {
+    box.append(el('p', { class: 'gempty', text: active ? 'No matching issues.' : 'No issues.' }));
+    return;
+  }
+  for (const id of roots) renderTreeNode(box, id, 0, vis, active);
 }
 function renderGraph() {
   const box = $('#graph'); box.textContent = '';
@@ -638,6 +712,12 @@ function renderGraph() {
   box.append(s);
 }
 
+function applyFilter() {
+  renderList();
+  if (state.view === 'tree') renderTree();
+  // The graph view shows the full dependency graph regardless of list filters.
+}
+
 function fill(sel, values, label) {
   sel.append(el('option', { value: '', text: label }));
   for (const v of values) sel.append(el('option', { value: v, text: v }));
@@ -648,9 +728,9 @@ function init() {
   renderCounts();
   fill($('#fstatus'), DATA.config.statuses.map(s => s.name), 'all statuses');
   fill($('#fpriority'), DATA.config.priorities, 'all priorities');
-  $('#q').addEventListener('input', e => { state.q = e.target.value; renderList(); });
-  $('#fstatus').addEventListener('change', e => { state.status = e.target.value; renderList(); });
-  $('#fpriority').addEventListener('change', e => { state.priority = e.target.value; renderList(); });
+  $('#q').addEventListener('input', e => { state.q = e.target.value; applyFilter(); });
+  $('#fstatus').addEventListener('change', e => { state.status = e.target.value; applyFilter(); });
+  $('#fpriority').addEventListener('change', e => { state.priority = e.target.value; applyFilter(); });
   $('#pcopy').addEventListener('click', copyAll);
   $('#pclear').addEventListener('click', clearEdits);
   for (const b of document.querySelectorAll('.viewtoggle button'))
