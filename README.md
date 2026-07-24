@@ -240,7 +240,16 @@ for just that issue's directed dependency line (its transitive prerequisites and
 dependents), where the focal issue's row is marked with a `▸` and bolded. Scope to one
 cone with `trck deps NNN --requires` (only what it needs) or
 `--blocks` (only what waits on it); add `--full` instead to widen to the issue's whole
-connected cluster, including cousins joined only through a shared neighbour. The whole-graph
+connected cluster, including cousins joined only through a shared neighbour.
+
+Alongside the dependencies you authored, the graph draws an **inferred** `parent needs child`
+edge for every parent/child pair — a parent is done exactly when all its children are, which
+*is* a dependency. So a parent renders *below* the work it contains (it completes last), and
+`trck deps <epic>` answers "what is needed to finish this epic": its open descendants plus
+whatever they in turn wait on. Inferred edges are dimmed to set them apart from authored
+ones, and they are display-only — only `trck dep --add/--remove` ever changes what is stored.
+Since containment edges connect nearly the whole forest, the no-id view shows only components
+holding at least one authored edge, kept whole; pure hierarchy is what `trck list` is for. The whole-graph
 view hides fully done components by default so completed chains don't drown out active work;
 `--include-done-chains` restores them. Done nodes inside a still-active chain remain visible
 as useful context, and `--omit-done` drops terminal nodes from the rendered graph without

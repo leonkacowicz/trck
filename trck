@@ -610,6 +610,36 @@ class Graph:
     def requires_of(self, r: Issue) -> list[Issue]:
         return [self.by_id[d] for d in sorted(r.depends_on) if d in self.by_id]
 
+    # --- inferred (containment) edges: display-only ------------------------ #
+    # A parent is done exactly when all its children are, which *is* a dependency:
+    # `parent -> child`. Nobody authors those edges; they follow from what parenthood
+    # means. Surfacing them to the renderer is what lets `deps <epic>` answer "what is
+    # needed to complete this epic". They are never written back to the index — only
+    # `dep --add/--remove` touches `depends_on`.
+    #
+    # The combined relation needs no new invariant: `_eff_reach` already composes
+    # `lifted_deps` with each target's `subtree`, and `would_cycle`/`validate` reject
+    # any authored edge that would close a loop in it, so authored + containment is
+    # acyclic for any tracker that passes `check`.
+
+    def drawn_deps_of(self, r: Issue, hier: bool = True) -> list[tuple[Issue, str]]:
+        """The targets `r` depends on *as drawn*, each paired with its edge kind:
+        `"dep"` for an authored `depends_on`, `"child"` for an inferred containment
+        edge. Authored first, id-sorted within a kind, so the layout stays
+        deterministic. `hier=False` yields the authored graph untouched."""
+        out = [(self.by_id[d], "dep") for d in sorted(r.depends_on) if d in self.by_id]
+        if hier:
+            out += [(c, "child") for c in self.children_of(r)]
+        return out
+
+    def drawn_dependents_of(self, r: Issue, hier: bool = True) -> list[Issue]:
+        """The reverse of `drawn_deps_of`: issues that depend on `r` as drawn — its
+        authored dependents plus, when `hier`, the parent that contains it."""
+        out = list(self.dependents_of(r))
+        if hier and r.parent is not None and r.parent in self.by_id:
+            out.append(self.by_id[r.parent])
+        return out
+
     def ancestors_of(self, r: Issue) -> list[Issue]:
         """The parent spine above `r`, nearest first, up to a root. A parent that
         points at a missing id ends the spine (that node is treated as a root); a
@@ -695,28 +725,36 @@ class Graph:
         return not self.is_terminal(r) and self.is_leaf(r) and not self.is_blocked(r)
 
     # dependency graph
-    def dependency_line(self, r: Issue, up: bool = True, down: bool = True) -> set[int]:
-        """The ids in `r`'s directed depends_on line: `r` itself, plus — when `up` —
+    def dependency_line(self, r: Issue, up: bool = True, down: bool = True,
+                        hier: bool = True) -> set[int]:
+        """The ids in `r`'s directed dependency line: `r` itself, plus — when `up` —
         everything it transitively depends on (prerequisites, following edges forward)
         and — when `down` — everything that transitively depends on it (dependents,
         following edges back). Excludes "cousins" joined only through a shared
         neighbour — unlike a weakly-connected component, the two sweeps never cross
-        direction. `up`/`down` gate each sweep so callers can scope to one cone."""
+        direction. `up`/`down` gate each sweep so callers can scope to one cone.
+
+        With `hier`, containment edges are followed too: `up` from a parent descends
+        its whole subtree (what it is waiting on), `down` from a child climbs to the
+        parents that contain it. Siblings remain cousins — they meet only at the
+        parent, and neither sweep crosses direction."""
         seen = {r.id}
         if up:
             stack = [r.id]                              # forward: prerequisites
             while stack:
                 node = self.by_id.get(stack.pop())
                 if node:
-                    for d in node.depends_on:
-                        if d in self.by_id and d not in seen:
-                            seen.add(d); stack.append(d)
+                    for d, _kind in self.drawn_deps_of(node, hier):
+                        if d.id not in seen:
+                            seen.add(d.id); stack.append(d.id)
         if down:
             stack = [r.id]                              # back: dependents
             while stack:
-                for dep in self._dependents.get(stack.pop(), []):
-                    if dep.id not in seen:
-                        seen.add(dep.id); stack.append(dep.id)
+                node = self.by_id.get(stack.pop())
+                if node:
+                    for dep in self.drawn_dependents_of(node, hier):
+                        if dep.id not in seen:
+                            seen.add(dep.id); stack.append(dep.id)
         return seen
 
     def containment(self, a: int, b: int) -> str | None:
@@ -1100,14 +1138,22 @@ def hl_id(iid: str, abbrev=None, hash_prefix: bool = True) -> str:
 
 
 def paint_lane(text, owner) -> str:
-    """Colour one graph cell by its lane owner: an id picks a palette colour,
-    the "node" sentinel bolds the bullet, None leaves it uncoloured."""
+    """Colour one graph cell by its lane owner: an id picks a palette colour, the
+    "node" sentinel bolds the bullet, None leaves it uncoloured. An owner may also be
+    an `(id, kind)` pair; an inferred containment edge ("child") is dimmed on top of
+    its palette colour, so it stays traceable through crossings while reading as
+    derived rather than authored. Box-drawing has no dashed corners, so weight —
+    not glyph shape — is what can carry the distinction."""
     if owner is None:
         return text
     if owner == "node":
         return paint(text, "bold")
+    kind = "dep"
+    if isinstance(owner, tuple):
+        owner, kind = owner
     idx = int(owner) if owner.isdigit() else int.from_bytes(owner.encode(), "big")
-    return paint(text, _LANE_PALETTE[idx % len(_LANE_PALETTE)])
+    codes = (_LANE_PALETTE[idx % len(_LANE_PALETTE)],)
+    return paint(text, *(("dim",) + codes if kind == "child" else codes))
 
 
 def parse_status_filter(spec: str | None) -> tuple[set, set]:
@@ -1224,16 +1270,17 @@ _GRAPH_GLYPH = {
 }
 
 
-def graph_components(g: "Graph", ids) -> list[list[int]]:
-    """Weakly-connected components over depends_on edges restricted to `ids`
-    (edges undirected). Each component is id-sorted; components order by smallest
-    member — so a node's cluster renders as one contiguous, separable block."""
+def graph_components(g: "Graph", ids, hier: bool = True) -> list[list[int]]:
+    """Weakly-connected components over the drawn edges restricted to `ids` (edges
+    undirected; containment included unless `hier` is off). Each component is
+    id-sorted; components order by smallest member — so a node's cluster renders as
+    one contiguous, separable block."""
     idset = set(ids)
     adj: dict[int, set] = {i: set() for i in idset}
     for i in idset:
-        for dep in g.by_id[i].depends_on:
-            if dep in idset:
-                adj[i].add(dep); adj[dep].add(i)
+        for dep, _kind in g.drawn_deps_of(g.by_id[i], hier):
+            if dep.id in idset:
+                adj[i].add(dep.id); adj[dep.id].add(i)
     seen, comps = set(), []
     for start in sorted(idset):
         if start in seen:
@@ -1249,8 +1296,8 @@ def graph_components(g: "Graph", ids) -> list[list[int]]:
     return sorted(comps, key=min)
 
 
-def _graph_topo(g: "Graph", ids) -> tuple[list[int], dict[int, list[int]]]:
-    """Topological order over depends_on within `ids`, prerequisites first. Returns
+def _graph_topo(g: "Graph", ids, hier: bool = True) -> tuple[list[int], dict[int, list[int]]]:
+    """Topological order over the drawn edges within `ids`, prerequisites first. Returns
     (order, dependents) where dependents[i] is i's id-sorted in-set dependents — the
     lanes node i opens downward.
 
@@ -1262,7 +1309,10 @@ def _graph_topo(g: "Graph", ids) -> tuple[list[int], dict[int, list[int]]]:
     interleaves branches breadth-first. Siblings unblocked together are visited in
     ascending id order, so the layout stays fully deterministic."""
     idset = set(ids)
-    requires = {i: [d for d in g.by_id[i].depends_on if d in idset] for i in idset}
+    requires = {i: [d.id for d, _k in g.drawn_deps_of(g.by_id[i], hier) if d.id in idset]
+                for i in idset}
+    kinds = {(i, d.id): k for i in idset
+             for d, k in g.drawn_deps_of(g.by_id[i], hier) if d.id in idset}
     dependents: dict[int, list[int]] = {i: [] for i in idset}
     for i in idset:
         for d in requires[i]:
@@ -1283,19 +1333,24 @@ def _graph_topo(g: "Graph", ids) -> tuple[list[int], dict[int, list[int]]]:
             if indeg[dep] == 0:
                 newly.append(dep)
         stack.extend(sorted(newly, reverse=True))
-    return order, dependents
+    return order, dependents, kinds
 
 
-def _graph_component_rows(g: "Graph", comp) -> list[tuple[int, str, list]]:
+def _graph_component_rows(g: "Graph", comp, hier: bool = True) -> list[tuple[int, str, list]]:
     """Render one connected component, one row per node. Returns (id, gutter, owners):
     gutter is the plain box-drawing string; owners is a per-character lane owner (an
-    id, the "node" sentinel for the bullet, or None) for colouring."""
-    order, dependents = _graph_topo(g, comp)
-    lanes: list = []                         # lanes[c] = dependent id the lane heads to
+    `(id, kind)` pair, the "node" sentinel for the bullet, or None) for colouring.
+
+    A lane is opened at its prerequisite's row and closed at the row of the dependent
+    it heads to, so each lane column carries exactly one edge — which is why the edge
+    kind rides along with the lane and an inferred containment edge can be drawn
+    differently from an authored one."""
+    order, dependents, kinds = _graph_topo(g, comp, hier)
+    lanes: list = []                         # lanes[c] = (dependent id, edge kind)
     rows = []
     for n in order:
         top = list(lanes)
-        arriving = [c for c, t in enumerate(top) if t == n]
+        arriving = [c for c, t in enumerate(top) if t is not None and t[0] == n]
         pos = arriving[0] if arriving else (top.index(None) if None in top else len(top))
         bottom = list(top)
         while len(bottom) <= pos:
@@ -1305,8 +1360,9 @@ def _graph_component_rows(g: "Graph", comp) -> list[tuple[int, str, list]]:
         bottom[pos] = None
         started = []
         for k, d in enumerate(dependents[n]):
+            lane = (d, kinds[(d, n)])        # the lane carries the edge d -> n
             if k == 0:
-                bottom[pos] = d; started.append(pos)
+                bottom[pos] = lane; started.append(pos)
             else:
                 # Reuse the free column NEAREST the node, not the leftmost gap:
                 # same lane count (still greedy interval colouring) but a shorter
@@ -1315,7 +1371,7 @@ def _graph_component_rows(g: "Graph", comp) -> list[tuple[int, str, list]]:
                 c = min(free, key=lambda c: (abs(c - pos), c)) if free else len(bottom)
                 if c == len(bottom):
                     bottom.append(None)
-                bottom[c] = d; started.append(c)
+                bottom[c] = lane; started.append(c)
 
         width = max(len(top), len(bottom), pos + 1)
         dirs = [set() for _ in range(width)]
@@ -1337,9 +1393,10 @@ def _graph_component_rows(g: "Graph", comp) -> list[tuple[int, str, list]]:
             dirs[a].add("U")
             if a == pos:
                 continue
-            dirs[a].add("R" if a < pos else "L"); colour(a, n, 2)
-            dirs[pos].add("L" if a < pos else "R"); colour(pos, n, 1)
-            bridge(a, pos, n)
+            lane = top[a]                    # (n, kind of the edge that opened it)
+            dirs[a].add("R" if a < pos else "L"); colour(a, lane, 2)
+            dirs[pos].add("L" if a < pos else "R"); colour(pos, lane, 1)
+            bridge(a, pos, lane)
         for b in started:                    # lanes forking down out of the node
             d = bottom[b]
             dirs[b].add("D")
@@ -1365,16 +1422,37 @@ def _graph_component_rows(g: "Graph", comp) -> list[tuple[int, str, list]]:
     return rows
 
 
-def render_graph(g: "Graph", ids) -> list:
-    """Render the depends_on DAG over `ids` as lazygit-style rows, grouped by
+def render_graph(g: "Graph", ids, hier: bool = True) -> list:
+    """Render the dependency DAG over `ids` as lazygit-style rows, grouped by
     weakly-connected component with a `None` separator between groups. Each
     non-separator row is (id, gutter, owners)."""
     rows = []
-    for comp in graph_components(g, ids):
+    for comp in graph_components(g, ids, hier):
         if rows:
             rows.append(None)
-        rows.extend(_graph_component_rows(g, comp))
+        rows.extend(_graph_component_rows(g, comp, hier))
     return rows
+
+
+def deps_overview_ids(g: "Graph") -> set:
+    """The id set for the bare `deps` view: every weakly-connected component holding
+    at least one *authored* edge, taken whole.
+
+    Containment edges connect nearly the whole forest, so the old rule — "every issue
+    touching an edge" — would now match almost every issue and turn this view into
+    `list`. Selecting by authored edges keeps it about ordering constraints, and a
+    family joins the view as soon as anything in it is actually ordered.
+
+    Components are kept or dropped *whole* rather than filtering node by node: a
+    parent shown without some of its children would misreport what it is waiting on,
+    which is precisely the question this view exists to answer."""
+    ids = [r.id for r in g.rows]
+    keep = set()
+    for comp in graph_components(g, ids):
+        members = set(comp)
+        if any(d in members for i in comp for d in g.by_id[i].depends_on):
+            keep |= members
+    return keep
 
 
 def filter_deps_graph_ids(g: "Graph", ids, *, omit_done: bool = False,
@@ -2147,31 +2225,33 @@ def _print_deps_graph(ctx: Ctx, g: Graph, root_id, full: bool = False,
                       up: bool = True, down: bool = True,
                       omit_done: bool = False,
                       include_done_chains: bool = False) -> None:
-    """Render the depends_on DAG as a lazygit-style gutter, topologically sorted so a
-    blocker always sits above what it blocks. With no id, the whole graph (every issue
-    touching an edge), components separated; with an id, only that issue's directed
-    dependency line — its transitive prerequisites (`up`) and dependents (`down`); pass
-    one of `up`/`down` to scope to a single cone. `full` widens an id's view to its whole
-    weakly-connected component (cousins included) and ignores the cone gating."""
+    """Render the dependency DAG as a lazygit-style gutter, topologically sorted so a
+    blocker always sits above what it blocks. Containment edges are drawn alongside
+    authored ones, so a parent sits below the work it contains. With no id, every
+    component that carries at least one authored edge (see `deps_overview_ids`),
+    components separated; with an id, only that issue's directed dependency line — its
+    transitive prerequisites (`up`) and dependents (`down`); pass one of `up`/`down` to
+    scope to a single cone. `full` widens an id's view to its whole weakly-connected
+    component (cousins included) and ignores the cone gating."""
     abbrev = unique_prefix_lens([r.id for r in g.rows])
-    edged = set()
-    for r in g.rows:
-        for dep in r.depends_on:
-            if dep in g.by_id:
-                edged.add(r.id); edged.add(dep)
     if root_id is not None:
-        if root_id not in edged:
-            if omit_done and g.is_terminal(g.row(root_id)):
+        root = g.row(root_id)
+        if not g.drawn_deps_of(root) and not g.drawn_dependents_of(root):
+            if omit_done and g.is_terminal(root):
                 return
-            print(node_label(ctx, g.row(root_id), focal=True, abbrev=abbrev) + "  (no dependencies)")
+            print(node_label(ctx, root, focal=True, abbrev=abbrev) + "  (no dependencies)")
             return
-        ids = (next(c for c in graph_components(g, edged) if root_id in set(c))
-               if full else g.dependency_line(g.row(root_id), up=up, down=down))
-    elif not edged:
-        print("no dependencies recorded yet")
-        return
+        # --full means the focal node's whole weakly-connected component, computed
+        # over every issue — not over the overview set, which drops the components
+        # the bare view suppresses and could therefore lose the focal node itself.
+        ids = (next(c for c in graph_components(g, [r.id for r in g.rows])
+                    if root_id in set(c))
+               if full else g.dependency_line(root, up=up, down=down))
     else:
-        ids = edged
+        ids = deps_overview_ids(g)
+        if not ids:
+            print("no dependencies recorded yet")
+            return
     ids = filter_deps_graph_ids(g, ids, omit_done=omit_done,
                                 include_done_chains=include_done_chains,
                                 hide_done_chains=root_id is None)
@@ -2812,12 +2892,19 @@ def build_parser() -> argparse.ArgumentParser:
 
     dz = sub.add_parser(
         "deps", help="draw the dependency DAG (lazygit-style gutter)",
-        description="Draw the depends_on DAG as a lazygit-style gutter, topologically "
-                    "sorted so a blocker sits above what it blocks. With no id, the "
-                    "whole graph; with an id, that issue's directed dependency line — "
-                    "its prerequisites and dependents. --requires/--blocks scope to one "
-                    "cone (prerequisites only / dependents only); --full instead widens "
-                    "to the issue's whole connected cluster (cousins included).")
+        description="Draw the dependency DAG as a lazygit-style gutter, topologically "
+                    "sorted so a blocker sits above what it blocks. Alongside the "
+                    "authored depends_on edges it draws an inferred 'parent needs "
+                    "child' edge for each parent/child pair — a parent is done exactly "
+                    "when its children are — so a parent renders below the work it "
+                    "contains and `deps <epic>` answers what is left to finish it. "
+                    "Inferred edges are dimmed, and are display-only: only dep "
+                    "--add/--remove ever changes stored dependencies. With no id, every "
+                    "component holding at least one authored edge (pure hierarchy is "
+                    "what `list` is for); with an id, that issue's directed dependency "
+                    "line — its prerequisites and dependents. --requires/--blocks scope "
+                    "to one cone (prerequisites only / dependents only); --full instead "
+                    "widens to the issue's whole connected cluster (cousins included).")
     dz.add_argument("id", nargs="?", help="issue id (omit for the whole graph)")
     dz.add_argument("--requires", action="store_true",
                     help="with an id, show only its prerequisite cone (what it needs)")

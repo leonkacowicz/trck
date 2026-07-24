@@ -18,10 +18,10 @@ class TestGraphRender(unittest.TestCase):
         self.t = load_trck()
         self.cfg = self.t.DEFAULT_CONFIG
 
-    def issue(self, iid, status="backlog", depends=None):
+    def issue(self, iid, status="backlog", depends=None, parent=None):
         return self.t.Issue(id=iid, slug=f"i{iid}", title=f"Item {iid}",
                             kind="task", status=status, priority="medium",
-                            parent=None, depends_on=list(depends or []))
+                            parent=parent, depends_on=list(depends or []))
 
     def graph(self, *issues):
         return self.t.Graph(self.cfg, list(issues))
@@ -463,6 +463,201 @@ class TestGraphRender(unittest.TestCase):
             out = self.node_label_out(d, labels=[])
             plain = re.sub("\033\\[[0-9;]*m", "", out)
             self.assertNotIn("[", plain)            # no label bracket, no stray dim
+
+
+class TestContainmentEdges(unittest.TestCase):
+    """`deps` draws an inferred `parent -> child` edge for every parent/child pair:
+    a parent is done exactly when its children are, which *is* a dependency. Without
+    them the graph cannot answer "what is needed to complete this epic". Inferred
+    edges are display-only — nothing here is ever written back to the index."""
+
+    def setUp(self):
+        self.t = load_trck()
+        self.cfg = self.t.DEFAULT_CONFIG
+
+    def issue(self, iid, status="backlog", depends=None, parent=None):
+        return self.t.Issue(id=iid, slug=f"i{iid}", title=f"Item {iid}",
+                            kind="task", status=status, priority="medium",
+                            parent=parent, depends_on=list(depends or []))
+
+    def graph(self, *issues):
+        return self.t.Graph(self.cfg, list(issues))
+
+    def order(self, rows):
+        return [r[0] for r in rows if r is not None]
+
+    # --- the edge accessor ------------------------------------------------ #
+
+    def test_a_parent_depends_on_each_of_its_children(self):
+        g = self.graph(self.issue(1), self.issue(2, parent="1"), self.issue(3, parent="1"))
+        self.assertEqual([(b.id, kind) for b, kind in g.drawn_deps_of(g.row("1"))],
+                         [("2", "child"), ("3", "child")])
+
+    def test_authored_edges_keep_their_kind_alongside_children(self):
+        g = self.graph(self.issue(1, depends=[9]), self.issue(2, parent="1"),
+                       self.issue(9))
+        self.assertEqual([(b.id, kind) for b, kind in g.drawn_deps_of(g.row("1"))],
+                         [("9", "dep"), ("2", "child")])
+
+    def test_hier_false_is_the_authored_graph_untouched(self):
+        g = self.graph(self.issue(1, depends=[9]), self.issue(2, parent="1"),
+                       self.issue(9))
+        self.assertEqual([(b.id, kind) for b, kind in g.drawn_deps_of(g.row("1"), hier=False)],
+                         [("9", "dep")])
+
+    def test_a_child_does_not_gain_an_edge_back_to_its_parent(self):
+        # containment points parent -> child only; the reverse would be a cycle
+        g = self.graph(self.issue(1), self.issue(2, parent="1"))
+        self.assertEqual(g.drawn_deps_of(g.row("2")), [])
+
+    def test_a_missing_parent_reference_is_ignored(self):
+        g = self.graph(self.issue(2, parent="nope"))
+        self.assertEqual(g.drawn_deps_of(g.row("2")), [])
+
+    # --- components / ordering -------------------------------------------- #
+
+    def test_a_family_is_one_component(self):
+        g = self.graph(self.issue(1), self.issue(2, parent="1"), self.issue(3, parent="1"))
+        self.assertEqual(self.t.graph_components(g, ["1", "2", "3"]), [["1", "2", "3"]])
+
+    def test_children_render_above_their_parent(self):
+        # a child blocks its parent, and the renderer puts blockers on top — so an
+        # epic sits *below* the work it contains, the last thing to complete.
+        g = self.graph(self.issue(1), self.issue(2, parent="1"), self.issue(3, parent="1"))
+        self.assertEqual(self.order(self.t.render_graph(g, ["1", "2", "3"])), ["2", "3", "1"])
+
+    def test_a_childs_own_prerequisite_precedes_the_whole_family(self):
+        # 9 blocks child 2, child 2 blocks parent 1
+        g = self.graph(self.issue(1), self.issue(2, parent="1", depends=[9]), self.issue(9))
+        self.assertEqual(self.order(self.t.render_graph(g, ["1", "2", "9"])), ["9", "2", "1"])
+
+    # --- dependency line (scoped view) ------------------------------------ #
+
+    def test_a_parents_line_reaches_its_whole_subtree(self):
+        g = self.graph(self.issue(1), self.issue(2, parent="1"),
+                       self.issue(3, parent="2"))
+        self.assertEqual(g.dependency_line(g.row("1"), down=False), {"1", "2", "3"})
+
+    def test_a_childs_line_reaches_up_to_its_parent(self):
+        g = self.graph(self.issue(1), self.issue(2, parent="1"))
+        self.assertEqual(g.dependency_line(g.row("2"), up=False), {"1", "2"})
+
+    def test_siblings_stay_cousins(self):
+        # 2 and 3 share only the parent that contains them; the cone must not cross
+        g = self.graph(self.issue(1), self.issue(2, parent="1"), self.issue(3, parent="1"))
+        self.assertEqual(g.dependency_line(g.row("2"), up=False), {"1", "2"})
+
+    # --- command level ---------------------------------------------------- #
+
+    def seed(self, d, title="Item", depends=None, parent=None):
+        from pathlib import Path
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.t.cmd_new(ns(dir=str(d), title=title, priority="high", kind=None,
+                              parent=parent, points=None, depends=depends, spec=None,
+                              slug=None))
+        return Path(buf.getvalue().strip()).name.split("-")[0]
+
+    def deps_graph(self, d, issue_id=None, **over):
+        args = dict(dir=str(d), id=str(issue_id) if issue_id is not None else None,
+                    full=False, requires=False, blocks=False, omit_done=False,
+                    include_done_chains=False)
+        args.update(over)
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.t.cmd_deps(ns(**args))
+        return buf.getvalue()
+
+    def test_deps_of_an_epic_lists_the_work_it_contains(self):
+        # the headline case: before containment edges this printed "(no dependencies)"
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            epic = self.seed(d, "Epic")
+            kid1 = self.seed(d, "Kid one", parent=epic)
+            kid2 = self.seed(d, "Kid two", parent=epic)
+            out = self.deps_graph(d, epic)
+            self.assertNotIn("no dependencies", out.lower())
+            self.assertIn(f"#{kid1}", out)
+            self.assertIn(f"#{kid2}", out)
+
+    def test_deps_of_an_epic_reaches_a_childs_external_blocker(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            blocker = self.seed(d, "Blocker")
+            epic = self.seed(d, "Epic")
+            self.seed(d, "Kid", parent=epic, depends=blocker)
+            out = self.deps_graph(d, epic, requires=True)
+            self.assertIn(f"#{blocker}", out)
+
+    def test_bare_deps_drops_a_family_with_no_authored_edge(self):
+        # pure hierarchy is what `list` is for; admitting it turns `deps` into the
+        # forest. A family only appears once something in it is actually ordered.
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            lone_epic = self.seed(d, "Lone epic")
+            lone_kid = self.seed(d, "Lone kid", parent=lone_epic)
+            base = self.seed(d, "Base")
+            top = self.seed(d, "Top", depends=base)
+            out = self.deps_graph(d)
+            self.assertIn(f"#{base}", out)
+            self.assertIn(f"#{top}", out)
+            self.assertNotIn(f"#{lone_epic}", out)
+            self.assertNotIn(f"#{lone_kid}", out)
+
+    def test_bare_deps_keeps_a_family_whole_once_it_has_an_authored_edge(self):
+        # the reason to drop whole components rather than filter nodes: a partially
+        # shown epic would misreport what it needs. `sib` has no edges of its own
+        # and must still appear, or the epic's row is a lie.
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            blocker = self.seed(d, "Blocker")
+            epic = self.seed(d, "Epic")
+            kid = self.seed(d, "Kid", parent=epic, depends=blocker)
+            sib = self.seed(d, "Sibling", parent=epic)
+            out = self.deps_graph(d)
+            for iid in (blocker, epic, kid, sib):
+                self.assertIn(f"#{iid}", out)
+
+    # --- telling inferred edges apart from authored ones ------------------ #
+
+    def test_a_containment_lane_is_dimmed(self):
+        # box-drawing has no dashed corner glyphs, so weight carries the distinction
+        self.t._use_color = lambda: True
+        self.assertIn(self.t._ANSI["dim"], self.t.paint_lane("│", ("3", "child")))
+
+    def test_an_authored_lane_is_not_dimmed(self):
+        self.t._use_color = lambda: True
+        self.assertNotIn(self.t._ANSI["dim"], self.t.paint_lane("│", ("3", "dep")))
+
+    def test_both_kinds_keep_the_same_palette_colour_for_one_lane(self):
+        # dimming must not change the hue, or a lane stops being traceable
+        self.t._use_color = lambda: True
+        hue = lambda s: re.findall(r"\033\[(3[0-7]|9[0-6])m", s)
+        self.assertEqual(hue(self.t.paint_lane("│", ("3", "dep"))),
+                         hue(self.t.paint_lane("│", ("3", "child"))))
+
+    def test_a_bare_id_owner_still_works(self):
+        # paint_lane's older single-argument owner form stays supported
+        self.t._use_color = lambda: True
+        self.assertEqual(self.t.paint_lane("│", "3"), self.t.paint_lane("│", ("3", "dep")))
+
+    def test_containment_lanes_are_dim_in_real_deps_output(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            blocker = self.seed(d, "Blocker")
+            epic = self.seed(d, "Epic")
+            self.seed(d, "Kid", parent=epic, depends=blocker)
+            self.t._use_color = lambda: True
+            self.assertIn(self.t._ANSI["dim"], self.deps_graph(d, epic))
+
+    def test_deps_never_writes_inferred_edges_to_the_index(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            epic = self.seed(d, "Epic")
+            self.seed(d, "Kid", parent=epic)
+            before = (d / "index.jsonl").read_text()
+            self.deps_graph(d, epic)
+            self.assertEqual((d / "index.jsonl").read_text(), before)
 
 
 if __name__ == "__main__":
