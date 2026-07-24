@@ -39,3 +39,33 @@ Warning, never error — a redundant edge is untidy, not invalid, and `check` ga
   pair, so this is additive.
 - Depends on #atk4umk only for the shared reduction primitive — factor it so both callers
   use one implementation parameterised by which edge set to reduce.
+
+## Resolution: wontfix
+
+Built, then reverted. The premise above is wrong.
+
+The stated motivation — that hiding a redundant edge lets the index accrue cruft "that only
+bites when someone removes the covering edge and the hidden constraint silently reappears" —
+does not describe a failure. If `A -> C` is hidden while `B -> C` covers it, and `B -> C` is
+later removed, `A -> C` simply becomes visible again. That is correct behaviour. The reasoning
+dressed up a feature as a hazard and then proposed a linter to prevent it.
+
+Worse, the advice destroys information. `A -> C` and `B -> C` are independent assertions: one
+says *A* needs C, the other says *B* does. Their redundancy is contingent on `B -> C`
+continuing to exist. Remove `A -> C` as advised, later rescope `B` so it no longer needs `C`,
+and A's genuine constraint is gone with nothing recording that it was ever stated. The warning
+trades a robust explicit fact for a fragile inferred one — the opposite of the usual
+convention, where you declare what you directly depend on precisely *because* transitive
+availability is someone else's decision to change.
+
+The display-side reduction (#atk4umk) does not share the problem, which is why the two looked
+alike and are not. It declutters a view recomputed from scratch every time and touches nothing
+durable; this would have mutated stored data to match a property that is not durable.
+
+A signal misread while implementing: when the warning fired on this tracker's own data, the
+instinct was to *suppress* it (skip terminal issues) rather than act on it. That the advice was
+not worth taking was the actual finding.
+
+Reverted in full; `edge_reach` / `implied_edges` / `transitive_reduction` stay, since the
+renderer needs them. If this redundancy is ever worth surfacing, it is a display concern, and
+the display already handles it.
