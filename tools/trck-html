@@ -530,16 +530,18 @@ function sv(tag, props = {}, ...kids) {
   for (const kid of kids) if (kid != null) n.append(kid);
   return n;
 }
-const NODE_W = 168, NODE_H = 34, COL_GAP = 26, ROW_GAP = 52, PAD = 16;
+const NODE_W = 150, NODE_H = 32, COL_GAP = 20, ROW_GAP = 46, PAD = 14, COMP_GAP = 30;
 const trunc = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
 function graphData() {
-  const nodes = new Set(), preds = {};
+  const nodes = new Set(), preds = {}, adj = {};
   for (const e of DATA.edges) {
     nodes.add(e.from); nodes.add(e.to);
     (preds[e.to] = preds[e.to] || []).push(e.from);
+    (adj[e.from] = adj[e.from] || []).push(e.to);
+    (adj[e.to] = adj[e.to] || []).push(e.from);   // undirected, for components
   }
-  return { nodes: [...nodes], preds };
+  return { nodes: [...nodes].sort((a, b) => a.localeCompare(b)), preds, adj };
 }
 function layerOf(id, preds, memo, seen) {
   if (id in memo) return memo[id];
@@ -549,6 +551,42 @@ function layerOf(id, preds, memo, seen) {
   for (const p of (preds[id] || [])) L = Math.max(L, layerOf(p, preds, memo, seen) + 1);
   seen.delete(id);
   return (memo[id] = L);
+}
+// Split the node set into connected components (over undirected edges) so each
+// small dependency cluster is laid out on its own rather than sharing global rows.
+function components(nodes, adj) {
+  const seen = new Set(), comps = [];
+  for (const id of nodes) {
+    if (seen.has(id)) continue;
+    const comp = [], stack = [id]; seen.add(id);
+    while (stack.length) {
+      const x = stack.pop(); comp.push(x);
+      for (const y of (adj[x] || [])) if (!seen.has(y)) { seen.add(y); stack.push(y); }
+    }
+    comps.push(comp.sort((a, b) => a.localeCompare(b)));
+  }
+  // Widest/tallest clusters first tends to pack the wrapping flow more tidily.
+  return comps.sort((a, b) => b.length - a.length || a[0].localeCompare(b[0]));
+}
+// Lay one component out in local coords (origin 0,0): longest-path layers stacked
+// top→bottom, nodes ordered by id within a layer. Returns {local, w, h}.
+function layoutComponent(comp, preds) {
+  const memo = {};
+  for (const id of comp) layerOf(id, preds, memo, new Set());
+  const layers = {};
+  for (const id of comp) (layers[memo[id]] = layers[memo[id]] || []).push(id);
+  const keys = Object.keys(layers).map(Number).sort((a, b) => a - b);
+  const local = {}; let cols = 0;
+  keys.forEach((L, li) => {
+    const ids = layers[L].sort((a, b) => a.localeCompare(b));
+    ids.forEach((id, i) => { local[id] = { x: i * (NODE_W + COL_GAP), y: li * (NODE_H + ROW_GAP) }; });
+    cols = Math.max(cols, ids.length);
+  });
+  return {
+    local,
+    w: cols * NODE_W + Math.max(0, cols - 1) * COL_GAP,
+    h: keys.length * NODE_H + Math.max(0, keys.length - 1) * ROW_GAP,
+  };
 }
 function setView(v) {
   state.view = v;
@@ -560,22 +598,23 @@ function setView(v) {
 }
 function renderGraph() {
   const box = $('#graph'); box.textContent = '';
-  const { nodes, preds } = graphData();
+  const { nodes, preds, adj } = graphData();
   if (!nodes.length) { box.append(el('p', { class: 'gempty', text: 'No dependencies to show.' })); return; }
-  const memo = {};
-  for (const id of nodes) layerOf(id, preds, memo, new Set());
-  const layers = {};
-  for (const id of nodes) (layers[memo[id]] = layers[memo[id]] || []).push(id);
+  // Flow the components left→right, wrapping to a new row when the pane width is
+  // exceeded, so the graph grows down (natural scroll) rather than out.
+  const laid = components(nodes, adj).map(c => ({ comp: c, ...layoutComponent(c, preds) }));
+  const avail = Math.max(box.clientWidth - PAD * 2, ...laid.map(l => l.w), 320);
   const pos = {};
-  let maxCols = 0;
-  const keys = Object.keys(layers).map(Number).sort((a, b) => a - b);
-  for (const L of keys) {
-    const ids = layers[L].sort((a, b) => a.localeCompare(b));
-    ids.forEach((id, i) => { pos[id] = { x: PAD + i * (NODE_W + COL_GAP), y: PAD + L * (NODE_H + ROW_GAP) }; });
-    maxCols = Math.max(maxCols, ids.length);
+  let x = PAD, y = PAD, rowH = 0, W = 0;
+  for (const l of laid) {
+    if (x > PAD && x + l.w > PAD + avail) { x = PAD; y += rowH + COMP_GAP; rowH = 0; }
+    for (const id of l.comp) pos[id] = { x: x + l.local[id].x, y: y + l.local[id].y };
+    x += l.w + COMP_GAP;
+    rowH = Math.max(rowH, l.h);
+    W = Math.max(W, x - COMP_GAP);
   }
-  const W = PAD * 2 + maxCols * NODE_W + Math.max(0, maxCols - 1) * COL_GAP;
-  const H = PAD * 2 + keys.length * NODE_H + Math.max(0, keys.length - 1) * ROW_GAP;
+  const H = y + rowH + PAD;
+  W += PAD;
   const s = sv('svg', { width: W, height: H, viewBox: '0 0 ' + W + ' ' + H });
   s.append(sv('defs', {}, sv('marker',
     { id: 'arrow', viewBox: '0 0 10 10', refX: '9', refY: '5', markerWidth: '7', markerHeight: '7', orient: 'auto' },
@@ -593,7 +632,7 @@ function renderGraph() {
     const g = sv('g', { class: cls, transform: 'translate(' + p.x + ',' + p.y + ')', onclick: () => select(id) });
     g.append(sv('rect', { width: NODE_W, height: NODE_H, rx: 7 }));
     g.append(sv('title', { text: (i ? i.title : id) }));
-    g.append(sv('text', { x: 9, y: NODE_H / 2 + 4, text: trunc('#' + id + (i ? '  ' + i.title : ''), 23) }));
+    g.append(sv('text', { x: 8, y: NODE_H / 2 + 4, text: trunc('#' + id + (i ? '  ' + i.title : ''), 20) }));
     s.append(g);
   }
   box.append(s);
