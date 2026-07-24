@@ -123,7 +123,23 @@ def _issue_dict(g, ctx, r):
     }
 
 
-def build_model(ctx):
+def _default_cmd():
+    """The command prefix the page's copy-to-clipboard commands are built from:
+    a global `trck` when one is on PATH, else a repo-relative path to the engine we
+    loaded (`./trck`, or `./issues/trck` when vendored)."""
+    if shutil.which("trck"):
+        return "trck"
+    p = getattr(E, "SELF_PATH", None)
+    if p:
+        p = Path(p)
+        try:
+            return "./" + str(p.relative_to(Path.cwd()))
+        except ValueError:
+            return str(p)
+    return "trck"
+
+
+def build_model(ctx, cmd=None):
     g = E.load_graph(ctx)
     cfg = ctx.cfg
     repo = (cfg.get("update") or {}).get("repo") or ctx.dir.parent.name
@@ -134,6 +150,7 @@ def build_model(ctx):
             "statuses": [{"name": s["name"], "role": s.get("role")} for s in cfg["statuses"]],
             "priorities": list(cfg.get("priorities", [])),
             "kinds": list(cfg.get("kinds", [])),
+            "cmd": cmd or _default_cmd(),
         },
         "issues": [_issue_dict(g, ctx, r) for r in g.rows],
     }
@@ -154,9 +171,9 @@ def _json_island(model):
     )
 
 
-def render_html(ctx):
+def render_html(ctx, cmd=None):
     """The reusable core: a Ctx -> one self-contained HTML SPA string."""
-    model = build_model(ctx)
+    model = build_model(ctx, cmd=cmd)
     island = _json_island(model)
     title = _html.escape("trck · " + str(model["repo"]))
     return "".join([
@@ -184,10 +201,13 @@ def main(argv=None):
     ap.add_argument("--dir", help="tracker dir (like `trck --dir`)")
     ap.add_argument("-o", "--output",
                     help="output file, or - for stdout (default: <tracker>/issues.html)")
+    ap.add_argument("--cmd",
+                    help="command prefix for the page's copy-to-clipboard commands "
+                         "(default: `trck` if on PATH, else a path to this engine)")
     args = ap.parse_args(argv)
 
     ctx = build_ctx_from(args.dir or args.path)
-    doc = render_html(ctx)
+    doc = render_html(ctx, cmd=args.cmd)
 
     if args.output == "-":
         sys.stdout.write(doc)
@@ -250,6 +270,27 @@ main { display: grid; grid-template-columns: minmax(20rem, 2fr) 3fr; gap: 0;
 .ilink { color: var(--accent); text-decoration: none; }
 .ilink:hover { text-decoration: underline; }
 .empty { color: var(--muted); padding: 1rem; }
+.emark { color: var(--accent); font-size: .7rem; }
+.row.edited { box-shadow: inset 3px 0 0 var(--accent); }
+.stage { display: flex; gap: .9rem; align-items: center; flex-wrap: wrap;
+         margin: 0 0 1rem; padding: .5rem .7rem; border: 1px dashed var(--line); border-radius: 8px; }
+.stage .stagek { color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; }
+.sfield { display: inline-flex; align-items: center; gap: .35rem; color: var(--muted); font-size: .85rem; }
+.sedit { font: inherit; padding: .2rem .4rem; border: 1px solid var(--line); border-radius: 6px;
+         background: var(--bg); color: var(--fg); }
+.pending { position: fixed; left: 0; right: 0; bottom: 0; background: var(--panel);
+           border-top: 1px solid var(--line); box-shadow: 0 -4px 14px rgba(0,0,0,.14);
+           max-height: 42vh; display: flex; flex-direction: column; z-index: 5; }
+.pbar { display: flex; align-items: center; gap: .7rem; padding: .5rem .9rem;
+        border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.pcount { font-weight: 600; }
+.phint { color: var(--muted); font-size: .8rem; }
+.pspace { flex: 1; }
+.pending button { font: inherit; padding: .3rem .8rem; border: 1px solid var(--line);
+                  border-radius: 6px; background: var(--bg); color: var(--fg); cursor: pointer; }
+.pending button:hover { border-color: var(--accent); color: var(--accent); }
+.plist { list-style: none; margin: 0; padding: .5rem .9rem; overflow: auto; }
+.pcmd { font: 13px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; user-select: all; white-space: pre-wrap; }
 """
 
 _SHELL = """\
@@ -266,6 +307,16 @@ _SHELL = """\
   <ul id="list" class="list"></ul>
   <section id="detail" class="detail"><p class="empty">Select an issue.</p></section>
 </main>
+<div id="pending" class="pending" hidden>
+  <div class="pbar">
+    <span id="pcount" class="pcount"></span>
+    <span class="phint">staged edits don't persist — run these in your terminal</span>
+    <span class="pspace"></span>
+    <button id="pcopy" type="button">Copy all</button>
+    <button id="pclear" type="button">Clear</button>
+  </div>
+  <ul id="plist" class="plist"></ul>
+</div>
 """
 
 _APP_JS = """\
@@ -287,7 +338,65 @@ function el(tag, props = {}, ...kids) {
 const byId = Object.fromEntries(DATA.issues.map(i => [i.id, i]));
 const terminal = new Set(DATA.config.statuses.filter(s => s.role === 'terminal').map(s => s.name));
 const prio = DATA.config.priorities;
-const state = { q: '', status: '', priority: '', selected: null };
+const state = { q: '', status: '', priority: '', selected: null, edits: {} };
+
+// --- staged edits (v2 command-copy): key `${id}::${field}` -> new value ------
+const editKey = (id, field) => id + '::' + field;
+const stagedValue = (i, field) => {
+  const k = editKey(i.id, field);
+  return k in state.edits ? state.edits[k] : i[field];
+};
+const issueEdited = id => Object.keys(state.edits).some(k => k.slice(0, k.indexOf('::')) === id);
+function setEdit(i, field, value) {
+  const k = editKey(i.id, field);
+  if (value === i[field]) delete state.edits[k];
+  else state.edits[k] = value;
+  renderList(); renderDetail(); renderPending();
+}
+function commandFor(id, field, value) {
+  const c = DATA.config.cmd;
+  if (field === 'status') return c + ' mv ' + id + ' ' + value;
+  if (field === 'priority') return c + ' set ' + id + ' --priority ' + value;
+  return '';
+}
+function pendingCommands() {
+  return Object.entries(state.edits).map(([k, v]) => {
+    const id = k.slice(0, k.indexOf('::')), field = k.slice(k.indexOf('::') + 2);
+    return commandFor(id, field, v);
+  });
+}
+function renderPending() {
+  const box = $('#pending'), list = $('#plist'); list.textContent = '';
+  const cmds = pendingCommands();
+  if (!cmds.length) { box.hidden = true; return; }
+  box.hidden = false;
+  $('#pcount').textContent = cmds.length + (cmds.length === 1 ? ' command' : ' commands');
+  for (const c of cmds) list.append(el('li', { class: 'pcmd', text: c }));
+}
+function flash(sel, msg) {
+  const b = $(sel), t = b.textContent;
+  b.textContent = msg; setTimeout(() => { b.textContent = t; }, 1200);
+}
+async function copyAll() {
+  const text = pendingCommands().join('\\n');
+  try { await navigator.clipboard.writeText(text); }
+  catch (e) {
+    const ta = el('textarea'); ta.value = text; document.body.append(ta);
+    ta.select(); document.execCommand('copy'); ta.remove();
+  }
+  flash('#pcopy', 'Copied!');
+}
+function clearEdits() { state.edits = {}; renderList(); renderDetail(); renderPending(); }
+function editSelect(i, field, values) {
+  const cur = stagedValue(i, field);
+  const sel = el('select', { class: 'sedit', onchange: e => setEdit(i, field, e.target.value) });
+  for (const v of values) {
+    const opt = el('option', { value: v, text: v });
+    if (v === cur) opt.selected = true;
+    sel.append(opt);
+  }
+  return sel;
+}
 
 function matches(i) {
   if (state.status && i.status !== state.status) return false;
@@ -321,12 +430,14 @@ function links(ids) {
 }
 
 function row(i) {
-  const cls = 'row' + (terminal.has(i.status) ? ' done' : '') + (i.id === state.selected ? ' sel' : '');
+  const cls = 'row' + (terminal.has(i.status) ? ' done' : '')
+    + (i.id === state.selected ? ' sel' : '') + (issueEdited(i.id) ? ' edited' : '');
   const r = el('li', { class: cls, onclick: () => select(i.id) },
     el('span', { class: 'rid', text: '#' + i.id }),
     el('span', { class: 'rtitle', text: i.title }),
     el('span', { class: 'badge', text: i.priority }),
     el('span', { class: 'badge', text: i.status }));
+  if (issueEdited(i.id)) r.append(el('span', { class: 'emark', title: 'has staged changes', text: '●' }));
   if (i.progress) r.append(el('span', { class: 'pct', text: i.progress.pct + '%' }));
   return r;
 }
@@ -362,6 +473,14 @@ function renderDetail() {
   if (i.requires.length) m.append(meta('requires', links(i.requires)));
   if (i.dependents.length) m.append(meta('blocks', links(i.dependents)));
   d.append(m);
+
+  const stage = el('div', { class: 'stage' }, el('span', { class: 'stagek', text: 'stage a change' }));
+  stage.append(el('label', { class: 'sfield' }, 'status',
+    editSelect(i, 'status', DATA.config.statuses.map(s => s.name))));
+  stage.append(el('label', { class: 'sfield' }, 'priority',
+    editSelect(i, 'priority', DATA.config.priorities)));
+  d.append(stage);
+
   d.append(el('pre', { class: 'body', text: i.body || '' }));
 }
 
@@ -380,8 +499,11 @@ function init() {
   $('#q').addEventListener('input', e => { state.q = e.target.value; renderList(); });
   $('#fstatus').addEventListener('change', e => { state.status = e.target.value; renderList(); });
   $('#fpriority').addEventListener('change', e => { state.priority = e.target.value; renderList(); });
+  $('#pcopy').addEventListener('click', copyAll);
+  $('#pclear').addEventListener('click', clearEdits);
   renderList();
   renderDetail();
+  renderPending();
 }
 init();
 """

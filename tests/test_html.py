@@ -123,6 +123,58 @@ class TestDataIsland(HtmlTestBase):
             self.assertIn("medium", data["config"]["priorities"])
 
 
+class TestCommandCopy(HtmlTestBase):
+    def test_config_carries_a_command_prefix(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Alpha")
+            data = island(self.render(d))
+            self.assertIn("cmd", data["config"])
+            self.assertTrue(data["config"]["cmd"])
+
+    def test_cmd_override_flows_into_the_island(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Alpha")
+            ctx = self.h.build_ctx_from(str(d))
+            data = island(self.h.render_html(ctx, cmd="./trck"))
+            self.assertEqual(data["config"]["cmd"], "./trck")
+
+    def test_default_cmd_is_trck_when_on_path(self):
+        orig = self.h.shutil.which
+        self.h.shutil.which = lambda name: "/usr/bin/trck"
+        try:
+            self.assertEqual(self.h._default_cmd(), "trck")
+        finally:
+            self.h.shutil.which = orig
+
+    def test_default_cmd_falls_back_to_engine_path_when_off_path(self):
+        orig = self.h.shutil.which
+        self.h.shutil.which = lambda name: None
+        try:
+            self.assertTrue(self.h._default_cmd().endswith("trck"))
+        finally:
+            self.h.shutil.which = orig
+
+    def test_document_includes_the_staging_ui(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Alpha")
+            html = self.render(d)
+            self.assertIn('id="pending"', html)
+            self.assertIn("Copy", html)
+
+    def test_cli_cmd_flag_overrides_prefix(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Alpha")
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                self.h.main(["--dir", str(d), "-o", "-", "--cmd", "xyzzy"])
+            data = island(buf.getvalue())
+            self.assertEqual(data["config"]["cmd"], "xyzzy")
+
+
 class TestBodyEscaping(HtmlTestBase):
     def test_body_cannot_break_out_of_the_script_island(self):
         payload = 'Danger: </script><script>alert(1)</script> & <b>bold</b> "q"'
