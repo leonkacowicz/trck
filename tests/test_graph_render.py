@@ -660,5 +660,190 @@ class TestContainmentEdges(unittest.TestCase):
             self.assertEqual((d / "index.jsonl").read_text(), before)
 
 
+class TestTransitiveReduction(unittest.TestCase):
+    """The drawn graph omits any edge already implied by a longer path: with A needing
+    both B and C, and B needing C, draw A <- B <- C and drop A <- C. On a DAG the
+    reduction is unique, so there is nothing arbitrary to choose. Display-only — the
+    authored edge stays in the index, and only `dep --remove` deletes it."""
+
+    def setUp(self):
+        self.t = load_trck()
+        self.cfg = self.t.DEFAULT_CONFIG
+
+    def issue(self, iid, status="backlog", depends=None, parent=None):
+        return self.t.Issue(id=iid, slug=f"i{iid}", title=f"Item {iid}",
+                            kind="task", status=status, priority="medium",
+                            parent=parent, depends_on=list(depends or []))
+
+    def graph(self, *issues):
+        return self.t.Graph(self.cfg, list(issues))
+
+    def edges(self, g, ids, **over):
+        """The drawn edge set as {source: {target}}, ignoring edge kinds."""
+        e = self.t.drawn_edges(g, ids, **over)
+        return {i: {t for t, _k in tv} for i, tv in e.items() if tv}
+
+    def gutters(self, rows):
+        return [r[1] for r in rows if r is not None]
+
+    # --- the reduction itself --------------------------------------------- #
+
+    def test_drops_an_edge_implied_by_a_two_hop_path(self):
+        # A needs B and C; B needs C  =>  A -> C is implied by A -> B -> C
+        g = self.graph(self.issue("a", depends=["b", "c"]),
+                       self.issue("b", depends=["c"]), self.issue("c"))
+        self.assertEqual(self.edges(g, ["a", "b", "c"], reduce=True),
+                         {"a": {"b"}, "b": {"c"}})
+
+    def test_keeps_everything_without_reduction(self):
+        g = self.graph(self.issue("a", depends=["b", "c"]),
+                       self.issue("b", depends=["c"]), self.issue("c"))
+        self.assertEqual(self.edges(g, ["a", "b", "c"], reduce=False),
+                         {"a": {"b", "c"}, "b": {"c"}})
+
+    def test_a_chain_is_already_reduced(self):
+        g = self.graph(self.issue("a", depends=["b"]), self.issue("b", depends=["c"]),
+                       self.issue("c"))
+        self.assertEqual(self.edges(g, ["a", "b", "c"], reduce=True),
+                         {"a": {"b"}, "b": {"c"}})
+
+    def test_a_diamond_keeps_all_four_edges(self):
+        # nothing is implied twice over: neither branch reaches the other
+        g = self.graph(self.issue("a", depends=["b", "c"]), self.issue("b", depends=["d"]),
+                       self.issue("c", depends=["d"]), self.issue("d"))
+        self.assertEqual(self.edges(g, ["a", "b", "c", "d"], reduce=True),
+                         {"a": {"b", "c"}, "b": {"d"}, "c": {"d"}})
+
+    def test_drops_an_edge_implied_by_a_long_path(self):
+        g = self.graph(self.issue("a", depends=["b", "d"]), self.issue("b", depends=["c"]),
+                       self.issue("c", depends=["d"]), self.issue("d"))
+        self.assertEqual(self.edges(g, ["a", "b", "c", "d"], reduce=True),
+                         {"a": {"b"}, "b": {"c"}, "c": {"d"}})
+
+    def test_reduction_is_idempotent(self):
+        g = self.graph(self.issue("a", depends=["b", "c"]),
+                       self.issue("b", depends=["c"]), self.issue("c"))
+        once = self.t.drawn_edges(g, ["a", "b", "c"], reduce=True)
+        self.assertEqual(self.t.transitive_reduction(once), once)
+
+    def test_reduction_preserves_reachability(self):
+        g = self.graph(self.issue("a", depends=["b", "c"]),
+                       self.issue("b", depends=["c"]), self.issue("c"))
+        ids = ["a", "b", "c"]
+
+        def reach(e, start):
+            seen, stack = set(), [start]
+            while stack:
+                for t, _k in e.get(stack.pop(), []):
+                    if t not in seen:
+                        seen.add(t); stack.append(t)
+            return seen
+
+        full = self.t.drawn_edges(g, ids, reduce=False)
+        cut = self.t.drawn_edges(g, ids, reduce=True)
+        for i in ids:
+            self.assertEqual(reach(full, i), reach(cut, i))
+
+    # --- containment edges reduce too ------------------------------------- #
+
+    def test_a_parent_points_only_at_the_work_nothing_else_waits_on(self):
+        # epic P contains 1 and 2, and 1 needs 2. P -> 2 is implied by P -> 1 -> 2,
+        # so the epic points only at 1 — the maximal element of its subtree.
+        g = self.graph(self.issue("p"), self.issue("1", parent="p", depends=["2"]),
+                       self.issue("2", parent="p"))
+        self.assertEqual(self.edges(g, ["p", "1", "2"], reduce=True),
+                         {"p": {"1"}, "1": {"2"}})
+
+    def test_a_kept_edge_keeps_its_kind(self):
+        g = self.graph(self.issue("p"), self.issue("1", parent="p", depends=["2"]),
+                       self.issue("2", parent="p"))
+        e = self.t.drawn_edges(g, ["p", "1", "2"], reduce=True)
+        self.assertEqual(e["p"], [("1", "child")])
+        self.assertEqual(e["1"], [("2", "dep")])
+
+    # --- rendering -------------------------------------------------------- #
+
+    def test_the_implied_edge_costs_no_lane(self):
+        # unreduced this needs two lanes out of A; reduced it is a plain chain
+        g = self.graph(self.issue("a", depends=["b", "c"]),
+                       self.issue("b", depends=["c"]), self.issue("c"))
+        rows = self.t.render_graph(g, ["a", "b", "c"])
+        self.assertEqual(self.gutters(rows), ["●", "●", "●"])
+
+    def test_unreduced_rendering_still_available(self):
+        g = self.graph(self.issue("a", depends=["b", "c"]),
+                       self.issue("b", depends=["c"]), self.issue("c"))
+        rows = self.t.render_graph(g, ["a", "b", "c"], reduce=False)
+        self.assertNotEqual(self.gutters(rows), ["●", "●", "●"])
+
+    # --- the ordering trap ------------------------------------------------- #
+
+    def test_hiding_a_middle_node_must_not_disconnect_its_neighbours(self):
+        # A -> B -> C plus an authored A -> C. Reduce *before* dropping the done B
+        # and A -> C vanishes with nothing left to imply it — A and C would render
+        # as unrelated. Reducing the already-filtered set cannot do that: a path
+        # only justifies dropping an edge when the path is itself drawn.
+        g = self.graph(self.issue("a", depends=["b", "c"]),
+                       self.issue("b", status="done", depends=["c"]), self.issue("c"))
+        self.assertEqual(self.edges(g, ["a", "c"], reduce=True), {"a": {"c"}})
+        rows = self.t.render_graph(g, ["a", "c"])
+        self.assertNotIn(None, rows)             # one component, not two
+
+    def test_reduction_runs_on_the_filtered_set_end_to_end(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            base = self.seed(d, "Base")
+            mid = self.seed(d, "Mid", depends=base)
+            top = self.seed(d, "Top", depends=f"{mid},{base}")
+            self.done(d, mid)
+            out = self.deps_graph(d, omit_done=True)
+            # Mid is gone, so Top -> Base is the only thing tying them together and
+            # must survive: both on screen, no blank line splitting them apart.
+            self.assertIn(f"#{base}", out)
+            self.assertIn(f"#{top}", out)
+            self.assertNotIn(f"#{mid}", out)
+            self.assertNotIn("\n\n", out.strip())
+
+    # --- command level ----------------------------------------------------- #
+
+    def seed(self, d, title="Item", depends=None, parent=None):
+        from pathlib import Path
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.t.cmd_new(ns(dir=str(d), title=title, priority="high", kind=None,
+                              parent=parent, points=None, depends=depends, spec=None,
+                              slug=None))
+        return Path(buf.getvalue().strip()).name.split("-")[0]
+
+    def done(self, d, issue_id):
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            self.t.cmd_mv(ns(dir=str(d), id=issue_id, status="done", resolution=None))
+
+    def deps_graph(self, d, issue_id=None, **over):
+        args = dict(dir=str(d), id=str(issue_id) if issue_id is not None else None,
+                    full=False, requires=False, blocks=False, omit_done=False,
+                    include_done_chains=False)
+        args.update(over)
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.t.cmd_deps(ns(**args))
+        return buf.getvalue()
+
+    def test_the_redundant_edge_stays_in_the_index(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            base = self.seed(d, "Base")
+            mid = self.seed(d, "Mid", depends=base)
+            top = self.seed(d, "Top", depends=f"{mid},{base}")
+            before = (d / "index.jsonl").read_text()
+            self.deps_graph(d)
+            self.assertEqual((d / "index.jsonl").read_text(), before)
+            import json
+            stored = {r["id"]: r for r in map(json.loads, before.splitlines())}
+            # the implied edge is hidden from the graph, not deleted: `dep --remove`
+            # stays the only way to drop it
+            self.assertEqual(sorted(stored[top]["depends_on"]), sorted([mid, base]))
+
+
 if __name__ == "__main__":
     unittest.main()

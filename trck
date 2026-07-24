@@ -1270,17 +1270,63 @@ _GRAPH_GLYPH = {
 }
 
 
-def graph_components(g: "Graph", ids, hier: bool = True) -> list[list[int]]:
+def drawn_edges(g: "Graph", ids, hier: bool = True, reduce: bool = True) -> dict:
+    """The drawn edge set restricted to `ids`, as `{source: [(target, kind), …]}`.
+    With `reduce`, transitively reduced (see `transitive_reduction`).
+
+    Callers pass the ids they are *about to draw* — already done-filtered — which is
+    what keeps the reduction honest: an edge may only be dropped in favour of a path
+    that is itself on screen."""
+    idset = set(ids)
+    edges = {i: [(d.id, k) for d, k in g.drawn_deps_of(g.by_id[i], hier) if d.id in idset]
+             for i in idset}
+    return transitive_reduction(edges) if reduce else edges
+
+
+def transitive_reduction(edges: dict) -> dict:
+    """Drop every edge already implied by a longer path: `u -> v` goes if some other
+    `u -> w` reaches `v`. On a DAG the result is unique and preserves reachability
+    exactly, so there is no arbitrary choice to make and nothing is lost — the path
+    that justified the removal is still drawn.
+
+    Display-only. The authored edge stays in the index; only `dep --remove` deletes
+    one. `check` is where redundancy gets *reported* rather than silently hidden."""
+    reach: dict = {}                                   # node -> all nodes below it
+
+    def below(u):                                      # memoised, DFS post-order
+        if u not in reach:
+            reach[u] = set()                           # guards a malformed cycle
+            acc = set()
+            for v, _k in edges.get(u, ()):
+                acc.add(v); acc |= below(v)
+            reach[u] = acc
+        return reach[u]
+
+    out = {}
+    for u, targets in edges.items():
+        keep = []
+        for v, kind in targets:
+            # implied iff a *sibling* edge out of u already reaches v
+            if not any(w != v and v in below(w) for w, _k in targets):
+                keep.append((v, kind))
+        out[u] = keep
+    return out
+
+
+def graph_components(g: "Graph", ids, hier: bool = True, edges: dict | None = None) -> list[list[int]]:
     """Weakly-connected components over the drawn edges restricted to `ids` (edges
     undirected; containment included unless `hier` is off). Each component is
     id-sorted; components order by smallest member — so a node's cluster renders as
-    one contiguous, separable block."""
+    one contiguous, separable block. Pass `edges` to group over an already-built
+    (e.g. reduced) edge set rather than recomputing it."""
     idset = set(ids)
+    if edges is None:
+        edges = drawn_edges(g, idset, hier, reduce=False)
     adj: dict[int, set] = {i: set() for i in idset}
     for i in idset:
-        for dep, _kind in g.drawn_deps_of(g.by_id[i], hier):
-            if dep.id in idset:
-                adj[i].add(dep.id); adj[dep.id].add(i)
+        for dep, _kind in edges.get(i, ()):
+            if dep in idset:
+                adj[i].add(dep); adj[dep].add(i)
     seen, comps = set(), []
     for start in sorted(idset):
         if start in seen:
@@ -1296,7 +1342,8 @@ def graph_components(g: "Graph", ids, hier: bool = True) -> list[list[int]]:
     return sorted(comps, key=min)
 
 
-def _graph_topo(g: "Graph", ids, hier: bool = True) -> tuple[list[int], dict[int, list[int]]]:
+def _graph_topo(g: "Graph", ids, hier: bool = True,
+                edges: dict | None = None) -> tuple[list[int], dict[int, list[int]], dict]:
     """Topological order over the drawn edges within `ids`, prerequisites first. Returns
     (order, dependents) where dependents[i] is i's id-sorted in-set dependents — the
     lanes node i opens downward.
@@ -1309,10 +1356,10 @@ def _graph_topo(g: "Graph", ids, hier: bool = True) -> tuple[list[int], dict[int
     interleaves branches breadth-first. Siblings unblocked together are visited in
     ascending id order, so the layout stays fully deterministic."""
     idset = set(ids)
-    requires = {i: [d.id for d, _k in g.drawn_deps_of(g.by_id[i], hier) if d.id in idset]
-                for i in idset}
-    kinds = {(i, d.id): k for i in idset
-             for d, k in g.drawn_deps_of(g.by_id[i], hier) if d.id in idset}
+    if edges is None:
+        edges = drawn_edges(g, idset, hier, reduce=False)
+    requires = {i: [d for d, _k in edges.get(i, ()) if d in idset] for i in idset}
+    kinds = {(i, d): k for i in idset for d, k in edges.get(i, ()) if d in idset}
     dependents: dict[int, list[int]] = {i: [] for i in idset}
     for i in idset:
         for d in requires[i]:
@@ -1336,7 +1383,8 @@ def _graph_topo(g: "Graph", ids, hier: bool = True) -> tuple[list[int], dict[int
     return order, dependents, kinds
 
 
-def _graph_component_rows(g: "Graph", comp, hier: bool = True) -> list[tuple[int, str, list]]:
+def _graph_component_rows(g: "Graph", comp, hier: bool = True,
+                          edges: dict | None = None) -> list[tuple[int, str, list]]:
     """Render one connected component, one row per node. Returns (id, gutter, owners):
     gutter is the plain box-drawing string; owners is a per-character lane owner (an
     `(id, kind)` pair, the "node" sentinel for the bullet, or None) for colouring.
@@ -1345,7 +1393,7 @@ def _graph_component_rows(g: "Graph", comp, hier: bool = True) -> list[tuple[int
     it heads to, so each lane column carries exactly one edge — which is why the edge
     kind rides along with the lane and an inferred containment edge can be drawn
     differently from an authored one."""
-    order, dependents, kinds = _graph_topo(g, comp, hier)
+    order, dependents, kinds = _graph_topo(g, comp, hier, edges)
     lanes: list = []                         # lanes[c] = (dependent id, edge kind)
     rows = []
     for n in order:
@@ -1422,15 +1470,22 @@ def _graph_component_rows(g: "Graph", comp, hier: bool = True) -> list[tuple[int
     return rows
 
 
-def render_graph(g: "Graph", ids, hier: bool = True) -> list:
+def render_graph(g: "Graph", ids, hier: bool = True, reduce: bool = True) -> list:
     """Render the dependency DAG over `ids` as lazygit-style rows, grouped by
     weakly-connected component with a `None` separator between groups. Each
-    non-separator row is (id, gutter, owners)."""
+    non-separator row is (id, gutter, owners).
+
+    The edge set is built and transitively reduced here, over exactly the ids being
+    drawn. Doing it at this point rather than at the caller is what makes the
+    ordering trap impossible: `ids` has already been done-filtered, so an edge can
+    never be dropped in favour of a path through a node that isn't rendered — which
+    would leave its endpoints looking unrelated."""
+    edges = drawn_edges(g, ids, hier, reduce)
     rows = []
-    for comp in graph_components(g, ids, hier):
+    for comp in graph_components(g, ids, hier, edges):
         if rows:
             rows.append(None)
-        rows.extend(_graph_component_rows(g, comp, hier))
+        rows.extend(_graph_component_rows(g, comp, hier, edges))
     return rows
 
 
@@ -2899,7 +2954,10 @@ def build_parser() -> argparse.ArgumentParser:
                     "when its children are — so a parent renders below the work it "
                     "contains and `deps <epic>` answers what is left to finish it. "
                     "Inferred edges are dimmed, and are display-only: only dep "
-                    "--add/--remove ever changes stored dependencies. With no id, every "
+                    "--add/--remove ever changes stored dependencies. The graph is "
+                    "transitively reduced — an edge already implied by a longer path "
+                    "is not drawn (A needs B and C, B needs C: you see A <- B <- C), "
+                    "which is unique on a DAG and preserves reachability. With no id, every "
                     "component holding at least one authored edge (pure hierarchy is "
                     "what `list` is for); with an id, that issue's directed dependency "
                     "line — its prerequisites and dependents. --requires/--blocks scope "

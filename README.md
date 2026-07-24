@@ -249,7 +249,15 @@ edge for every parent/child pair — a parent is done exactly when all its child
 whatever they in turn wait on. Inferred edges are dimmed to set them apart from authored
 ones, and they are display-only — only `trck dep --add/--remove` ever changes what is stored.
 Since containment edges connect nearly the whole forest, the no-id view shows only components
-holding at least one authored edge, kept whole; pure hierarchy is what `trck list` is for. The whole-graph
+holding at least one authored edge, kept whole; pure hierarchy is what `trck list` is for.
+
+The graph is **transitively reduced**: an edge already implied by a longer path is not drawn. If
+`A` needs both `B` and `C` while `B` needs `C`, you see `A ← B ← C` and not the `A ← C` shortcut.
+On a DAG that reduction is unique and preserves reachability exactly, so nothing is lost — the
+path that justified dropping an edge is still on screen. It also gives parents a pleasing shape:
+an epic ends up pointing only at the work nothing else waits on. Like the inferred edges this is
+display-only, and it happens *after* `--omit-done` filtering, so hiding a finished middle node can
+never leave its neighbours looking unrelated. The whole-graph
 view hides fully done components by default so completed chains don't drown out active work;
 `--include-done-chains` restores them. Done nodes inside a still-active chain remain visible
 as useful context, and `--omit-done` drops terminal nodes from the rendered graph without
