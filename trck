@@ -45,6 +45,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import NoReturn
 
+
 __version__ = "0.20.0"
 DEFAULT_UPDATE_REPO = "leonkacowicz/trck"
 SELF_PATH = Path(__file__).resolve()  # the running engine file; tests may override
@@ -264,6 +265,7 @@ def resolve_tracker_dir_or_die(dir_opt, env=None) -> Path:
             die(f"{Path(explicit).resolve()} is not a tracker (no trck.json)")
         die("no tracker found here; run `trck init`")
     return path
+
 
 # --------------------------------------------------------------------------- #
 # context + index I/O
@@ -568,6 +570,8 @@ def unique_prefix_lens(ids) -> dict:
 
 def get_row(rows: list[Issue], issue_id) -> Issue:
     return resolve_ref(rows, issue_id)
+
+
 # --------------------------------------------------------------------------- #
 # issue graph (derived read view)
 # --------------------------------------------------------------------------- #
@@ -1145,6 +1149,8 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
                 if dep in by_id and not g.is_terminal(by_id[dep]):
                     warnings.append(f"#{r.id} is terminal but depends on non-terminal #{dep}")
     return errors, warnings
+
+
 # --------------------------------------------------------------------------- #
 # tree rendering helpers (used by SUMMARY, tree, deps)
 # --------------------------------------------------------------------------- #

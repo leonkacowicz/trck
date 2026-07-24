@@ -17,9 +17,11 @@ The scheme is deliberately simple so the output is trustworthy:
     so per-module imports are redundant there.
 
 Because the engine already has no top-level imports below its header, every
-top-level import in a module body is one added for the editor — stripping them
-all reproduces the original bytes. That is what makes `build.py --check` a
-byte-exact round-trip test rather than a mere smoke test.
+top-level import in a module body is one added for the editor, so stripping them
+all recovers the engine text. Inter-band spacing is owned here (see `amalgamate`),
+not inherited from each module's trailing blank lines — so a formatter that trims
+those can't cramp one band's header against the previous one. `build.py --check`
+verifies the committed ./trck matches this canonical output byte-for-byte.
 
 Usage:
   python3 build.py            # write ./trck from src/trck/ (and chmod +x)
@@ -87,13 +89,31 @@ def strip_imports(text: str) -> str:
     return "".join(kept)
 
 
+BAND_GAP = "\n\n\n"  # two blank lines between the header and each module
+
+
+def _strip_blank_lines(text: str) -> str:
+    """Drop leading and trailing blank lines, preserving internal spacing."""
+    lines = text.split("\n")
+    while lines and not lines[0].strip():
+        lines.pop(0)
+    while lines and not lines[-1].strip():
+        lines.pop()
+    return "\n".join(lines)
+
+
 def amalgamate(src: Path = SRC, manifest: list[str] = MANIFEST) -> str:
-    """Flatten the package into the single-file engine source text."""
-    header = (src / "__init__.py").read_text()
-    parts = [header]
+    """Flatten the package into the single-file engine source text.
+
+    The build owns inter-band spacing: each part (the header, then each import-
+    stripped module) is trimmed of its own leading/trailing blank lines, and the
+    parts are rejoined with a fixed two-blank-line gap. So however many trailing
+    blanks a module happens to carry — none, after a formatter's whitespace trim —
+    the bands stay evenly separated in the generated engine."""
+    parts = [(src / "__init__.py").read_text()]
     for mod in manifest:
         parts.append(strip_imports((src / f"{mod}.py").read_text()))
-    return "".join(parts)
+    return BAND_GAP.join(_strip_blank_lines(p) for p in parts) + "\n"
 
 
 def write(out: Path, text: str) -> None:

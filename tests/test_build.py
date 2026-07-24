@@ -101,7 +101,7 @@ class TestAmalgamate(unittest.TestCase):
         )
         return pkg
 
-    def test_header_verbatim_bodies_stripped_and_ordered(self):
+    def test_header_and_bodies_stripped_ordered_and_evenly_spaced(self):
         import tempfile
         with tempfile.TemporaryDirectory() as d:
             pkg = self._make_pkg(Path(d))
@@ -112,7 +112,10 @@ class TestAmalgamate(unittest.TestCase):
             "from __future__ import annotations\n"
             "import re\n"
             "\n"
+            "\n"
             "PAT = re.compile('x')\n"
+            "\n"
+            "\n"
             "def main():\n"
             "    return PAT\n"
             "\n"
@@ -130,36 +133,34 @@ class TestAmalgamate(unittest.TestCase):
         _ast.parse(out)  # raises SyntaxError on failure
 
 
-class TestSyntheticRoundTrip(unittest.TestCase):
-    """The core guarantee: split a file into (header + verbatim body slices with
-    editor imports prepended), amalgamate, and get the original bytes back."""
+class TestInterBandSpacing(unittest.TestCase):
+    """The build owns inter-band spacing: a module's own trailing blank lines
+    (which formatters trim) must not change how far apart the bands sit."""
 
-    def test_split_then_amalgamate_reproduces_original(self):
+    def _amalgamate(self, trailing_a: str, trailing_b: str) -> str:
         import tempfile
-        original = (
-            "#!/usr/bin/env python3\n"
-            "from __future__ import annotations\n"
-            "import re\n"
-            "\n"
-            "A = 1\n"
-            "B = re.compile('b')\n"
-            "\n"
-            "def use():\n"
-            "    return A + 1\n"
-        )
-        lines = original.splitlines(keepends=True)
-        header = "".join(lines[0:4])       # shebang, __future__, import, blank
-        body_a = "".join(lines[4:6])       # A, B
-        body_b = "".join(lines[6:])        # blank, def use
         with tempfile.TemporaryDirectory() as d:
             pkg = Path(d) / "trck"
             pkg.mkdir(parents=True)
-            (pkg / "__init__.py").write_text(header)
-            # Editor imports prepended to each body; the build must strip them back out.
-            (pkg / "alpha.py").write_text("from __future__ import annotations\nimport re\n\n" + body_a)
-            (pkg / "beta.py").write_text("from __future__ import annotations\n\n" + body_b)
-            rebuilt = build.amalgamate(src=pkg, manifest=["alpha", "beta"])
-        self.assertEqual(rebuilt, original)
+            (pkg / "__init__.py").write_text(
+                "#!/usr/bin/env python3\nfrom __future__ import annotations\n")
+            (pkg / "alpha.py").write_text(
+                "from __future__ import annotations\n\nA = 1" + trailing_a)
+            (pkg / "beta.py").write_text(
+                "from __future__ import annotations\n\nB = 2" + trailing_b)
+            return build.amalgamate(src=pkg, manifest=["alpha", "beta"])
+
+    def test_output_is_independent_of_module_trailing_blanks(self):
+        # zero trailing blanks vs several — the amalgamation must be identical
+        tight = self._amalgamate("\n", "\n")
+        loose = self._amalgamate("\n\n\n\n", "\n\n\n")
+        self.assertEqual(tight, loose)
+
+    def test_exactly_two_blank_lines_between_bands(self):
+        out = self._amalgamate("\n", "\n")
+        self.assertIn("A = 1\n\n\nB = 2\n", out)   # two blank lines between bands
+        self.assertTrue(out.endswith("B = 2\n"))    # single trailing newline
+        self.assertNotIn("\n\n\n\n", out)           # never more than two
 
 
 if __name__ == "__main__":
