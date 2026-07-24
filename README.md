@@ -157,7 +157,10 @@ away from its parent. `tree` is an alias for `list` (`trck tree 4` == `trck list
 
 `ready` lists issues whose dependencies are all satisfied (add `--next` for just the top
 pick); `next` prints the single best issue to work on next; `normalize` rewrites
-`index.jsonl` in canonical slim form.
+`index.jsonl` in canonical slim form. Both take an optional issue id — `trck ready NNN`
+scopes to that issue's subtree, answering "what can I pick up on this epic right now".
+Scoping narrows the answer, never the constraints: a leaf waiting on something outside the
+subtree, directly or through an edge authored on an ancestor, stays out of the list.
 
 Epics: create an epic with `--kind epic`, attach children with `--parent NNN`; the epic's
 points-weighted rollup `%` is computed from its children and shown after the title on every

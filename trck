@@ -2325,6 +2325,14 @@ def cmd_ready(args) -> None:
     g = load_graph(ctx)                                    # not-terminal leaf, every dep terminal
     rows = sorted((r for r in g.rows if g.is_ready(r)),
                   key=lambda r: (priority_rank(ctx.cfg, r.priority), -r.points, r.id))
+    root = getattr(args, "id", None)
+    if root is not None:
+        # Scope by filtering the *result*, never by restricting the graph readiness is
+        # computed over: blocking is effective, so a leaf here may be waiting on an
+        # issue outside this subtree — commonly one authored on an ancestor. Narrow
+        # the graph and those blockers vanish, making blocked work look actionable.
+        kept = {n.id for n in g.subtree(resolve_ref(g.rows, root))}
+        rows = [r for r in rows if r.id in kept]
     if getattr(args, "next", False):
         rows = rows[:1]
     print_rows(ctx, rows, abbrev=unique_prefix_lens([r.id for r in g.rows]))
@@ -2995,14 +3003,21 @@ def build_parser() -> argparse.ArgumentParser:
     rd = sub.add_parser(
         "ready", help="list issues you can work on right now",
         description="List not-done leaf issues whose dependencies are all in a "
-                    "terminal status, ranked by priority then points then id.")
+                    "terminal status, ranked by priority then points then id. With an "
+                    "id, scope to that issue's subtree — what can I pick up on this "
+                    "epic right now. Scoping never loosens blocking: a leaf waiting on "
+                    "an issue outside the subtree, directly or through an edge "
+                    "authored on an ancestor, stays out.")
+    rd.add_argument("id", nargs="?", help="scope to this issue's subtree")
     rd.add_argument("--next", action="store_true",
                     help="print only the single highest-ranked ready issue")
     rd.set_defaults(func=cmd_ready)
 
     nx = sub.add_parser("next", help="print the single best issue to work on next",
                         description="Print only the highest-ranked ready issue "
-                                    "(shorthand for `ready --next`).")
+                                    "(shorthand for `ready --next`). With an id, the "
+                                    "best pick within that issue's subtree.")
+    nx.add_argument("id", nargs="?", help="scope to this issue's subtree")
     nx.set_defaults(func=cmd_next)
 
     dz = sub.add_parser(

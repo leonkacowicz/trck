@@ -683,3 +683,139 @@ class TestRead(unittest.TestCase):
             self.seed(d, "Solo")
             with self.assertRaises(SystemExit):
                 self.deps(d, None, requires=True)          # cone flags need an id
+
+
+class TestScopedReady(unittest.TestCase):
+    """`ready`/`next` take an optional issue id and answer within that subtree: what
+    can I pick up on *this* epic right now. Blocking stays effective — a leaf waiting
+    on something outside the subtree, directly or through an ancestor's edge, is not
+    ready no matter where the scope is drawn."""
+
+    def setUp(self):
+        self.t = load_trck()
+
+    def cap(self, fn, args):
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            fn(args)
+        return buf.getvalue()
+
+    def seed(self, d, title="Item", parent=None, priority="high", depends=None,
+             points=None):
+        a = ns(dir=str(d), title=title, priority=priority, kind=None, parent=parent,
+               points=points, depends=depends, spec=None, slug=None)
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.t.cmd_new(a)
+        return Path(buf.getvalue().strip()).name.split("-")[0]
+
+    def ready(self, d, issue_id=None, **over):
+        a = dict(dir=str(d), next=False, id=issue_id)
+        a.update(over)
+        return self.cap(self.t.cmd_ready, ns(**a))
+
+    def epic_with_two_kids(self, d):
+        epic = self.seed(d, "Epic")
+        return epic, self.seed(d, "Kid one", parent=epic), self.seed(d, "Kid two", parent=epic)
+
+    # --- scoping ----------------------------------------------------------- #
+
+    def test_scoping_keeps_only_the_subtree(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            epic, kid1, kid2 = self.epic_with_two_kids(d)
+            outside = self.seed(d, "Unrelated")
+            out = self.ready(d, epic)
+            self.assertIn(f"#{kid1}", out)
+            self.assertIn(f"#{kid2}", out)
+            self.assertNotIn(f"#{outside}", out)
+
+    def test_without_an_id_nothing_changes(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            _epic, kid1, _kid2 = self.epic_with_two_kids(d)
+            outside = self.seed(d, "Unrelated")
+            out = self.ready(d)
+            self.assertIn(f"#{kid1}", out)
+            self.assertIn(f"#{outside}", out)
+
+    def test_the_parent_itself_is_never_listed(self):
+        # it has children, so it is not a leaf and there is nothing to pick up on it
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            epic, _k1, _k2 = self.epic_with_two_kids(d)
+            self.assertNotIn(f"#{epic}", self.ready(d, epic))
+
+    def test_a_grandchild_is_in_scope(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            epic = self.seed(d, "Epic")
+            mid = self.seed(d, "Middle", parent=epic)
+            leaf = self.seed(d, "Leaf", parent=mid)
+            self.assertIn(f"#{leaf}", self.ready(d, epic))
+
+    def test_an_id_prefix_resolves(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            epic, kid1, _kid2 = self.epic_with_two_kids(d)
+            self.assertIn(f"#{kid1}", self.ready(d, epic[:2]))
+
+    # --- blocking stays effective ------------------------------------------ #
+
+    def test_a_blocker_outside_the_subtree_still_blocks(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            blocker = self.seed(d, "Blocker")
+            epic = self.seed(d, "Epic")
+            kid = self.seed(d, "Kid", parent=epic, depends=blocker)
+            free = self.seed(d, "Free kid", parent=epic)
+            out = self.ready(d, epic)
+            self.assertNotIn(f"#{kid}", out)         # waiting on work outside the scope
+            self.assertIn(f"#{free}", out)
+
+    def test_a_blocker_inherited_from_the_parent_still_blocks(self):
+        # the edge is authored on the epic, so every child waits on it — scoping to
+        # the epic must not make its children look actionable
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            blocker = self.seed(d, "Blocker")
+            epic = self.seed(d, "Epic", depends=blocker)
+            kid = self.seed(d, "Kid", parent=epic)
+            self.assertNotIn(f"#{kid}", self.ready(d, epic))
+
+    def test_scoping_to_a_ready_leaf_yields_that_leaf(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            _epic, kid1, kid2 = self.epic_with_two_kids(d)
+            out = self.ready(d, kid1)
+            self.assertIn(f"#{kid1}", out)
+            self.assertNotIn(f"#{kid2}", out)
+
+    def test_scoping_to_a_blocked_leaf_yields_nothing(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            blocker = self.seed(d, "Blocker")
+            kid = self.seed(d, "Blocked", depends=blocker)
+            self.assertNotIn(f"#{kid}", self.ready(d, kid))
+
+    # --- next --------------------------------------------------------------- #
+
+    def test_next_picks_the_best_within_the_subtree(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Urgent elsewhere", priority="urgent")
+            epic = self.seed(d, "Epic")
+            self.seed(d, "Low kid", parent=epic, priority="low")
+            top = self.seed(d, "Medium kid", parent=epic, priority="medium")
+            out = self.cap(self.t.cmd_next, ns(dir=str(d), id=epic))
+            self.assertIn(f"#{top}", out)
+            self.assertEqual(len(out.strip().splitlines()), 1)
+
+    def test_next_without_an_id_still_spans_the_tracker(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            urgent = self.seed(d, "Urgent elsewhere", priority="urgent")
+            epic = self.seed(d, "Epic")
+            self.seed(d, "Low kid", parent=epic, priority="low")
+            out = self.cap(self.t.cmd_next, ns(dir=str(d), id=None))
+            self.assertIn(f"#{urgent}", out)
