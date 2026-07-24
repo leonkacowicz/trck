@@ -108,6 +108,24 @@ class TestResolveRef(unittest.TestCase):
                         status="backlog", priority="high", legacy_id=65)]
         self.assertEqual(t.resolve_ref(rows, "65").id, "k3m9x2a")
 
+    def test_leading_hash_is_stripped_exact(self):
+        # ids print as "#abc1234"; pasting that back must resolve
+        self.assertEqual(self.t.resolve_ref(self.rows, "#p4abcde").id, "p4abcde")
+
+    def test_leading_hash_is_stripped_prefix(self):
+        self.assertEqual(self.t.resolve_ref(self.rows, "#p4").id, "p4abcde")
+
+    def test_leading_hash_is_stripped_legacy(self):
+        t = self.t
+        rows = [t.Issue(id="k3m9x2a", slug="s", title="T", kind="task",
+                        status="backlog", priority="high", legacy_id=65)]
+        self.assertEqual(t.resolve_ref(rows, "#65").id, "k3m9x2a")
+
+    def test_only_a_leading_hash_is_stripped(self):
+        # a bare "#" is not an id; strip the one "#" and fall through to no-match
+        with self.assertRaises(SystemExit):
+            self.t.resolve_ref(self.rows, "#")
+
 
 class TestMergeAndOrder(unittest.TestCase):
     def setUp(self):

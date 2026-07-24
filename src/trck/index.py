@@ -260,6 +260,8 @@ def resolve_ref(rows: list[Issue], token) -> Issue:
     (3) unique id prefix. `die`s on no match or an ambiguous reference, listing
     the candidates."""
     token = str(token)
+    if token.startswith("#"):
+        token = token[1:]  # ids print as "#abc1234"; tolerate a pasted-back "#"
     exact = [r for r in rows if r.id == token]
     if exact:
         return exact[0]
