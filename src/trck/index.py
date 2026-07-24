@@ -93,7 +93,7 @@ class Issue:
         self.depends_on = [str(d) for d in (self.depends_on or [])]
 
     @classmethod
-    def from_dict(cls, d: dict) -> "Issue":
+    def from_dict(cls, d: dict) -> Issue:
         """Parse one index row into an Issue, enforcing the structural contract.
         Migrates the legacy `milestone` field to a plain label, routes unknown
         keys into `extra`, and raises ValueError on a missing required field or a
@@ -204,7 +204,7 @@ def build_ctx_or_die(args) -> Ctx:
     d = resolve_tracker_dir_or_die(getattr(args, "dir", None))
     return Ctx(d, load_config(d))
 
-def file_id(m: "re.Match") -> str:
+def file_id(m: re.Match) -> str:
     """The issue id from a FILENAME_RE match. A legacy zero-padded numeric name
     (064) normalizes to its bare integer string (64) so it matches the index's
     coerced string id; a random alphanumeric id is returned unchanged."""
@@ -309,5 +309,3 @@ def unique_prefix_lens(ids) -> dict:
 
 def get_row(rows: list[Issue], issue_id) -> Issue:
     return resolve_ref(rows, issue_id)
-
-

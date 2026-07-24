@@ -8,7 +8,7 @@ from .render import label_tag, priority_rank
 # --------------------------------------------------------------------------- #
 # SUMMARY.md generation
 # --------------------------------------------------------------------------- #
-def leaf_rollup(g: "Graph", row, seen=frozenset()) -> tuple[int, int, int, int]:
+def leaf_rollup(g: Graph, row, seen=frozenset()) -> tuple[int, int, int, int]:
     """Aggregate (done_points, total_points, done_count, total_count) over the leaf
     descendants of `row`, deriving children and terminal-ness from `g`. A leaf's weight
     defaults to 1; a node's weight is the sum of its leaves. Cycle-guarded so a
@@ -31,7 +31,7 @@ def leaf_rollup(g: "Graph", row, seen=frozenset()) -> tuple[int, int, int, int]:
     return pdone, ptotal, ndone, ntotal
 
 
-def progress_pct(g: "Graph", row) -> str:
+def progress_pct(g: Graph, row) -> str:
     """A ` NN%` points-weighted completion suffix for parent rows (issues with children),
     derived from leaf descendants via `leaf_rollup` — the same number `summary` reports.
     Empty for leaves, which have nothing to roll up; `ptotal == 0` falls back to `0%`."""

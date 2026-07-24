@@ -164,9 +164,8 @@ class TestGitLayer(unittest.TestCase):
         self.b = load_backfill()
 
     def test_resolve_index_missing_file(self):
-        with TemporaryDirectory() as tmp:
-            with self.assertRaises(SystemExit):
-                self.b.resolve_index(tmp)
+        with TemporaryDirectory() as tmp, self.assertRaises(SystemExit):
+            self.b.resolve_index(tmp)
 
     def test_resolve_index_not_a_repo(self):
         with TemporaryDirectory() as tmp:

@@ -137,9 +137,8 @@ class TestDiscovery(unittest.TestCase):
             self.assertEqual(self.t.find_tracker(deep), d.resolve())
 
     def test_none_found_raises(self):
-        with TemporaryDirectory() as tmp:
-            with self.assertRaises(SystemExit):
-                self.t.find_tracker(Path(tmp))
+        with TemporaryDirectory() as tmp, self.assertRaises(SystemExit):
+            self.t.find_tracker(Path(tmp))
 
     def test_optional_resolution_returns_none(self):
         with TemporaryDirectory() as tmp:

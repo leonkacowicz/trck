@@ -78,9 +78,8 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
             errors.append(f"#{iid} markdown file on disk but no index row")
 
     for r in rows:
-        if r.parent is not None:
-            if r.parent not in by_id:
-                errors.append(f"#{r.id} parent #{r.parent} does not exist")
+        if r.parent is not None and r.parent not in by_id:
+            errors.append(f"#{r.id} parent #{r.parent} does not exist")
         for dep in r.depends_on:
             if dep not in by_id:
                 errors.append(f"#{r.id} depends_on #{dep} which does not exist")
@@ -115,5 +114,3 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
                 if dep in by_id and not g.is_terminal(by_id[dep]):
                     warnings.append(f"#{r.id} is terminal but depends on non-terminal #{dep}")
     return errors, warnings
-
-

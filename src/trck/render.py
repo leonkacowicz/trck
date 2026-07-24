@@ -189,7 +189,7 @@ _GRAPH_GLYPH = {
 }
 
 
-def drawn_edges(g: "Graph", ids, hier: bool = True, reduce: bool = True,
+def drawn_edges(g: Graph, ids, hier: bool = True, reduce: bool = True,
                 fanout: bool = False) -> dict:
     """The drawn edge set restricted to `ids`, as `{source: [(target, kind), …]}`.
     With `reduce`, transitively reduced (see `transitive_reduction`).
@@ -227,7 +227,7 @@ def drawn_edges(g: "Graph", ids, hier: bool = True, reduce: bool = True,
     return transitive_reduction(edges) if reduce else edges
 
 
-def graph_components(g: "Graph", ids, hier: bool = True, edges: dict | None = None) -> list[list[int]]:
+def graph_components(g: Graph, ids, hier: bool = True, edges: dict | None = None) -> list[list[int]]:
     """Weakly-connected components over the drawn edges restricted to `ids` (edges
     undirected; containment included unless `hier` is off). Each component is
     id-sorted; components order by smallest member — so a node's cluster renders as
@@ -256,7 +256,7 @@ def graph_components(g: "Graph", ids, hier: bool = True, edges: dict | None = No
     return sorted(comps, key=min)
 
 
-def _graph_topo(g: "Graph", ids, hier: bool = True,
+def _graph_topo(g: Graph, ids, hier: bool = True,
                 edges: dict | None = None) -> tuple[list[int], dict[int, list[int]], dict]:
     """Topological order over the drawn edges within `ids`, prerequisites first. Returns
     (order, dependents) where dependents[i] is i's id-sorted in-set dependents — the
@@ -297,7 +297,7 @@ def _graph_topo(g: "Graph", ids, hier: bool = True,
     return order, dependents, kinds
 
 
-def _graph_component_rows(g: "Graph", comp, hier: bool = True,
+def _graph_component_rows(g: Graph, comp, hier: bool = True,
                           edges: dict | None = None) -> list[tuple[int, str, list]]:
     """Render one connected component, one row per node. Returns (id, gutter, owners):
     gutter is the plain box-drawing string; owners is a per-character lane owner (an
@@ -384,7 +384,7 @@ def _graph_component_rows(g: "Graph", comp, hier: bool = True,
     return rows
 
 
-def render_graph(g: "Graph", ids, hier: bool = True, reduce: bool = True,
+def render_graph(g: Graph, ids, hier: bool = True, reduce: bool = True,
                  fanout: bool = False) -> list:
     """Render the dependency DAG over `ids` as lazygit-style rows, grouped by
     weakly-connected component with a `None` separator between groups. Each
@@ -404,7 +404,7 @@ def render_graph(g: "Graph", ids, hier: bool = True, reduce: bool = True,
     return rows
 
 
-def deps_overview_ids(g: "Graph") -> set:
+def deps_overview_ids(g: Graph) -> set:
     """The id set for the bare `deps` view: every weakly-connected component holding
     at least one *authored* edge, taken whole.
 
@@ -425,7 +425,7 @@ def deps_overview_ids(g: "Graph") -> set:
     return keep
 
 
-def filter_deps_graph_ids(g: "Graph", ids, *, omit_done: bool = False,
+def filter_deps_graph_ids(g: Graph, ids, *, omit_done: bool = False,
                           include_done_chains: bool = False,
                           hide_done_chains: bool = True) -> set[int]:
     """Apply display-only done filtering to a deps graph id set.

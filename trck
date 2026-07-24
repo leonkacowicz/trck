@@ -352,7 +352,7 @@ class Issue:
         self.depends_on = [str(d) for d in (self.depends_on or [])]
 
     @classmethod
-    def from_dict(cls, d: dict) -> "Issue":
+    def from_dict(cls, d: dict) -> Issue:
         """Parse one index row into an Issue, enforcing the structural contract.
         Migrates the legacy `milestone` field to a plain label, routes unknown
         keys into `extra`, and raises ValueError on a missing required field or a
@@ -463,7 +463,7 @@ def build_ctx_or_die(args) -> Ctx:
     d = resolve_tracker_dir_or_die(getattr(args, "dir", None))
     return Ctx(d, load_config(d))
 
-def file_id(m: "re.Match") -> str:
+def file_id(m: re.Match) -> str:
     """The issue id from a FILENAME_RE match. A legacy zero-padded numeric name
     (064) normalizes to its bare integer string (64) so it matches the index's
     coerced string id; a random alphanumeric id is returned unchanged."""
@@ -568,8 +568,6 @@ def unique_prefix_lens(ids) -> dict:
 
 def get_row(rows: list[Issue], issue_id) -> Issue:
     return resolve_ref(rows, issue_id)
-
-
 # --------------------------------------------------------------------------- #
 # issue graph (derived read view)
 # --------------------------------------------------------------------------- #
@@ -1111,9 +1109,8 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
             errors.append(f"#{iid} markdown file on disk but no index row")
 
     for r in rows:
-        if r.parent is not None:
-            if r.parent not in by_id:
-                errors.append(f"#{r.id} parent #{r.parent} does not exist")
+        if r.parent is not None and r.parent not in by_id:
+            errors.append(f"#{r.id} parent #{r.parent} does not exist")
         for dep in r.depends_on:
             if dep not in by_id:
                 errors.append(f"#{r.id} depends_on #{dep} which does not exist")
@@ -1148,8 +1145,6 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
                 if dep in by_id and not g.is_terminal(by_id[dep]):
                     warnings.append(f"#{r.id} is terminal but depends on non-terminal #{dep}")
     return errors, warnings
-
-
 # --------------------------------------------------------------------------- #
 # tree rendering helpers (used by SUMMARY, tree, deps)
 # --------------------------------------------------------------------------- #
@@ -1334,7 +1329,7 @@ _GRAPH_GLYPH = {
 }
 
 
-def drawn_edges(g: "Graph", ids, hier: bool = True, reduce: bool = True,
+def drawn_edges(g: Graph, ids, hier: bool = True, reduce: bool = True,
                 fanout: bool = False) -> dict:
     """The drawn edge set restricted to `ids`, as `{source: [(target, kind), …]}`.
     With `reduce`, transitively reduced (see `transitive_reduction`).
@@ -1372,7 +1367,7 @@ def drawn_edges(g: "Graph", ids, hier: bool = True, reduce: bool = True,
     return transitive_reduction(edges) if reduce else edges
 
 
-def graph_components(g: "Graph", ids, hier: bool = True, edges: dict | None = None) -> list[list[int]]:
+def graph_components(g: Graph, ids, hier: bool = True, edges: dict | None = None) -> list[list[int]]:
     """Weakly-connected components over the drawn edges restricted to `ids` (edges
     undirected; containment included unless `hier` is off). Each component is
     id-sorted; components order by smallest member — so a node's cluster renders as
@@ -1401,7 +1396,7 @@ def graph_components(g: "Graph", ids, hier: bool = True, edges: dict | None = No
     return sorted(comps, key=min)
 
 
-def _graph_topo(g: "Graph", ids, hier: bool = True,
+def _graph_topo(g: Graph, ids, hier: bool = True,
                 edges: dict | None = None) -> tuple[list[int], dict[int, list[int]], dict]:
     """Topological order over the drawn edges within `ids`, prerequisites first. Returns
     (order, dependents) where dependents[i] is i's id-sorted in-set dependents — the
@@ -1442,7 +1437,7 @@ def _graph_topo(g: "Graph", ids, hier: bool = True,
     return order, dependents, kinds
 
 
-def _graph_component_rows(g: "Graph", comp, hier: bool = True,
+def _graph_component_rows(g: Graph, comp, hier: bool = True,
                           edges: dict | None = None) -> list[tuple[int, str, list]]:
     """Render one connected component, one row per node. Returns (id, gutter, owners):
     gutter is the plain box-drawing string; owners is a per-character lane owner (an
@@ -1529,7 +1524,7 @@ def _graph_component_rows(g: "Graph", comp, hier: bool = True,
     return rows
 
 
-def render_graph(g: "Graph", ids, hier: bool = True, reduce: bool = True,
+def render_graph(g: Graph, ids, hier: bool = True, reduce: bool = True,
                  fanout: bool = False) -> list:
     """Render the dependency DAG over `ids` as lazygit-style rows, grouped by
     weakly-connected component with a `None` separator between groups. Each
@@ -1549,7 +1544,7 @@ def render_graph(g: "Graph", ids, hier: bool = True, reduce: bool = True,
     return rows
 
 
-def deps_overview_ids(g: "Graph") -> set:
+def deps_overview_ids(g: Graph) -> set:
     """The id set for the bare `deps` view: every weakly-connected component holding
     at least one *authored* edge, taken whole.
 
@@ -1570,7 +1565,7 @@ def deps_overview_ids(g: "Graph") -> set:
     return keep
 
 
-def filter_deps_graph_ids(g: "Graph", ids, *, omit_done: bool = False,
+def filter_deps_graph_ids(g: Graph, ids, *, omit_done: bool = False,
                           include_done_chains: bool = False,
                           hide_done_chains: bool = True) -> set[int]:
     """Apply display-only done filtering to a deps graph id set.
@@ -1593,7 +1588,7 @@ def filter_deps_graph_ids(g: "Graph", ids, *, omit_done: bool = False,
 # --------------------------------------------------------------------------- #
 # SUMMARY.md generation
 # --------------------------------------------------------------------------- #
-def leaf_rollup(g: "Graph", row, seen=frozenset()) -> tuple[int, int, int, int]:
+def leaf_rollup(g: Graph, row, seen=frozenset()) -> tuple[int, int, int, int]:
     """Aggregate (done_points, total_points, done_count, total_count) over the leaf
     descendants of `row`, deriving children and terminal-ness from `g`. A leaf's weight
     defaults to 1; a node's weight is the sum of its leaves. Cycle-guarded so a
@@ -1616,7 +1611,7 @@ def leaf_rollup(g: "Graph", row, seen=frozenset()) -> tuple[int, int, int, int]:
     return pdone, ptotal, ndone, ntotal
 
 
-def progress_pct(g: "Graph", row) -> str:
+def progress_pct(g: Graph, row) -> str:
     """A ` NN%` points-weighted completion suffix for parent rows (issues with children),
     derived from leaf descendants via `leaf_rollup` — the same number `summary` reports.
     Empty for leaves, which have nothing to roll up; `ptotal == 0` falls back to `0%`."""

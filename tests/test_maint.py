@@ -54,9 +54,8 @@ class TestMaint(unittest.TestCase):
             ctx = self.t.Ctx(d, self.t.load_config(d))
             row = self.t.get_row(self.t.load_index(ctx), id1)
             self.t.issue_path(ctx, row).unlink()
-            with self.assertRaises(SystemExit) as cm:
-                with redirect_stdout(io.StringIO()):
-                    self.t.cmd_check(ns(dir=str(d)))
+            with self.assertRaises(SystemExit) as cm, redirect_stdout(io.StringIO()):
+                self.t.cmd_check(ns(dir=str(d)))
             self.assertNotEqual(cm.exception.code, 0)
 
     def test_summary_writes_file(self):

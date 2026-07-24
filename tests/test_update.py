@@ -74,9 +74,8 @@ class TestUpdate(unittest.TestCase):
             p = self.make_self(tmp, "0.1.0")
             self.t.latest_release = lambda repo: ("v0.2.0", "")
             self.t.fetch_url = lambda url, accept=None: "def (oops"  # invalid python
-            with self.assertRaises(SystemExit):
-                with redirect_stdout(io.StringIO()):
-                    self.t.cmd_update(ns(dir=None, check=False, ref=None))
+            with self.assertRaises(SystemExit), redirect_stdout(io.StringIO()):
+                self.t.cmd_update(ns(dir=None, check=False, ref=None))
             self.assertIn("__version__ = '0.1.0'", p.read_text())  # untouched
 
     def test_network_error_aborts_cleanly(self):
@@ -84,9 +83,8 @@ class TestUpdate(unittest.TestCase):
             p = self.make_self(tmp, "0.1.0")
             def boom(repo): raise __import__("urllib").error.URLError("no net")
             self.t.latest_release = boom
-            with self.assertRaises(SystemExit):
-                with redirect_stdout(io.StringIO()):
-                    self.t.cmd_update(ns(dir=None, check=False, ref=None))
+            with self.assertRaises(SystemExit), redirect_stdout(io.StringIO()):
+                self.t.cmd_update(ns(dir=None, check=False, ref=None))
             self.assertIn("__version__ = '0.1.0'", p.read_text())
 
     def test_ref_writes_regardless_of_version(self):
@@ -103,9 +101,8 @@ class TestUpdate(unittest.TestCase):
             self.make_self(tmp, "0.1.0")
             self.t.latest_release = lambda repo: ("v0.2.0", "")
             self.t.fetch_url = lambda url, accept=None: "def (oops"  # invalid python
-            with self.assertRaises(SystemExit):
-                with redirect_stdout(io.StringIO()):
-                    self.t.cmd_update(ns(dir=None, check=False, ref=None))
+            with self.assertRaises(SystemExit), redirect_stdout(io.StringIO()):
+                self.t.cmd_update(ns(dir=None, check=False, ref=None))
             self.assertEqual(list(Path(tmp).glob("*.trck-update.tmp")), [])
 
     def test_replace_failure_cleans_up_temp_and_keeps_original(self):
@@ -114,10 +111,9 @@ class TestUpdate(unittest.TestCase):
             p = self.make_self(tmp, "0.1.0")
             self.t.latest_release = lambda repo: ("v0.2.0", "")
             self.t.fetch_url = lambda url, accept=None: "#!/usr/bin/env python3\n__version__ = '0.2.0'\n"
-            with mock.patch.object(self.t.os, "replace", side_effect=OSError("boom")):
-                with self.assertRaises(SystemExit):
-                    with redirect_stdout(io.StringIO()):
-                        self.t.cmd_update(ns(dir=None, check=False, ref=None))
+            with mock.patch.object(self.t.os, "replace", side_effect=OSError("boom")), \
+                    self.assertRaises(SystemExit), redirect_stdout(io.StringIO()):
+                self.t.cmd_update(ns(dir=None, check=False, ref=None))
             self.assertEqual(list(Path(tmp).glob("*.trck-update.tmp")), [])  # cleaned up
             self.assertIn("__version__ = '0.1.0'", p.read_text())  # original intact
 

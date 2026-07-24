@@ -27,10 +27,9 @@ class TestGenId(unittest.TestCase):
         t = self.t
         ctx = self._ctx()
         # First draw collides with an existing id, second is fresh.
-        with mock.patch.object(t, "_existing_ids", return_value={"aaaaaaa"}):
-            with mock.patch.object(t.secrets, "choice",
-                                   side_effect=list("aaaaaaa") + list("bbbbbbb")):
-                gid = t.gen_id(ctx)
+        with mock.patch.object(t, "_existing_ids", return_value={"aaaaaaa"}), \
+            mock.patch.object(t.secrets, "choice", side_effect=list("aaaaaaa") + list("bbbbbbb")):
+            gid = t.gen_id(ctx)
         self.assertEqual(gid, "bbbbbbb")
 
     def test_generated_id_is_never_all_digits(self):
@@ -38,10 +37,9 @@ class TestGenId(unittest.TestCase):
         # so the "all-digit ⇔ legacy" discriminator (renumber/filename) stays sound.
         t = self.t
         # force an all-digit draw first, then a valid one; gen_id must skip the digits
-        with mock.patch.object(t, "_existing_ids", return_value=set()):
-            with mock.patch.object(t.secrets, "choice",
-                                   side_effect=list("2345678") + list("abcdefg")):
-                gid = t.gen_id(self._ctx())
+        with mock.patch.object(t, "_existing_ids", return_value=set()), \
+            mock.patch.object(t.secrets, "choice", side_effect=list("2345678") + list("abcdefg")):
+            gid = t.gen_id(self._ctx())
         self.assertFalse(gid.isdigit())
         self.assertEqual(gid, "abcdefg")
 
