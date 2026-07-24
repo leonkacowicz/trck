@@ -5,19 +5,19 @@
 
 | State | Count |
 |---|---:|
-| backlog | 24 |
+| backlog | 22 |
 | ongoing | 1 |
-| done | 56 |
+| done | 58 |
 | **total** | **81** |
 
 ## Hierarchies
 
-### [#dj5b42j deps: infer hierarchy edges so the graph answers 'what is left to finish this parent'](ongoing/dj5b42j-deps-infer-hierarchy-edges-so-the-graph-answers-what-is-left-to-finish-this-parent.md) — 40% (2/5 pts · 2/5 done) · _high_ · ongoing
+### [#dj5b42j deps: infer hierarchy edges so the graph answers 'what is left to finish this parent'](ongoing/dj5b42j-deps-infer-hierarchy-edges-so-the-graph-answers-what-is-left-to-finish-this-parent.md) — 80% (4/5 pts · 4/5 done) · _high_ · ongoing
 
 - [x] [#atk4umk deps: transitive reduction of the rendered graph (display-only, after done-filtering)](done/atk4umk-deps-transitive-reduction-of-the-rendered-graph-display-only-after-done-filtering.md)
-- [ ] [#wr8ybmk deps: hoist uniform inherited fanouts back to the parent; --fanout to opt out](backlog/wr8ybmk-deps-hoist-uniform-inherited-fanouts-back-to-the-parent-fanout-to-opt-out.md) _(backlog)_
+- [x] [#wr8ybmk deps: hoist uniform inherited fanouts back to the parent; --fanout to opt out](done/wr8ybmk-deps-hoist-uniform-inherited-fanouts-back-to-the-parent-fanout-to-opt-out.md)
 - [ ] [#wsqfwc6 check: warn on authored dependency edges made redundant by another path](backlog/wsqfwc6-check-warn-on-authored-dependency-edges-made-redundant-by-another-path.md) _(backlog)_
-- [ ] [#zbkkc2a deps: draw inherited dependency edges (child -> ancestor's out-of-subtree deps)](backlog/zbkkc2a-deps-draw-inherited-dependency-edges-child-ancestor-s-out-of-subtree-deps.md) _(backlog)_
+- [x] [#zbkkc2a deps: draw inherited dependency edges (child -> ancestor's out-of-subtree deps)](done/zbkkc2a-deps-draw-inherited-dependency-edges-child-ancestor-s-out-of-subtree-deps.md)
 - [x] [#zhhxgcw deps: draw parent->child containment edges in the rendered graph](done/zhhxgcw-deps-draw-parent-child-containment-edges-in-the-rendered-graph.md)
 
 ### [#ee2crq3 Introduce a derived Graph view over the loaded index](done/ee2crq3-introduce-a-derived-graph-view-over-the-loaded-index.md) — 100% (3/3 pts · 3/3 done) · _medium_ · done
