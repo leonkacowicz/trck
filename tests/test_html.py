@@ -175,6 +175,42 @@ class TestCommandCopy(HtmlTestBase):
             self.assertEqual(data["config"]["cmd"], "xyzzy")
 
 
+class TestDependencyGraph(HtmlTestBase):
+    def test_model_exposes_authored_dependency_edges(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            b = self.seed(d, "Blocker")
+            a = self.seed(d, "Needs it", depends=b)
+            data = island(self.render(d))
+            self.assertIn("edges", data)
+            self.assertIn({"from": b, "to": a}, data["edges"])
+
+    def test_containment_is_not_a_dependency_edge(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            p = self.seed(d, "Parent")
+            c = self.seed(d, "Child", parent=p)
+            data = island(self.render(d))
+            pairs = {(e["from"], e["to"]) for e in data["edges"]}
+            self.assertNotIn((p, c), pairs)
+            self.assertNotIn((c, p), pairs)
+
+    def test_edges_empty_when_no_dependencies(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Lonely")
+            data = island(self.render(d))
+            self.assertEqual(data["edges"], [])
+
+    def test_graph_view_ui_is_present(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")
+            html = self.render(d)
+            self.assertIn('id="graph"', html)
+            self.assertIn('data-view="graph"', html)
+
+
 class TestBodyEscaping(HtmlTestBase):
     def test_body_cannot_break_out_of_the_script_island(self):
         payload = 'Danger: </script><script>alert(1)</script> & <b>bold</b> "q"'

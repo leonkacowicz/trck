@@ -143,6 +143,10 @@ def build_model(ctx, cmd=None):
     g = E.load_graph(ctx)
     cfg = ctx.cfg
     repo = (cfg.get("update") or {}).get("repo") or ctx.dir.parent.name
+    issues = [_issue_dict(g, ctx, r) for r in g.rows]
+    # Authored dependency edges, blocker -> blocked (matches the engine's `deps`
+    # ordering). Containment (parent/child) is intentionally excluded here.
+    edges = [{"from": b, "to": a["id"]} for a in issues for b in a["requires"]]
     return {
         "repo": repo,
         "tracker": ctx.dir.name,
@@ -152,7 +156,8 @@ def build_model(ctx, cmd=None):
             "kinds": list(cfg.get("kinds", [])),
             "cmd": cmd or _default_cmd(),
         },
-        "issues": [_issue_dict(g, ctx, r) for r in g.rows],
+        "issues": issues,
+        "edges": edges,
     }
 
 
@@ -247,7 +252,8 @@ body { margin: 0; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", 
 main { display: grid; grid-template-columns: minmax(20rem, 2fr) 3fr; gap: 0;
        height: calc(100vh - 92px); }
 @media (max-width: 720px) { main { grid-template-columns: 1fr; height: auto; } }
-.list { list-style: none; margin: 0; padding: 0; overflow: auto; border-right: 1px solid var(--line); }
+.leftpane { overflow: hidden; border-right: 1px solid var(--line); }
+.list { list-style: none; margin: 0; padding: 0; height: 100%; overflow: auto; }
 .row { display: flex; align-items: center; gap: .5rem; padding: .45rem .8rem;
        border-bottom: 1px solid var(--line); cursor: pointer; }
 .row:hover { background: var(--panel); }
@@ -291,6 +297,20 @@ main { display: grid; grid-template-columns: minmax(20rem, 2fr) 3fr; gap: 0;
 .pending button:hover { border-color: var(--accent); color: var(--accent); }
 .plist { list-style: none; margin: 0; padding: .5rem .9rem; overflow: auto; }
 .pcmd { font: 13px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; user-select: all; white-space: pre-wrap; }
+.viewtoggle { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.viewtoggle button { font: inherit; padding: .35rem .8rem; border: 0; background: var(--bg);
+                     color: var(--muted); cursor: pointer; }
+.viewtoggle button.on { background: var(--accent); color: #fff; }
+.graph { height: 100%; overflow: auto; padding: 1rem; }
+.graph svg { display: block; }
+.gnode { cursor: pointer; }
+.gnode rect { fill: var(--bg); stroke: var(--line); stroke-width: 1.5; }
+.gnode:hover rect { stroke: var(--accent); }
+.gnode.sel rect { stroke: var(--accent); stroke-width: 2.5; fill: var(--sel); }
+.gnode.done { opacity: .5; }
+.gnode text { fill: var(--fg); font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.gedge { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+.gempty { color: var(--muted); padding: 1rem; }
 """
 
 _SHELL = """\
@@ -299,12 +319,19 @@ _SHELL = """\
   <div id="counts" class="counts"></div>
 </header>
 <div class="filters">
+  <div class="viewtoggle">
+    <button data-view="list" class="on" type="button">list</button>
+    <button data-view="graph" type="button">graph</button>
+  </div>
   <input id="q" type="search" placeholder="Search id / title / body / label…" autocomplete="off">
   <select id="fstatus"></select>
   <select id="fpriority"></select>
 </div>
 <main>
-  <ul id="list" class="list"></ul>
+  <div class="leftpane">
+    <ul id="list" class="list"></ul>
+    <div id="graph" class="graph" hidden></div>
+  </div>
   <section id="detail" class="detail"><p class="empty">Select an issue.</p></section>
 </main>
 <div id="pending" class="pending" hidden>
@@ -338,7 +365,7 @@ function el(tag, props = {}, ...kids) {
 const byId = Object.fromEntries(DATA.issues.map(i => [i.id, i]));
 const terminal = new Set(DATA.config.statuses.filter(s => s.role === 'terminal').map(s => s.name));
 const prio = DATA.config.priorities;
-const state = { q: '', status: '', priority: '', selected: null, edits: {} };
+const state = { q: '', status: '', priority: '', selected: null, edits: {}, view: 'list' };
 
 // --- staged edits (v2 command-copy): key `${id}::${field}` -> new value ------
 const editKey = (id, field) => id + '::' + field;
@@ -484,7 +511,93 @@ function renderDetail() {
   d.append(el('pre', { class: 'body', text: i.body || '' }));
 }
 
-function select(id) { state.selected = id; renderList(); renderDetail(); }
+function select(id) {
+  state.selected = id;
+  renderList(); renderDetail();
+  if (state.view === 'graph') renderGraph();
+}
+
+// --- v3 dependency graph: SVG layered DAG from authored edges ----------------
+const SVGNS = 'http://www.w3.org/2000/svg';
+function sv(tag, props = {}, ...kids) {
+  const n = document.createElementNS(SVGNS, tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (v == null) continue;
+    if (k === 'text') n.textContent = v;
+    else if (k.slice(0, 2) === 'on') n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const kid of kids) if (kid != null) n.append(kid);
+  return n;
+}
+const NODE_W = 168, NODE_H = 34, COL_GAP = 26, ROW_GAP = 52, PAD = 16;
+const trunc = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
+
+function graphData() {
+  const nodes = new Set(), preds = {};
+  for (const e of DATA.edges) {
+    nodes.add(e.from); nodes.add(e.to);
+    (preds[e.to] = preds[e.to] || []).push(e.from);
+  }
+  return { nodes: [...nodes], preds };
+}
+function layerOf(id, preds, memo, seen) {
+  if (id in memo) return memo[id];
+  if (seen.has(id)) return 0;           // cycle guard (authored deps are acyclic)
+  seen.add(id);
+  let L = 0;
+  for (const p of (preds[id] || [])) L = Math.max(L, layerOf(p, preds, memo, seen) + 1);
+  seen.delete(id);
+  return (memo[id] = L);
+}
+function setView(v) {
+  state.view = v;
+  $('#list').hidden = v !== 'list';
+  $('#graph').hidden = v !== 'graph';
+  for (const b of document.querySelectorAll('.viewtoggle button'))
+    b.classList.toggle('on', b.dataset.view === v);
+  if (v === 'graph') renderGraph();
+}
+function renderGraph() {
+  const box = $('#graph'); box.textContent = '';
+  const { nodes, preds } = graphData();
+  if (!nodes.length) { box.append(el('p', { class: 'gempty', text: 'No dependencies to show.' })); return; }
+  const memo = {};
+  for (const id of nodes) layerOf(id, preds, memo, new Set());
+  const layers = {};
+  for (const id of nodes) (layers[memo[id]] = layers[memo[id]] || []).push(id);
+  const pos = {};
+  let maxCols = 0;
+  const keys = Object.keys(layers).map(Number).sort((a, b) => a - b);
+  for (const L of keys) {
+    const ids = layers[L].sort((a, b) => a.localeCompare(b));
+    ids.forEach((id, i) => { pos[id] = { x: PAD + i * (NODE_W + COL_GAP), y: PAD + L * (NODE_H + ROW_GAP) }; });
+    maxCols = Math.max(maxCols, ids.length);
+  }
+  const W = PAD * 2 + maxCols * NODE_W + Math.max(0, maxCols - 1) * COL_GAP;
+  const H = PAD * 2 + keys.length * NODE_H + Math.max(0, keys.length - 1) * ROW_GAP;
+  const s = sv('svg', { width: W, height: H, viewBox: '0 0 ' + W + ' ' + H });
+  s.append(sv('defs', {}, sv('marker',
+    { id: 'arrow', viewBox: '0 0 10 10', refX: '9', refY: '5', markerWidth: '7', markerHeight: '7', orient: 'auto' },
+    sv('path', { d: 'M0,0 L10,5 L0,10 z', fill: 'var(--muted)' }))));
+  for (const e of DATA.edges) {
+    const a = pos[e.from], b = pos[e.to];
+    if (!a || !b) continue;
+    const x1 = a.x + NODE_W / 2, y1 = a.y + NODE_H, x2 = b.x + NODE_W / 2, y2 = b.y;
+    s.append(sv('path', { class: 'gedge', 'marker-end': 'url(#arrow)',
+      d: 'M' + x1 + ',' + y1 + ' C' + x1 + ',' + (y1 + ROW_GAP / 2) + ' ' + x2 + ',' + (y2 - ROW_GAP / 2) + ' ' + x2 + ',' + y2 }));
+  }
+  for (const id of nodes) {
+    const i = byId[id], p = pos[id];
+    const cls = 'gnode' + (i && terminal.has(i.status) ? ' done' : '') + (id === state.selected ? ' sel' : '');
+    const g = sv('g', { class: cls, transform: 'translate(' + p.x + ',' + p.y + ')', onclick: () => select(id) });
+    g.append(sv('rect', { width: NODE_W, height: NODE_H, rx: 7 }));
+    g.append(sv('title', { text: (i ? i.title : id) }));
+    g.append(sv('text', { x: 9, y: NODE_H / 2 + 4, text: trunc('#' + id + (i ? '  ' + i.title : ''), 23) }));
+    s.append(g);
+  }
+  box.append(s);
+}
 
 function fill(sel, values, label) {
   sel.append(el('option', { value: '', text: label }));
@@ -501,6 +614,8 @@ function init() {
   $('#fpriority').addEventListener('change', e => { state.priority = e.target.value; renderList(); });
   $('#pcopy').addEventListener('click', copyAll);
   $('#pclear').addEventListener('click', clearEdits);
+  for (const b of document.querySelectorAll('.viewtoggle button'))
+    b.addEventListener('click', () => setView(b.dataset.view));
   renderList();
   renderDetail();
   renderPending();
