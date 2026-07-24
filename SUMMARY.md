@@ -5,12 +5,20 @@
 
 | State | Count |
 |---|---:|
-| backlog | 21 |
+| backlog | 27 |
 | ongoing | 0 |
-| done | 53 |
-| **total** | **74** |
+| done | 54 |
+| **total** | **81** |
 
 ## Hierarchies
+
+### [#dj5b42j deps: infer hierarchy edges so the graph answers 'what is left to finish this parent'](backlog/dj5b42j-deps-infer-hierarchy-edges-so-the-graph-answers-what-is-left-to-finish-this-parent.md) — 0% (0/5 pts · 0/5 done) · _high_ · backlog
+
+- [ ] [#atk4umk deps: transitive reduction of the rendered graph (display-only, after done-filtering)](backlog/atk4umk-deps-transitive-reduction-of-the-rendered-graph-display-only-after-done-filtering.md) _(backlog)_
+- [ ] [#wr8ybmk deps: hoist uniform inherited fanouts back to the parent; --fanout to opt out](backlog/wr8ybmk-deps-hoist-uniform-inherited-fanouts-back-to-the-parent-fanout-to-opt-out.md) _(backlog)_
+- [ ] [#wsqfwc6 check: warn on authored dependency edges made redundant by another path](backlog/wsqfwc6-check-warn-on-authored-dependency-edges-made-redundant-by-another-path.md) _(backlog)_
+- [ ] [#zbkkc2a deps: draw inherited dependency edges (child -> ancestor's out-of-subtree deps)](backlog/zbkkc2a-deps-draw-inherited-dependency-edges-child-ancestor-s-out-of-subtree-deps.md) _(backlog)_
+- [ ] [#zhhxgcw deps: draw parent->child containment edges in the rendered graph](backlog/zhhxgcw-deps-draw-parent-child-containment-edges-in-the-rendered-graph.md) _(backlog)_
 
 ### [#ee2crq3 Introduce a derived Graph view over the loaded index](done/ee2crq3-introduce-a-derived-graph-view-over-the-loaded-index.md) — 100% (3/3 pts · 3/3 done) · _medium_ · done
 Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-06-09-graph-derived-view-design.md)
@@ -50,8 +58,8 @@ Spec: [`docs/specs/2026-06-11-custom-fields-design.md`](../docs/specs/2026-06-11
 
 ## Backlog
 
-- [#9jgarpa list: 'needs' annotation ignores inherited deps, disagreeing with ready/is_blocked](backlog/9jgarpa-list-needs-annotation-ignores-inherited-deps-disagreeing-with-ready-is-blocked.md) — _urgent_
 - [#ey2aruc Auto-resolve index.jsonl and SUMMARY.md merge conflicts via git merge drivers](backlog/ey2aruc-auto-resolve-index-jsonl-and-summary-md-merge-conflicts-via-git-merge-drivers.md) — _medium_ [conflict-resolution tracker-features]
+- [#gs3vd4w ready/next: scope to a subtree (what can I pick up on this parent now)](backlog/gs3vd4w-ready-next-scope-to-a-subtree-what-can-i-pick-up-on-this-parent-now.md) — _medium_
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](backlog/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#tfhhp8h mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](backlog/tfhhp8h-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
 - [#wh3mv52 mv/done: guard closing a parent with open descendants (--recurse to cascade)](backlog/wh3mv52-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
@@ -72,6 +80,7 @@ _none_
 
 ## Done
 
+- [#9jgarpa list: 'needs' annotation ignores inherited deps, disagreeing with ready/is_blocked](done/9jgarpa-list-needs-annotation-ignores-inherited-deps-disagreeing-with-ready-is-blocked.md) — _urgent_ (closed 2026-07-23)
 - [#dqmp5c5 Cut v0.1.0 release](done/dqmp5c5-cut-v0-1-0-release.md) — _high_ (closed 2026-06-05)
 - [#ejcxwmz pre-commit hook never runs check when trck.json is at repo root](done/ejcxwmz-pre-commit-hook-never-runs-check-when-trck-json-is-at-repo-root.md) — _high_ (closed 2026-06-09)
 - [#mur7gwd Crash instead of clean error when no tracker is found](done/mur7gwd-crash-instead-of-clean-error-when-no-tracker-is-found.md) — _high_ (closed 2026-06-10)
