@@ -962,26 +962,6 @@ def transitive_reduction(edges: dict) -> dict:
             for u, targets in edges.items()}
 
 
-def check_edges(g: Graph) -> dict:
-    """The edge map `check` reasons over: authored `depends_on` plus containment,
-    and deliberately *not* inheritance.
-
-    The two halves of the lifting rule pull opposite ways here. Its target side —
-    "depend on b" means depend on all of `subtree(b)` — is what genuinely makes an
-    edge redundant: depending on both an epic and one of its children says the same
-    thing twice, and containment edges are what let the check see it. Its source side
-    — a child inherits its parent's deps — would instead make every parent-authored
-    edge look implied by a path through its own children, so the check would advise
-    removing precisely the parent-altitude edges that belong there.
-
-    This is why the renderer and the linter reduce different graphs. They answer
-    different questions: "what should I draw" versus "what did you write that you did
-    not need"."""
-    return {r.id: ([(d, "dep") for d in sorted(r.depends_on) if d in g.by_id]
-                   + [(c.id, "child") for c in g.children_of(r)])
-            for r in g.rows}
-
-
 def load_graph(ctx: Ctx) -> Graph:
     """Load the index and wrap it in a `Graph` — the read-side analog of `load_index`."""
     return Graph(ctx.cfg, load_index(ctx))
@@ -1165,18 +1145,6 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
             for dep in r.depends_on:
                 if dep in by_id and not g.is_terminal(by_id[dep]):
                     warnings.append(f"#{r.id} is terminal but depends on non-terminal #{dep}")
-
-    # An authored edge already implied by another path is untidy, not invalid — so a
-    # warning, never an error. `deps` hides these; reporting them is what stops the
-    # index quietly accumulating edges that only matter again when someone removes
-    # the covering one and a hidden constraint reappears.
-    # A terminal issue's edges constrain nothing any more, exactly as `blocks` goes
-    # quiet for a done row — nagging about tidying finished work would make the
-    # warning permanent, and a warning nobody acts on teaches people to skip them.
-    for u, v, w in implied_edges(check_edges(g)):
-        if v in by_id[u].depends_on and not g.is_terminal(by_id[u]):
-            warnings.append(f"#{u}'s dependency on #{v} is implied via #{w} — "
-                            f"consider `trck dep {u} --remove {v}`")
     return errors, warnings
 
 
