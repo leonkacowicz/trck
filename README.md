@@ -332,12 +332,17 @@ preference, not a constraint. Nothing is blocked; it just influences what to pic
 python3 -m unittest discover -s tests -v
 ```
 
-The engine is the single file `./trck` (executable, and importable for tests). Keep it
-standard-library only. This repo **self-hosts** its own issues under `./issues/` — browse them
-to see `trck` tracking its own roadmap.
+`trck` **ships** as the single executable file `./trck`, but that file is **generated** — the
+source lives in the `src/trck/` package and is amalgamated into `./trck` by `python3 build.py`.
+Edit `src/trck/*.py` (never `./trck` directly), then rebuild; the test command above regenerates
+`./trck` from `src/` first, and `python3 build.py --check` verifies the two are in sync. Keep it
+standard-library only. Enable the sync + tracker pre-commit guard once with
+`git config core.hooksPath scripts/hooks`. This repo **self-hosts** its own issues under
+`./issues/` — browse them to see `trck` tracking its own roadmap.
 
 The README screenshots are regenerated (also standard-library only) from the bundled example
 tracker with `python3 docs/gen-screenshots.py`, which writes the SVGs under `docs/img/`.
 
-Releasing: bump `__version__` in `trck`, commit, tag `vX.Y.Z`, and create a GitHub Release —
-that release is the stable channel `trck update` consumes.
+Releasing: bump `__version__` in `src/trck/constants.py`, run `python3 build.py`, commit `./trck`
+with the source, tag `vX.Y.Z`, and create a GitHub Release — that release is the stable channel
+`trck update` consumes.

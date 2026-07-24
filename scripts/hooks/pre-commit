@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+#
+# Pre-commit guard for the trck engine dev repo.
+#
+# `./trck` is a GENERATED artifact — its source of truth is the `src/trck/`
+# package, flattened by `build.py`. This hook refuses a commit when:
+#   1. `./trck` is out of sync with `src/trck/` (someone edited src without
+#      rebuilding, or hand-edited the generated `./trck`); and
+#   2. the issue tracker under `issues/` is inconsistent.
+#
+# Enable it once per clone:  git config core.hooksPath scripts/hooks
+set -euo pipefail
+
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+
+python3 build.py --check || {
+    echo "pre-commit: ./trck is out of sync with src/trck/." >&2
+    echo "            run 'python3 build.py' and stage ./trck, then commit again." >&2
+    exit 1
+}
+
+if [ -x ./trck ]; then
+    python3 ./trck check || {
+        echo "pre-commit: trck tracker is inconsistent — aborting commit." >&2
+        exit 1
+    }
+fi

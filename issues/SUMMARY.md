@@ -7,8 +7,8 @@
 |---|---:|
 | backlog | 20 |
 | ongoing | 0 |
-| done | 61 |
-| **total** | **81** |
+| done | 67 |
+| **total** | **87** |
 
 ## Hierarchies
 
@@ -26,6 +26,14 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 - [x] [#bt9pwy8 Graph: migrate ready/next and deps to the Graph view](done/bt9pwy8-graph-migrate-ready-next-and-deps-to-the-graph-view.md)
 - [x] [#chzay3q Graph: add class and load_graph (maps, accessors, predicates)](done/chzay3q-graph-add-class-and-load-graph-maps-accessors-predicates.md)
 - [x] [#n2gdhdd Graph: absorb cycle/parent free functions; migrate validate and dep](done/n2gdhdd-graph-absorb-cycle-parent-free-functions-migrate-validate-and-dep.md)
+
+### [#et9qb2y Split ./trck into a src/ package with an amalgamation build](done/et9qb2y-split-trck-into-a-src-package-with-an-amalgamation-build.md) — 100% (11/11 pts · 5/5 done) · _high_ · done
+
+- [x] [#4252w2z Bootstrap src/ package by slicing ./trck at band boundaries; reach byte-exact round-trip](done/4252w2z-bootstrap-src-package-by-slicing-trck-at-band-boundaries-reach-byte-exact-round-trip.md)
+- [x] [#4d54c2k Sync-guard: 'trck check' + pre-commit hook fail if ./trck differs from build(src/)](done/4d54c2k-sync-guard-trck-check-pre-commit-hook-fail-if-trck-differs-from-build-src.md)
+- [x] [#5yp7277 Wire build-before-test (conftest/helpers rebuild ./trck from src/ before suite)](done/5yp7277-wire-build-before-test-conftest-helpers-rebuild-trck-from-src-before-suite.md)
+- [x] [#f6ez2tz build.py amalgamator: header template + manifest + strip-imports concat, with round-trip --check](done/f6ez2tz-build-py-amalgamator-header-template-manifest-strip-imports-concat-with-round-trip-check.md)
+- [x] [#htgf9gb Docs: mark ./trck generated (never hand-edit) in CLAUDE.md/README; document build+dev workflow](done/htgf9gb-docs-mark-trck-generated-never-hand-edit-in-claude-md-readme-document-build-dev-workflow.md)
 
 ### [#evsw9tr Introduce an Issue class instead of dict-oriented code](done/evsw9tr-introduce-an-issue-class-instead-of-dict-oriented-code.md) — 100% (1/1 pts · 1/1 done) · _medium_ · done
 
