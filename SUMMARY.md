@@ -5,9 +5,9 @@
 
 | State | Count |
 |---|---:|
-| backlog | 21 |
+| backlog | 20 |
 | ongoing | 0 |
-| done | 60 |
+| done | 61 |
 | **total** | **81** |
 
 ## Hierarchies
@@ -59,7 +59,6 @@ Spec: [`docs/specs/2026-06-11-custom-fields-design.md`](../docs/specs/2026-06-11
 ## Backlog
 
 - [#ey2aruc Auto-resolve index.jsonl and SUMMARY.md merge conflicts via git merge drivers](backlog/ey2aruc-auto-resolve-index-jsonl-and-summary-md-merge-conflicts-via-git-merge-drivers.md) — _medium_ [conflict-resolution tracker-features]
-- [#gs3vd4w ready/next: scope to a subtree (what can I pick up on this parent now)](backlog/gs3vd4w-ready-next-scope-to-a-subtree-what-can-i-pick-up-on-this-parent-now.md) — _medium_
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](backlog/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#tfhhp8h mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](backlog/tfhhp8h-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
 - [#wh3mv52 mv/done: guard closing a parent with open descendants (--recurse to cascade)](backlog/wh3mv52-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
@@ -100,6 +99,7 @@ _none_
 - [#dbq2wqn deps: hide done work by default (fully-done chains + --omit-done)](done/dbq2wqn-deps-hide-done-by-default.md) — _medium_ (closed 2026-06-24)
 - [#dscmxng Use random alphanumeric ids to make concurrent creation collision-free](done/dscmxng-use-random-alphanumeric-ids-to-make-concurrent-creation-collision-free.md) — _medium_ [conflict-resolution tracker-features] (closed 2026-06-15)
 - [#ge5jt9s Cascading parent status: derive parent status from children (status rollup)](done/ge5jt9s-cascading-parent-status-derive-parent-status-from-children-status-rollup.md) — _medium_ (closed 2026-06-13)
+- [#gs3vd4w ready/next: scope to a subtree (what can I pick up on this parent now)](done/gs3vd4w-ready-next-scope-to-a-subtree-what-can-i-pick-up-on-this-parent-now.md) — _medium_ (closed 2026-07-24)
 - [#gwcr9qd deps: shorter edges / fewer crossings in the graph layout](done/gwcr9qd-deps-shorter-edges-fewer-crossings-in-the-graph-layout.md) — _medium_ (closed 2026-06-12)
 - [#httj4xf Add labels/tags to issues](done/httj4xf-add-labels-tags-to-issues.md) — _medium_ [tracker-features] (closed 2026-06-06)
 - [#kd8ngqv Improve CLI output presentation (align/icons, color, show, SUMMARY)](done/kd8ngqv-improve-cli-output-presentation-align-icons-color-show-summary.md) — _medium_ (closed 2026-06-05)
