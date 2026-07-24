@@ -5,16 +5,16 @@
 
 | State | Count |
 |---|---:|
-| backlog | 25 |
+| backlog | 24 |
 | ongoing | 1 |
-| done | 55 |
+| done | 56 |
 | **total** | **81** |
 
 ## Hierarchies
 
-### [#dj5b42j deps: infer hierarchy edges so the graph answers 'what is left to finish this parent'](ongoing/dj5b42j-deps-infer-hierarchy-edges-so-the-graph-answers-what-is-left-to-finish-this-parent.md) — 20% (1/5 pts · 1/5 done) · _high_ · ongoing
+### [#dj5b42j deps: infer hierarchy edges so the graph answers 'what is left to finish this parent'](ongoing/dj5b42j-deps-infer-hierarchy-edges-so-the-graph-answers-what-is-left-to-finish-this-parent.md) — 40% (2/5 pts · 2/5 done) · _high_ · ongoing
 
-- [ ] [#atk4umk deps: transitive reduction of the rendered graph (display-only, after done-filtering)](backlog/atk4umk-deps-transitive-reduction-of-the-rendered-graph-display-only-after-done-filtering.md) _(backlog)_
+- [x] [#atk4umk deps: transitive reduction of the rendered graph (display-only, after done-filtering)](done/atk4umk-deps-transitive-reduction-of-the-rendered-graph-display-only-after-done-filtering.md)
 - [ ] [#wr8ybmk deps: hoist uniform inherited fanouts back to the parent; --fanout to opt out](backlog/wr8ybmk-deps-hoist-uniform-inherited-fanouts-back-to-the-parent-fanout-to-opt-out.md) _(backlog)_
 - [ ] [#wsqfwc6 check: warn on authored dependency edges made redundant by another path](backlog/wsqfwc6-check-warn-on-authored-dependency-edges-made-redundant-by-another-path.md) _(backlog)_
 - [ ] [#zbkkc2a deps: draw inherited dependency edges (child -> ancestor's out-of-subtree deps)](backlog/zbkkc2a-deps-draw-inherited-dependency-edges-child-ancestor-s-out-of-subtree-deps.md) _(backlog)_
