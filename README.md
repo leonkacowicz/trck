@@ -267,7 +267,12 @@ On a DAG that reduction is unique and preserves reachability exactly, so nothing
 path that justified dropping an edge is still on screen. It also gives parents a pleasing shape:
 an epic ends up pointing only at the work nothing else waits on. Like the inferred edges this is
 display-only, and it happens *after* `--omit-done` filtering, so hiding a finished middle node can
-never leave its neighbours looking unrelated. The whole-graph
+never leave its neighbours looking unrelated. Hiding an edge is not the same as forgetting it:
+`trck check` reports each authored dependency that another path already implies —
+`#A's dependency on #C is implied via #B — consider `trck dep A --remove C`` — as a warning, so
+the index can be tidied deliberately instead of quietly accruing edges that only matter again
+once the covering one is removed. Finished issues are left alone; their edges constrain nothing.
+The whole-graph
 view hides fully done components by default so completed chains don't drown out active work;
 `--include-done-chains` restores them. Done nodes inside a still-active chain remain visible
 as useful context, and `--omit-done` drops terminal nodes from the rendered graph without

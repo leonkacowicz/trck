@@ -914,6 +914,74 @@ class Graph:
         return self._find_cycles(lambda r: () if r.parent is None else (r.parent,))
 
 
+def edge_reach(edges: dict) -> dict:
+    """`{node: every node reachable from it}` over an `{u: [(v, kind), …]}` edge map.
+    Memoised DFS; the placeholder written before recursing makes it terminate on a
+    malformed cycle instead of blowing the stack."""
+    reach: dict = {}
+
+    def below(u):
+        if u not in reach:
+            reach[u] = set()                           # guards a malformed cycle
+            acc = set()
+            for v, _k in edges.get(u, ()):
+                acc.add(v); acc |= below(v)
+            reach[u] = acc
+        return reach[u]
+
+    for u in edges:
+        below(u)
+    return reach
+
+
+def implied_edges(edges: dict):
+    """Every `(u, v, w)` where the edge `u -> v` is already implied by `u -> w -> … -> v`.
+    On a DAG these are exactly the edges a transitive reduction removes, and `w` is a
+    witness — the covering path's first hop, which is what makes a report actionable."""
+    reach = edge_reach(edges)
+    for u, targets in edges.items():
+        for v, _kind in targets:
+            for w, _k in targets:
+                if w != v and v in reach.get(w, ()):
+                    yield u, v, w
+                    break
+
+
+def transitive_reduction(edges: dict) -> dict:
+    """Drop every edge already implied by a longer path: `u -> v` goes if some other
+    `u -> w` reaches `v`. On a DAG the result is unique and preserves reachability
+    exactly, so there is no arbitrary choice to make and nothing is lost — the path
+    that justified the removal is still drawn.
+
+    Display-only. The authored edge stays in the index; only `dep --remove` deletes
+    one. `check` is where redundancy gets *reported* rather than silently hidden."""
+    cut = {}
+    for u, v, _w in implied_edges(edges):
+        cut.setdefault(u, set()).add(v)
+    return {u: [(v, k) for v, k in targets if v not in cut.get(u, ())]
+            for u, targets in edges.items()}
+
+
+def check_edges(g: Graph) -> dict:
+    """The edge map `check` reasons over: authored `depends_on` plus containment,
+    and deliberately *not* inheritance.
+
+    The two halves of the lifting rule pull opposite ways here. Its target side —
+    "depend on b" means depend on all of `subtree(b)` — is what genuinely makes an
+    edge redundant: depending on both an epic and one of its children says the same
+    thing twice, and containment edges are what let the check see it. Its source side
+    — a child inherits its parent's deps — would instead make every parent-authored
+    edge look implied by a path through its own children, so the check would advise
+    removing precisely the parent-altitude edges that belong there.
+
+    This is why the renderer and the linter reduce different graphs. They answer
+    different questions: "what should I draw" versus "what did you write that you did
+    not need"."""
+    return {r.id: ([(d, "dep") for d in sorted(r.depends_on) if d in g.by_id]
+                   + [(c.id, "child") for c in g.children_of(r)])
+            for r in g.rows}
+
+
 def load_graph(ctx: Ctx) -> Graph:
     """Load the index and wrap it in a `Graph` — the read-side analog of `load_index`."""
     return Graph(ctx.cfg, load_index(ctx))
@@ -1097,6 +1165,18 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
             for dep in r.depends_on:
                 if dep in by_id and not g.is_terminal(by_id[dep]):
                     warnings.append(f"#{r.id} is terminal but depends on non-terminal #{dep}")
+
+    # An authored edge already implied by another path is untidy, not invalid — so a
+    # warning, never an error. `deps` hides these; reporting them is what stops the
+    # index quietly accumulating edges that only matter again when someone removes
+    # the covering one and a hidden constraint reappears.
+    # A terminal issue's edges constrain nothing any more, exactly as `blocks` goes
+    # quiet for a done row — nagging about tidying finished work would make the
+    # warning permanent, and a warning nobody acts on teaches people to skip them.
+    for u, v, w in implied_edges(check_edges(g)):
+        if v in by_id[u].depends_on and not g.is_terminal(by_id[u]):
+            warnings.append(f"#{u}'s dependency on #{v} is implied via #{w} — "
+                            f"consider `trck dep {u} --remove {v}`")
     return errors, warnings
 
 
@@ -1320,36 +1400,6 @@ def drawn_edges(g: "Graph", ids, hier: bool = True, reduce: bool = True,
         edges[i] = [(d.id, k) for d, k in g.drawn_deps_of(r, hier)
                     if d.id in idset and not (k == "inherited" and d.id in hidden)]
     return transitive_reduction(edges) if reduce else edges
-
-
-def transitive_reduction(edges: dict) -> dict:
-    """Drop every edge already implied by a longer path: `u -> v` goes if some other
-    `u -> w` reaches `v`. On a DAG the result is unique and preserves reachability
-    exactly, so there is no arbitrary choice to make and nothing is lost — the path
-    that justified the removal is still drawn.
-
-    Display-only. The authored edge stays in the index; only `dep --remove` deletes
-    one. `check` is where redundancy gets *reported* rather than silently hidden."""
-    reach: dict = {}                                   # node -> all nodes below it
-
-    def below(u):                                      # memoised, DFS post-order
-        if u not in reach:
-            reach[u] = set()                           # guards a malformed cycle
-            acc = set()
-            for v, _k in edges.get(u, ()):
-                acc.add(v); acc |= below(v)
-            reach[u] = acc
-        return reach[u]
-
-    out = {}
-    for u, targets in edges.items():
-        keep = []
-        for v, kind in targets:
-            # implied iff a *sibling* edge out of u already reaches v
-            if not any(w != v and v in below(w) for w, _k in targets):
-                keep.append((v, kind))
-        out[u] = keep
-    return out
 
 
 def graph_components(g: "Graph", ids, hier: bool = True, edges: dict | None = None) -> list[list[int]]:
