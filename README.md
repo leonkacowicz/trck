@@ -255,14 +255,20 @@ inventing replacement edges between their neighbours.
 
 Dependencies compose with containment, so a single authored edge covers a whole subtree on
 both ends — you never restate it on each child. `ready`/`next` and the inline `needs #NNN`
-annotations honour these **effective** dependencies, not just the edges you typed.
+annotations honour these **effective** dependencies, not just the edges you typed. The mirror
+`blocks #NNN` note stays at the altitude the edge was authored — it names the issues that
+declared the dependency, and the subtrees under them inherit the wait.
 
 - **Depending on a parent depends on its whole subtree.** Because a parent is *done* only when
   all its descendants are (status rolls up), `A depends on P` means A waits for every issue
   under `P`, recursively — not just `P` itself.
 - **A parent's dependencies are inherited by its children.** If `P depends on B`, then every
   issue under `P` is effectively blocked by `B` too: none of `P`'s work can start until `B` is
-  done.
+  done. A row blocked this way says `needs #B (via #P)` — naming the issue the edge is actually
+  authored on, which is where you'd `trck dep #P --remove #B`. The tag is spelled out only where
+  `P`'s own row isn't on screen (`--flat` with a filter, or a forest rooted below `P`); in the
+  usual nested view `P` sits right above its children already saying `needs #B`, so the
+  children stay quiet rather than repeating it.
 - **An issue and its own ancestor or descendant can never depend on each other** — that would
   be a cycle (a child would wait for its parent, but the parent isn't done until the child is).
   Siblings and cousins may depend on each other freely. Any edge that would close such a cycle,

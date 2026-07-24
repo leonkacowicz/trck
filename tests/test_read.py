@@ -225,6 +225,89 @@ class TestRead(unittest.TestCase):
             self.assertNotIn("blocks", out)                # ready stays terse
             self.assertNotIn("needs", out)
 
+    # --- inherited (ancestor-authored) dependencies in the `needs` note ---------
+    # A parent's dependency is inherited by its whole subtree, so a child can be
+    # blocked by an edge authored above it. The annotation spells that edge out
+    # only when the authoring ancestor is NOT itself on screen — where it is, its
+    # own row already carries the note and repeating it on every child is noise.
+
+    def inherit_fixture(self, d):
+        """`kid` under `par`, where `par` (not `kid`) authored the dep on `dep`."""
+        dep = self.seed(d, "Dep")
+        par = self.seed(d, "Parent epic", kind="epic", depends=dep)
+        kid = self.seed(d, "Child leaf", parent=par)
+        return dep, par, kid
+
+    def test_list_spells_out_inherited_dep_when_ancestor_not_shown(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            dep, par, kid = self.inherit_fixture(d)
+            # only the child matches, so its parent's row is absent from the output
+            line = self.row_for(self.listing(d, match="Child leaf"), kid)
+            self.assertIn(f"needs #{dep}", line)      # agrees with ready/is_blocked
+            self.assertIn(f"(via #{par})", line)      # ...but the edge lives on par
+
+    def test_list_omits_inherited_dep_when_ancestor_is_shown(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            dep, par, kid = self.inherit_fixture(d)
+            out = self.listing(d)                     # unfiltered: par is printed too
+            self.assertIn(f"needs #{dep}", self.row_for(out, par))
+            self.assertNotIn("needs", self.row_for(out, kid))
+
+    def test_list_nested_forest_keeps_ancestor_so_child_stays_quiet(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            dep, par, kid = self.inherit_fixture(d)
+            # the forest keeps a match's ancestor spine as context -> par is on screen
+            out = self.listing(d, flat=False, match="Child leaf")
+            self.assertIn(f"#{par}", out)
+            self.assertNotIn("needs", self.row_for(out, kid))
+
+    def test_list_rooted_at_child_spells_out_inherited_dep(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            dep, par, kid = self.inherit_fixture(d)
+            # rooting at the child cuts the spine above it: nothing else carries it
+            line = self.row_for(self.listing(d, flat=False, id=kid), kid)
+            self.assertIn(f"needs #{dep} (via #{par})", line)
+
+    def test_list_inherited_dep_follows_its_own_authored_deps(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            dep, par, kid = self.inherit_fixture(d)
+            own = self.seed(d, "Own dep")
+            self.t.cmd_dep(ns(dir=str(d), id=kid, add=own, remove=None))
+            line = self.row_for(self.listing(d, match="Child leaf"), kid)
+            self.assertIn(f"needs #{own} #{dep} (via #{par})", line)
+
+    def test_list_inherited_dep_clears_when_the_blocker_is_done(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            dep, par, kid = self.inherit_fixture(d)
+            self.t.cmd_mv(ns(dir=str(d), id=dep, status="done", resolution=None))
+            out = self.listing(d, match="Child leaf")
+            self.assertNotIn("needs", self.row_for(out, kid))
+
+    def test_list_inherited_dep_is_reported_once_down_the_spine(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            dep = self.seed(d, "Dep")
+            top = self.seed(d, "Top epic", kind="epic", depends=dep)
+            mid = self.seed(d, "Child mid", kind="epic", parent=top)
+            kid = self.seed(d, "Child leaf", parent=mid)
+            out = self.listing(d, match="Child")      # prints mid + kid, not top
+            self.assertIn(f"needs #{dep} (via #{top})", self.row_for(out, mid))
+            self.assertNotIn("needs", self.row_for(out, kid))  # mid already says it
+
+    def test_list_blocks_stays_at_the_authored_altitude(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            dep, par, kid = self.inherit_fixture(d)
+            line = self.row_for(self.listing(d), dep)
+            self.assertIn(f"blocks #{par}", line)     # the subtree under par is implied
+            self.assertNotIn(f"#{kid}", line)
+
     def test_list_orphan_only(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})

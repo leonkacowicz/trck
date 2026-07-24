@@ -652,20 +652,30 @@ class Graph:
             stack.extend(self._children.get(n.id, []))
         return out
 
+    def lifted_dep_sources(self, r: Issue) -> list[tuple[Issue, Issue]]:
+        """`lifted_deps` with each target paired to the issue that authored the edge
+        (`r` itself, or the nearest ancestor it was inherited from). Nearest author
+        first, id-sorted within an author, and a target reached twice keeps its
+        nearest author — so an edge `r` authored itself never reads as inherited.
+        Callers that only need the targets use `lifted_deps`; row rendering needs the
+        author too, to say where the edge actually lives."""
+        out, seen = [], set()
+        for a in (r, *self.ancestors_of(r)):
+            for d in sorted(a.depends_on):
+                b = self.by_id.get(d)
+                if b is not None and b.id not in seen:
+                    seen.add(b.id)
+                    out.append((b, a))
+        return out
+
     def lifted_deps(self, r: Issue) -> list[Issue]:
         """The authored dependency targets visible to `r` through the parent
         hierarchy: `r`'s own `depends_on` plus every ancestor's — the *source-side*
         of the lifting rule (an authored edge a->b is inherited by all of
         subtree(a)). This is the single shared lifting primitive: `is_blocked`
-        reads the target statuses one-sidedly, while the cycle traversal expands
-        each target's subtree."""
-        out = []
-        for a in (r, *self.ancestors_of(r)):
-            for d in a.depends_on:
-                b = self.by_id.get(d)
-                if b is not None:
-                    out.append(b)
-        return out
+        reads the target statuses one-sidedly, the cycle traversal expands each
+        target's subtree, and `block_annotations` renders the row's note."""
+        return [b for b, _ in self.lifted_dep_sources(r)]
 
     # predicates
     def is_terminal(self, r: Issue) -> bool:
@@ -1144,15 +1154,43 @@ def label_tag(r: Issue) -> str:
     return " [" + " ".join(labels) + "]" if labels else ""
 
 
-def block_annotations(g: Graph, r: Issue) -> str:
+def block_annotations(g: Graph, r: Issue, on_screen=frozenset()) -> str:
     """A dim ` needs #… blocks #…` suffix exposing the blocking graph in row form.
-    `needs` lists the row's non-terminal dependencies (mirrors `is_blocked`, so a done
-    blocker drops off — the block is cleared). `blocks` lists the issues that depend on
-    this row, shown only while the row is itself non-terminal (a done task blocks nothing)."""
-    parts = []
-    needs = [d.id for d in g.requires_of(r) if not g.is_terminal(d)]
+
+    `needs` lists the non-terminal dependencies that make `is_blocked` true — the row's
+    own *and* those lifted from an ancestor, since an authored edge is inherited by the
+    author's whole subtree. A done blocker drops off (the block is cleared). An
+    inherited one is tagged `(via #author)`, so the note never implies the edge was
+    authored on this row — that tells you where `dep --remove` goes. It is spelled out
+    only when no row between this one and the author is itself being printed
+    (`on_screen` = the ids of the rows in this listing): where such a row exists it
+    already carries the note, and restating it down every child is noise.
+
+    `blocks` lists the issues that authored a dependency on this row, shown only while
+    the row is itself non-terminal (a done task blocks nothing). It deliberately stays
+    at the authored altitude rather than mirroring the lifting: those dependents' whole
+    subtrees inherit the wait, and are exactly the rows whose `needs` reads `(via #…)`."""
+    spine = g.ancestors_of(r)                          # nearest first
+
+    def carried_above(author):
+        """Does a printed row between `r` and `author` (inclusive) already say it?"""
+        for a in spine:
+            if a.id in on_screen:
+                return True
+            if a.id == author.id:
+                break
+        return False
+
+    parts, needs = [], []
+    for b, author in g.lifted_dep_sources(r):
+        if g.is_terminal(b):
+            continue
+        if author.id == r.id:
+            needs.append(f"#{b.id}")
+        elif not carried_above(author):
+            needs.append(f"#{b.id} (via #{author.id})")
     if needs:
-        parts.append("needs " + " ".join(f"#{i}" for i in needs))
+        parts.append("needs " + " ".join(needs))
     if not g.is_terminal(r):
         blocks = [d.id for d in g.dependents_of(r)]
         if blocks:
@@ -1969,7 +2007,11 @@ def cmd_list(args) -> None:
             die(f"unknown --sort '{sort}' "
                 "(choices: id, priority, points, created, field:NAME)")
         key = sort_keys[sort]
-    annotate = lambda r: block_annotations(g, r)
+    # the blocking note is view-aware: it spells an inherited dependency out only when
+    # the ancestor carrying it isn't among the rows being printed (see
+    # `block_annotations`), so each view supplies the set it is about to render.
+    annotate_over = lambda rows: (
+        lambda r: block_annotations(g, r, {x.id for x in rows}))
     progress = lambda r: progress_pct(g, r)
     # Bold the shortest prefix that uniquely identifies each id across the whole
     # tracker (what you'd type for `show`/`set`/…); the rest of the id is dimmed.
@@ -1982,7 +2024,7 @@ def cmd_list(args) -> None:
 
     if getattr(args, "flat", False):
         rows = sorted([r for r in g.rows if keep(r)], key=key)
-        print_rows(ctx, rows, annotate=annotate, show_fields=show_fields,
+        print_rows(ctx, rows, annotate=annotate_over(rows), show_fields=show_fields,
                    progress=progress, abbrev=abbrev)
         return
 
@@ -1997,7 +2039,7 @@ def cmd_list(args) -> None:
         roots = [r for r in g.rows
                  if (r.parent is None or r.parent not in g.by_id) and r.id in shown]
     ordered, prefix_of = forest_layout(g, roots, shown, key)
-    print_rows(ctx, ordered, annotate=annotate,
+    print_rows(ctx, ordered, annotate=annotate_over(ordered),
                prefix=lambda r: prefix_of[r.id], dim=lambda r: r.id in dim,
                show_fields=show_fields, progress=progress, abbrev=abbrev)
 
@@ -2713,8 +2755,11 @@ def build_parser() -> argparse.ArgumentParser:
                                     "Parent rows show a dim points-weighted completion '% ' after the "
                                     "title (rolled up from leaf descendants, as in SUMMARY.md). "
                                     "Rows carry a dim blocking note: 'needs #NNN' for each open "
-                                    "(non-terminal) dependency, and 'blocks #NNN' for the issues "
-                                    "waiting on this one. A note clears once the blocker is done. "
+                                    "(non-terminal) dependency — including one inherited from an "
+                                    "ancestor, tagged 'needs #NNN (via #AAA)' and shown only where "
+                                    "that ancestor's own row isn't on screen — and 'blocks #NNN' for "
+                                    "the issues waiting on this one. A note clears once the blocker "
+                                    "is done. "
                                     "By default settled work is hidden: a terminal issue shows only "
                                     "while it is still open or sits under a non-terminal parent (so "
                                     "open epics keep their done children as context). Use --all to "
