@@ -327,6 +327,10 @@ main { display: grid; grid-template-columns: minmax(12rem, var(--leftw, 40%)) 6p
 .viewtoggle button.on { background: var(--accent); color: #fff; }
 .graph { height: 100%; overflow: auto; padding: 1rem; }
 .graph svg { display: block; }
+.gbar { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: .7rem;
+        font-size: .82rem; color: var(--muted); }
+.gcheck { display: inline-flex; align-items: center; gap: .25rem; cursor: pointer; }
+.ghint { font-style: italic; }
 .gnode { cursor: pointer; }
 .gnode rect { fill: var(--bg); stroke: var(--line); stroke-width: 1.5; }
 .gnode:hover rect { stroke: var(--accent); }
@@ -423,7 +427,8 @@ function el(tag, props = {}, ...kids) {
 const byId = Object.fromEntries(DATA.issues.map(i => [i.id, i]));
 const terminal = new Set(DATA.config.statuses.filter(s => s.role === 'terminal').map(s => s.name));
 const prio = DATA.config.priorities;
-const state = { q: '', status: '', priority: '', selected: null, edits: {}, view: 'list', collapsed: new Set(), bodyRaw: false };
+const state = { q: '', status: '', priority: '', selected: null, edits: {}, view: 'list',
+  collapsed: new Set(), bodyRaw: false, graphIncludeDone: false, graphOmitDone: false };
 
 // --- staged edits (v2 command-copy): key `${id}::${field}` -> new value ------
 const editKey = (id, field) => id + '::' + field;
@@ -680,15 +685,48 @@ function sv(tag, props = {}, ...kids) {
 const NODE_W = 150, NODE_H = 32, COL_GAP = 20, ROW_GAP = 46, PAD = 14, COMP_GAP = 30;
 const trunc = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
-function graphData() {
-  const nodes = new Set(), preds = {}, adj = {};
+// The dependency cone of a set of seeds: everything reachable up (blockers) and
+// down (dependents). Used to seed the graph from the filter bar's matches.
+function coneOf(seeds) {
+  const fwd = {}, back = {};
   for (const e of DATA.edges) {
-    nodes.add(e.from); nodes.add(e.to);
-    (preds[e.to] = preds[e.to] || []).push(e.from);
-    (adj[e.from] = adj[e.from] || []).push(e.to);
-    (adj[e.to] = adj[e.to] || []).push(e.from);   // undirected, for components
+    (fwd[e.from] = fwd[e.from] || []).push(e.to);
+    (back[e.to] = back[e.to] || []).push(e.from);
   }
-  return { nodes: [...nodes].sort((a, b) => a.localeCompare(b)), preds, adj };
+  const grow = adj => {
+    const seen = new Set(seeds), st = [...seeds];
+    while (st.length) { const n = st.pop(); for (const m of (adj[n] || [])) if (!seen.has(m)) { seen.add(m); st.push(m); } }
+    return seen;
+  };
+  const out = new Set();
+  for (const id of grow(fwd)) out.add(id);
+  for (const id of grow(back)) out.add(id);
+  return out;
+}
+function restrictedAdj(nodeSet) {
+  const adj = {};
+  for (const e of DATA.edges) {
+    if (!nodeSet.has(e.from) || !nodeSet.has(e.to)) continue;
+    (adj[e.from] = adj[e.from] || []).push(e.to);
+    (adj[e.to] = adj[e.to] || []).push(e.from);
+  }
+  return adj;
+}
+function graphSeeds() {
+  return [...new Set(DATA.edges.flatMap(e => [e.from, e.to]))].filter(id => byId[id] && matches(byId[id]));
+}
+function checkbox(label, checked, onchange) {
+  const cb = el('input', { type: 'checkbox' });
+  cb.checked = checked;
+  cb.addEventListener('change', () => onchange(cb.checked));
+  return el('label', { class: 'gcheck' }, cb, ' ' + label);
+}
+function graphToolbar() {
+  const bar = el('div', { class: 'gbar' });
+  bar.append(checkbox('include done chains', state.graphIncludeDone, v => { state.graphIncludeDone = v; renderGraph(); }));
+  bar.append(checkbox('omit done', state.graphOmitDone, v => { state.graphOmitDone = v; renderGraph(); }));
+  if (filterActive()) bar.append(el('span', { class: 'ghint', text: 'seeded from ' + graphSeeds().length + ' matching' }));
+  return bar;
 }
 function layerOf(id, preds, memo, seen) {
   if (id in memo) return memo[id];
@@ -833,11 +871,39 @@ function renderTree() {
 }
 function renderGraph() {
   const box = $('#graph'); box.textContent = '';
-  const { nodes, preds, adj } = graphData();
-  if (!nodes.length) { box.append(el('p', { class: 'gempty', text: 'No dependencies to show.' })); return; }
+  box.append(graphToolbar());
+
+  const all = new Set();
+  for (const e of DATA.edges) { all.add(e.from); all.add(e.to); }
+  const active = filterActive();
+  // Filter bar seeds the graph: show the union of the matches' dependency cones.
+  let nodes = active ? coneOf(graphSeeds()) : new Set(all);
+  // Done-filtering, mirroring the engine's filter_deps_graph_ids.
+  if (!state.graphIncludeDone) {
+    const a = restrictedAdj(nodes);
+    for (const comp of components([...nodes], a))
+      if (comp.every(id => byId[id] && byId[id].terminal)) comp.forEach(id => nodes.delete(id));
+  }
+  if (state.graphOmitDone)
+    for (const id of [...nodes]) if (byId[id] && byId[id].terminal) nodes.delete(id);
+
+  if (!nodes.size) {
+    box.append(el('p', { class: 'gempty',
+      text: active ? 'No matching issues have dependencies to show.' : 'No dependencies to show.' }));
+    return;
+  }
+
+  const edges = DATA.edges.filter(e => nodes.has(e.from) && nodes.has(e.to));
+  const preds = {}, adj = {};
+  for (const e of edges) {
+    (preds[e.to] = preds[e.to] || []).push(e.from);
+    (adj[e.from] = adj[e.from] || []).push(e.to);
+    (adj[e.to] = adj[e.to] || []).push(e.from);
+  }
+  const nodeList = [...nodes].sort((a, b) => a.localeCompare(b));
   // Flow the components left→right, wrapping to a new row when the pane width is
   // exceeded, so the graph grows down (natural scroll) rather than out.
-  const laid = components(nodes, adj).map(c => ({ comp: c, ...layoutComponent(c, preds) }));
+  const laid = components(nodeList, adj).map(c => ({ comp: c, ...layoutComponent(c, preds) }));
   const avail = Math.max(box.clientWidth - PAD * 2, ...laid.map(l => l.w), 320);
   const pos = {};
   let x = PAD, y = PAD, rowH = 0, W = 0;
@@ -854,7 +920,7 @@ function renderGraph() {
   s.append(sv('defs', {}, sv('marker',
     { id: 'arrow', viewBox: '0 0 10 10', refX: '9', refY: '5', markerWidth: '7', markerHeight: '7', orient: 'auto' },
     sv('path', { d: 'M0,0 L10,5 L0,10 z', fill: 'var(--muted)' }))));
-  for (const e of DATA.edges) {
+  for (const e of edges) {
     const a = pos[e.from], b = pos[e.to];
     if (!a || !b) continue;
     const x1 = a.x + NODE_W / 2, y1 = a.y + NODE_H, x2 = b.x + NODE_W / 2, y2 = b.y;

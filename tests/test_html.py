@@ -242,6 +242,14 @@ class TestDependencyGraph(HtmlTestBase):
             self.assertIn('id="graph"', html)
             self.assertIn('data-view="graph"', html)
 
+    def test_graph_has_done_filter_controls(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")
+            html = self.render(d)
+            self.assertIn("include done chains", html)
+            self.assertIn("omit done", html)
+
 
 class TestTreeView(HtmlTestBase):
     def test_model_lists_roots(self):
