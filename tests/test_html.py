@@ -84,6 +84,13 @@ class TestRenderShell(HtmlTestBase):
             self.assertTrue(html.lstrip().lower().startswith("<!doctype html"))
             self.assertIn("</html>", html)
 
+    def test_has_a_resizable_divider(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Alpha")
+            html = self.render(d)
+            self.assertIn('id="split"', html)
+
     def test_document_is_self_contained_no_external_refs(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
