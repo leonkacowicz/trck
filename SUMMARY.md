@@ -7,8 +7,8 @@
 |---|---:|
 | backlog | 21 |
 | ongoing | 1 |
-| done | 75 |
-| **total** | **97** |
+| done | 76 |
+| **total** | **98** |
 
 ## Hierarchies
 
@@ -39,7 +39,7 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 
 - [x] [#nddf6wg Harden Issue.from_dict with a structural/type contract](done/nddf6wg-harden-issue-from-dict-with-a-structural-type-contract.md)
 
-### [#fkrp9dh trck-html: static HTML SPA to browse issues in a browser](ongoing/fkrp9dh-trck-html-static-html-spa-to-browse-issues-in-a-browser.md) — 88% (7/8 pts · 7/8 done) · _medium_ · ongoing
+### [#fkrp9dh trck-html: static HTML SPA to browse issues in a browser](ongoing/fkrp9dh-trck-html-static-html-spa-to-browse-issues-in-a-browser.md) — 89% (8/9 pts · 8/9 done) · _medium_ · ongoing
 
 - [x] [#2ytfth4 v5: board / kanban by status](done/2ytfth4-v5-board-kanban-by-status.md)
 - [x] [#4vbk79y v4: tree / hierarchy view with rolled-up progress %](done/4vbk79y-v4-tree-hierarchy-view-with-rolled-up-progress.md)
@@ -49,6 +49,7 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 - [x] [#ej5772f trck-html: draggable divider to resize left pane vs detail](done/ej5772f-trck-html-draggable-divider-to-resize-left-pane-vs-detail.md)
 - [x] [#qcgr8sy v2: command-copy — stage status/priority edits, show equivalent ./trck commands](done/qcgr8sy-v2-command-copy-stage-status-priority-edits-show-equivalent-trck-commands.md)
 - [ ] [#tcm5s56 v7: trck serve — live process, edits write back to index.jsonl](backlog/tcm5s56-v7-trck-serve-live-process-edits-write-back-to-index-jsonl.md) _(backlog)_
+- [x] [#zssaj4k trck-html: graph view — done-chain filters + filter-as-seeds](done/zssaj4k-trck-html-graph-view-done-chain-filters-filter-as-seeds.md)
 
 ### [#h7xp2dm Free-form custom fields: set/filter/sort arbitrary key→value](done/h7xp2dm-free-form-custom-fields-set-filter-sort-arbitrary-key-value.md) — 100% (6/6 pts · 6/6 done) · _medium_ · done
 Spec: [`docs/specs/2026-06-11-custom-fields-design.md`](../docs/specs/2026-06-11-custom-fields-design.md)
