@@ -7,8 +7,8 @@
 |---|---:|
 | backlog | 21 |
 | ongoing | 1 |
-| done | 76 |
-| **total** | **98** |
+| done | 77 |
+| **total** | **99** |
 
 ## Hierarchies
 
@@ -39,13 +39,14 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 
 - [x] [#nddf6wg Harden Issue.from_dict with a structural/type contract](done/nddf6wg-harden-issue-from-dict-with-a-structural-type-contract.md)
 
-### [#fkrp9dh trck-html: static HTML SPA to browse issues in a browser](ongoing/fkrp9dh-trck-html-static-html-spa-to-browse-issues-in-a-browser.md) — 89% (8/9 pts · 8/9 done) · _medium_ · ongoing
+### [#fkrp9dh trck-html: static HTML SPA to browse issues in a browser](ongoing/fkrp9dh-trck-html-static-html-spa-to-browse-issues-in-a-browser.md) — 90% (9/10 pts · 9/10 done) · _medium_ · ongoing
 
 - [x] [#2ytfth4 v5: board / kanban by status](done/2ytfth4-v5-board-kanban-by-status.md)
 - [x] [#4vbk79y v4: tree / hierarchy view with rolled-up progress %](done/4vbk79y-v4-tree-hierarchy-view-with-rolled-up-progress.md)
 - [x] [#4xh68fa v6: markdown bodies — JS subset renderer, then optional lib, <pre> fallback](done/4xh68fa-v6-markdown-bodies-js-subset-renderer-then-optional-lib-pre-fallback.md)
 - [x] [#6yttx97 v3: dependency graph view (clickable, jump between blockers/blocked)](done/6yttx97-v3-dependency-graph-view-clickable-jump-between-blockers-blocked.md)
 - [x] [#99wkju8 v1 MVP: tools/trck-html — list + detail panel + filter/search, escaped bodies](done/99wkju8-v1-mvp-tools-trck-html-list-detail-panel-filter-search-escaped-bodies.md)
+- [x] [#d9ckqzc trck-html: highlight shortest-unique id prefix (like the CLI)](done/d9ckqzc-trck-html-highlight-shortest-unique-id-prefix-like-the-cli.md)
 - [x] [#ej5772f trck-html: draggable divider to resize left pane vs detail](done/ej5772f-trck-html-draggable-divider-to-resize-left-pane-vs-detail.md)
 - [x] [#qcgr8sy v2: command-copy — stage status/priority edits, show equivalent ./trck commands](done/qcgr8sy-v2-command-copy-stage-status-priority-edits-show-equivalent-trck-commands.md)
 - [ ] [#tcm5s56 v7: trck serve — live process, edits write back to index.jsonl](backlog/tcm5s56-v7-trck-serve-live-process-edits-write-back-to-index-jsonl.md) _(backlog)_
