@@ -276,6 +276,27 @@ main { display: grid; grid-template-columns: minmax(12rem, var(--leftw, 40%)) 6p
 .body { background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
         padding: .8rem 1rem; white-space: pre-wrap; word-wrap: break-word;
         font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.bodybar { display: flex; justify-content: flex-end; margin-bottom: .3rem; }
+.bodytog { font: inherit; font-size: .78rem; padding: .12rem .55rem; border: 1px solid var(--line);
+           border-radius: 6px; background: var(--bg); color: var(--muted); cursor: pointer; }
+.bodytog:hover { border-color: var(--accent); color: var(--accent); }
+.body.md { white-space: normal; font: inherit; }
+.body.md > :first-child { margin-top: 0; }
+.body.md h1, .body.md h2, .body.md h3, .body.md h4 { margin: .9rem 0 .4rem; line-height: 1.25; }
+.body.md h1 { font-size: 1.3rem; } .body.md h2 { font-size: 1.14rem; }
+.body.md h3 { font-size: 1.02rem; } .body.md h4 { font-size: .95rem; }
+.body.md p { margin: .5rem 0; }
+.body.md ul, .body.md ol { margin: .4rem 0; padding-left: 1.4rem; }
+.body.md li { margin: .18rem 0; }
+.body.md li.md-task { list-style: none; margin-left: -1.2rem; }
+.body.md li.md-task input { margin-right: .45rem; vertical-align: middle; }
+.body.md code { background: var(--bg); border: 1px solid var(--line); border-radius: 4px;
+                padding: .03rem .3rem; font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.body.md pre.md-code { background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+                       padding: .7rem .9rem; overflow: auto; white-space: pre; }
+.body.md pre.md-code code { background: none; border: 0; padding: 0; }
+.body.md a { color: var(--accent); }
+.body.md hr { border: 0; border-top: 1px solid var(--line); margin: .9rem 0; }
 .ilink { color: var(--accent); text-decoration: none; }
 .ilink:hover { text-decoration: underline; }
 .empty { color: var(--muted); padding: 1rem; }
@@ -383,7 +404,7 @@ _SHELL = """\
 </div>
 """
 
-_APP_JS = """\
+_APP_JS = r"""
 const DATA = JSON.parse(document.getElementById('trck-data').textContent);
 const $ = (s, r = document) => r.querySelector(s);
 function el(tag, props = {}, ...kids) {
@@ -402,7 +423,7 @@ function el(tag, props = {}, ...kids) {
 const byId = Object.fromEntries(DATA.issues.map(i => [i.id, i]));
 const terminal = new Set(DATA.config.statuses.filter(s => s.role === 'terminal').map(s => s.name));
 const prio = DATA.config.priorities;
-const state = { q: '', status: '', priority: '', selected: null, edits: {}, view: 'list', collapsed: new Set() };
+const state = { q: '', status: '', priority: '', selected: null, edits: {}, view: 'list', collapsed: new Set(), bodyRaw: false };
 
 // --- staged edits (v2 command-copy): key `${id}::${field}` -> new value ------
 const editKey = (id, field) => id + '::' + field;
@@ -442,7 +463,7 @@ function flash(sel, msg) {
   b.textContent = msg; setTimeout(() => { b.textContent = t; }, 1200);
 }
 async function copyAll() {
-  const text = pendingCommands().join('\\n');
+  const text = pendingCommands().join('\n');
   try { await navigator.clipboard.writeText(text); }
   catch (e) {
     const ta = el('textarea'); ta.value = text; document.body.append(ta);
@@ -519,6 +540,90 @@ function meta(label, node) {
     : el('div', { class: 'm' }, el('span', { class: 'mk', text: label }), node);
 }
 
+// --- v6 markdown bodies: a tiny, self-contained, DOM-based subset renderer ----
+// Builds nodes via createElement/textContent (never innerHTML) so body text can
+// never inject executable HTML; link URLs are scheme-validated.
+function safeUrl(u) {
+  u = (u || '').trim();
+  return /^(https?:|mailto:|#|\/|\.)/i.test(u) ? u : null;
+}
+function inlineMd(text) {
+  const out = [];
+  let rest = text;
+  const re = /(`[^`]+`)|(\*\*[^*]+\*\*)|(\*[^*]+\*|_[^_]+_)|(\[[^\]]+\]\([^)\s]+\))/;
+  while (rest) {
+    const m = re.exec(rest);
+    if (!m) { out.push(document.createTextNode(rest)); break; }
+    if (m.index > 0) out.push(document.createTextNode(rest.slice(0, m.index)));
+    const tok = m[0];
+    if (tok[0] === '`') out.push(el('code', { text: tok.slice(1, -1) }));
+    else if (tok.slice(0, 2) === '**') out.push(el('strong', {}, ...inlineMd(tok.slice(2, -2))));
+    else if (tok[0] === '*' || tok[0] === '_') out.push(el('em', {}, ...inlineMd(tok.slice(1, -1))));
+    else {
+      const lm = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(tok), url = lm && safeUrl(lm[2]);
+      if (url) out.push(el('a', { href: url, target: '_blank', rel: 'noopener noreferrer' }, ...inlineMd(lm[1])));
+      else out.push(document.createTextNode(tok));
+    }
+    rest = rest.slice(m.index + tok.length);
+  }
+  return out;
+}
+function renderMarkdown(text) {
+  const frag = document.createDocumentFragment();
+  const lines = (text || '').replace(/<!--[\s\S]*?-->/g, '').replace(/\r\n?/g, '\n').split('\n');
+  let i = 0, para = [];
+  const flush = () => { if (para.length) { frag.append(el('p', {}, ...inlineMd(para.join(' ')))); para = []; } };
+  const LIST = /^\s*([-*]|\d+\.)\s+/;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (/^```/.test(line)) {
+      flush(); const buf = []; i++;
+      while (i < lines.length && !/^```/.test(lines[i])) buf.push(lines[i++]);
+      i++;
+      frag.append(el('pre', { class: 'md-code' }, el('code', { text: buf.join('\n') })));
+      continue;
+    }
+    const hm = /^(#{1,6})\s+(.*)$/.exec(line);
+    if (hm) { flush(); frag.append(el('h' + Math.min(hm[1].length, 6), {}, ...inlineMd(hm[2]))); i++; continue; }
+    if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) { flush(); frag.append(el('hr')); i++; continue; }
+    if (LIST.test(line)) {
+      flush();
+      const ordered = /^\s*\d+\.\s+/.test(line);
+      const list = el(ordered ? 'ol' : 'ul', { class: 'md-list' });
+      while (i < lines.length && LIST.test(lines[i])) {
+        const item = lines[i].replace(LIST, '');
+        const tm = /^\[([ xX])\]\s+(.*)$/.exec(item);
+        if (tm) {
+          const box = el('input', { type: 'checkbox', disabled: 'disabled' });
+          if (tm[1].toLowerCase() === 'x') box.checked = true;
+          list.append(el('li', { class: 'md-task' }, box, ...inlineMd(tm[2])));
+        } else {
+          list.append(el('li', {}, ...inlineMd(item)));
+        }
+        i++;
+      }
+      frag.append(list);
+      continue;
+    }
+    if (/^\s*$/.test(line)) { flush(); i++; continue; }
+    para.push(line); i++;
+  }
+  flush();
+  return frag;
+}
+function bodyNode(i) {
+  const wrap = el('div', { class: 'bodywrap' });
+  wrap.append(el('div', { class: 'bodybar' }, el('button', {
+    class: 'bodytog', type: 'button', text: state.bodyRaw ? 'rendered' : 'raw',
+    onclick: () => { state.bodyRaw = !state.bodyRaw; renderDetail(); },
+  })));
+  if (state.bodyRaw) { wrap.append(el('pre', { class: 'body', text: i.body || '' })); return wrap; }
+  let md = null;
+  try { md = renderMarkdown(i.body || ''); } catch (e) { md = null; }
+  wrap.append(md ? el('div', { class: 'body md' }, md) : el('pre', { class: 'body', text: i.body || '' }));
+  return wrap;
+}
+
 function renderDetail() {
   const d = $('#detail'); d.textContent = '';
   const i = byId[state.selected];
@@ -545,7 +650,7 @@ function renderDetail() {
     editSelect(i, 'priority', DATA.config.priorities)));
   d.append(stage);
 
-  d.append(el('pre', { class: 'body', text: i.body || '' }));
+  d.append(bodyNode(i));
 }
 
 function renderActiveView() {

@@ -11,6 +11,8 @@ import io
 import json
 import os
 import re
+import shutil
+import subprocess
 import sys
 import unittest
 from contextlib import redirect_stdout
@@ -134,6 +136,25 @@ class TestDataIsland(HtmlTestBase):
             self.assertIn("medium", data["config"]["priorities"])
 
 
+@unittest.skipUnless(shutil.which("node"), "node not installed")
+class TestGeneratedJsSyntax(HtmlTestBase):
+    """The Python tests can't execute the embedded JS, so a stray Python-escape
+    corrupting the generated script (e.g. an un-escaped `\\n` in a non-raw asset
+    string) is invisible to them. `node --check` closes that gap when available."""
+    def test_embedded_app_script_parses(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Alpha")
+            html = self.render(d)
+            scripts = re.findall(r'<script>\n(.*?)\n</script>', html, re.S)
+            self.assertTrue(scripts, "no inline app <script> found")
+            js = Path(tmp) / "app.js"
+            js.write_text(scripts[-1])
+            r = subprocess.run(["node", "--check", str(js)],
+                               capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, r.stderr)
+
+
 class TestCommandCopy(HtmlTestBase):
     def test_config_carries_a_command_prefix(self):
         with TemporaryDirectory() as tmp:
@@ -255,6 +276,29 @@ class TestTreeView(HtmlTestBase):
             html = self.render(d)
             self.assertIn('id="tree"', html)
             self.assertIn('data-view="tree"', html)
+
+
+class TestMarkdownBodies(HtmlTestBase):
+    def test_body_render_toggle_and_renderer_present(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")
+            html = self.render(d)
+            self.assertIn("renderMarkdown", html)   # the subset renderer
+            self.assertIn("bodytog", html)          # the raw/rendered toggle
+
+    def test_raw_body_still_shipped_and_escaped(self):
+        payload = '## Head\n</script><script>alert(1)</script> **bold**'
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            iid = self.seed(d, "A")
+            self.body_file(d, iid).write_text(payload)
+            html = self.render(d)
+            data = island(html)
+            # The raw markdown source rides the island intact...
+            self.assertEqual(data["issues"][0]["body"], payload)
+            # ...and the dangerous tag never appears un-neutralised in the document.
+            self.assertNotIn("<script>alert(1)</script>", html)
 
 
 class TestBoardView(HtmlTestBase):
