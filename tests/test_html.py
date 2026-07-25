@@ -250,6 +250,16 @@ class TestTreeView(HtmlTestBase):
             self.assertIn('data-view="tree"', html)
 
 
+class TestBoardView(HtmlTestBase):
+    def test_board_view_ui_is_present(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")
+            html = self.render(d)
+            self.assertIn('id="board"', html)
+            self.assertIn('data-view="board"', html)
+
+
 class TestBodyEscaping(HtmlTestBase):
     def test_body_cannot_break_out_of_the_script_island(self):
         payload = 'Danger: </script><script>alert(1)</script> & <b>bold</b> "q"'

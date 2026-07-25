@@ -323,6 +323,24 @@ main { display: grid; grid-template-columns: minmax(20rem, 2fr) 3fr; gap: 0;
 .tbar { flex: none; width: 46px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
 .tbar > i { display: block; height: 100%; background: var(--accent); }
 .tpct { flex: none; color: var(--muted); font-size: .78rem; width: 2.6em; text-align: right; }
+.board { height: 100%; display: flex; gap: .6rem; padding: .6rem; overflow-x: auto; align-items: flex-start; }
+.bcol { flex: 1 0 11rem; min-width: 10rem; max-height: 100%; display: flex; flex-direction: column;
+        background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.bhead { padding: .45rem .6rem; border-bottom: 1px solid var(--line); font-weight: 600;
+         display: flex; justify-content: space-between; gap: .5rem; }
+.bhead .bn { color: var(--muted); font-weight: 400; }
+.bcards { padding: .4rem; overflow: auto; display: flex; flex-direction: column; gap: .4rem; }
+.card { background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
+        padding: .45rem .55rem; cursor: pointer; }
+.card:hover { border-color: var(--accent); }
+.card.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: var(--sel); }
+.card.done { opacity: .6; }
+.card.done .ct { text-decoration: line-through; }
+.card.edited { box-shadow: inset 3px 0 0 var(--accent); }
+.card .cid { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .76rem; }
+.card .ct { display: block; margin: .15rem 0; }
+.card .cmeta { display: flex; gap: .35rem; align-items: center; flex-wrap: wrap; }
+.bempty { color: var(--muted); font-size: .82rem; padding: .3rem; }
 """
 
 _SHELL = """\
@@ -335,6 +353,7 @@ _SHELL = """\
     <button data-view="list" class="on" type="button">list</button>
     <button data-view="graph" type="button">graph</button>
     <button data-view="tree" type="button">tree</button>
+    <button data-view="board" type="button">board</button>
   </div>
   <input id="q" type="search" placeholder="Search id / title / body / label…" autocomplete="off">
   <select id="fstatus"></select>
@@ -345,6 +364,7 @@ _SHELL = """\
     <ul id="list" class="list"></ul>
     <div id="graph" class="graph" hidden></div>
     <div id="tree" class="tree" hidden></div>
+    <div id="board" class="board" hidden></div>
   </div>
   <section id="detail" class="detail"><p class="empty">Select an issue.</p></section>
 </main>
@@ -392,7 +412,7 @@ function setEdit(i, field, value) {
   const k = editKey(i.id, field);
   if (value === i[field]) delete state.edits[k];
   else state.edits[k] = value;
-  renderList(); renderDetail(); renderPending();
+  renderList(); renderDetail(); renderPending(); renderActiveView();
 }
 function commandFor(id, field, value) {
   const c = DATA.config.cmd;
@@ -427,7 +447,7 @@ async function copyAll() {
   }
   flash('#pcopy', 'Copied!');
 }
-function clearEdits() { state.edits = {}; renderList(); renderDetail(); renderPending(); }
+function clearEdits() { state.edits = {}; renderList(); renderDetail(); renderPending(); renderActiveView(); }
 function editSelect(i, field, values) {
   const cur = stagedValue(i, field);
   const sel = el('select', { class: 'sedit', onchange: e => setEdit(i, field, e.target.value) });
@@ -525,11 +545,15 @@ function renderDetail() {
   d.append(el('pre', { class: 'body', text: i.body || '' }));
 }
 
+function renderActiveView() {
+  if (state.view === 'graph') renderGraph();
+  else if (state.view === 'tree') renderTree();
+  else if (state.view === 'board') renderBoard();
+}
 function select(id) {
   state.selected = id;
   renderList(); renderDetail();
-  if (state.view === 'graph') renderGraph();
-  if (state.view === 'tree') renderTree();
+  renderActiveView();
 }
 
 // --- v3 dependency graph: SVG layered DAG from authored edges ----------------
@@ -608,10 +632,39 @@ function setView(v) {
   $('#list').hidden = v !== 'list';
   $('#graph').hidden = v !== 'graph';
   $('#tree').hidden = v !== 'tree';
+  $('#board').hidden = v !== 'board';
   for (const b of document.querySelectorAll('.viewtoggle button'))
     b.classList.toggle('on', b.dataset.view === v);
-  if (v === 'graph') renderGraph();
-  if (v === 'tree') renderTree();
+  renderActiveView();
+}
+// --- v5 board / kanban: one column per configured status --------------------
+function card(i) {
+  const cls = 'card' + (terminal.has(i.status) ? ' done' : '')
+    + (i.id === state.selected ? ' sel' : '') + (issueEdited(i.id) ? ' edited' : '');
+  const c = el('div', { class: cls, onclick: () => select(i.id) },
+    el('span', { class: 'cid', text: '#' + i.id }),
+    el('span', { class: 'ct', text: i.title }));
+  const m = el('div', { class: 'cmeta' }, el('span', { class: 'badge', text: i.priority }));
+  if (i.progress) m.append(el('span', { class: 'pct', text: i.progress.pct + '%' }));
+  if (issueEdited(i.id)) m.append(el('span', { class: 'emark', title: 'has staged changes', text: '●' }));
+  c.append(m);
+  return c;
+}
+function renderBoard() {
+  const box = $('#board'); box.textContent = '';
+  const shown = DATA.issues.filter(matches);
+  for (const s of DATA.config.statuses) {
+    const items = shown.filter(i => i.status === s.name).sort((a, b) =>
+      (prio.indexOf(a.priority) - prio.indexOf(b.priority)) || a.id.localeCompare(b.id));
+    const col = el('div', { class: 'bcol' });
+    col.append(el('div', { class: 'bhead' },
+      el('span', { text: s.name }), el('span', { class: 'bn', text: String(items.length) })));
+    const cards = el('div', { class: 'bcards' });
+    if (!items.length) cards.append(el('div', { class: 'bempty', text: '—' }));
+    for (const i of items) cards.append(card(i));
+    col.append(cards);
+    box.append(col);
+  }
 }
 // --- v4 tree / hierarchy view: collapsible forest from roots -> children -----
 function toggleCollapse(id) {
@@ -714,8 +767,7 @@ function renderGraph() {
 
 function applyFilter() {
   renderList();
-  if (state.view === 'tree') renderTree();
-  // The graph view shows the full dependency graph regardless of list filters.
+  renderActiveView();   // tree/board narrow to matches; graph stays full (v3-deferred)
 }
 
 function fill(sel, values, label) {
