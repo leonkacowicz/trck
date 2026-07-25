@@ -5,9 +5,9 @@
 
 | State | Count |
 |---|---:|
-| backlog | 23 |
+| backlog | 22 |
 | ongoing | 1 |
-| done | 72 |
+| done | 73 |
 | **total** | **96** |
 
 ## Hierarchies
@@ -39,9 +39,9 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 
 - [x] [#nddf6wg Harden Issue.from_dict with a structural/type contract](done/nddf6wg-harden-issue-from-dict-with-a-structural-type-contract.md)
 
-### [#fkrp9dh trck-html: static HTML SPA to browse issues in a browser](ongoing/fkrp9dh-trck-html-static-html-spa-to-browse-issues-in-a-browser.md) — 57% (4/7 pts · 4/7 done) · _medium_ · ongoing
+### [#fkrp9dh trck-html: static HTML SPA to browse issues in a browser](ongoing/fkrp9dh-trck-html-static-html-spa-to-browse-issues-in-a-browser.md) — 71% (5/7 pts · 5/7 done) · _medium_ · ongoing
 
-- [ ] [#2ytfth4 v5: board / kanban by status](backlog/2ytfth4-v5-board-kanban-by-status.md) _(backlog)_
+- [x] [#2ytfth4 v5: board / kanban by status](done/2ytfth4-v5-board-kanban-by-status.md)
 - [x] [#4vbk79y v4: tree / hierarchy view with rolled-up progress %](done/4vbk79y-v4-tree-hierarchy-view-with-rolled-up-progress.md)
 - [ ] [#4xh68fa v6: markdown bodies — JS subset renderer, then optional lib, <pre> fallback](backlog/4xh68fa-v6-markdown-bodies-js-subset-renderer-then-optional-lib-pre-fallback.md) _(backlog)_
 - [x] [#6yttx97 v3: dependency graph view (clickable, jump between blockers/blocked)](done/6yttx97-v3-dependency-graph-view-clickable-jump-between-blockers-blocked.md)
