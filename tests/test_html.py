@@ -369,5 +369,30 @@ class TestCli(HtmlTestBase):
             self.assertFalse((Path(d) / "issues.html").exists())
 
 
+class TestIdPrefixHighlight(HtmlTestBase):
+    def test_model_carries_shortest_unique_prefix_len(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            for t in ("Alpha", "Beta", "Gamma", "Delta", "Epsilon"):
+                self.seed(d, t)
+            data = island(self.render(d))
+            ids = [i["id"] for i in data["issues"]]
+            expect = self.t.unique_prefix_lens(ids)  # the same helper the CLI uses
+            for i in data["issues"]:
+                self.assertEqual(i["plen"], expect[i["id"]])
+                self.assertGreaterEqual(i["plen"], 1)
+                self.assertLessEqual(i["plen"], len(i["id"]))
+
+    def test_document_styles_and_marks_up_the_prefix(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Alpha")
+            html = self.render(d)
+            # The emphasised-prefix class is styled and produced by the id renderer.
+            self.assertIn(".idpre", html)
+            self.assertIn("idpre", html)
+            self.assertIn("plen", html)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -144,6 +144,11 @@ def build_model(ctx, cmd=None):
     cfg = ctx.cfg
     repo = (cfg.get("update") or {}).get("repo") or ctx.dir.parent.name
     issues = [_issue_dict(g, ctx, r) for r in g.rows]
+    # Each id's shortest-unique-prefix length (git-short-hash style), computed with the
+    # very helper the CLI uses so the page's highlight matches `trck list` exactly.
+    plen = E.unique_prefix_lens([a["id"] for a in issues])
+    for a in issues:
+        a["plen"] = plen[a["id"]]
     # Authored dependency edges, blocker -> blocked (matches the engine's `deps`
     # ordering). Containment (parent/child) is intentionally excluded here.
     edges = [{"from": b, "to": a["id"]} for a in issues for b in a["requires"]]
@@ -263,6 +268,8 @@ main { display: grid; grid-template-columns: minmax(12rem, var(--leftw, 40%)) 6p
 .row.sel { background: var(--sel); }
 .row.done .rtitle { color: var(--done); text-decoration: line-through; }
 .rid { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .82rem; }
+.idpre { color: var(--fg); font-weight: 600; }
+.idrest { color: var(--muted); }
 .rtitle { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pct { color: var(--muted); font-size: .8rem; }
 .badge { font-size: .72rem; padding: .05rem .4rem; border-radius: 999px;
@@ -337,6 +344,8 @@ main { display: grid; grid-template-columns: minmax(12rem, var(--leftw, 40%)) 6p
 .gnode.sel rect { stroke: var(--accent); stroke-width: 2.5; fill: var(--sel); }
 .gnode.done { opacity: .5; }
 .gnode text { fill: var(--fg); font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.gnode .gidpre { font-weight: 600; }
+.gnode .gidrest { fill: var(--muted); }
 .gedge { stroke: var(--muted); stroke-width: 1.5; fill: none; }
 .gempty { color: var(--muted); padding: 1rem; }
 .tree { height: 100%; overflow: auto; padding: .3rem 0; }
@@ -508,6 +517,16 @@ function renderCounts() {
   c.append(el('span', { class: 'count total' }, el('b', { text: String(DATA.issues.length) }), ' total'));
 }
 
+// Render `#<id>` with its shortest-unique prefix emphasised and the remainder dimmed —
+// git-short-hash style, mirroring `hl_id` in the CLI. `plen` comes from the model.
+function ridSpan(id, cls) {
+  const n = (byId[id] && byId[id].plen) || id.length;
+  return el('span', { class: cls },
+    '#',
+    el('b', { class: 'idpre', text: id.slice(0, n) }),
+    n < id.length ? el('span', { class: 'idrest', text: id.slice(n) }) : null);
+}
+
 function link(id) {
   const i = byId[id];
   return el('a', { class: 'ilink', href: '#', text: '#' + id + (i ? ' ' + i.title : ''),
@@ -523,7 +542,7 @@ function row(i) {
   const cls = 'row' + (terminal.has(i.status) ? ' done' : '')
     + (i.id === state.selected ? ' sel' : '') + (issueEdited(i.id) ? ' edited' : '');
   const r = el('li', { class: cls, onclick: () => select(i.id) },
-    el('span', { class: 'rid', text: '#' + i.id }),
+    ridSpan(i.id, 'rid'),
     el('span', { class: 'rtitle', text: i.title }),
     el('span', { class: 'badge', text: i.priority }),
     el('span', { class: 'badge', text: i.status }));
@@ -633,7 +652,7 @@ function renderDetail() {
   const d = $('#detail'); d.textContent = '';
   const i = byId[state.selected];
   if (!i) { d.append(el('p', { class: 'empty', text: 'Select an issue.' })); return; }
-  d.append(el('h2', {}, el('span', { class: 'rid', text: '#' + i.id + ' ' }), i.title));
+  d.append(el('h2', {}, ridSpan(i.id, 'rid'), ' ', i.title));
   const m = el('div', { class: 'meta' });
   m.append(meta('status', el('span', { class: 'badge', text: i.status })));
   m.append(meta('priority', el('span', { class: 'badge', text: i.priority })));
@@ -788,7 +807,7 @@ function card(i) {
   const cls = 'card' + (terminal.has(i.status) ? ' done' : '')
     + (i.id === state.selected ? ' sel' : '') + (issueEdited(i.id) ? ' edited' : '');
   const c = el('div', { class: cls, onclick: () => select(i.id) },
-    el('span', { class: 'cid', text: '#' + i.id }),
+    ridSpan(i.id, 'cid'),
     el('span', { class: 'ct', text: i.title }));
   const m = el('div', { class: 'cmeta' }, el('span', { class: 'badge', text: i.priority }));
   if (i.progress) m.append(el('span', { class: 'pct', text: i.progress.pct + '%' }));
@@ -847,7 +866,7 @@ function renderTreeNode(container, id, depth, vis, active) {
   const caret = el('span', { class: 'tcaret' + (hasKids ? '' : ' leaf'),
     text: hasKids ? (collapsed ? '▸' : '▾') : '·' });
   if (hasKids) caret.addEventListener('click', e => { e.stopPropagation(); toggleCollapse(id); });
-  r.append(caret, el('span', { class: 'rid', text: '#' + id }), el('span', { class: 'ttitle', text: i.title }));
+  r.append(caret, ridSpan(id, 'rid'), el('span', { class: 'ttitle', text: i.title }));
   if (i.progress) {
     r.append(el('span', { class: 'tbar' }, el('i', { style: 'width:' + i.progress.pct + '%' })),
       el('span', { class: 'tpct', text: i.progress.pct + '%' }));
@@ -933,7 +952,14 @@ function renderGraph() {
     const g = sv('g', { class: cls, transform: 'translate(' + p.x + ',' + p.y + ')', onclick: () => select(id) });
     g.append(sv('rect', { width: NODE_W, height: NODE_H, rx: 7 }));
     g.append(sv('title', { text: (i ? i.title : id) }));
-    g.append(sv('text', { x: 8, y: NODE_H / 2 + 4, text: trunc('#' + id + (i ? '  ' + i.title : ''), 20) }));
+    // Label with the id prefix emphasised (tspans), then the title truncated to fit ~20 chars.
+    const n = (i && i.plen) || id.length, rest = i ? '  ' + i.title : '';
+    const label = sv('text', { x: 8, y: NODE_H / 2 + 4 },
+      sv('tspan', { text: '#' }),
+      sv('tspan', { class: 'gidpre', text: id.slice(0, n) }),
+      n < id.length ? sv('tspan', { class: 'gidrest', text: id.slice(n) }) : null);
+    if (rest) label.append(sv('tspan', { text: trunc(rest, 20 - 1 - id.length) }));
+    g.append(label);
     s.append(g);
   }
   box.append(s);
