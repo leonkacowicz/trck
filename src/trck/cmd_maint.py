@@ -10,7 +10,7 @@ import shutil
 import subprocess
 import sys
 from .cmd_mutate import cmd_mv
-from .config import DEFAULT_CONFIG, is_terminal, resolve_alias, resolve_tracker_dir
+from .config import DEFAULT_CONFIG, check_pr, is_terminal, resolve_alias, resolve_tracker_dir
 from .constants import DEFAULT_UPDATE_REPO, ID_ALPHABET, ID_LEN, SELF_PATH, SINCE_RE, __version__, die
 from .finalize import finalize
 from .graph import Graph, _existing_ids
@@ -214,6 +214,19 @@ def cmd_start(args) -> None:
     if not target:
         die("no 'start' alias configured; use `trck mv <id> <status>`")
     cmd_mv(ns_like(args, status=target, resolution=None))
+
+
+def cmd_review(args) -> None:
+    """Alias: move to the 'review' status and, given a URL, link the pull request —
+    one move, one finalize, one line of output."""
+    ctx = build_ctx_or_die(args)
+    target = resolve_alias(ctx.cfg, "review")
+    if not target:
+        die("no 'review' alias configured; use `trck mv <id> <status>`")
+    url = getattr(args, "url", None)
+    if url is not None and (m := check_pr(url)):
+        die(m)
+    cmd_mv(ns_like(args, status=target, resolution=None, pr=url))
 
 
 def cmd_done(args) -> None:

@@ -3,7 +3,7 @@ from .config import is_terminal, status_names
 from .constants import date_slice
 from .graph import Graph, load_graph
 from .index import Ctx, get_id, rel_link
-from .render import label_tag, priority_rank
+from .render import label_tag, pr_tag, priority_rank
 
 # --------------------------------------------------------------------------- #
 # SUMMARY.md generation
@@ -79,13 +79,15 @@ def generate_summary(ctx: Ctx) -> str:
             )
             if parent.spec:
                 out.append(f"Spec: [`{parent.spec}`](../{parent.spec})")
+            if parent.pr:
+                out.append(f"PR: [{parent.pr}]({parent.pr})")
             if kids:
                 out.append("")
                 for k in kids:
                     box = "x" if g.is_terminal(k) else " "
                     tail = "" if g.is_terminal(k) else f" _({k.status})_"
                     out.append(f"- [{box}] [#{k.id} {k.title}]"
-                               f"({rel_link(k)}){label_tag(k)}{tail}")
+                               f"({rel_link(k)}){label_tag(k)}{tail}{pr_tag(k)}")
             out.append("")
 
     def standalone(s: str):
@@ -105,7 +107,7 @@ def generate_summary(ctx: Ctx) -> str:
             if is_terminal(ctx.cfg, status) and r.closed:
                 extra += f" (closed {date_slice(r.closed)})"
             out.append(f"- [#{r.id} {r.title}]({rel_link(r)}) — "
-                       f"_{r.priority}_{label_tag(r)}{extra}")
+                       f"_{r.priority}_{label_tag(r)}{extra}{pr_tag(r)}")
         out.append("")
 
     return "\n".join(out).rstrip() + "\n"

@@ -1,7 +1,7 @@
 from __future__ import annotations
 import re
 import shutil
-from .config import check_kind, check_points, check_priority, check_resolution, default_priority, initial_status, is_terminal, reconcile
+from .config import check_kind, check_points, check_pr, check_priority, check_resolution, default_priority, initial_status, is_terminal, reconcile
 from .constants import SLUG_RE, die, now_utc, slugify
 from .finalize import finalize
 from .graph import Graph, gen_id
@@ -25,12 +25,15 @@ def cmd_new(args) -> None:
     kind = args.kind or ctx.cfg["kinds"][0]
     if (m := check_kind(ctx.cfg, kind)):
         die(m)
+    pr = getattr(args, "pr", None)
+    if pr is not None and (m := check_pr(pr)):
+        die(m)
     parent = None if args.parent is None else resolve_ref(rows, args.parent).id
     deps = [resolve_ref(rows, tok).id for tok in parse_ids(args.depends)]
     row = Issue(
         id=iid, slug=slug, title=args.title, kind=kind,
         status=initial_status(ctx.cfg), priority=priority, points=points,
-        parent=parent, depends_on=deps, spec=args.spec, created=now_utc(),
+        parent=parent, depends_on=deps, spec=args.spec, pr=pr, created=now_utc(),
     )
     path = issue_path(ctx, row)
     if path.exists():
@@ -57,7 +60,14 @@ def cmd_mv(args) -> None:
             die("--resolution is only valid when moving to a terminal status")
         if (m := check_resolution(ctx.cfg, resolution)):
             die(m)
+    # A move-time annotation, like --resolution: the moment a PR exists is the moment
+    # both facts are known. Unrestricted by status — linking one while ongoing is fine.
+    pr = getattr(args, "pr", None)
+    if pr is not None and (m := check_pr(pr)):
+        die(m)
     move_issue(ctx, row, args.status)
+    if pr is not None:
+        row.pr = pr
     if resolution is not None:
         row.resolution = resolution
     # Moving a node that has children is an override of the rollup (#67) — but only
@@ -95,6 +105,10 @@ def cmd_set(args) -> None:
             row.parent = resolve_ref(rows, args.parent).id
     if args.spec is not None:
         row.spec = None if args.spec == "none" else args.spec
+    if (pr := getattr(args, "pr", None)) is not None:
+        if pr != "none" and (m := check_pr(pr)):
+            die(m)
+        row.pr = None if pr == "none" else pr
     if args.kind:
         if (m := check_kind(ctx.cfg, args.kind)):
             die(m)

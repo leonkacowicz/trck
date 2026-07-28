@@ -2,19 +2,23 @@ from __future__ import annotations
 from pathlib import Path
 import json
 import os
-from .constants import DEFAULT_UPDATE_REPO, SELF_PATH, die
+from .constants import DEFAULT_UPDATE_REPO, PR_URL_RE, SELF_PATH, die
 
 # --------------------------------------------------------------------------- #
 # config + discovery
 # --------------------------------------------------------------------------- #
+# `in-review` is a waiting state, not a lifecycle anchor: it carries no role (the
+# rollup's one-each initial/active/terminal constraint is untouched) and opts out of
+# `actionable`, so ready/next never propose work that is only waiting on a review.
 DEFAULT_CONFIG = {
     "update": {"repo": DEFAULT_UPDATE_REPO, "channel": "stable"},
     "statuses": [
         {"name": "backlog", "role": "initial"},
         {"name": "ongoing", "role": "active"},
+        {"name": "in-review", "actionable": False},
         {"name": "done", "role": "terminal"},
     ],
-    "aliases": {"start": "ongoing", "done": "done"},
+    "aliases": {"start": "ongoing", "review": "in-review", "done": "done"},
     "priorities": ["urgent", "high", "medium", "low", "lowest"],
     "default_priority": "medium",
     "kinds": ["task", "epic", "bug", "story", "investigation"],
@@ -86,6 +90,12 @@ def check_resolution(cfg: dict, value: str) -> str | None:
     return f"bad resolution '{value}' (configured: {', '.join(cfg['resolutions'])})"
 
 
+def check_pr(value: str) -> str | None:
+    if isinstance(value, str) and PR_URL_RE.match(value):
+        return None
+    return f"bad pr {value!r} (must be an absolute http(s) URL)"
+
+
 def check_points(value: int) -> str | None:
     if value >= 0:
         return None
@@ -102,6 +112,27 @@ def check_status_roles(cfg: dict) -> list[str]:
         if n != 1:
             out.append(f"config: exactly one status must carry role '{role}' (found {n})")
     return out
+
+
+def check_status_flags(cfg: dict) -> list[str]:
+    """`actionable`, when a status declares it, must be a boolean. Returns one
+    message per offending status (empty when the vocabulary is well-formed)."""
+    return [f"config: status '{s.get('name')}' has a non-boolean 'actionable' "
+            f"({s['actionable']!r})"
+            for s in cfg["statuses"]
+            if "actionable" in s and not isinstance(s["actionable"], bool)]
+
+
+def is_actionable(cfg: dict, name: str) -> bool:
+    """Whether `ready`/`next` may propose an issue in this status as work to pick up.
+
+    True unless the status opts out with `"actionable": false` — the generic way to
+    model a waiting state (in-review, qa, awaiting-deploy) where the issue is in
+    flight but there is nothing for anyone to start. Unknown statuses fail open."""
+    for s in cfg["statuses"]:
+        if s["name"] == name:
+            return s.get("actionable", True)
+    return True
 
 
 def initial_status(cfg: dict) -> str:

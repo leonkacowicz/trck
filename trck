@@ -56,6 +56,7 @@ ID_ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz"  # base32 minus 0/1/o/l/i, lower
 ID_LEN = 7                                        # 31**7 ≈ 2.75e10 id space
 ID_RE = re.compile(rf"^[{ID_ALPHABET}]+$")
 FIELD_KEY_RE = re.compile(r"^[a-z][a-z0-9_-]*$")
+PR_URL_RE = re.compile(r"^https?://\S+$")  # forge-agnostic: any absolute http(s) link
 SINCE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}Z)?$")
 
 
@@ -79,14 +80,18 @@ def slugify(text: str) -> str:
 # --------------------------------------------------------------------------- #
 # config + discovery
 # --------------------------------------------------------------------------- #
+# `in-review` is a waiting state, not a lifecycle anchor: it carries no role (the
+# rollup's one-each initial/active/terminal constraint is untouched) and opts out of
+# `actionable`, so ready/next never propose work that is only waiting on a review.
 DEFAULT_CONFIG = {
     "update": {"repo": DEFAULT_UPDATE_REPO, "channel": "stable"},
     "statuses": [
         {"name": "backlog", "role": "initial"},
         {"name": "ongoing", "role": "active"},
+        {"name": "in-review", "actionable": False},
         {"name": "done", "role": "terminal"},
     ],
-    "aliases": {"start": "ongoing", "done": "done"},
+    "aliases": {"start": "ongoing", "review": "in-review", "done": "done"},
     "priorities": ["urgent", "high", "medium", "low", "lowest"],
     "default_priority": "medium",
     "kinds": ["task", "epic", "bug", "story", "investigation"],
@@ -158,6 +163,12 @@ def check_resolution(cfg: dict, value: str) -> str | None:
     return f"bad resolution '{value}' (configured: {', '.join(cfg['resolutions'])})"
 
 
+def check_pr(value: str) -> str | None:
+    if isinstance(value, str) and PR_URL_RE.match(value):
+        return None
+    return f"bad pr {value!r} (must be an absolute http(s) URL)"
+
+
 def check_points(value: int) -> str | None:
     if value >= 0:
         return None
@@ -174,6 +185,27 @@ def check_status_roles(cfg: dict) -> list[str]:
         if n != 1:
             out.append(f"config: exactly one status must carry role '{role}' (found {n})")
     return out
+
+
+def check_status_flags(cfg: dict) -> list[str]:
+    """`actionable`, when a status declares it, must be a boolean. Returns one
+    message per offending status (empty when the vocabulary is well-formed)."""
+    return [f"config: status '{s.get('name')}' has a non-boolean 'actionable' "
+            f"({s['actionable']!r})"
+            for s in cfg["statuses"]
+            if "actionable" in s and not isinstance(s["actionable"], bool)]
+
+
+def is_actionable(cfg: dict, name: str) -> bool:
+    """Whether `ready`/`next` may propose an issue in this status as work to pick up.
+
+    True unless the status opts out with `"actionable": false` — the generic way to
+    model a waiting state (in-review, qa, awaiting-deploy) where the issue is in
+    flight but there is nothing for anyone to start. Unknown statuses fail open."""
+    for s in cfg["statuses"]:
+        if s["name"] == name:
+            return s.get("actionable", True)
+    return True
 
 
 def initial_status(cfg: dict) -> str:
@@ -272,7 +304,7 @@ def resolve_tracker_dir_or_die(dir_opt, env=None) -> Path:
 # --------------------------------------------------------------------------- #
 CANON_KEYS = [
     "id", "slug", "title", "kind", "status", "priority", "points", "parent",
-    "labels", "depends_on", "spec", "created", "started", "closed",
+    "labels", "depends_on", "spec", "pr", "created", "started", "closed",
     "resolution", "manual_status", "legacy_id",
 ]
 
@@ -289,6 +321,7 @@ FIELD_DEFAULTS = {
     "labels": [],
     "depends_on": [],
     "spec": None,
+    "pr": None,
     "started": None,
     "closed": None,
     "resolution": None,
@@ -335,6 +368,7 @@ class Issue:
     labels: list[str] = field(default_factory=list)
     depends_on: list[str] = field(default_factory=list)
     spec: str | None = None
+    pr: str | None = None
     created: str | None = None
     started: str | None = None
     closed: str | None = None
@@ -401,7 +435,7 @@ class Issue:
                 bad("labels", f"must contain only strings, got {lab!r}")
         for dep in (d.get("depends_on") or []):
             want_id("depends_on", dep)
-        for k in ("spec", "created", "started", "closed", "resolution"):
+        for k in ("spec", "pr", "created", "started", "closed", "resolution"):
             if d.get(k) is not None and not isinstance(d[k], str):
                 bad(k, f"must be a string, got {d[k]!r}")
         if "manual_status" in d and not isinstance(d["manual_status"], bool):
@@ -729,6 +763,9 @@ class Graph:
     def is_terminal(self, r: Issue) -> bool:
         return is_terminal(self.cfg, r.status)
 
+    def is_actionable(self, r: Issue) -> bool:
+        return is_actionable(self.cfg, r.status)
+
     def is_blocked(self, r: Issue) -> bool:
         """One-sided effective blocking: `r` is blocked iff it, or any ancestor,
         has an authored dependency on a non-terminal issue. The depended-on side
@@ -740,7 +777,11 @@ class Graph:
         return r.id not in self._parents
 
     def is_ready(self, r: Issue) -> bool:
-        return not self.is_terminal(r) and self.is_leaf(r) and not self.is_blocked(r)
+        """An unblocked leaf you could pick up right now. A status may opt out of
+        being pickable (`"actionable": false`) — an issue awaiting review is in
+        flight, not available — without becoming terminal, so it still blocks."""
+        return (not self.is_terminal(r) and self.is_actionable(r)
+                and self.is_leaf(r) and not self.is_blocked(r))
 
     # dependency graph
     def dependency_line(self, r: Issue, up: bool = True, down: bool = True,
@@ -1068,6 +1109,7 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
     persisted index as loaded from disk."""
     errors, warnings = [], []
     errors.extend(check_status_roles(ctx.cfg))
+    errors.extend(check_status_flags(ctx.cfg))
     if rows is None:
         rows = load_index(ctx)
     files = scan_files(ctx)
@@ -1102,6 +1144,8 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
         elif (m := check_points(pts)):
             errors.append(f"#{iid} {m}")
         if r.resolution is not None and (m := check_resolution(ctx.cfg, r.resolution)):
+            errors.append(f"#{iid} {m}")
+        if r.pr is not None and (m := check_pr(r.pr)):
             errors.append(f"#{iid} {m}")
         for k, v in r.extra.items():
             if not FIELD_KEY_RE.match(k):
@@ -1263,6 +1307,11 @@ def status_codes(cfg: dict, name: str) -> tuple:
 def label_tag(r: Issue) -> str:
     labels = r.labels or []
     return " [" + " ".join(labels) + "]" if labels else ""
+
+
+def pr_tag(r: Issue) -> str:
+    """A markdown ` · [PR](url)` suffix for SUMMARY.md rows; empty without a PR."""
+    return f" · [PR]({r.pr})" if r.pr else ""
 
 
 def block_annotations(g: Graph, r: Issue, on_screen=frozenset()) -> str:
@@ -1665,13 +1714,15 @@ def generate_summary(ctx: Ctx) -> str:
             )
             if parent.spec:
                 out.append(f"Spec: [`{parent.spec}`](../{parent.spec})")
+            if parent.pr:
+                out.append(f"PR: [{parent.pr}]({parent.pr})")
             if kids:
                 out.append("")
                 for k in kids:
                     box = "x" if g.is_terminal(k) else " "
                     tail = "" if g.is_terminal(k) else f" _({k.status})_"
                     out.append(f"- [{box}] [#{k.id} {k.title}]"
-                               f"({rel_link(k)}){label_tag(k)}{tail}")
+                               f"({rel_link(k)}){label_tag(k)}{tail}{pr_tag(k)}")
             out.append("")
 
     def standalone(s: str):
@@ -1691,7 +1742,7 @@ def generate_summary(ctx: Ctx) -> str:
             if is_terminal(ctx.cfg, status) and r.closed:
                 extra += f" (closed {date_slice(r.closed)})"
             out.append(f"- [#{r.id} {r.title}]({rel_link(r)}) — "
-                       f"_{r.priority}_{label_tag(r)}{extra}")
+                       f"_{r.priority}_{label_tag(r)}{extra}{pr_tag(r)}")
         out.append("")
 
     return "\n".join(out).rstrip() + "\n"
@@ -1776,7 +1827,7 @@ regenerates `SUMMARY.md`, and self-validates.
 ## Where things live
 | Data | Source of truth | Changed by |
 |---|---|---|
-| status | the folder the file is in (configured in `trck.json`) | `trck mv` / `start` / `done` (moves the file) |
+| status | the folder the file is in (configured in `trck.json`) | `trck mv` / `start` / `review` / `done` (moves the file) |
 | other metadata | `index.jsonl` (one JSON object per issue) | `trck set` / `dep` / `label` |
 | narrative | the issue markdown body | **you** (hand-edited) |
 | rollup | `SUMMARY.md` (generated) | `trck` (auto, every mutating verb) |
@@ -1794,11 +1845,14 @@ Run from anywhere in the repo — `trck` finds the tracker by walking up to the 
 holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
 
 - `trck new "<title>" [--priority …] [--kind …] [--parent ID] [--depends a,b]`
-- `trck mv ID <status>` (vocabulary-agnostic); `trck start ID` / `trck done ID [--resolution …]` (aliases)
-- `trck set ID [--priority …] [--parent …|none] [--kind …] [--title …] [--field k=v] [--unset k]`
+- `trck mv ID <status>` (vocabulary-agnostic); `trck start ID` / `trck review ID [URL]` / `trck done ID [--resolution …]` (aliases)
+- `trck set ID [--priority …] [--parent …|none] [--kind …] [--title …] [--pr URL|none] [--field k=v] [--unset k]`
 - `trck dep ID --add ID2 | --remove ID2`
 - `trck label ID --add X --remove Y`
 - Custom fields: `trck set ID --field assignee=leon`; filter `trck list --field assignee=leon`; sort `--sort field:assignee`; show `--show-field assignee`.
+- Pull requests: `trck review ID https://…/pull/12` moves to the review status **and** links
+  the PR in one step. An issue there is out of `ready`/`next` (nothing to pick up) but still
+  **blocks** whatever depends on it until the PR lands. `trck set ID --pr none` unlinks.
 - `trck list` · `trck tree` · `trck deps ID` · `trck show ID` · `trck check` · `trck summary`
 - `trck normalize` — rewrite `index.jsonl` in canonical slim form (no data change)
 - `trck renumber` — convert legacy integer ids to random alphanumeric ids
@@ -1936,12 +1990,15 @@ def cmd_new(args) -> None:
     kind = args.kind or ctx.cfg["kinds"][0]
     if (m := check_kind(ctx.cfg, kind)):
         die(m)
+    pr = getattr(args, "pr", None)
+    if pr is not None and (m := check_pr(pr)):
+        die(m)
     parent = None if args.parent is None else resolve_ref(rows, args.parent).id
     deps = [resolve_ref(rows, tok).id for tok in parse_ids(args.depends)]
     row = Issue(
         id=iid, slug=slug, title=args.title, kind=kind,
         status=initial_status(ctx.cfg), priority=priority, points=points,
-        parent=parent, depends_on=deps, spec=args.spec, created=now_utc(),
+        parent=parent, depends_on=deps, spec=args.spec, pr=pr, created=now_utc(),
     )
     path = issue_path(ctx, row)
     if path.exists():
@@ -1968,7 +2025,14 @@ def cmd_mv(args) -> None:
             die("--resolution is only valid when moving to a terminal status")
         if (m := check_resolution(ctx.cfg, resolution)):
             die(m)
+    # A move-time annotation, like --resolution: the moment a PR exists is the moment
+    # both facts are known. Unrestricted by status — linking one while ongoing is fine.
+    pr = getattr(args, "pr", None)
+    if pr is not None and (m := check_pr(pr)):
+        die(m)
     move_issue(ctx, row, args.status)
+    if pr is not None:
+        row.pr = pr
     if resolution is not None:
         row.resolution = resolution
     # Moving a node that has children is an override of the rollup (#67) — but only
@@ -2006,6 +2070,10 @@ def cmd_set(args) -> None:
             row.parent = resolve_ref(rows, args.parent).id
     if args.spec is not None:
         row.spec = None if args.spec == "none" else args.spec
+    if (pr := getattr(args, "pr", None)) is not None:
+        if pr != "none" and (m := check_pr(pr)):
+            die(m)
+        row.pr = None if pr == "none" else pr
     if args.kind:
         if (m := check_kind(ctx.cfg, args.kind)):
             die(m)
@@ -2268,7 +2336,11 @@ def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None
         ann = annotate(r) if annotate else ""
         fsuf = ""
         if show_fields:
-            segs = [f"{n}={r.extra[n]}" for n in show_fields if n in r.extra]
+            # to_dict() so a built-in field (pr, spec, …) is showable too, not just
+            # a custom one; an unset/empty value contributes no column.
+            full = r.to_dict()
+            segs = [f"{n}={full[n]}" for n in show_fields
+                    if full.get(n) not in (None, "", [], False)]
             if segs:
                 fsuf = "  " + paint(" ".join(segs), "dim")
         if dim and dim(r):  # ancestor context: whole line dimmed, no per-field color
@@ -2613,6 +2685,19 @@ def cmd_start(args) -> None:
     cmd_mv(ns_like(args, status=target, resolution=None))
 
 
+def cmd_review(args) -> None:
+    """Alias: move to the 'review' status and, given a URL, link the pull request —
+    one move, one finalize, one line of output."""
+    ctx = build_ctx_or_die(args)
+    target = resolve_alias(ctx.cfg, "review")
+    if not target:
+        die("no 'review' alias configured; use `trck mv <id> <status>`")
+    url = getattr(args, "url", None)
+    if url is not None and (m := check_pr(url)):
+        die(m)
+    cmd_mv(ns_like(args, status=target, resolution=None, pr=url))
+
+
 def cmd_done(args) -> None:
     ctx = build_ctx_or_die(args)
     target = resolve_alias(ctx.cfg, "done")
@@ -2788,8 +2873,10 @@ MODEL
               place of a full id: `trck show k3m` matches k3m9x2a. An ambiguous
               prefix is an error that lists the candidates. Legacy integer-id
               trackers keep working; `trck renumber` migrates them.
-  status      every issue has exactly one; move it with mv / start / done.
-  metadata    priority, points, parent, spec, kind, title, slug -- change
+  status      every issue has exactly one; move it with mv / start / review /
+              done. A status may set "actionable": false (as in-review does) --
+              work waiting there stays out of ready/next, but still blocks.
+  metadata    priority, points, parent, spec, pr, kind, title, slug -- change
               with `trck set` (NOT by editing index.jsonl). labels -- a flat
               set of free-text tags; change with `trck label`.
   hierarchy   --parent / --kind epic build an epic tree (containment).
@@ -2800,8 +2887,9 @@ MODEL
               and its own ancestor/descendant can't depend on each other.
   points      a leaf's weight; rolls up to its epic for progress totals.
   config      the status vocabulary, aliases, priorities, kinds, and
-              resolutions all come from trck.json (defaults:
-              backlog -> ongoing -> done; start=ongoing, done=done).
+              resolutions all come from trck.json (defaults: backlog ->
+              ongoing -> in-review -> done; start=ongoing, review=in-review,
+              done=done).
 
 RECOMMENDED USAGE
   parent      decomposition, not categorization: make B a child of A only when
@@ -2824,6 +2912,7 @@ TYPICAL FLOW
   trck set 7 --points 3 --parent 4              # adjust metadata anytime
   trck set 7 --field assignee=leon --field component=ui  # arbitrary metadata
   trck start 7                                   # -> ongoing
+  trck review 7 https://github.com/o/r/pull/12  # -> in-review, links the PR
   trck done 7 --resolution superseded            # -> done (resolution optional)
   trck ready         /  trck next                # unblocked work / the top pick
   trck list                                      # active forest (settled subtrees hidden)
@@ -2864,6 +2953,7 @@ def build_parser() -> argparse.ArgumentParser:
     n.add_argument("--parent", help="id of the epic to nest this under")
     n.add_argument("--depends", help="comma-separated ids this issue depends on (must be done first)")
     n.add_argument("--spec", help="path to a spec/design doc")
+    n.add_argument("--pr", help="pull-request URL (absolute http(s) link)")
     n.add_argument("--slug", help="override the auto-derived filename slug")
     n.set_defaults(func=cmd_new, priority=None)
 
@@ -2873,12 +2963,26 @@ def build_parser() -> argparse.ArgumentParser:
     mv.add_argument("status", help="target status (must be configured)")
     mv.add_argument("--resolution",
                     help="resolution label; only valid when moving to a terminal status")
+    mv.add_argument("--pr", help="record a pull-request URL as part of the move")
     mv.set_defaults(func=cmd_mv)
 
     st = sub.add_parser("start", help="alias: move to the configured 'start' status",
                         description="Alias: move an issue to the status configured as the 'start' alias.")
     st.add_argument("id", help="issue id")
     st.set_defaults(func=cmd_start)
+
+    rv = sub.add_parser(
+        "review", help="alias: move to the configured 'review' status (and link a PR)",
+        formatter_class=raw,
+        description="Alias: move an issue to the status configured as the 'review' "
+                    "alias, and — given a URL — record it as the issue's pull request "
+                    "in one step. An issue in a non-actionable status like in-review "
+                    "stays out of ready/next, but still blocks whatever depends on it "
+                    "until the PR lands.",
+        epilog="examples:\n  trck review 7 https://github.com/o/r/pull/12")
+    rv.add_argument("id", help="issue id")
+    rv.add_argument("url", nargs="?", help="pull-request URL to link (optional)")
+    rv.set_defaults(func=cmd_review)
 
     dn = sub.add_parser("done", help="alias: move to the configured 'done' status",
                         description="Alias: move an issue to the status configured as the 'done' alias.")
@@ -2896,6 +3000,7 @@ def build_parser() -> argparse.ArgumentParser:
     se.add_argument("--points", type=int, help="leaf weight (error if the issue has children)")
     se.add_argument("--parent", help="epic id, or 'none' to clear")
     se.add_argument("--spec", help="path, or 'none' to clear")
+    se.add_argument("--pr", help="pull-request URL, or 'none' to clear")
     se.add_argument("--kind", help="configured kind")
     se.add_argument("--title", help="new title (also rewrites the body's H1)")
     se.add_argument("--slug", help="override the filename slug (renames the file)")

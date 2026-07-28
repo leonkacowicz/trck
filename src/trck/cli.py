@@ -1,6 +1,6 @@
 from __future__ import annotations
 import argparse
-from .cmd_maint import cmd_changelog, cmd_check, cmd_done, cmd_init, cmd_install_hook, cmd_normalize, cmd_renumber, cmd_start, cmd_summary, cmd_version
+from .cmd_maint import cmd_changelog, cmd_check, cmd_done, cmd_init, cmd_install_hook, cmd_normalize, cmd_renumber, cmd_review, cmd_start, cmd_summary, cmd_version
 from .cmd_mutate import cmd_dep, cmd_label, cmd_mv, cmd_new, cmd_set
 from .cmd_query import cmd_deps, cmd_list, cmd_next, cmd_path, cmd_ready, cmd_show, cmd_which
 from .cmd_selfmgmt import cmd_update
@@ -18,8 +18,10 @@ MODEL
               place of a full id: `trck show k3m` matches k3m9x2a. An ambiguous
               prefix is an error that lists the candidates. Legacy integer-id
               trackers keep working; `trck renumber` migrates them.
-  status      every issue has exactly one; move it with mv / start / done.
-  metadata    priority, points, parent, spec, kind, title, slug -- change
+  status      every issue has exactly one; move it with mv / start / review /
+              done. A status may set "actionable": false (as in-review does) --
+              work waiting there stays out of ready/next, but still blocks.
+  metadata    priority, points, parent, spec, pr, kind, title, slug -- change
               with `trck set` (NOT by editing index.jsonl). labels -- a flat
               set of free-text tags; change with `trck label`.
   hierarchy   --parent / --kind epic build an epic tree (containment).
@@ -30,8 +32,9 @@ MODEL
               and its own ancestor/descendant can't depend on each other.
   points      a leaf's weight; rolls up to its epic for progress totals.
   config      the status vocabulary, aliases, priorities, kinds, and
-              resolutions all come from trck.json (defaults:
-              backlog -> ongoing -> done; start=ongoing, done=done).
+              resolutions all come from trck.json (defaults: backlog ->
+              ongoing -> in-review -> done; start=ongoing, review=in-review,
+              done=done).
 
 RECOMMENDED USAGE
   parent      decomposition, not categorization: make B a child of A only when
@@ -54,6 +57,7 @@ TYPICAL FLOW
   trck set 7 --points 3 --parent 4              # adjust metadata anytime
   trck set 7 --field assignee=leon --field component=ui  # arbitrary metadata
   trck start 7                                   # -> ongoing
+  trck review 7 https://github.com/o/r/pull/12  # -> in-review, links the PR
   trck done 7 --resolution superseded            # -> done (resolution optional)
   trck ready         /  trck next                # unblocked work / the top pick
   trck list                                      # active forest (settled subtrees hidden)
@@ -94,6 +98,7 @@ def build_parser() -> argparse.ArgumentParser:
     n.add_argument("--parent", help="id of the epic to nest this under")
     n.add_argument("--depends", help="comma-separated ids this issue depends on (must be done first)")
     n.add_argument("--spec", help="path to a spec/design doc")
+    n.add_argument("--pr", help="pull-request URL (absolute http(s) link)")
     n.add_argument("--slug", help="override the auto-derived filename slug")
     n.set_defaults(func=cmd_new, priority=None)
 
@@ -103,12 +108,26 @@ def build_parser() -> argparse.ArgumentParser:
     mv.add_argument("status", help="target status (must be configured)")
     mv.add_argument("--resolution",
                     help="resolution label; only valid when moving to a terminal status")
+    mv.add_argument("--pr", help="record a pull-request URL as part of the move")
     mv.set_defaults(func=cmd_mv)
 
     st = sub.add_parser("start", help="alias: move to the configured 'start' status",
                         description="Alias: move an issue to the status configured as the 'start' alias.")
     st.add_argument("id", help="issue id")
     st.set_defaults(func=cmd_start)
+
+    rv = sub.add_parser(
+        "review", help="alias: move to the configured 'review' status (and link a PR)",
+        formatter_class=raw,
+        description="Alias: move an issue to the status configured as the 'review' "
+                    "alias, and — given a URL — record it as the issue's pull request "
+                    "in one step. An issue in a non-actionable status like in-review "
+                    "stays out of ready/next, but still blocks whatever depends on it "
+                    "until the PR lands.",
+        epilog="examples:\n  trck review 7 https://github.com/o/r/pull/12")
+    rv.add_argument("id", help="issue id")
+    rv.add_argument("url", nargs="?", help="pull-request URL to link (optional)")
+    rv.set_defaults(func=cmd_review)
 
     dn = sub.add_parser("done", help="alias: move to the configured 'done' status",
                         description="Alias: move an issue to the status configured as the 'done' alias.")
@@ -126,6 +145,7 @@ def build_parser() -> argparse.ArgumentParser:
     se.add_argument("--points", type=int, help="leaf weight (error if the issue has children)")
     se.add_argument("--parent", help="epic id, or 'none' to clear")
     se.add_argument("--spec", help="path, or 'none' to clear")
+    se.add_argument("--pr", help="pull-request URL, or 'none' to clear")
     se.add_argument("--kind", help="configured kind")
     se.add_argument("--title", help="new title (also rewrites the body's H1)")
     se.add_argument("--slug", help="override the filename slug (renames the file)")

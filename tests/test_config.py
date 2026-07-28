@@ -17,7 +17,8 @@ class TestConfigDefaults(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             cfg = self.t.load_config(d)
-            self.assertEqual(self.t.status_names(cfg), ["backlog", "ongoing", "done"])
+            self.assertEqual(self.t.status_names(cfg),
+                             ["backlog", "ongoing", "in-review", "done"])
             self.assertEqual(self.t.initial_status(cfg), "backlog")
             self.assertTrue(self.t.is_terminal(cfg, "done"))
             self.assertFalse(self.t.is_terminal(cfg, "ongoing"))
@@ -55,7 +56,8 @@ class TestConfigDefaults(unittest.TestCase):
             d = make_tracker(tmp, {"priorities": ["p0", "p1"]})
             cfg = self.t.load_config(d)
             self.assertEqual(cfg["priorities"], ["p0", "p1"])
-            self.assertEqual(self.t.status_names(cfg), ["backlog", "ongoing", "done"])
+            self.assertEqual(self.t.status_names(cfg),
+                             ["backlog", "ongoing", "in-review", "done"])
 
     def test_custom_statuses_and_roles(self):
         with TemporaryDirectory() as tmp:

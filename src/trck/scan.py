@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .config import check_kind, check_points, check_priority, check_resolution, check_status_roles, reconcile, status_names
+from .config import check_kind, check_points, check_pr, check_priority, check_resolution, check_status_flags, check_status_roles, reconcile, status_names
 from .constants import FIELD_KEY_RE, FILENAME_RE, SLUG_RE, die
 from .graph import Graph
 from .index import Ctx, DEFAULT_POINTS, Issue, file_id, filename, load_index
@@ -33,6 +33,7 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
     persisted index as loaded from disk."""
     errors, warnings = [], []
     errors.extend(check_status_roles(ctx.cfg))
+    errors.extend(check_status_flags(ctx.cfg))
     if rows is None:
         rows = load_index(ctx)
     files = scan_files(ctx)
@@ -67,6 +68,8 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
         elif (m := check_points(pts)):
             errors.append(f"#{iid} {m}")
         if r.resolution is not None and (m := check_resolution(ctx.cfg, r.resolution)):
+            errors.append(f"#{iid} {m}")
+        if r.pr is not None and (m := check_pr(r.pr)):
             errors.append(f"#{iid} {m}")
         for k, v in r.extra.items():
             if not FIELD_KEY_RE.match(k):

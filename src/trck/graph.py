@@ -1,6 +1,6 @@
 from __future__ import annotations
 import secrets
-from .config import is_terminal, reconcile, status_names
+from .config import is_actionable, is_terminal, reconcile, status_names
 from .constants import FILENAME_RE, ID_ALPHABET, ID_LEN
 from .index import Ctx, DEFAULT_POINTS, Issue, file_id, get_id, get_row, load_index
 from .templates import move_issue
@@ -162,6 +162,9 @@ class Graph:
     def is_terminal(self, r: Issue) -> bool:
         return is_terminal(self.cfg, r.status)
 
+    def is_actionable(self, r: Issue) -> bool:
+        return is_actionable(self.cfg, r.status)
+
     def is_blocked(self, r: Issue) -> bool:
         """One-sided effective blocking: `r` is blocked iff it, or any ancestor,
         has an authored dependency on a non-terminal issue. The depended-on side
@@ -173,7 +176,11 @@ class Graph:
         return r.id not in self._parents
 
     def is_ready(self, r: Issue) -> bool:
-        return not self.is_terminal(r) and self.is_leaf(r) and not self.is_blocked(r)
+        """An unblocked leaf you could pick up right now. A status may opt out of
+        being pickable (`"actionable": false`) — an issue awaiting review is in
+        flight, not available — without becoming terminal, so it still blocks."""
+        return (not self.is_terminal(r) and self.is_actionable(r)
+                and self.is_leaf(r) and not self.is_blocked(r))
 
     # dependency graph
     def dependency_line(self, r: Issue, up: bool = True, down: bool = True,

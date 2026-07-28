@@ -15,6 +15,7 @@ ID_ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz"  # base32 minus 0/1/o/l/i, lower
 ID_LEN = 7                                        # 31**7 ≈ 2.75e10 id space
 ID_RE = re.compile(rf"^[{ID_ALPHABET}]+$")
 FIELD_KEY_RE = re.compile(r"^[a-z][a-z0-9_-]*$")
+PR_URL_RE = re.compile(r"^https?://\S+$")  # forge-agnostic: any absolute http(s) link
 SINCE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}Z)?$")
 
 

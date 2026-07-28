@@ -48,7 +48,7 @@ class TestInit(unittest.TestCase):
             cfg = json.loads((d / "trck.json").read_text())
             self.assertEqual(cfg["update"]["repo"], self.t.DEFAULT_UPDATE_REPO)
             self.assertEqual([s["name"] for s in cfg["statuses"]],
-                             ["backlog", "ongoing", "done"])
+                             ["backlog", "ongoing", "in-review", "done"])
 
     def test_init_refuses_existing_without_force(self):
         with TemporaryDirectory() as tmp:

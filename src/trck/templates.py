@@ -34,7 +34,7 @@ regenerates `SUMMARY.md`, and self-validates.
 ## Where things live
 | Data | Source of truth | Changed by |
 |---|---|---|
-| status | the folder the file is in (configured in `trck.json`) | `trck mv` / `start` / `done` (moves the file) |
+| status | the folder the file is in (configured in `trck.json`) | `trck mv` / `start` / `review` / `done` (moves the file) |
 | other metadata | `index.jsonl` (one JSON object per issue) | `trck set` / `dep` / `label` |
 | narrative | the issue markdown body | **you** (hand-edited) |
 | rollup | `SUMMARY.md` (generated) | `trck` (auto, every mutating verb) |
@@ -52,11 +52,14 @@ Run from anywhere in the repo — `trck` finds the tracker by walking up to the 
 holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
 
 - `trck new "<title>" [--priority …] [--kind …] [--parent ID] [--depends a,b]`
-- `trck mv ID <status>` (vocabulary-agnostic); `trck start ID` / `trck done ID [--resolution …]` (aliases)
-- `trck set ID [--priority …] [--parent …|none] [--kind …] [--title …] [--field k=v] [--unset k]`
+- `trck mv ID <status>` (vocabulary-agnostic); `trck start ID` / `trck review ID [URL]` / `trck done ID [--resolution …]` (aliases)
+- `trck set ID [--priority …] [--parent …|none] [--kind …] [--title …] [--pr URL|none] [--field k=v] [--unset k]`
 - `trck dep ID --add ID2 | --remove ID2`
 - `trck label ID --add X --remove Y`
 - Custom fields: `trck set ID --field assignee=leon`; filter `trck list --field assignee=leon`; sort `--sort field:assignee`; show `--show-field assignee`.
+- Pull requests: `trck review ID https://…/pull/12` moves to the review status **and** links
+  the PR in one step. An issue there is out of `ready`/`next` (nothing to pick up) but still
+  **blocks** whatever depends on it until the PR lands. `trck set ID --pr none` unlinks.
 - `trck list` · `trck tree` · `trck deps ID` · `trck show ID` · `trck check` · `trck summary`
 - `trck normalize` — rewrite `index.jsonl` in canonical slim form (no data change)
 - `trck renumber` — convert legacy integer ids to random alphanumeric ids

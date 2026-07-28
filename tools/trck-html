@@ -119,6 +119,7 @@ def _issue_dict(g, ctx, r):
         "started": r.started,
         "closed": r.closed,
         "spec": r.spec,
+        "pr": r.pr,
         "body": _body_text(ctx, r),
     }
 
@@ -308,6 +309,11 @@ main { display: grid; grid-template-columns: minmax(12rem, var(--leftw, 40%)) 6p
 .ilink:hover { text-decoration: underline; }
 .empty { color: var(--muted); padding: 1rem; }
 .emark { color: var(--accent); font-size: .7rem; }
+.prlink { color: var(--accent); text-decoration: none; font-size: .72rem;
+          padding: .05rem .4rem; border: 1px solid var(--line); border-radius: 999px;
+          white-space: nowrap; }
+.prlink:hover { text-decoration: underline; }
+.m .prlink { font-size: .8rem; border: 0; padding: 0; }
 .row.edited { box-shadow: inset 3px 0 0 var(--accent); }
 .stage { display: flex; gap: .9rem; align-items: center; flex-wrap: wrap;
          margin: 0 0 1rem; padding: .5rem .7rem; border: 1px dashed var(--line); border-radius: 8px; }
@@ -547,6 +553,8 @@ function row(i) {
     el('span', { class: 'badge', text: i.priority }),
     el('span', { class: 'badge', text: i.status }));
   if (issueEdited(i.id)) r.append(el('span', { class: 'emark', title: 'has staged changes', text: '●' }));
+  const pl = prLink(i, 'PR');
+  if (pl) r.append(pl);
   if (i.progress) r.append(el('span', { class: 'pct', text: i.progress.pct + '%' }));
   return r;
 }
@@ -562,6 +570,16 @@ function renderList() {
 function meta(label, node) {
   return node == null ? null
     : el('div', { class: 'm' }, el('span', { class: 'mk', text: label }), node);
+}
+
+// The pull request an issue is waiting on, as a real anchor. Null without one, so
+// callers can append it unconditionally. Clicks don't bubble into row selection.
+function prLink(i, text) {
+  const href = i.pr && safeUrl(i.pr);
+  if (!href) return null;
+  return el('a', { class: 'prlink', href, title: i.pr, text: text || i.pr,
+    target: '_blank', rel: 'noreferrer noopener',
+    onclick: e => e.stopPropagation() });
 }
 
 // --- v6 markdown bodies: a tiny, self-contained, DOM-based subset renderer ----
@@ -658,6 +676,7 @@ function renderDetail() {
   m.append(meta('priority', el('span', { class: 'badge', text: i.priority })));
   m.append(meta('kind', i.kind));
   if (i.resolution) m.append(meta('resolution', i.resolution));
+  if (i.pr) m.append(meta('pr', prLink(i)));
   if (i.labels.length) m.append(meta('labels', i.labels.join(', ')));
   if (i.progress) m.append(meta('progress',
     i.progress.pct + '% (' + i.progress.done_points + '/' + i.progress.total_points + ' pts)'));
@@ -874,6 +893,8 @@ function renderTreeNode(container, id, depth, vis, active) {
     r.append(el('span', { class: 'badge', text: i.priority }),
       el('span', { class: 'badge', text: i.status }));
   }
+  const pl = prLink(i, 'PR');
+  if (pl) r.append(pl);
   container.append(r);
   if (hasKids && !collapsed) for (const k of kids) renderTreeNode(container, k, depth + 1, vis, active);
 }

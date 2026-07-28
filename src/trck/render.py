@@ -119,6 +119,11 @@ def label_tag(r: Issue) -> str:
     return " [" + " ".join(labels) + "]" if labels else ""
 
 
+def pr_tag(r: Issue) -> str:
+    """A markdown ` · [PR](url)` suffix for SUMMARY.md rows; empty without a PR."""
+    return f" · [PR]({r.pr})" if r.pr else ""
+
+
 def block_annotations(g: Graph, r: Issue, on_screen=frozenset()) -> str:
     """A dim ` needs #… blocks #…` suffix exposing the blocking graph in row form.
 

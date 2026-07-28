@@ -196,7 +196,11 @@ def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None
         ann = annotate(r) if annotate else ""
         fsuf = ""
         if show_fields:
-            segs = [f"{n}={r.extra[n]}" for n in show_fields if n in r.extra]
+            # to_dict() so a built-in field (pr, spec, …) is showable too, not just
+            # a custom one; an unset/empty value contributes no column.
+            full = r.to_dict()
+            segs = [f"{n}={full[n]}" for n in show_fields
+                    if full.get(n) not in (None, "", [], False)]
             if segs:
                 fsuf = "  " + paint(" ".join(segs), "dim")
         if dim and dim(r):  # ancestor context: whole line dimmed, no per-field color

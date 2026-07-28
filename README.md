@@ -31,6 +31,7 @@ trck init                       # scaffold ./issues (config + a vendored copy of
                                 # `trck init <dir>` for a custom dir; `--no-vendor` skips the engine copy
 trck new "Fix login bug" --priority high   # prints the new id, e.g. k3m9x2a
 trck start k3m                  # any unambiguous prefix works (git-style)
+trck review k3m https://github.com/you/repo/pull/12   # -> in-review, and links the PR
 trck done k3m9x2a --resolution wontfix
 trck list                       # nested forest of active work (settled subtrees hidden)
 trck list --all                 # include settled (done) work too
@@ -69,10 +70,11 @@ Zero config works out of the box. To customize, edit `trck.json`:
 ```json
 {
   "update":      { "repo": "leonkacowicz/trck", "channel": "stable" },
-  "statuses":    [ {"name": "backlog", "role": "initial"},
-                   {"name": "ongoing", "role": "active"},
-                   {"name": "done",    "role": "terminal"} ],
-  "aliases":     { "start": "ongoing", "done": "done" },
+  "statuses":    [ {"name": "backlog",   "role": "initial"},
+                   {"name": "ongoing",   "role": "active"},
+                   {"name": "in-review", "actionable": false},
+                   {"name": "done",      "role": "terminal"} ],
+  "aliases":     { "start": "ongoing", "review": "in-review", "done": "done" },
   "priorities":  ["urgent", "high", "medium", "low", "lowest"],
   "default_priority": "medium",
   "kinds":       ["task", "epic", "bug", "story", "investigation"],
@@ -82,7 +84,7 @@ Zero config works out of the box. To customize, edit `trck.json`:
 
 Statuses are an **ordered, free-form list**; the folders are named after them and `SUMMARY.md`
 groups by that order. Semantics attach to **roles**, not names. Exactly one status must carry
-each of the three roles (extra unroled statuses — e.g. a `review` lane — are fine):
+each of the three roles (extra unroled statuses — like the shipped `in-review` lane — are fine):
 
 - `initial` — where `trck new` lands an issue (and the first move off it stamps `started`).
 - `active` — the "in progress" status a parent rolls up to (see below).
@@ -90,14 +92,21 @@ each of the three roles (extra unroled statuses — e.g. a `review` lane — are
   clears both. "Didn't really finish" outcomes (wontfix/duplicate/…) are a `--resolution`,
   not a separate status.
 
+Any status may also set **`"actionable": false`** — a *waiting* state. The issue is in flight,
+but there is nothing for anyone to pick up, so `ready`/`next` skip it; it is still non-terminal,
+so it keeps **blocking** whatever depends on it. The shipped `in-review` lane uses this, and so
+can your own `qa` or `awaiting-deploy`. Roles and `actionable` are independent: a waiting state
+carries no role, and the rollup is unaffected (a parent whose children are in-review is
+`active`).
+
 A **parent's status is derived from its children**: all `initial` → `initial`, all `terminal`
 → `terminal`, otherwise `active`. This rollup is maintained automatically on every move,
 recursively up to the root. To override it, `mv` the parent by hand — that pins its status;
 `set NNN --auto` returns it to derivation.
 
-The generic `trck mv NNN <status>` moves between any statuses; `start`/`done` are convenience
-aliases resolved through `aliases`. So a repo can use, say, `todo → doing → review → shipped`
-and either define its own aliases or just use `mv`.
+The generic `trck mv NNN <status>` moves between any statuses; `start`/`review`/`done` are
+convenience aliases resolved through `aliases`. So a repo can use, say,
+`todo → doing → review → shipped` and either define its own aliases or just use `mv`.
 
 `priorities` is **ordered by precedence** — first is highest — and that order drives
 `list --sort priority`, `ready`, and `next`. The priority `trck new` assigns when you don't
@@ -134,7 +143,7 @@ opaque string ids and are tolerated on read.
 
 ## Common verbs
 
-`new` · `mv` · `start` · `done` · `set` · `dep` · `label` · `show` · `list` · `ready` ·
+`new` · `mv` · `start` · `review` · `done` · `set` · `dep` · `label` · `show` · `list` · `ready` ·
 `next` · `tree` · `deps` · `path` · `which` · `check` · `summary` · `normalize` · `renumber` ·
 `install-hook` · `init` · `update` · `version`. Run `trck --help` (or `trck <verb> --help`) for details.
 
@@ -167,6 +176,21 @@ points-weighted rollup `%` is computed from its children and shown after the tit
 parent row in `trck list`/`tree` (leaf rows carry none) as well as in `SUMMARY.md`. (Any
 issue can be a parent — `kind: epic` is just a display label.) Filter a list to one epic's
 children with `trck list --parent NNN`.
+
+**Pull requests** — when a PR opens, `trck review NNN <url>` moves the issue to the review
+status *and* records the URL in its built-in `pr` field, in one move:
+
+    trck review 42 https://github.com/you/repo/pull/12   # -> in-review, PR linked
+    trck new "Fix login" --pr https://…/pull/9           # or set it at creation
+    trck set 42 --pr https://…/pull/13                   # relink; `--pr none` clears it
+    trck mv 42 ongoing --pr https://…/pull/13            # or record it on any move
+    trck list --show-field pr                            # show it as a column
+
+The value must be an absolute `http(s)` URL (`check` enforces it) but is otherwise
+forge-agnostic — trck never talks to GitHub. It shows in `trck show`, links from `SUMMARY.md`,
+and renders as a clickable anchor in `tools/trck-html`. Because the review status is
+`actionable: false`, the issue drops out of `ready`/`next` while it waits, yet still blocks its
+dependents until it's `done`.
 
 Labels: tag issues with a flat, multi-valued set of free-text labels via
 `trck label NNN --add X --remove Y`, then filter with `trck list --label X`. Labels show

@@ -50,7 +50,7 @@ find it with `command -v trck >/dev/null; ls issues/index.jsonl trck.json issues
      `PATH`. (This is the same vendored-vs-global choice you resolve at §1 on every later run.)
   3. **Install the pre-commit consistency hook?** (`--hook`) — recommended; it runs `trck check`
      so an inconsistent tracker can't be committed.
-  4. **Custom status vocabulary?** Default is `backlog → ongoing → done`. Most repos keep it;
+  4. **Custom status vocabulary?** Default is `backlog → ongoing → in-review → done`. Most repos keep it;
      if they want different statuses/priorities/kinds, note it — those live in `trck.json` and
      can be edited right after init.
 
@@ -129,13 +129,14 @@ criteria / Notes) — never `index.jsonl` or `SUMMARY.md`, and never move/rename
 hand; the verbs do that.
 
 **Create & modify**
-- `trck new "<title>" [--priority P] [--kind K] [--parent ID] [--depends a,b] [--points N] [--spec PATH] [--slug S]`
+- `trck new "<title>" [--priority P] [--kind K] [--parent ID] [--depends a,b] [--points N] [--spec PATH] [--pr URL] [--slug S]`
   — create an issue; prints the new file path. Then open that file and write the body prose.
-- `trck set ID [--priority P] [--parent ID|none] [--kind K] [--title T] [--points N] [--spec PATH|none] [--field k=v] [--unset k] [--auto]`
+- `trck set ID [--priority P] [--parent ID|none] [--kind K] [--title T] [--points N] [--spec PATH|none] [--pr URL|none] [--field k=v] [--unset k] [--auto]`
   — edit metadata. `--parent` **re-parents** (guarded against cycles); `--field`/`--unset`
   manage free-form custom fields; `--auto` returns a manually-pinned status to derivation.
-- `trck mv ID <status>` — move to any configured status. Aliases: `trck start ID`
-  (→ active), `trck done ID [--resolution superseded|wontfix|duplicate]` (→ terminal).
+- `trck mv ID <status> [--pr URL]` — move to any configured status. Aliases: `trck start ID`
+  (→ active), `trck review ID [URL]` (→ the review status, recording the pull request),
+  `trck done ID [--resolution superseded|wontfix|duplicate]` (→ terminal).
 - `trck dep ID --add ID2 | --remove ID2` — add/remove a dependency edge (ID depends on ID2).
 - `trck label ID --add X --remove Y` — manage labels.
 
@@ -150,7 +151,8 @@ hand; the verbs do that.
   `--paths` prints file paths for piping into rg/grep/fzf.
 - `trck show ID` — full metadata + body.
 - `trck ready` / `trck next` — actionable leaves (not done, not blocked by an unmet dep,
-  directly or inherited). `next` is the single best pick; `ready --next` is equivalent.
+  directly or inherited, and not parked in a waiting status like `in-review`). `next` is the
+  single best pick; `ready --next` is equivalent.
 - `trck deps [ID] [--requires|--blocks|--full] [--omit-done|--include-done-chains]` — the
   dependency DAG as a gutter graph. No ID = whole graph; `ID` = that issue's dependency line.
 - `trck tree [ID]` — hierarchy view. `trck path ID` / `trck which FILE` — resolve id↔path.
@@ -169,9 +171,11 @@ A tracker is only useful if it reflects reality. These habits are what make trck
 follow them proactively, without being asked.
 
 - **Keep the issue list always up to date.** The moment reality changes, reflect it: `start`
-  what you begin, `done` what you finish (with a `--resolution` if it was superseded, won't-fix,
-  or a duplicate — that records the outcome without losing history), re-`set` priority/parent
-  when your understanding shifts. A stale tracker silently lies about what's left; an accurate
+  what you begin, `review ID <pr-url>` the moment a pull request opens (it moves the issue to
+  the waiting status *and* links the PR, so the work stops showing up as pickable while still
+  blocking its dependents), `done` what you finish (with a `--resolution` if it was superseded,
+  won't-fix, or a duplicate — that records the outcome without losing history), re-`set`
+  priority/parent when your understanding shifts. A stale tracker silently lies about what's left; an accurate
   one lets `ready`/`next` actually be trusted. `trck check` must pass before you commit.
 - **Capture every "this needs doing" as an issue — immediately.** Whenever you (or the user)
   realize work is needed — a bug you noticed in passing, a follow-up a change implies, a rough
