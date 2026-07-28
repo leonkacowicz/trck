@@ -13,12 +13,17 @@
       "role": "active"
     },
     {
+      "name": "in-review",
+      "actionable": false
+    },
+    {
       "name": "done",
       "role": "terminal"
     }
   ],
   "aliases": {
     "start": "ongoing",
+    "review": "in-review",
     "done": "done"
   },
   "priorities": [

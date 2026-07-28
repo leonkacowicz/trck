@@ -7,8 +7,9 @@
 |---|---:|
 | backlog | 21 |
 | ongoing | 1 |
-| done | 77 |
-| **total** | **99** |
+| in-review | 0 |
+| done | 87 |
+| **total** | **109** |
 
 ## Hierarchies
 
@@ -62,6 +63,19 @@ Spec: [`docs/specs/2026-06-11-custom-fields-design.md`](../docs/specs/2026-06-11
 - [x] [#z65knha list: --field key=value exact-match filter (repeatable, AND-ed, composes with existing filters)](done/z65knha-list-field-key-value-exact-match-filter-repeatable-and-ed-composes-with-existing-filters.md)
 - [x] [#zke8bhp validate/check: enforce extra keys are well-formed and values are strings](done/zke8bhp-validate-check-enforce-extra-keys-are-well-formed-and-values-are-strings.md)
 
+### [#htg2zfw in-review status + first-class pr field](done/htg2zfw-in-review-status-first-class-pr-field.md) — 100% (18/18 pts · 9/9 done) · _medium_ · done
+Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/specs/2026-07-28-in-review-status-and-pr-field-design.md)
+
+- [x] [#6pvt7fy ready/next: honor the actionable status flag](done/6pvt7fy-ready-next-honor-the-actionable-status-flag.md)
+- [x] [#ecfntpa index/validate: pr as a first-class field](done/ecfntpa-index-validate-pr-as-a-first-class-field.md)
+- [x] [#eqca4v5 docs: help epilog, scaffold templates, README, skill](done/eqca4v5-docs-help-epilog-scaffold-templates-readme-skill.md)
+- [x] [#g6yddkm adopt in-review in this repo trck.json](done/g6yddkm-adopt-in-review-in-this-repo-trck-json.md)
+- [x] [#hmreu38 config: in-review status, actionable flag, review alias](done/hmreu38-config-in-review-status-actionable-flag-review-alias.md)
+- [x] [#jpchmkk trck review ID [URL] alias verb](done/jpchmkk-trck-review-id-url-alias-verb.md)
+- [x] [#kcqe3dj trck-html: export and link the pr field](done/kcqe3dj-trck-html-export-and-link-the-pr-field.md)
+- [x] [#mseqgr5 cli: --pr on new/set/mv](done/mseqgr5-cli-pr-on-new-set-mv.md)
+- [x] [#shaadcs render: PR links in SUMMARY.md, --show-field over canonical fields](done/shaadcs-render-pr-links-in-summary-md-show-field-over-canonical-fields.md)
+
 ### [#qapvxpz Merge tree into list: structure-aware browse verb](done/qapvxpz-merge-tree-into-list-structure-aware-browse-verb.md) — 100% (4/4 pts · 4/4 done) · _high_ · done
 
 - [x] [#33frt7s list: extract shared row renderer with connector prefix](done/33frt7s-list-extract-shared-row-renderer-with-connector-prefix.md)
@@ -95,6 +109,10 @@ Spec: [`docs/specs/2026-06-11-custom-fields-design.md`](../docs/specs/2026-06-11
 - [#9ax2ny2 deps: --depth N to cut expansion N hops from the seed(s)](backlog/9ax2ny2-deps-depth-n-to-cut-expansion-n-hops-from-the-seed-s.md) — _lowest_
 
 ## Ongoing
+
+_none_
+
+## In-review
 
 _none_
 
