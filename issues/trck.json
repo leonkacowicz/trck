@@ -38,7 +38,8 @@
     "epic",
     "bug",
     "story",
-    "investigation"
+    "investigation",
+    "decision"
   ],
   "resolutions": [
     "superseded",
