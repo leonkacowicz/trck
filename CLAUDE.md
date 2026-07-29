@@ -70,6 +70,12 @@ each means something distinct. Pick the right one.
   siblings and cousins can. **Be precise:** an over-broad edge blocks work that is actually ready.
 - **Priorities = soft ordering (SHOULD).** A task that *should* be done before another — a
   preference that influences what to pick up next, not a constraint. Nothing is blocked.
+  Set a priority on the issue that **carries** the urgency, not on everything it needs:
+  `ready`/`next` rank by **demand**, counting what an issue unblocks (its dependents and
+  the parents it composes, transitively) alongside its own priority, so a medium task
+  blocking an urgent one outranks a high task blocking nothing. A row lifted that way is
+  marked `↑<priority>(#id)` naming what drives it. Marking every prerequisite urgent by
+  hand only flattens the ordering you were trying to express.
 
 Rule of thumb: decomposition → **parent/child**; "category of similar things" → **labels**;
 "must come first" → **dependency**; "ought to come first" → **priority**.
