@@ -5,13 +5,20 @@
 
 | State | Count |
 |---|---:|
-| backlog | 21 |
+| backlog | 24 |
 | ongoing | 1 |
 | in-review | 0 |
-| done | 87 |
-| **total** | **109** |
+| done | 92 |
+| **total** | **117** |
 
 ## Hierarchies
+
+### [#9bktptp ready/next: rank by demand cone (inferred priority) + marker](done/9bktptp-ready-next-rank-by-demand-cone-inferred-priority-marker.md) — 100% (8/8 pts · 4/4 done) · _high_ · done
+
+- [x] [#5yjce3w graph: demand cone + priority-count vector (effective blocking, reversed)](done/5yjce3w-graph-demand-cone-priority-count-vector-effective-blocking-reversed.md)
+- [x] [#8peq4ea docs: demand ranking in README, help epilog, AGENTS scaffold](done/8peq4ea-docs-demand-ranking-in-readme-help-epilog-agents-scaffold.md)
+- [x] [#aujt85q ready: mark inferred rows with ↑<priority>(#culprit)](done/aujt85q-ready-mark-inferred-rows-with-priority-culprit.md)
+- [x] [#yrre4zn ready/next: rank by the demand vector instead of declared priority](done/yrre4zn-ready-next-rank-by-the-demand-vector-instead-of-declared-priority.md)
 
 ### [#dj5b42j deps: infer hierarchy edges so the graph answers 'what is left to finish this parent'](done/dj5b42j-deps-infer-hierarchy-edges-so-the-graph-answers-what-is-left-to-finish-this-parent.md) — 100% (5/5 pts · 5/5 done) · _high_ · done
 
@@ -98,11 +105,14 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#wh3mv52 mv/done: guard closing a parent with open descendants (--recurse to cascade)](backlog/wh3mv52-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
 - [#5jhvpz4 update: add a minimum-size sanity check on the downloaded engine](backlog/5jhvpz4-update-add-a-minimum-size-sanity-check-on-the-downloaded-engine.md) — _low_
 - [#6ddksge Reconcile id collisions when branches concurrently create issues](backlog/6ddksge-reconcile-id-collisions-when-branches-concurrently-create-issues.md) — _low_ [conflict-resolution tracker-features]
+- [#av2h8cm docs: refresh docs/img/ready.svg — the screenshot predates the demand marker](backlog/av2h8cm-docs-refresh-docs-img-ready-svg-the-screenshot-predates-the-demand-marker.md) — _low_
+- [#c2wadyd graph/render: id type annotations still say int after the random-id migration](backlog/c2wadyd-graph-render-id-type-annotations-still-say-int-after-the-random-id-migration.md) — _low_
 - [#cbf4sxp config: friendly errors for empty statuses/priorities/kinds lists](backlog/cbf4sxp-config-friendly-errors-for-empty-statuses-priorities-kinds-lists.md) — _low_
 - [#eemqu4g Support configurable custom fields](backlog/eemqu4g-support-configurable-custom-fields.md) — _low_ [tracker-features]
 - [#ey2aruc Auto-resolve index.jsonl and SUMMARY.md merge conflicts via git merge drivers](backlog/ey2aruc-auto-resolve-index-jsonl-and-summary-md-merge-conflicts-via-git-merge-drivers.md) — _low_ [conflict-resolution tracker-features]
 - [#kj2c95b validate: suppress redundant bad-slug error when filename-slug mismatch already reported](backlog/kj2c95b-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
 - [#m3z2ywb summary: include foreign/unknown statuses in the counts table](backlog/m3z2ywb-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
+- [#me67zba trck-html: mirror demand-cone ranking in the ready/next view](backlog/me67zba-trck-html-mirror-demand-cone-ranking-in-the-ready-next-view.md) — _low_
 - [#s3d6xyz Add reconfigure verb to rename/reorder statuses](backlog/s3d6xyz-add-reconfigure-verb-to-rename-reorder-statuses.md) — _low_ [tracker-features]
 - [#v9nyy42 Part C: curses TUI for browsing and quick actions](backlog/v9nyy42-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
 - [#xagqqgd deps: optimize node ordering to minimize edge span and crossings (local search)](backlog/xagqqgd-deps-optimize-node-ordering-to-minimize-edge-span-and-crossings-local-search.md) — _low_
