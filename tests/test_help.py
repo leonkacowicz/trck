@@ -40,6 +40,18 @@ class TestHelp(unittest.TestCase):
     def test_list_help_explains_parent_filter(self):
         self.assertIn("children of", self.sub_help("list"))
 
+    def test_ready_help_explains_demand_ranking(self):
+        h = self.sub_help("ready")
+        self.assertIn("ranked by demand", h)
+        self.assertIn("↑<priority>(#id)", h)       # the marker a lifted row carries
+
+    def test_next_help_says_it_picks_what_unblocks(self):
+        self.assertIn("unblocks the hottest issue", self.sub_help("next"))
+
+    def test_top_level_epilog_warns_against_hand_lifting_priorities(self):
+        h = norm(self.parser.format_help())
+        self.assertIn("carries the urgency", h)
+
     def test_dep_help_has_example(self):
         self.assertIn("7 now waits on 5", self.sub_help("dep"))
 

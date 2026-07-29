@@ -49,7 +49,10 @@ RECOMMENDED USAGE
               on a parent waits for its whole subtree. Put the arrow at the right
               altitude (parent vs. specific children) and be precise.
   priority    soft ordering (SHOULD): a preference for what to pick up next, not
-              a constraint -- nothing is blocked.
+              a constraint -- nothing is blocked. Set it on the issue that
+              carries the urgency; ready/next propagate it back along the
+              dependency and parent edges, so a blocker inherits the urgency of
+              whatever is waiting on it (marked `↑<priority>(#id)` on the row).
 
 TYPICAL FLOW
   trck new "Add CSV export" --priority high     # create; prints the new id
@@ -59,7 +62,7 @@ TYPICAL FLOW
   trck start 7                                   # -> ongoing
   trck review 7 https://github.com/o/r/pull/12  # -> in-review, links the PR
   trck done 7 --resolution superseded            # -> done (resolution optional)
-  trck ready         /  trck next                # unblocked work / the top pick
+  trck ready         /  trck next                # unblocked work, ranked by demand
   trck list                                      # active forest (settled subtrees hidden)
   trck list --all                                # include settled (done) work too
   trck list --status ongoing                     # what's in flight
@@ -256,11 +259,16 @@ def build_parser() -> argparse.ArgumentParser:
     rd = sub.add_parser(
         "ready", help="list issues you can work on right now",
         description="List not-done leaf issues whose dependencies are all in a "
-                    "terminal status, ranked by priority then points then id. With an "
-                    "id, scope to that issue's subtree — what can I pick up on this "
+                    "terminal status, ranked by demand: an issue counts for what it "
+                    "unblocks, so a medium task blocking an urgent one outranks a high "
+                    "task blocking nothing. Ties go to the number of issues blocked at "
+                    "that priority, then points, then id. A row ranked above its own "
+                    "priority is marked ↑<priority>(#id), naming what drives it. With "
+                    "an id, scope to that issue's subtree — what can I pick up on this "
                     "epic right now. Scoping never loosens blocking: a leaf waiting on "
                     "an issue outside the subtree, directly or through an edge "
-                    "authored on an ancestor, stays out.")
+                    "authored on an ancestor, stays out; nor does it change the "
+                    "ranking, which is computed over the whole graph.")
     rd.add_argument("id", nargs="?", help="scope to this issue's subtree")
     rd.add_argument("--next", action="store_true",
                     help="print only the single highest-ranked ready issue")
@@ -268,8 +276,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     nx = sub.add_parser("next", help="print the single best issue to work on next",
                         description="Print only the highest-ranked ready issue "
-                                    "(shorthand for `ready --next`). With an id, the "
-                                    "best pick within that issue's subtree.")
+                                    "(shorthand for `ready --next`) — the work that "
+                                    "unblocks the hottest issue, not necessarily the "
+                                    "hottest issue itself. With an id, the best pick "
+                                    "within that issue's subtree.")
     nx.add_argument("id", nargs="?", help="scope to this issue's subtree")
     nx.set_defaults(func=cmd_next)
 

@@ -314,6 +314,147 @@ class TestGraph(unittest.TestCase):
         g = self.graph(self.issue(1, depends=[2]), self.issue(2, depends=[1]))
         self.assertEqual(len(g.effective_cycles()), 1)
 
+    # --- demand cone ------------------------------------------------------ #
+    # The reverse of effective blocking: who is waiting on this issue. Ranking
+    # `ready` by it is what makes a blocker of an urgent task outrank a merely
+    # high-priority task that blocks nothing (issue #5yjce3w).
+
+    def cone(self, g, iid):
+        return g.demand_cone(g.row(iid))
+
+    def test_demand_cone_of_isolated_issue_is_itself(self):
+        g = self.graph(self.issue(1), self.issue(2))
+        self.assertEqual(self.cone(g, "1"), {"1"})
+
+    def test_demand_cone_includes_authored_dependent(self):
+        g = self.graph(self.issue(1), self.issue(2, depends=[1]))
+        self.assertEqual(self.cone(g, "1"), {"1", "2"})
+
+    def test_demand_cone_is_transitive(self):
+        # 3 -> 2 -> 1: finishing 1 is what eventually unblocks 3.
+        g = self.graph(self.issue(1), self.issue(2, depends=[1]),
+                       self.issue(3, depends=[2]))
+        self.assertEqual(self.cone(g, "1"), {"1", "2", "3"})
+
+    def test_demand_cone_includes_dependents_subtree(self):
+        # 2 depends on 1 and 3 is 2's child: the edge is inherited, so 3 waits
+        # on 1 too — and an urgent 3 under a medium 2 must reach back to 1.
+        g = self.graph(self.issue(1), self.issue(2, depends=[1]),
+                       self.issue(3, parent=2))
+        self.assertEqual(self.cone(g, "1"), {"1", "2", "3"})
+
+    def test_demand_cone_lifts_through_the_targets_ancestors(self):
+        # 3 depends on parent 1; 2 is 1's child, so 3 waits on 2 as well.
+        g = self.graph(self.issue(1), self.issue(2, parent=1),
+                       self.issue(3, depends=[1]))
+        self.assertEqual(self.cone(g, "2"), {"1", "2", "3"})
+
+    def test_demand_cone_follows_containment_without_any_dependency(self):
+        # An urgent epic makes its own leaves urgent: the parent is not done
+        # until the child is, which is a demand even with no authored edge.
+        g = self.graph(self.issue(1), self.issue(2, parent=1))
+        self.assertEqual(self.cone(g, "2"), {"1", "2"})
+
+    def test_demand_cone_excludes_terminal_dependents(self):
+        g = self.graph(self.issue(1), self.issue(2, status="done", depends=[1]))
+        self.assertEqual(self.cone(g, "1"), {"1"})
+
+    def test_demand_cone_does_not_conduct_through_a_terminal_node(self):
+        # 3 -> 2(done) -> 1: 2 is settled, so 3 is no longer waiting on 1.
+        g = self.graph(self.issue(1), self.issue(2, status="done", depends=[1]),
+                       self.issue(3, depends=[2]))
+        self.assertEqual(self.cone(g, "1"), {"1"})
+
+    def test_demand_cone_counts_a_diamond_member_once(self):
+        g = self.graph(self.issue(1), self.issue(2, depends=[1]),
+                       self.issue(3, depends=[1]), self.issue(4, depends=[2, 3]))
+        self.assertEqual(self.cone(g, "1"), {"1", "2", "3", "4"})
+
+    def test_demand_cone_excludes_cousins(self):
+        # 3 depends on 2, not on 1: 1's cone must not leak sideways.
+        g = self.graph(self.issue(1), self.issue(2), self.issue(3, depends=[2]))
+        self.assertEqual(self.cone(g, "1"), {"1"})
+
+    def test_demand_cone_excludes_what_this_issue_waits_on(self):
+        g = self.graph(self.issue(1), self.issue(2, depends=[1]))
+        self.assertEqual(self.cone(g, "2"), {"2"})
+
+    # --- demand vector ---------------------------------------------------- #
+
+    def test_demand_vector_counts_by_configured_priority(self):
+        g = self.graph(self.issue(1, priority="medium"),
+                       self.issue(2, priority="urgent", depends=[1]))
+        # ["urgent", "high", "medium", "low", "lowest"] + an unknown bucket
+        self.assertEqual(g.demand_vector(g.row("1")), (1, 0, 1, 0, 0, 0))
+
+    def test_demand_vector_of_isolated_issue_counts_only_itself(self):
+        g = self.graph(self.issue(1, priority="high"))
+        self.assertEqual(g.demand_vector(g.row("1")), (0, 1, 0, 0, 0, 0))
+
+    def test_demand_vector_buckets_unknown_priority_last(self):
+        g = self.graph(self.issue(1, priority="spicy"))
+        self.assertEqual(g.demand_vector(g.row("1")), (0, 0, 0, 0, 0, 1))
+
+    def test_demand_vector_orders_blocker_of_urgent_above_a_lone_high(self):
+        g = self.graph(
+            self.issue(1, priority="medium"),                    # blocks urgent 2
+            self.issue(2, priority="urgent", depends=[1]),
+            self.issue(3, priority="high"),                      # blocks nothing
+        )
+        self.assertGreater(g.demand_vector(g.row("1")), g.demand_vector(g.row("3")))
+
+    def test_demand_vector_breaks_ties_on_how_many_are_blocked(self):
+        g = self.graph(
+            self.issue(1, priority="medium"),
+            self.issue(2, priority="high", depends=[1]),
+            self.issue(3, priority="high", depends=[1]),         # 1 blocks two highs
+            self.issue(4, priority="medium"),
+            self.issue(5, priority="high", depends=[4]),         # 4 blocks one
+        )
+        self.assertGreater(g.demand_vector(g.row("1")), g.demand_vector(g.row("4")))
+
+    def test_demand_vector_never_trades_levels(self):
+        # Many mediums must not add up to one high.
+        rows = [self.issue(1, priority="lowest")]
+        rows += [self.issue(i, priority="medium", depends=[1]) for i in range(10, 20)]
+        rows += [self.issue(2, priority="lowest"), self.issue(3, priority="high", depends=[2])]
+        g = self.graph(*rows)
+        self.assertGreater(g.demand_vector(g.row("2")), g.demand_vector(g.row("1")))
+
+    # --- demand source (the culprit shown in `ready`) --------------------- #
+
+    def test_demand_source_names_the_issue_that_outranks(self):
+        g = self.graph(self.issue(1, priority="medium"),
+                       self.issue(2, priority="urgent", depends=[1]))
+        self.assertEqual(g.demand_source(g.row("1")).id, "2")
+
+    def test_demand_source_is_none_when_own_priority_is_the_maximum(self):
+        g = self.graph(self.issue(1, priority="urgent"),
+                       self.issue(2, priority="high", depends=[1]))
+        self.assertIsNone(g.demand_source(g.row("1")))
+
+    def test_demand_source_is_none_for_an_equal_priority_dependent(self):
+        g = self.graph(self.issue(1, priority="high"),
+                       self.issue(2, priority="high", depends=[1]))
+        self.assertIsNone(g.demand_source(g.row("1")))
+
+    def test_demand_source_picks_the_highest_priority_member(self):
+        g = self.graph(self.issue(1, priority="lowest"),
+                       self.issue(2, priority="high", depends=[1]),
+                       self.issue(3, priority="urgent", depends=[1]))
+        self.assertEqual(g.demand_source(g.row("1")).id, "3")
+
+    def test_demand_source_breaks_ties_by_id(self):
+        g = self.graph(self.issue(1, priority="medium"),
+                       self.issue(3, priority="urgent", depends=[1]),
+                       self.issue(2, priority="urgent", depends=[1]))
+        self.assertEqual(g.demand_source(g.row("1")).id, "2")
+
+    def test_demand_source_ignores_terminal_dependents(self):
+        g = self.graph(self.issue(1, priority="medium"),
+                       self.issue(2, priority="urgent", status="done", depends=[1]))
+        self.assertIsNone(g.demand_source(g.row("1")))
+
     # --- loader ----------------------------------------------------------- #
 
     def test_load_graph_parallels_load_index(self):

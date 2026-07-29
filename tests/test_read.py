@@ -608,6 +608,104 @@ class TestRead(unittest.TestCase):
             self.assertLess(out.index(f"#{id2}"), out.index(f"#{id1}"))    # points within high
             self.assertLess(out.index(f"#{id1}"), out.index(f"#{id3}"))    # priority over points
 
+    # `ready` ranks by demand, not by the declared priority alone: what an issue
+    # unblocks counts as much as what it says it is (issue #yrre4zn).
+
+    def test_ready_ranks_blocker_of_urgent_above_a_lone_high(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            blocker = self.seed(d, "Blocker", priority="medium")
+            self.seed(d, "Urgent", priority="urgent", depends=blocker)
+            lone = self.seed(d, "Lone high", priority="high")
+            out = self.ready(d)
+            self.assertLess(out.index(f"#{blocker}"), out.index(f"#{lone}"))
+
+    def test_ready_ranks_by_how_many_are_blocked_at_the_same_level(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            two = self.seed(d, "Blocks two", priority="medium")
+            one = self.seed(d, "Blocks one", priority="medium")
+            self.seed(d, "H1", priority="high", depends=two)
+            self.seed(d, "H2", priority="high", depends=two)
+            self.seed(d, "H3", priority="high", depends=one)
+            out = self.ready(d)
+            self.assertLess(out.index(f"#{two}"), out.index(f"#{one}"))
+
+    def test_ready_lifts_a_child_of_an_urgent_epic(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            epic = self.seed(d, "Urgent epic", priority="urgent", kind="epic")
+            kid = self.seed(d, "Kid", priority="low", parent=epic)
+            lone = self.seed(d, "Lone high", priority="high")
+            out = self.ready(d)
+            self.assertLess(out.index(f"#{kid}"), out.index(f"#{lone}"))
+
+    def test_ready_keeps_points_then_id_tiebreaks_within_equal_demand(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            small = self.seed(d, "High small", priority="high", points=1)
+            big = self.seed(d, "High big", priority="high", points=8)
+            out = self.ready(d)
+            self.assertLess(out.index(f"#{big}"), out.index(f"#{small}"))
+
+    def test_ready_ignores_demand_from_terminal_dependents(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            blocker = self.seed(d, "Blocker", priority="medium")
+            dead = self.seed(d, "Abandoned", priority="urgent", depends=blocker)
+            lone = self.seed(d, "Lone high", priority="high")
+            self.t.cmd_mv(ns(dir=str(d), id=dead, status="done", resolution="wontfix"))
+            out = self.ready(d)
+            self.assertLess(out.index(f"#{lone}"), out.index(f"#{blocker}"))
+
+    # The marker is what keeps the ranking honest: without it `ready` shows a
+    # medium above a high with no visible reason (issue #aujt85q).
+
+    def test_ready_marks_an_inferred_row_with_the_culprit(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            blocker = self.seed(d, "Blocker", priority="medium")
+            urgent = self.seed(d, "Urgent", priority="urgent", depends=blocker)
+            out = self.row_for(self.ready(d), blocker)
+            self.assertIn(f"↑urgent(#{urgent})", out)
+
+    def test_ready_does_not_mark_a_row_that_is_its_own_maximum(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            top = self.seed(d, "Top", priority="urgent")
+            self.seed(d, "Waiting", priority="high", depends=top)
+            self.assertNotIn("↑", self.row_for(self.ready(d), top))
+
+    def test_ready_marks_with_the_highest_priority_demander(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            blocker = self.seed(d, "Blocker", priority="lowest")
+            self.seed(d, "Merely high", priority="high", depends=blocker)
+            urgent = self.seed(d, "Urgent", priority="urgent", depends=blocker)
+            row = self.row_for(self.ready(d), blocker)
+            self.assertIn(f"↑urgent(#{urgent})", row)
+
+    def test_ready_marks_a_child_of_a_hotter_parent(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            epic = self.seed(d, "Urgent epic", priority="urgent", kind="epic")
+            kid = self.seed(d, "Kid", priority="low", parent=epic)
+            self.assertIn(f"↑urgent(#{epic})", self.row_for(self.ready(d), kid))
+
+    def test_next_carries_the_marker(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            blocker = self.seed(d, "Blocker", priority="medium")
+            urgent = self.seed(d, "Urgent", priority="urgent", depends=blocker)
+            self.assertIn(f"↑urgent(#{urgent})", self.ready(d, next=True))
+
+    def test_list_carries_no_demand_marker(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            blocker = self.seed(d, "Blocker", priority="medium")
+            self.seed(d, "Urgent", priority="urgent", depends=blocker)
+            self.assertNotIn("↑", self.listing(d))
+
     def test_next_prints_only_top_pick(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
@@ -719,6 +817,18 @@ class TestScopedReady(unittest.TestCase):
         return epic, self.seed(d, "Kid one", parent=epic), self.seed(d, "Kid two", parent=epic)
 
     # --- scoping ----------------------------------------------------------- #
+
+    def test_scoping_ranks_over_the_whole_graph_then_filters(self):
+        # The epic's medium kid blocks an urgent issue outside the scope; narrowing
+        # the view must not hide the reason it outranks its high-priority sibling.
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            epic = self.seed(d, "Epic", priority="medium")
+            kid = self.seed(d, "Blocker kid", parent=epic, priority="medium")
+            sib = self.seed(d, "High sibling", parent=epic, priority="high")
+            self.seed(d, "Urgent outsider", priority="urgent", depends=kid)
+            out = self.ready(d, epic)
+            self.assertLess(out.index(f"#{kid}"), out.index(f"#{sib}"))
 
     def test_scoping_keeps_only_the_subtree(self):
         with TemporaryDirectory() as tmp:

@@ -630,6 +630,8 @@ class Graph:
             for d in r.depends_on:
                 self._dependents.setdefault(d, []).append(r)
         self._parents = set(self._children)            # ids with >= 1 child
+        self._demands: dict[str, set[str]] | None = None  # reverse blocking, built once
+        self._cones: dict[str, set[str]] = {}          # per-id demand closure
 
     # lookup
     def get(self, issue_id: int) -> Issue | None:
@@ -782,6 +784,89 @@ class Graph:
         flight, not available — without becoming terminal, so it still blocks."""
         return (not self.is_terminal(r) and self.is_actionable(r)
                 and self.is_leaf(r) and not self.is_blocked(r))
+
+    # --- demand: effective blocking, reversed ----------------------------- #
+    # `is_blocked` asks what an issue is waiting on. Ranking `ready` needs the
+    # mirror image — who is waiting on *it* — because a medium task standing
+    # between us and an urgent one is worth more than a high one that blocks
+    # nothing. Purely derived, like every other predicate here: nothing about
+    # demand is stored, and `list --sort priority` still sorts the declared field.
+
+    def _demand_edges(self) -> dict[str, set[str]]:
+        """`id -> the ids directly waiting on it`, over non-terminal issues only.
+
+        Two channels feed it. An authored edge `a -> b` is inherited by all of
+        `subtree(a)` and satisfied only by all of `subtree(b)` (the lifting rule),
+        so every member of the target subtree is demanded by every member of the
+        source subtree — the same relation `is_blocked` reads, turned around. And
+        a node is demanded by its parent, which is not done until its children
+        are; that alone lets an urgent epic rank its own leaves.
+
+        Terminal issues are dropped from both ends, so they neither count nor
+        conduct: an urgent dependent closed as `wontfix` stops making its
+        blockers urgent, exactly as it stops blocking. Built once per graph."""
+        if self._demands is None:
+            rev: dict[str, set[str]] = {}
+            for r in self.rows:
+                if self.is_terminal(r):
+                    continue
+                p = self.by_id.get(r.parent) if r.parent is not None else None
+                if p is not None and not self.is_terminal(p):
+                    rev.setdefault(r.id, set()).add(p.id)
+            for a in self.rows:
+                srcs = {n.id for n in self.subtree(a) if not self.is_terminal(n)}
+                if not srcs:
+                    continue
+                for b in self.requires_of(a):
+                    for t in self.subtree(b):
+                        if not self.is_terminal(t):
+                            rev.setdefault(t.id, set()).update(srcs)
+            self._demands = rev
+        return self._demands
+
+    def demand_cone(self, r: Issue) -> set[str]:
+        """`r` plus every non-terminal issue transitively waiting on it — the
+        transitive closure of `_demand_edges` from `r`. `r` is always in its own
+        cone, so an issue nobody waits on still ranks by its own priority."""
+        cone = self._cones.get(r.id)
+        if cone is None:
+            rev = self._demand_edges()
+            cone, stack = {r.id}, [r.id]
+            while stack:
+                for n in rev.get(stack.pop(), ()):
+                    if n not in cone:
+                        cone.add(n)
+                        stack.append(n)
+            self._cones[r.id] = cone
+        return cone
+
+    def demand_vector(self, r: Issue) -> tuple[int, ...]:
+        """The cone's population per configured priority, highest first, with a
+        trailing bucket for unconfigured ones. Compared lexicographically this is
+        the whole ranking rule: the first non-zero slot *is* the cone's maximum
+        priority (blocking an urgent issue beats being high), and within a slot a
+        larger count wins (blocking two high issues beats blocking one). Levels
+        never trade, so no pile of mediums adds up to a high."""
+        order = self.cfg.get("priorities") or []
+        counts = [0] * (len(order) + 1)
+        for i in self.demand_cone(r):
+            counts[priority_rank(self.cfg, self.by_id[i].priority)] += 1
+        return tuple(counts)
+
+    def demand_source(self, r: Issue) -> Issue | None:
+        """The cone member that makes `r` rank above its own priority — the
+        highest-priority issue waiting on it, or None when `r` is already the
+        maximum (nothing to explain). Ties go to the lowest id, so the note a row
+        carries is stable across runs."""
+        own = priority_rank(self.cfg, r.priority)
+        best = None
+        for i in sorted(self.demand_cone(r)):
+            if i == r.id:
+                continue
+            rank = priority_rank(self.cfg, self.by_id[i].priority)
+            if rank < own and (best is None or rank < priority_rank(self.cfg, best.priority)):
+                best = self.by_id[i]
+        return best
 
     # dependency graph
     def dependency_line(self, r: Issue, up: bool = True, down: bool = True,
@@ -1358,6 +1443,22 @@ def block_annotations(g: Graph, r: Issue, on_screen=frozenset()) -> str:
     return paint(" " + "  ".join(parts), "dim") if parts else ""
 
 
+def demand_annotation(g: Graph, r: Issue, abbrev=None) -> str:
+    """A ` ↑<priority>(#id)` suffix naming why a row outranks its own priority: the
+    highest-priority issue waiting on it (`Graph.demand_source`), coloured as that
+    priority. Empty when the row is its own maximum — most rows carry no note.
+
+    `ready` sorts by the demand cone, so without this a `medium` row sits above a
+    `high` one with nothing on screen to explain it. It rides the same trailing slot
+    `list` uses for its `needs #…`/`blocks #…` notes rather than widening the
+    priority column, which `print_rows` shares with `list`."""
+    src = g.demand_source(r)
+    if src is None:
+        return ""
+    prio = paint(f"↑{src.priority}", *priority_codes(g.cfg, src.priority))
+    return f"  {prio}({hl_id(src.id, abbrev)})"
+
+
 def node_label(ctx: Ctx, r: Issue, focal: bool = False, abbrev=None) -> str:
     tag = " ·epic·" if r.kind == "epic" else ""
     icon = paint(status_icon(ctx, r.status), *status_codes(ctx.cfg, r.status))
@@ -1886,6 +1987,12 @@ each means something distinct. Pick the right one.
   siblings and cousins can. **Be precise:** an over-broad edge blocks work that is actually ready.
 - **Priorities = soft ordering (SHOULD).** A task that *should* be done before another — a
   preference that influences what to pick up next, not a constraint. Nothing is blocked.
+  Set a priority on the issue that **carries** the urgency, not on everything it needs:
+  `ready`/`next` rank by **demand**, counting what an issue unblocks (its dependents and
+  the parents it composes, transitively) alongside its own priority, so a medium task
+  blocking an urgent one outranks a high task blocking nothing. A row lifted that way is
+  marked `↑<priority>(#id)` naming what drives it. Marking every prerequisite urgent by
+  hand only flattens the ordering you were trying to express.
 
 Rule of thumb: decomposition → **parent/child**; "category of similar things" → **labels**;
 "must come first" → **dependency**; "ought to come first" → **priority**.
@@ -2398,8 +2505,13 @@ def cmd_which(args) -> None:
 def cmd_ready(args) -> None:
     ctx = build_ctx_or_die(args)
     g = load_graph(ctx)                                    # not-terminal leaf, every dep terminal
+    # Ranked by demand, not by the declared priority alone: a medium task standing
+    # between us and an urgent one outranks a high one that blocks nothing. The
+    # negated `demand_vector` is compared slot by slot (see `Graph.demand_vector`),
+    # then the long-standing `-points`, `id` tie-breaks. With no dependencies and no
+    # parents every cone is a singleton, which is the declared-priority sort exactly.
     rows = sorted((r for r in g.rows if g.is_ready(r)),
-                  key=lambda r: (priority_rank(ctx.cfg, r.priority), -r.points, r.id))
+                  key=lambda r: (*(-n for n in g.demand_vector(r)), -r.points, r.id))
     root = getattr(args, "id", None)
     if root is not None:
         # Scope by filtering the *result*, never by restricting the graph readiness is
@@ -2410,7 +2522,9 @@ def cmd_ready(args) -> None:
         rows = [r for r in rows if r.id in kept]
     if getattr(args, "next", False):
         rows = rows[:1]
-    print_rows(ctx, rows, abbrev=unique_prefix_lens([r.id for r in g.rows]))
+    abbrev = unique_prefix_lens([r.id for r in g.rows])
+    print_rows(ctx, rows, abbrev=abbrev,
+               annotate=lambda r: demand_annotation(g, r, abbrev))
 
 
 def cmd_next(args) -> None:
@@ -2904,7 +3018,10 @@ RECOMMENDED USAGE
               on a parent waits for its whole subtree. Put the arrow at the right
               altitude (parent vs. specific children) and be precise.
   priority    soft ordering (SHOULD): a preference for what to pick up next, not
-              a constraint -- nothing is blocked.
+              a constraint -- nothing is blocked. Set it on the issue that
+              carries the urgency; ready/next propagate it back along the
+              dependency and parent edges, so a blocker inherits the urgency of
+              whatever is waiting on it (marked `↑<priority>(#id)` on the row).
 
 TYPICAL FLOW
   trck new "Add CSV export" --priority high     # create; prints the new id
@@ -2914,7 +3031,7 @@ TYPICAL FLOW
   trck start 7                                   # -> ongoing
   trck review 7 https://github.com/o/r/pull/12  # -> in-review, links the PR
   trck done 7 --resolution superseded            # -> done (resolution optional)
-  trck ready         /  trck next                # unblocked work / the top pick
+  trck ready         /  trck next                # unblocked work, ranked by demand
   trck list                                      # active forest (settled subtrees hidden)
   trck list --all                                # include settled (done) work too
   trck list --status ongoing                     # what's in flight
@@ -3111,11 +3228,16 @@ def build_parser() -> argparse.ArgumentParser:
     rd = sub.add_parser(
         "ready", help="list issues you can work on right now",
         description="List not-done leaf issues whose dependencies are all in a "
-                    "terminal status, ranked by priority then points then id. With an "
-                    "id, scope to that issue's subtree — what can I pick up on this "
+                    "terminal status, ranked by demand: an issue counts for what it "
+                    "unblocks, so a medium task blocking an urgent one outranks a high "
+                    "task blocking nothing. Ties go to the number of issues blocked at "
+                    "that priority, then points, then id. A row ranked above its own "
+                    "priority is marked ↑<priority>(#id), naming what drives it. With "
+                    "an id, scope to that issue's subtree — what can I pick up on this "
                     "epic right now. Scoping never loosens blocking: a leaf waiting on "
                     "an issue outside the subtree, directly or through an edge "
-                    "authored on an ancestor, stays out.")
+                    "authored on an ancestor, stays out; nor does it change the "
+                    "ranking, which is computed over the whole graph.")
     rd.add_argument("id", nargs="?", help="scope to this issue's subtree")
     rd.add_argument("--next", action="store_true",
                     help="print only the single highest-ranked ready issue")
@@ -3123,8 +3245,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     nx = sub.add_parser("next", help="print the single best issue to work on next",
                         description="Print only the highest-ranked ready issue "
-                                    "(shorthand for `ready --next`). With an id, the "
-                                    "best pick within that issue's subtree.")
+                                    "(shorthand for `ready --next`) — the work that "
+                                    "unblocks the hottest issue, not necessarily the "
+                                    "hottest issue itself. With an id, the best pick "
+                                    "within that issue's subtree.")
     nx.add_argument("id", nargs="?", help="scope to this issue's subtree")
     nx.set_defaults(func=cmd_next)
 

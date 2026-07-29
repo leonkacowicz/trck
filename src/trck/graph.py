@@ -3,6 +3,7 @@ import secrets
 from .config import is_actionable, is_terminal, reconcile, status_names
 from .constants import FILENAME_RE, ID_ALPHABET, ID_LEN
 from .index import Ctx, DEFAULT_POINTS, Issue, file_id, get_id, get_row, load_index
+from .render import priority_rank
 from .templates import move_issue
 
 # --------------------------------------------------------------------------- #
@@ -29,6 +30,8 @@ class Graph:
             for d in r.depends_on:
                 self._dependents.setdefault(d, []).append(r)
         self._parents = set(self._children)            # ids with >= 1 child
+        self._demands: dict[str, set[str]] | None = None  # reverse blocking, built once
+        self._cones: dict[str, set[str]] = {}          # per-id demand closure
 
     # lookup
     def get(self, issue_id: int) -> Issue | None:
@@ -181,6 +184,89 @@ class Graph:
         flight, not available — without becoming terminal, so it still blocks."""
         return (not self.is_terminal(r) and self.is_actionable(r)
                 and self.is_leaf(r) and not self.is_blocked(r))
+
+    # --- demand: effective blocking, reversed ----------------------------- #
+    # `is_blocked` asks what an issue is waiting on. Ranking `ready` needs the
+    # mirror image — who is waiting on *it* — because a medium task standing
+    # between us and an urgent one is worth more than a high one that blocks
+    # nothing. Purely derived, like every other predicate here: nothing about
+    # demand is stored, and `list --sort priority` still sorts the declared field.
+
+    def _demand_edges(self) -> dict[str, set[str]]:
+        """`id -> the ids directly waiting on it`, over non-terminal issues only.
+
+        Two channels feed it. An authored edge `a -> b` is inherited by all of
+        `subtree(a)` and satisfied only by all of `subtree(b)` (the lifting rule),
+        so every member of the target subtree is demanded by every member of the
+        source subtree — the same relation `is_blocked` reads, turned around. And
+        a node is demanded by its parent, which is not done until its children
+        are; that alone lets an urgent epic rank its own leaves.
+
+        Terminal issues are dropped from both ends, so they neither count nor
+        conduct: an urgent dependent closed as `wontfix` stops making its
+        blockers urgent, exactly as it stops blocking. Built once per graph."""
+        if self._demands is None:
+            rev: dict[str, set[str]] = {}
+            for r in self.rows:
+                if self.is_terminal(r):
+                    continue
+                p = self.by_id.get(r.parent) if r.parent is not None else None
+                if p is not None and not self.is_terminal(p):
+                    rev.setdefault(r.id, set()).add(p.id)
+            for a in self.rows:
+                srcs = {n.id for n in self.subtree(a) if not self.is_terminal(n)}
+                if not srcs:
+                    continue
+                for b in self.requires_of(a):
+                    for t in self.subtree(b):
+                        if not self.is_terminal(t):
+                            rev.setdefault(t.id, set()).update(srcs)
+            self._demands = rev
+        return self._demands
+
+    def demand_cone(self, r: Issue) -> set[str]:
+        """`r` plus every non-terminal issue transitively waiting on it — the
+        transitive closure of `_demand_edges` from `r`. `r` is always in its own
+        cone, so an issue nobody waits on still ranks by its own priority."""
+        cone = self._cones.get(r.id)
+        if cone is None:
+            rev = self._demand_edges()
+            cone, stack = {r.id}, [r.id]
+            while stack:
+                for n in rev.get(stack.pop(), ()):
+                    if n not in cone:
+                        cone.add(n)
+                        stack.append(n)
+            self._cones[r.id] = cone
+        return cone
+
+    def demand_vector(self, r: Issue) -> tuple[int, ...]:
+        """The cone's population per configured priority, highest first, with a
+        trailing bucket for unconfigured ones. Compared lexicographically this is
+        the whole ranking rule: the first non-zero slot *is* the cone's maximum
+        priority (blocking an urgent issue beats being high), and within a slot a
+        larger count wins (blocking two high issues beats blocking one). Levels
+        never trade, so no pile of mediums adds up to a high."""
+        order = self.cfg.get("priorities") or []
+        counts = [0] * (len(order) + 1)
+        for i in self.demand_cone(r):
+            counts[priority_rank(self.cfg, self.by_id[i].priority)] += 1
+        return tuple(counts)
+
+    def demand_source(self, r: Issue) -> Issue | None:
+        """The cone member that makes `r` rank above its own priority — the
+        highest-priority issue waiting on it, or None when `r` is already the
+        maximum (nothing to explain). Ties go to the lowest id, so the note a row
+        carries is stable across runs."""
+        own = priority_rank(self.cfg, r.priority)
+        best = None
+        for i in sorted(self.demand_cone(r)):
+            if i == r.id:
+                continue
+            rank = priority_rank(self.cfg, self.by_id[i].priority)
+            if rank < own and (best is None or rank < priority_rank(self.cfg, best.priority)):
+                best = self.by_id[i]
+        return best
 
     # dependency graph
     def dependency_line(self, r: Issue, up: bool = True, down: bool = True,

@@ -6,7 +6,7 @@ from .cmd_maint import ns_like
 from .constants import FILENAME_RE, date_slice, die
 from .graph import Graph, load_graph
 from .index import CANON_KEYS, Ctx, Issue, build_ctx_or_die, check_field_key, file_id, get_id, get_row, issue_path, load_index, resolve_ref, unique_prefix_lens
-from .render import block_annotations, deps_overview_ids, filter_deps_graph_ids, graph_components, hl_id, node_label, paint, paint_lane, parse_status_filter, priority_codes, priority_rank, render_graph, status_codes, status_icon
+from .render import block_annotations, demand_annotation, deps_overview_ids, filter_deps_graph_ids, graph_components, hl_id, node_label, paint, paint_lane, parse_status_filter, priority_codes, priority_rank, render_graph, status_codes, status_icon
 from .summary import progress_pct
 
 def cmd_show(args) -> None:
@@ -258,8 +258,13 @@ def cmd_which(args) -> None:
 def cmd_ready(args) -> None:
     ctx = build_ctx_or_die(args)
     g = load_graph(ctx)                                    # not-terminal leaf, every dep terminal
+    # Ranked by demand, not by the declared priority alone: a medium task standing
+    # between us and an urgent one outranks a high one that blocks nothing. The
+    # negated `demand_vector` is compared slot by slot (see `Graph.demand_vector`),
+    # then the long-standing `-points`, `id` tie-breaks. With no dependencies and no
+    # parents every cone is a singleton, which is the declared-priority sort exactly.
     rows = sorted((r for r in g.rows if g.is_ready(r)),
-                  key=lambda r: (priority_rank(ctx.cfg, r.priority), -r.points, r.id))
+                  key=lambda r: (*(-n for n in g.demand_vector(r)), -r.points, r.id))
     root = getattr(args, "id", None)
     if root is not None:
         # Scope by filtering the *result*, never by restricting the graph readiness is
@@ -270,7 +275,9 @@ def cmd_ready(args) -> None:
         rows = [r for r in rows if r.id in kept]
     if getattr(args, "next", False):
         rows = rows[:1]
-    print_rows(ctx, rows, abbrev=unique_prefix_lens([r.id for r in g.rows]))
+    abbrev = unique_prefix_lens([r.id for r in g.rows])
+    print_rows(ctx, rows, abbrev=abbrev,
+               annotate=lambda r: demand_annotation(g, r, abbrev))
 
 
 def cmd_next(args) -> None:

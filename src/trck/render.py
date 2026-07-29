@@ -168,6 +168,22 @@ def block_annotations(g: Graph, r: Issue, on_screen=frozenset()) -> str:
     return paint(" " + "  ".join(parts), "dim") if parts else ""
 
 
+def demand_annotation(g: Graph, r: Issue, abbrev=None) -> str:
+    """A ` ↑<priority>(#id)` suffix naming why a row outranks its own priority: the
+    highest-priority issue waiting on it (`Graph.demand_source`), coloured as that
+    priority. Empty when the row is its own maximum — most rows carry no note.
+
+    `ready` sorts by the demand cone, so without this a `medium` row sits above a
+    `high` one with nothing on screen to explain it. It rides the same trailing slot
+    `list` uses for its `needs #…`/`blocks #…` notes rather than widening the
+    priority column, which `print_rows` shares with `list`."""
+    src = g.demand_source(r)
+    if src is None:
+        return ""
+    prio = paint(f"↑{src.priority}", *priority_codes(g.cfg, src.priority))
+    return f"  {prio}({hl_id(src.id, abbrev)})"
+
+
 def node_label(ctx: Ctx, r: Issue, focal: bool = False, abbrev=None) -> str:
     tag = " ·epic·" if r.kind == "epic" else ""
     icon = paint(status_icon(ctx, r.status), *status_codes(ctx.cfg, r.status))

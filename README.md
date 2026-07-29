@@ -109,7 +109,9 @@ convenience aliases resolved through `aliases`. So a repo can use, say,
 `todo → doing → review → shipped` and either define its own aliases or just use `mv`.
 
 `priorities` is **ordered by precedence** — first is highest — and that order drives
-`list --sort priority`, `ready`, and `next`. The priority `trck new` assigns when you don't
+`list --sort priority` as well as the demand ranking behind `ready` and `next` (which
+weighs what an issue *unblocks*, not only what it declares — see **Ranked by demand**
+under [Common verbs](#common-verbs)). The priority `trck new` assigns when you don't
 pass `--priority` is set separately by `default_priority` (default `medium`); if omitted it
 falls back to the middle of the list.
 
@@ -169,7 +171,26 @@ pick); `next` prints the single best issue to work on next; `normalize` rewrites
 `index.jsonl` in canonical slim form. Both take an optional issue id — `trck ready NNN`
 scopes to that issue's subtree, answering "what can I pick up on this epic right now".
 Scoping narrows the answer, never the constraints: a leaf waiting on something outside the
-subtree, directly or through an edge authored on an ancestor, stays out of the list.
+subtree, directly or through an edge authored on an ancestor, stays out of the list — and
+never the ranking either: rows are ranked over the whole graph, then filtered.
+
+**Ranked by demand.** `ready`/`next` don't order by an issue's own priority alone — a
+medium task standing between you and an urgent one matters more than a high one that
+blocks nothing. Each issue is ranked by its **demand cone**: itself plus every unfinished
+issue transitively waiting on it, through both authored dependencies (a dependent needs
+it) and containment (a parent isn't done until its children are). The cone's members are
+counted per priority and compared highest-first, so the cone's top priority decides, and
+within it blocking *two* high issues beats blocking one. Levels never trade — no pile of
+mediums adds up to a high — and `-points`, then id, break what's left. Finished issues
+neither count nor conduct: an urgent dependent closed as `wontfix` stops making its
+blockers urgent, exactly as it stops blocking them.
+
+A row that ranks above its own priority says why, naming the issue that drives it:
+
+    ○ #k3m9x2a backlog  medium  Extract the parser  ↑urgent(#a1b2c3)
+
+Nothing about this is stored — it's derived from the graph on every run, like readiness
+itself. `list --sort priority` still sorts the declared field, and so does `SUMMARY.md`.
 
 Epics: create an epic with `--kind epic`, attach children with `--parent NNN`; the epic's
 points-weighted rollup `%` is computed from its children and shown after the title on every
@@ -346,6 +367,11 @@ actionable, and a missing one surfaces work that isn't.
 
 A **priority** expresses that a task *should* be done before another — an ordering
 preference, not a constraint. Nothing is blocked; it just influences what to pick up next.
+
+Set it on the issue that *carries* the urgency, not on everything it needs. `ready`/`next`
+propagate it backwards for you: an issue inherits the urgency of whatever waits on it (see
+**Ranked by demand** under [Common verbs](#common-verbs)), so marking every prerequisite
+urgent by hand only flattens the ordering you were trying to express.
 
 > Rule of thumb: decomposition → **parent/child**; "a category of similar things" →
 > **labels**; "must come first" → **dependency**; "ought to come first" → **priority**.
