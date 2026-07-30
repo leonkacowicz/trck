@@ -10,11 +10,11 @@ import shutil
 import subprocess
 import sys
 from .cmd_mutate import cmd_mv
-from .config import DEFAULT_CONFIG, check_pr, is_terminal, resolve_alias, resolve_tracker_dir
-from .constants import DEFAULT_UPDATE_REPO, ID_ALPHABET, ID_LEN, SELF_PATH, SINCE_RE, __version__, die
+from .config import DEFAULT_CONFIG, check_pr, detect_legacy_layout, is_terminal, resolve_alias, resolve_tracker_dir
+from .constants import DEFAULT_UPDATE_REPO, FILENAME_RE, ID_ALPHABET, ID_LEN, ITEMS_DIR, SELF_PATH, SINCE_RE, __version__, die
 from .finalize import finalize
 from .graph import Graph, _existing_ids
-from .index import build_ctx, build_ctx_or_die, issue_path, load_index
+from .index import build_ctx, build_ctx_or_die, file_id, issue_path, load_index
 from .scan import validate
 from .summary import write_summary
 from .templates import CLAUDE_MD_TEMPLATE, README_TEMPLATE
@@ -343,3 +343,67 @@ def _refresh_managed_docs(args, new_source: str) -> None:
             print(f"kept your modified {path} (template changed upstream)")
 
 
+
+
+def cmd_migrate_layout(args) -> None:
+    """One-shot: relocate every issue body from its per-status folder into
+    `items/`. Status stops being encoded in the path and lives only in
+    index.jsonl. Idempotent — a flat tracker is a no-op.
+
+    Deliberately conservative about the one ambiguity a legacy tracker can carry:
+    if a file's folder disagrees with its index status, the two sources of truth
+    have already drifted and only the author knows which is right, so we stop
+    rather than silently canonizing one."""
+    ctx = build_ctx_or_die(args, guard_layout=False)
+    stale = detect_legacy_layout(ctx.cfg, ctx.dir)
+    if not stale:
+        print(f"migrate-layout: nothing to migrate (already flat in {ITEMS_DIR}/)")
+        return
+
+    rows = load_index(ctx)
+    by_id = {r.id: r for r in rows}
+    dest_dir = ctx.dir / ITEMS_DIR
+
+    drift, collisions, moves = [], [], []
+    for p in stale:
+        m = FILENAME_RE.match(p.name)
+        iid = file_id(m)
+        row = by_id.get(iid)
+        if row is not None and row.status != p.parent.name:
+            drift.append(f"#{iid}: index says '{row.status}', file sits in "
+                         f"'{p.parent.name}/'")
+            continue
+        dest = dest_dir / p.name
+        if dest.exists():
+            collisions.append(f"#{iid}: {dest} already exists")
+            continue
+        moves.append((p, dest))
+
+    if drift:
+        detail = "\n  ".join(drift)
+        die(f"index status and folder disagree for {len(drift)} issue(s); fix the "
+            f"index (or move the files) so they agree, then re-run:\n  {detail}")
+    if collisions:
+        detail = "\n  ".join(collisions)
+        die(f"destination already occupied for {len(collisions)} file(s):\n  {detail}")
+
+    if getattr(args, "dry_run", False):
+        print(f"migrate-layout: would move {len(moves)} file(s) into {ITEMS_DIR}/")
+        for src, dest in moves:
+            print(f"  {src.parent.name}/{src.name} -> {ITEMS_DIR}/{dest.name}")
+        return
+
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    for src, dest in moves:
+        shutil.move(str(src), str(dest))
+
+    # Drop the status folders that are now empty. A folder holding anything else
+    # (a README, a scratch note) is left alone — rmdir refuses a non-empty dir.
+    for folder in {src.parent for src, _ in moves}:
+        try:
+            folder.rmdir()
+        except OSError:
+            pass
+
+    finalize(ctx, rows)  # rewrite SUMMARY.md with items/ links, then validate
+    print(f"migrate-layout: moved {len(moves)} file(s) into {ITEMS_DIR}/")

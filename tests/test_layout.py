@@ -163,3 +163,97 @@ class TestLegacyLayoutGuard(unittest.TestCase):
             d = self.legacy(tmp)
             ctx = self.t.build_ctx_or_die(ns(dir=str(d)), guard_layout=False)
             self.assertEqual(ctx.dir, d)
+
+
+class TestMigrateLayout(unittest.TestCase):
+    def setUp(self):
+        self.t = load_trck()
+
+    def legacy(self, tmp, *specs):
+        """Build a legacy-layout tracker. Each spec is (id, slug, status)."""
+        d = make_tracker(tmp, {})
+        ctx = self.t.Ctx(d, self.t.load_config(d))
+        rows = []
+        for iid, slug, status in specs:
+            row = self.t.Issue(id=iid, slug=slug, title=slug.title(), kind="task",
+                               status=status, priority="high")
+            folder = d / status
+            folder.mkdir(parents=True, exist_ok=True)
+            (folder / self.t.filename(row)).write_text(f"# {slug.title()}\n")
+            rows.append(row)
+        self.t.save_index(ctx, rows)
+        return d
+
+    def cap(self, fn, args):
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            fn(args)
+        return buf.getvalue()
+
+    def test_migrate_moves_every_file_into_items(self):
+        with TemporaryDirectory() as tmp:
+            d = self.legacy(tmp, ("abc1234", "alpha", "backlog"),
+                                 ("bcd2345", "beta", "done"))
+            self.cap(self.t.cmd_migrate_layout, ns(dir=str(d), dry_run=False))
+            names = sorted(p.name for p in (d / "items").glob("*.md"))
+            self.assertEqual(names, ["abc1234-alpha.md", "bcd2345-beta.md"])
+            self.assertFalse((d / "backlog").exists())
+            self.assertFalse((d / "done").exists())
+
+    def test_migrate_preserves_status_from_the_index(self):
+        with TemporaryDirectory() as tmp:
+            d = self.legacy(tmp, ("abc1234", "alpha", "backlog"),
+                                 ("bcd2345", "beta", "done"))
+            self.cap(self.t.cmd_migrate_layout, ns(dir=str(d), dry_run=False))
+            ctx = self.t.build_ctx_or_die(ns(dir=str(d)))
+            by_id = {r.id: r.status for r in self.t.load_index(ctx)}
+            self.assertEqual(by_id, {"abc1234": "backlog", "bcd2345": "done"})
+
+    def test_check_passes_after_migration(self):
+        with TemporaryDirectory() as tmp:
+            d = self.legacy(tmp, ("abc1234", "alpha", "backlog"))
+            self.cap(self.t.cmd_migrate_layout, ns(dir=str(d), dry_run=False))
+            out = self.cap(self.t.cmd_check, ns(dir=str(d)))
+            self.assertIn("OK", out)
+
+    def test_migrate_is_idempotent(self):
+        with TemporaryDirectory() as tmp:
+            d = self.legacy(tmp, ("abc1234", "alpha", "backlog"))
+            self.cap(self.t.cmd_migrate_layout, ns(dir=str(d), dry_run=False))
+            out = self.cap(self.t.cmd_migrate_layout, ns(dir=str(d), dry_run=False))
+            self.assertIn("nothing to migrate", out)
+
+    def test_dry_run_writes_nothing(self):
+        with TemporaryDirectory() as tmp:
+            d = self.legacy(tmp, ("abc1234", "alpha", "backlog"))
+            out = self.cap(self.t.cmd_migrate_layout, ns(dir=str(d), dry_run=True))
+            self.assertIn("abc1234-alpha.md", out)
+            self.assertTrue((d / "backlog" / "abc1234-alpha.md").is_file())
+            self.assertFalse((d / "items").exists())
+
+    def test_migrate_dies_when_folder_and_index_status_disagree(self):
+        with TemporaryDirectory() as tmp:
+            d = self.legacy(tmp, ("abc1234", "alpha", "backlog"))
+            ctx = self.t.Ctx(d, self.t.load_config(d))
+            rows = self.t.load_index(ctx)
+            rows[0].status = "done"            # index says done, file sits in backlog/
+            self.t.save_index(ctx, rows)
+            with self.assertRaises(SystemExit):
+                self.cap(self.t.cmd_migrate_layout, ns(dir=str(d), dry_run=False))
+            self.assertTrue((d / "backlog" / "abc1234-alpha.md").is_file())
+
+    def test_migrate_dies_on_a_destination_collision(self):
+        with TemporaryDirectory() as tmp:
+            d = self.legacy(tmp, ("abc1234", "alpha", "backlog"))
+            (d / "items").mkdir()
+            (d / "items" / "abc1234-alpha.md").write_text("# squatter\n")
+            with self.assertRaises(SystemExit):
+                self.cap(self.t.cmd_migrate_layout, ns(dir=str(d), dry_run=False))
+
+    def test_migrate_leaves_non_issue_files_in_place(self):
+        with TemporaryDirectory() as tmp:
+            d = self.legacy(tmp, ("abc1234", "alpha", "backlog"))
+            (d / "backlog" / "NOTES.md").write_text("scratch\n")
+            self.cap(self.t.cmd_migrate_layout, ns(dir=str(d), dry_run=False))
+            self.assertTrue((d / "backlog" / "NOTES.md").is_file())  # folder kept
+            self.assertTrue((d / "items" / "abc1234-alpha.md").is_file())

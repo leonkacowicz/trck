@@ -1,6 +1,6 @@
 from __future__ import annotations
 import argparse
-from .cmd_maint import cmd_changelog, cmd_check, cmd_done, cmd_init, cmd_install_hook, cmd_normalize, cmd_renumber, cmd_review, cmd_start, cmd_summary, cmd_version
+from .cmd_maint import cmd_changelog, cmd_check, cmd_done, cmd_init, cmd_install_hook, cmd_migrate_layout, cmd_normalize, cmd_renumber, cmd_review, cmd_start, cmd_summary, cmd_version
 from .cmd_mutate import cmd_dep, cmd_label, cmd_mv, cmd_new, cmd_set
 from .cmd_query import cmd_deps, cmd_list, cmd_next, cmd_path, cmd_ready, cmd_show, cmd_which
 from .cmd_selfmgmt import cmd_update
@@ -368,6 +368,17 @@ def build_parser() -> argparse.ArgumentParser:
     ih = rsub.add_parser("install-hook", help="install the pre-commit consistency hook",
                          description="Install a git pre-commit hook that runs `trck check`.")
     ih.set_defaults(func=cmd_install_hook)
+
+    ml = rsub.add_parser("migrate-layout",
+                         help="one-shot: move issue files from status folders into items/",
+                         description="One-shot migration to the flat layout: move every "
+                                     "issue body out of its per-status folder into "
+                                     "items/, so status lives only in index.jsonl. "
+                                     "Idempotent; stops without writing if a file's "
+                                     "folder disagrees with its index status.")
+    ml.add_argument("--dry-run", action="store_true",
+                    help="print what would move, write nothing")
+    ml.set_defaults(func=cmd_migrate_layout)
 
     iv = sub.add_parser("init", help="scaffold a tracker into the current repo",
                         description="Scaffold a tracker (trck.json + dirs) into the "

@@ -11,7 +11,7 @@ from contextlib import redirect_stderr
 
 from tests.helpers import load_trck
 
-GROUPED = ["normalize", "renumber", "install-hook"]
+GROUPED = ["normalize", "renumber", "install-hook", "migrate-layout"]
 ROOT_ONLY = ["init", "update"]
 
 
@@ -63,6 +63,7 @@ class TestRepoGroup(unittest.TestCase):
             "normalize": self.t.cmd_normalize,
             "renumber": self.t.cmd_renumber,
             "install-hook": self.t.cmd_install_hook,
+            "migrate-layout": self.t.cmd_migrate_layout,
         }
         for verb, func in expected.items():
             with self.subTest(verb=verb):
