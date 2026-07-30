@@ -5,13 +5,24 @@
 
 | State | Count |
 |---|---:|
-| backlog | 24 |
+| backlog | 33 |
 | ongoing | 1 |
 | in-review | 0 |
 | done | 92 |
-| **total** | **117** |
+| **total** | **126** |
 
 ## Hierarchies
+
+### [#2srvf6j Flat items/ layout: status lives only in index.jsonl](backlog/2srvf6j-flat-items-layout-status-lives-only-in-index-jsonl.md) — 0% (0/14 pts · 0/7 done) · _high_ · backlog
+Spec: [`docs/plans/2026-07-30-flat-items-layout.md`](../docs/plans/2026-07-30-flat-items-layout.md)
+
+- [ ] [#82an2dy release v0.23.0 with the breaking layout change](backlog/82an2dy-release-v0-23-0-with-the-breaking-layout-change.md) _(backlog)_
+- [ ] [#8fdjhhf detect the legacy status-folder layout and refuse to run](backlog/8fdjhhf-detect-the-legacy-status-folder-layout-and-refuse-to-run.md) _(backlog)_
+- [ ] [#nrvcky7 docs: status is an index field, not a directory](backlog/nrvcky7-docs-status-is-an-index-field-not-a-directory.md) _(backlog)_
+- [ ] [#twgv9jq migrate this repo's tracker and the bundled example](backlog/twgv9jq-migrate-this-repo-s-tracker-and-the-bundled-example.md) _(backlog)_
+- [ ] [#v7zzefd layout: point issue_path/rel_link/scan_files at items/](backlog/v7zzefd-layout-point-issue-path-rel-link-scan-files-at-items.md) _(backlog)_
+- [ ] [#x2exfdf add the migrate-layout verb](backlog/x2exfdf-add-the-migrate-layout-verb.md) _(backlog)_
+- [ ] [#zk5k59n move_issue: drop the now-unreachable file move](backlog/zk5k59n-move-issue-drop-the-now-unreachable-file-move.md) _(backlog)_
 
 ### [#9bktptp ready/next: rank by demand cone (inferred priority) + marker](done/9bktptp-ready-next-rank-by-demand-cone-inferred-priority-marker.md) — 100% (8/8 pts · 4/4 done) · _high_ · done
 
@@ -101,6 +112,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 ## Backlog
 
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](backlog/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
+- [#qs4zwzr Group the maintenance verbs under 'trck repo'](backlog/qs4zwzr-group-the-maintenance-verbs-out-of-the-root-command-namespace.md) — _medium_ [tracker-features]
 - [#tfhhp8h mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](backlog/tfhhp8h-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
 - [#wh3mv52 mv/done: guard closing a parent with open descendants (--recurse to cascade)](backlog/wh3mv52-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
 - [#5jhvpz4 update: add a minimum-size sanity check on the downloaded engine](backlog/5jhvpz4-update-add-a-minimum-size-sanity-check-on-the-downloaded-engine.md) — _low_
