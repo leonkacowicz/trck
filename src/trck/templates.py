@@ -162,27 +162,46 @@ def guard_effective_acyclic(ctx: Ctx, rows: list[Issue]) -> None:
             + g.describe_effective_cycle(cycles[0]))
 
 
-def move_issue(ctx: Ctx, row: Issue, new_status: str) -> None:
-    """Set an issue's status and stamp the dates its roles imply. The body file
-    does not move — the path encodes id and slug only, so a status change is
-    purely an index edit. The existence check stays so a missing body fails here,
-    loudly, rather than as a `check` error after the fact."""
-    if new_status not in status_names(ctx.cfg):
-        die(f"unknown status '{new_status}' (configured: {', '.join(status_names(ctx.cfg))})")
-    path = issue_path(ctx, row)
-    if not path.exists():
-        die(f"file missing for #{row.id}: {path}")
+def apply_status(cfg: dict, row: Issue, new_status: str) -> None:
+    """Apply a status transition: validate against the configured vocabulary, set
+    the status, and stamp the dates the roles imply.
+
+    Pure — no filesystem contact — so it is safe wherever the working tree may not
+    be settled: in-memory normalisation, dry runs, and merge drivers, which run
+    mid-operation when git may not have written a body file yet. Callers acting on
+    a user's instruction about a specific issue should use `move_issue`, which adds
+    the missing-body guard."""
+    if new_status not in status_names(cfg):
+        die(f"unknown status '{new_status}' (configured: {', '.join(status_names(cfg))})")
     old_status = row.status
     row.status = new_status
 
-    init = initial_status(ctx.cfg)
+    init = initial_status(cfg)
     if old_status == init and new_status != init and not row.started:
         row.started = now_utc()
-    if is_terminal(ctx.cfg, new_status):
+    if is_terminal(cfg, new_status):
         if not row.closed:
             row.closed = now_utc()
     else:
         row.closed = None
         row.resolution = None
+
+
+def move_issue(ctx: Ctx, row: Issue, new_status: str) -> None:
+    """`apply_status` plus the guard that the issue's body file exists.
+
+    The body does not move — the path encodes id and slug only, so a status change
+    is purely an index edit. The guard is what the interactive verbs want: acting
+    on a specific issue whose body has gone missing should fail here, loudly,
+    rather than surface later as a `check` error."""
+    # Vocabulary first, then the file: a bogus status is a mistake in the command,
+    # which is more useful to report than a missing body it would never have
+    # reached. `apply_status` re-checks, harmlessly, as the single source of truth.
+    if new_status not in status_names(ctx.cfg):
+        die(f"unknown status '{new_status}' (configured: {', '.join(status_names(ctx.cfg))})")
+    path = issue_path(ctx, row)
+    if not path.exists():
+        die(f"file missing for #{row.id}: {path}")
+    apply_status(ctx.cfg, row, new_status)
 
 

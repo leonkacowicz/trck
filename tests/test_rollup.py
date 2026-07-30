@@ -265,3 +265,69 @@ class TestPresentation(unittest.TestCase):
             d = make_tracker(tmp, {})
             id_solo = self.new(d, "solo")
             self.assertNotIn("manual_status", self.show(d, id_solo))
+
+
+class TestPureStatusTransition(unittest.TestCase):
+    """`apply_status` is the status transition without the filesystem guard, so a
+    pure derivation (`normalize_statuses`) does not depend on the working tree —
+    see #u8jt8rm. `move_issue` keeps the guard for the interactive verbs."""
+
+    def setUp(self):
+        self.t = load_trck()
+
+    def ctx(self, tmp):
+        d = make_tracker(tmp, {})
+        return self.t.Ctx(d, self.t.load_config(d))
+
+    def issue(self, **over):
+        f = {"id": "abc1234", "slug": "a", "title": "A", "kind": "task",
+             "status": "backlog", "priority": "medium"}
+        f.update(over)
+        return self.t.Issue(**f)
+
+    def test_apply_status_stamps_started_without_any_file(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)                      # no items/ dir at all
+            row = self.issue()
+            self.t.apply_status(ctx.cfg, row, "ongoing")
+            self.assertEqual(row.status, "ongoing")
+            self.assertIsNotNone(row.started)
+
+    def test_apply_status_stamps_closed_on_a_terminal_move(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            row = self.issue()
+            self.t.apply_status(ctx.cfg, row, "done")
+            self.assertIsNotNone(row.closed)
+
+    def test_apply_status_clears_closed_and_resolution_leaving_terminal(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            row = self.issue(status="done", closed="T1", resolution="wontfix")
+            self.t.apply_status(ctx.cfg, row, "ongoing")
+            self.assertIsNone(row.closed)
+            self.assertIsNone(row.resolution)
+
+    def test_apply_status_rejects_an_unknown_status(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            with self.assertRaises(SystemExit):
+                self.t.apply_status(ctx.cfg, self.issue(), "nonsense")
+
+    def test_move_issue_still_guards_the_body_file(self):
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            with self.assertRaises(SystemExit):
+                self.t.move_issue(ctx, self.issue(), "ongoing")
+
+    def test_normalize_statuses_works_with_no_body_files_on_disk(self):
+        """The whole point: a derived rollup must not depend on the working tree,
+        so it is safe mid-merge when git has not written the new bodies yet."""
+        with TemporaryDirectory() as tmp:
+            ctx = self.ctx(tmp)
+            parent = self.issue(id="par1111", slug="p", status="backlog")
+            kid = self.issue(id="kid1111", slug="k", status="done",
+                             closed="T1", parent="par1111")
+            g = self.t.Graph(ctx.cfg, [parent, kid])
+            self.t.normalize_statuses(ctx, g)        # no items/ dir exists
+            self.assertEqual(parent.status, "done")

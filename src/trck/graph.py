@@ -4,7 +4,7 @@ from .config import is_actionable, is_terminal, reconcile
 from .constants import FILENAME_RE, ID_ALPHABET, ID_LEN, ITEMS_DIR
 from .index import Ctx, DEFAULT_POINTS, Issue, file_id, get_id, get_row, load_index
 from .render import priority_rank
-from .templates import move_issue
+from .templates import apply_status
 
 # --------------------------------------------------------------------------- #
 # issue graph (derived read view)
@@ -528,15 +528,18 @@ def normalize_statuses(ctx: Ctx, g: Graph) -> None:
     all-terminal -> terminal, otherwise active. Like `normalize_points`, this derives
     the rollup on every index write via finalize — so cascade is uniform across mv /
     start / done / new --parent / reparent with no per-command hooks. Walks bottom-up
-    and relocates changed parents through `move_issue` (file move + date stamping).
-    Nodes flagged `manual_status` are an explicit opt-out and are left untouched."""
+    and restatuses changed parents through `apply_status` — date stamping, no file
+    contact, because this derives a value rather than carrying out an instruction
+    about a specific issue. Staying pure keeps it usable where the working tree is
+    not settled (a merge driver runs mid-operation). Nodes flagged `manual_status`
+    are an explicit opt-out and are left untouched."""
     for r in _postorder(g):
         kids = g.children_of(r)
         if not kids or r.manual_status:
             continue
         desired = reconcile(ctx.cfg, [k.status for k in kids])
         if desired and desired != r.status:
-            move_issue(ctx, r, desired)
+            apply_status(ctx.cfg, r, desired)
 
 
 def _existing_ids(ctx: Ctx) -> set[str]:
