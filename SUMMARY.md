@@ -6,10 +6,10 @@
 | State | Count |
 |---|---:|
 | backlog | 22 |
-| ongoing | 1 |
+| ongoing | 2 |
 | in-review | 0 |
 | done | 109 |
-| **total** | **132** |
+| **total** | **133** |
 
 ## Hierarchies
 
@@ -136,7 +136,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## Ongoing
 
-_none_
+- [#u8jt8rm extract the pure status transition out of move_issue](items/u8jt8rm-extract-the-pure-status-transition-out-of-move-issue.md) — _medium_
 
 ## In-review
 
