@@ -97,6 +97,31 @@ class TestSetupGit(unittest.TestCase):
             self.run_setup(root)
             self.assertTrue(self.git_config(root, "merge.trck-index.name"))
 
+    # --- which engine the driver re-invokes ------------------------------------ #
+
+    def test_driver_prefers_a_vendored_engine(self):
+        """A copy committed beside the tracker is pinned to the data's version."""
+        with TemporaryDirectory() as tmp:
+            root = self.repo(tmp)
+            vendored = root / "issues" / "trck"
+            vendored.write_text("#!/usr/bin/env python3\n")
+            self.run_setup(root)
+            self.assertIn(str(vendored.resolve()),
+                          self.git_config(root, "merge.trck-index.driver"))
+
+    def test_driver_falls_back_to_the_running_engine_not_the_path(self):
+        """With no vendored copy, re-invoke the engine file running right now.
+
+        A bare `trck` would make the driver depend on an install that need not
+        exist (CI checkouts have none) and, where it does, need not be this
+        engine or this version."""
+        with TemporaryDirectory() as tmp:
+            root = self.repo(tmp)
+            self.run_setup(root)
+            cmd = self.git_config(root, "merge.trck-index.driver")
+            self.assertIn(str(Path(self.t.SELF_PATH).resolve()), cmd)
+            self.assertFalse(cmd.startswith("trck "), f"driver leans on PATH: {cmd}")
+
     # --- failure modes --------------------------------------------------------- #
 
     def test_outside_a_git_repo_it_dies(self):

@@ -3384,11 +3384,16 @@ GITATTRIBUTES_LINES = [
 def _engine_invocation(ctx) -> str:
     """How a git driver should re-invoke this engine. Prefers a vendored copy
     committed beside the tracker (pinned to the data's version, present in CI with
-    no install); falls back to whatever `trck` is on PATH."""
+    no install); otherwise re-invokes the engine file running right now.
+
+    Never a bare `trck`: the driver command is baked into .git/config and fires much
+    later, from whatever environment git happens to have. A PATH lookup need not
+    resolve at all (a CI checkout installs nothing) and, where it does, need not be
+    this engine or this version. An absolute path is answerable now."""
     vendored = ctx.dir / "trck"
     if vendored.exists():
         return f'python3 "{vendored.resolve()}"'
-    return "trck"
+    return f'python3 "{Path(SELF_PATH).resolve()}"'
 
 
 def cmd_setup_git(args) -> None:
