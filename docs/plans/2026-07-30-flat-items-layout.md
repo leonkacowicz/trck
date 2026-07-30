@@ -804,59 +804,56 @@ else are left alone."
 
 ---
 
-### Task 5: Migrate this repo's tracker and the bundled example
+### Task 5: Migrate the bundled example and dogfood the verb
 
-Both on-disk trackers in this repo are still laid out by status. Migrate them with the verb we just built — dogfooding it is the acceptance test.
+> **Amended during Task 1.** This repo's own `issues/` tree was migrated **in the Task 1 commit**, not here. The engine and the tracker data must agree at every commit — the pre-commit hook runs `trck check`, so deferring the data migration would have left `main` red across Tasks 1–4 and made every `trck` verb unusable in the repo meanwhile. All 126 files moved via `git mv`; `check` is green. What remains here is the example tracker, which is also the only place left to dogfood the verb against real data.
 
 **Files:**
-- Modify: `issues/` (122 files move from `backlog/`, `ongoing/`, `done/` into `issues/items/`)
-- Modify: `issues/SUMMARY.md` (regenerated with `items/` links)
-- Modify: `examples/action-game/` (same treatment)
+- Modify: `examples/action-game/` (files move from `backlog/`, `ongoing/`, `done/` into `items/`)
+- Modify: `examples/action-game/SUMMARY.md` (regenerated with `items/` links)
+- Modify: `docs/img/*.svg` if the rendering changed
 
 **Interfaces:**
 - Consumes: `trck repo migrate-layout` from Task 4.
 
 ---
 
-- [ ] **Step 1: Dry-run this repo's tracker**
+- [ ] **Step 1: Dry-run the example tracker**
 
-Run: `./trck repo migrate-layout --dry-run`
+Run: `./trck --dir examples/action-game repo migrate-layout --dry-run`
 Expected: a list of every issue file with its planned `items/` destination, and no filesystem change. If it dies on status/folder drift instead, resolve the named issues first — they are pre-existing inconsistencies, not migration bugs.
 
-- [ ] **Step 2: Migrate this repo's tracker**
+- [ ] **Step 2: Confirm the guard fires before migrating**
 
-Run: `./trck repo migrate-layout`
-Expected: `migrate-layout: moved N file(s) into items/`
+Run: `./trck --dir examples/action-game check`
+Expected: the legacy-layout refusal from Task 3, naming the folders and pointing at `trck repo migrate-layout`. This is the only end-to-end proof that the guard fires on a real un-migrated tracker.
 
-- [ ] **Step 3: Verify consistency**
-
-Run: `./trck check`
-Expected: `OK — N issues, 0 errors, ...` (a pre-existing warning count is fine).
-
-- [ ] **Step 4: Confirm git recorded pure renames**
-
-Run: `git status --short | head -20`
-Expected: `R` entries moving `issues/<status>/*.md` to `issues/items/*.md`, plus modified `issues/SUMMARY.md`. No content changes to any issue body.
-
-- [ ] **Step 5: Migrate the bundled example tracker**
+- [ ] **Step 3: Migrate the bundled example tracker**
 
 Run: `./trck --dir examples/action-game repo migrate-layout && ./trck --dir examples/action-game check`
 Expected: files moved, then `OK`.
 
-- [ ] **Step 6: Regenerate the documentation screenshots**
+- [ ] **Step 4: Confirm git recorded pure renames**
+
+Run: `git status --short -- examples/`
+Expected: `R` entries moving `examples/action-game/<status>/*.md` to `examples/action-game/items/*.md`, plus a modified `SUMMARY.md`. No content changes to any issue body.
+
+- [ ] **Step 5: Regenerate the documentation screenshots**
 
 Run: `python3 docs/gen-screenshots.py`
 Expected: exit 0. Then `git diff --stat docs/img/` — if the SVGs changed, the change is cosmetic (the example tracker's rendering), and the regenerated files should be committed.
 
-- [ ] **Step 7: Commit the tracker migration separately from the example**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add issues examples docs/img
-git commit -m "migrate this repo's tracker and the example to the flat layout
+git add examples docs/img
+git commit -m "migrate the bundled example tracker to the flat layout
 
-Ran 'trck repo migrate-layout' against issues/ and examples/action-game. Every
-issue body moves from its status folder into items/; SUMMARY.md is
-regenerated with the new links. No issue body content changed."
+Ran 'trck repo migrate-layout' against examples/action-game — the first
+run of the verb against real data, and the last tracker in the repo still
+laid out by status folder. Every issue body moves from its status folder
+into items/; SUMMARY.md is regenerated with the new links. No issue body
+content changed."
 ```
 
 ---
