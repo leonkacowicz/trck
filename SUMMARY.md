@@ -6,18 +6,18 @@
 | State | Count |
 |---|---:|
 | backlog | 29 |
-| ongoing | 3 |
+| ongoing | 2 |
 | in-review | 0 |
-| done | 94 |
+| done | 95 |
 | **total** | **126** |
 
 ## Hierarchies
 
-### [#2srvf6j Flat items/ layout: status lives only in index.jsonl](items/2srvf6j-flat-items-layout-status-lives-only-in-index-jsonl.md) — 29% (4/14 pts · 2/7 done) · _high_ · ongoing
+### [#2srvf6j Flat items/ layout: status lives only in index.jsonl](items/2srvf6j-flat-items-layout-status-lives-only-in-index-jsonl.md) — 43% (6/14 pts · 3/7 done) · _high_ · ongoing
 Spec: [`docs/plans/2026-07-30-flat-items-layout.md`](../docs/plans/2026-07-30-flat-items-layout.md)
 
 - [ ] [#82an2dy release v0.23.0 with the breaking layout change](items/82an2dy-release-v0-23-0-with-the-breaking-layout-change.md) _(backlog)_
-- [ ] [#8fdjhhf detect the legacy status-folder layout and refuse to run](items/8fdjhhf-detect-the-legacy-status-folder-layout-and-refuse-to-run.md) _(ongoing)_
+- [x] [#8fdjhhf detect the legacy status-folder layout and refuse to run](items/8fdjhhf-detect-the-legacy-status-folder-layout-and-refuse-to-run.md)
 - [ ] [#nrvcky7 docs: status is an index field, not a directory](items/nrvcky7-docs-status-is-an-index-field-not-a-directory.md) _(backlog)_
 - [ ] [#twgv9jq migrate the bundled example and dogfood migrate-layout](items/twgv9jq-migrate-this-repo-s-tracker-and-the-bundled-example.md) _(backlog)_
 - [x] [#v7zzefd layout: point issue_path/rel_link/scan_files at items/](items/v7zzefd-layout-point-issue-path-rel-link-scan-files-at-items.md)
