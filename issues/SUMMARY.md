@@ -5,8 +5,8 @@
 
 | State | Count |
 |---|---:|
-| backlog | 24 |
-| ongoing | 1 |
+| backlog | 23 |
+| ongoing | 2 |
 | in-review | 0 |
 | done | 102 |
 | **total** | **127** |
@@ -111,7 +111,6 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## Backlog
 
-- [#s5585hq check: reject duplicate ids in index.jsonl](items/s5585hq-check-reject-duplicate-ids-in-index-jsonl.md) — _urgent_ [conflict-resolution]
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](items/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#tfhhp8h mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](items/tfhhp8h-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
 - [#wh3mv52 mv/done: guard closing a parent with open descendants (--recurse to cascade)](items/wh3mv52-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
@@ -131,7 +130,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## Ongoing
 
-_none_
+- [#s5585hq check: reject duplicate ids in index.jsonl](items/s5585hq-check-reject-duplicate-ids-in-index-jsonl.md) — _urgent_ [conflict-resolution]
 
 ## In-review
 

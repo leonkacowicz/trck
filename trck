@@ -572,7 +572,39 @@ def load_index(ctx: Ctx) -> list[Issue]:
             rows.append(Issue.from_dict(raw))
         except ValueError as e:
             die(f"index.jsonl line {n}: {e}")
+    check_unique_ids(rows)
     return rows
+
+
+def check_unique_ids(rows: list[Issue]) -> None:
+    """Refuse an index that keys two rows to one id.
+
+    A duplicate id is a structural defect, not a recoverable inconsistency: it makes
+    the in-memory model ambiguous, so it fails here — loudly, no guessing — like the
+    malformed-JSON and wrong-type cases above, rather than as a `validate` error the
+    mutating verbs would write straight past. (Downstream, `Graph.by_id` keeps one row
+    while both are counted and listed, and `resolve_ref` returns `exact[0]`, so a verb
+    would act on an arbitrary one of them.)
+
+    Every duplicated id is collected before dying — one id per line, whatever the
+    number of extra rows — so a single run reports the whole problem. The statuses are
+    named because that is the detail identifying which side of a bad merge to keep;
+    this is exactly the state `merge=union` on index.jsonl produces when two branches
+    both mutate one issue."""
+    seen, dupes = {}, {}
+    for r in rows:
+        if r.id in seen:
+            dupes.setdefault(r.id, [seen[r.id]]).append(r)
+        else:
+            seen[r.id] = r
+    if not dupes:
+        return
+    lines = [f"#{iid} appears {len(rs)} times (statuses: "
+             f"{', '.join(sorted({x.status for x in rs}))})"
+             for iid, rs in sorted(dupes.items())]
+    detail = "\n  ".join(lines)
+    die(f"index.jsonl: ids must be unique, but {len(dupes)} id(s) are repeated:\n"
+        f"  {detail}")
 
 
 def save_index(ctx: Ctx, rows: list[Issue]) -> None:
