@@ -48,6 +48,9 @@ flattened into `./trck` by **`build.py`**. This repo **self-hosts** its own issu
 - Use `./trck` for all bookkeeping; hand-edit only an issue's markdown **body** (Summary /
   Acceptance criteria / Notes). Never hand-edit `index.jsonl` or `SUMMARY.md`, and never move or
   rename issue files by hand — the verbs do that.
+- Issue bodies all live in `issues/items/` — status is **not** encoded in the path; it lives only
+  in `index.jsonl`. A `start`/`done` touches the index and `SUMMARY.md`, never the body file.
+  (`trck repo migrate-layout` converts a pre-0.23 tracker; every verb refuses one until it runs.)
 - `./trck check` must pass before committing. `SUMMARY.md` is generated.
 - Keep issue-tracker commits separate from engine-code commits where reasonable.
 - **This canonical repo keeps no vendored engine copy**: `./trck` (root) runs directly against

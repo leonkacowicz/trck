@@ -1,7 +1,7 @@
 # trck
 
 A deterministic, single-file, **standard-library-only** issue tracker that lives *inside*
-your repo. Status is the folder a markdown file sits in; all other metadata lives in
+your repo. Every issue is a markdown file in `items/`; all metadata — status included — lives in
 `index.jsonl`; `SUMMARY.md` is generated; only issue *bodies* are hand-authored — so the
 tracker can't drift. `trck` is the generalized successor to the original `track` script.
 
@@ -82,8 +82,9 @@ Zero config works out of the box. To customize, edit `trck.json`:
 }
 ```
 
-Statuses are an **ordered, free-form list**; the folders are named after them and `SUMMARY.md`
-groups by that order. Semantics attach to **roles**, not names. Exactly one status must carry
+Statuses are an **ordered, free-form list** stored in `index.jsonl`; `SUMMARY.md` groups by
+that order. Nothing about a status is encoded in the filesystem — moving an issue rewrites one
+index line and leaves its body file where it is. Semantics attach to **roles**, not names. Exactly one status must carry
 each of the three roles (extra unroled statuses — like the shipped `in-review` lane — are fine):
 
 - `initial` — where `trck new` lands an issue (and the first move off it stamps `started`).
