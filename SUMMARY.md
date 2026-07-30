@@ -5,8 +5,8 @@
 
 | State | Count |
 |---|---:|
-| backlog | 31 |
-| ongoing | 2 |
+| backlog | 30 |
+| ongoing | 3 |
 | in-review | 0 |
 | done | 93 |
 | **total** | **126** |
@@ -22,7 +22,7 @@ Spec: [`docs/plans/2026-07-30-flat-items-layout.md`](../docs/plans/2026-07-30-fl
 - [ ] [#twgv9jq migrate the bundled example and dogfood migrate-layout](items/twgv9jq-migrate-this-repo-s-tracker-and-the-bundled-example.md) _(backlog)_
 - [x] [#v7zzefd layout: point issue_path/rel_link/scan_files at items/](items/v7zzefd-layout-point-issue-path-rel-link-scan-files-at-items.md)
 - [ ] [#x2exfdf add the migrate-layout verb](items/x2exfdf-add-the-migrate-layout-verb.md) _(backlog)_
-- [ ] [#zk5k59n move_issue: drop the now-unreachable file move](items/zk5k59n-move-issue-drop-the-now-unreachable-file-move.md) _(backlog)_
+- [ ] [#zk5k59n move_issue: drop the now-unreachable file move](items/zk5k59n-move-issue-drop-the-now-unreachable-file-move.md) _(ongoing)_
 
 ### [#9bktptp ready/next: rank by demand cone (inferred priority) + marker](items/9bktptp-ready-next-rank-by-demand-cone-inferred-priority-marker.md) — 100% (8/8 pts · 4/4 done) · _high_ · done
 
