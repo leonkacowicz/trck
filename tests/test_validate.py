@@ -275,3 +275,80 @@ class TestValidate(unittest.TestCase):
             finally:
                 self.t.load_index = orig
             self.assertEqual(calls, [1])
+
+
+class TestLifecycleTupleInvariant(unittest.TestCase):
+    """`(status, closed, resolution)` is maintained as a unit by the verbs:
+    `move_issue` clears `closed` and `resolution` on any move to a non-terminal
+    status, and `cmd_mv` refuses `--resolution` unless the target is terminal.
+    A non-terminal row carrying either is a state no verb can write, so `validate`
+    must reject it — see #nuf3t68, and #ey2aruc for how a field-wise merge reaches
+    it without either side's fields diverging."""
+
+    def setUp(self):
+        self.t = load_trck()
+
+    def ctx(self, tmp, config=None):
+        d = make_tracker(tmp, config or {})
+        return self.t.Ctx(d, self.t.load_config(d))
+
+    def write(self, ctx, row, body="# x\n"):
+        p = self.t.issue_path(ctx, row)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(body)
+
+    def errors_for(self, tmp, **over):
+        ctx = self.ctx(tmp)
+        fields = {"id": 1, "slug": "a", "title": "A", "kind": "task",
+                  "status": "backlog", "priority": "high", "depends_on": []}
+        fields.update(over)
+        row = self.t.Issue(**fields)
+        self.write(ctx, row)
+        self.t.save_index(ctx, [row])
+        errors, _ = self.t.validate(ctx)
+        return errors
+
+    def test_non_terminal_with_resolution_is_an_error(self):
+        with TemporaryDirectory() as tmp:
+            errors = self.errors_for(tmp, status="backlog", resolution="wontfix")
+            self.assertTrue(any("resolution" in e for e in errors), errors)
+
+    def test_non_terminal_with_closed_is_an_error(self):
+        with TemporaryDirectory() as tmp:
+            errors = self.errors_for(tmp, status="ongoing",
+                                     closed="2026-07-30T00:00:00Z")
+            self.assertTrue(any("closed" in e for e in errors), errors)
+
+    def test_both_violations_produce_two_distinct_errors(self):
+        with TemporaryDirectory() as tmp:
+            errors = self.errors_for(tmp, status="backlog", resolution="wontfix",
+                                     closed="2026-07-30T00:00:00Z")
+            hits = [e for e in errors if "resolution" in e or "closed" in e]
+            self.assertEqual(len(hits), 2, errors)
+            self.assertEqual(len(set(hits)), 2, hits)
+
+    def test_terminal_with_closed_and_resolution_is_clean(self):
+        with TemporaryDirectory() as tmp:
+            errors = self.errors_for(tmp, status="done", resolution="wontfix",
+                                     closed="2026-07-30T00:00:00Z")
+            self.assertEqual(errors, [])
+
+    def test_terminal_keeping_its_pr_stays_valid(self):
+        """A closed issue's PR link is the review record for the change that
+        resolved it. Deliberately NOT an error — see #ey2aruc."""
+        with TemporaryDirectory() as tmp:
+            errors = self.errors_for(tmp, status="done",
+                                     closed="2026-07-30T00:00:00Z",
+                                     pr="https://github.com/o/r/pull/12")
+            self.assertEqual(errors, [])
+
+    def test_non_terminal_with_a_pr_stays_valid(self):
+        """Linking a PR while work is in flight is exactly what `trck review` does."""
+        with TemporaryDirectory() as tmp:
+            errors = self.errors_for(tmp, status="ongoing",
+                                     pr="https://github.com/o/r/pull/12")
+            self.assertEqual(errors, [])
+
+    def test_plain_non_terminal_row_is_clean(self):
+        with TemporaryDirectory() as tmp:
+            self.assertEqual(self.errors_for(tmp, status="backlog"), [])

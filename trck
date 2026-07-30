@@ -1293,6 +1293,21 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
             errors.append(f"#{iid} {m}")
         if r.resolution is not None and (m := check_resolution(ctx.cfg, r.resolution)):
             errors.append(f"#{iid} {m}")
+        # `(status, closed, resolution)` is one unit: `move_issue` clears both dates on
+        # any move to a non-terminal status, and `cmd_mv` refuses `--resolution` unless
+        # the target is terminal. So a non-terminal row carrying either is a row no verb
+        # can have written — a hand-edit, or a field-wise merge of index.jsonl that
+        # resolved the tuple's members independently (#ey2aruc). Two separate errors: a
+        # merge can produce either one alone. `pr` is deliberately not in this set — a
+        # closed issue keeping its pull-request link is the review record for the change
+        # that resolved it, and an issue in flight linking one is what `review` does.
+        if not g.is_terminal(r):
+            if r.resolution is not None:
+                errors.append(f"#{iid} is '{r.status}' (not terminal) but carries "
+                              f"resolution '{r.resolution}'")
+            if r.closed is not None:
+                errors.append(f"#{iid} is '{r.status}' (not terminal) but carries "
+                              f"closed '{r.closed}'")
         if r.pr is not None and (m := check_pr(r.pr)):
             errors.append(f"#{iid} {m}")
         for k, v in r.extra.items():
