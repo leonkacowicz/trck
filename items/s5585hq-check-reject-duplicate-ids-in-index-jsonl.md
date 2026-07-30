@@ -50,11 +50,24 @@ for r in rows:
 Emit **one** error per duplicated id, not one per extra row, and name the conflicting statuses
 in the message — that is the detail that tells someone which side of a merge to keep.
 
-Consider whether `load_index` should `die` instead: every command would then refuse a corrupt
-index rather than only `check`. Argument for `validate`: it keeps the loader structural and lets
-`check` report *all* problems at once. Argument for `load_index`: a duplicate id is not
-recoverable state, and letting mutating verbs run against it can make things worse. **Decide
-before implementing** — an errors-only approach still lets `trck done` rewrite a corrupt index.
+**Decision: `load_index` dies.** Not a `validate` error. Three reasons:
+
+1. The codebase's own doctrine, from `Issue.from_dict`'s docstring — the loader "enforces the
+   structural/type contract and fails loud (no guessing, no recovery)". A duplicate id is that
+   class of defect: the file is not a well-formed index.
+2. The "let `check` report everything at once" argument does not survive contact — `load_index`
+   already dies on malformed JSON and wrong-typed fields, so `check` cannot report past a
+   structural problem anyway.
+3. An errors-only approach still lets `trck done` rewrite a corrupt index, and worse, act on the
+   wrong row: `resolve_ref` returns `exact[0]`, so a verb silently picks an arbitrary one of the
+   duplicates.
+
+The one cost — no verb can run until the file is hand-repaired — is acceptable, and hand-editing
+`index.jsonl` is already the documented recovery for a botched merge.
+
+**Implemented** as `check_unique_ids(rows)` in `src/trck/index.py`, called at the end of
+`load_index`. It collects *every* duplicated id before dying, so one run reports the whole
+problem rather than the first offender.
 
 ## Acceptance criteria
 - [ ] Two index rows sharing an id make `trck check` exit nonzero with a clear error
