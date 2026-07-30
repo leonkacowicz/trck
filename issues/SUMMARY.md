@@ -6,9 +6,9 @@
 | State | Count |
 |---|---:|
 | backlog | 28 |
-| ongoing | 3 |
+| ongoing | 2 |
 | in-review | 0 |
-| done | 95 |
+| done | 96 |
 | **total** | **126** |
 
 ## Hierarchies
@@ -131,7 +131,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## Ongoing
 
-- [#qs4zwzr Group the maintenance verbs under 'trck repo'](items/qs4zwzr-group-the-maintenance-verbs-out-of-the-root-command-namespace.md) — _medium_ [tracker-features]
+_none_
 
 ## In-review
 
@@ -166,6 +166,7 @@ _none_
 - [#kd8ngqv Improve CLI output presentation (align/icons, color, show, SUMMARY)](items/kd8ngqv-improve-cli-output-presentation-align-icons-color-show-summary.md) — _medium_ (closed 2026-06-05)
 - [#nu939p9 Add normalize command to rewrite index.jsonl in canonical slim form](items/nu939p9-add-normalize-command-to-rewrite-index-jsonl-in-canonical-slim-form.md) — _medium_ (closed 2026-06-06)
 - [#pzmyzv3 deps: inherit dependencies through the parent hierarchy (effective deps) + lifted cycle prevention](items/pzmyzv3-deps-inherit-dependencies-through-the-parent-hierarchy-effective-deps-lifted-cycle-prevention.md) — _medium_ (closed 2026-07-18)
+- [#qs4zwzr Group the maintenance verbs under 'trck repo'](items/qs4zwzr-group-the-maintenance-verbs-out-of-the-root-command-namespace.md) — _medium_ [tracker-features] (closed 2026-07-30)
 - [#rd6rk5e Allow any issue to be a parent (rollup for any parent)](items/rd6rk5e-allow-any-issue-to-be-a-parent-rollup-for-any-parent.md) — _medium_ (closed 2026-06-05)
 - [#tazdgkg deps --graph: lazygit-style dependency DAG renderer](items/tazdgkg-deps-graph-lazygit-style-dependency-dag-renderer.md) — _medium_ (closed 2026-06-10)
 - [#uydwa9h Convert the #002 'richer tracker features' epic into a label](items/uydwa9h-convert-the-002-richer-tracker-features-epic-into-a-label.md) — _medium_ (closed 2026-06-23)
