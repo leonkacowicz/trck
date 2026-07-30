@@ -6,9 +6,9 @@
 | State | Count |
 |---|---:|
 | backlog | 23 |
-| ongoing | 2 |
+| ongoing | 1 |
 | in-review | 0 |
-| done | 103 |
+| done | 104 |
 | **total** | **128** |
 
 ## Hierarchies
@@ -130,7 +130,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## Ongoing
 
-- [#nuf3t68 check: reject a non-terminal issue carrying resolution or closed](items/nuf3t68-check-reject-a-non-terminal-issue-carrying-resolution-or-closed.md) — _high_ [conflict-resolution]
+_none_
 
 ## In-review
 
@@ -144,6 +144,7 @@ _none_
 - [#ejcxwmz pre-commit hook never runs check when trck.json is at repo root](items/ejcxwmz-pre-commit-hook-never-runs-check-when-trck-json-is-at-repo-root.md) — _high_ (closed 2026-06-09)
 - [#mur7gwd Crash instead of clean error when no tracker is found](items/mur7gwd-crash-instead-of-clean-error-when-no-tracker-is-found.md) — _high_ (closed 2026-06-10)
 - [#nhanp8c Strip null/empty fields from index.jsonl rows to reduce noise](items/nhanp8c-strip-null-empty-fields-from-index-jsonl-rows-to-reduce-noise.md) — _high_ (closed 2026-06-06)
+- [#nuf3t68 check: reject a non-terminal issue carrying resolution or closed](items/nuf3t68-check-reject-a-non-terminal-issue-carrying-resolution-or-closed.md) — _high_ [conflict-resolution] (closed 2026-07-30)
 - [#qc48tds Add 'ready'/'next' command: list unblocked, not-done leaves](items/qc48tds-add-ready-next-command-list-unblocked-not-done-leaves.md) — _high_ [tracker-features] (closed 2026-06-06)
 - [#y8asnbe Write root README.md and CLAUDE.md](items/y8asnbe-write-root-readme-md-and-claude-md.md) — _high_ (closed 2026-06-05)
 - [#3e3cn37 init: accept positional dir and add --no-vendor for self-hosting repos](items/3e3cn37-init-accept-positional-dir-and-add-no-vendor-for-self-hosting-repos.md) — _medium_ (closed 2026-06-05)
