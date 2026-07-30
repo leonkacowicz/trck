@@ -104,9 +104,9 @@ class TestTimestampBackCompat(unittest.TestCase):
     def test_mixed_form_sort_orders_date_before_same_day_timestamp(self):
         with TemporaryDirectory() as tmp:
             d = self.setup_dir(tmp)
-            (d / "backlog").mkdir()
-            (d / "backlog" / "001-older.md").write_text("# Older\n")
-            (d / "backlog" / "002-newer.md").write_text("# Newer\n")
+            (d / "items").mkdir()
+            (d / "items" / "001-older.md").write_text("# Older\n")
+            (d / "items" / "002-newer.md").write_text("# Newer\n")
             self.write_index(d, [
                 {"id": 1, "slug": "older", "title": "Older", "kind": "task",
                  "status": "backlog", "priority": "medium", "created": "2026-06-05"},

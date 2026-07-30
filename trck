@@ -197,6 +197,27 @@ def check_status_flags(cfg: dict) -> list[str]:
             if "actionable" in s and not isinstance(s["actionable"], bool)]
 
 
+def detect_legacy_layout(cfg: dict, tracker_dir: Path) -> list[Path]:
+    """Issue markdown still sitting in per-status folders — the pre-0.23 layout,
+    where the containing directory carried the status. Returns the offending paths
+    (sorted, one pass per configured status); empty when the tracker is already
+    flat. Only well-formed issue filenames count, so a README or scratch note
+    parked in an old folder is not mistaken for an unmigrated issue.
+
+    ITEMS_DIR is skipped: statuses no longer name directories, so a tracker may
+    legally configure a status called `items`, and scanning the body directory
+    would report every correctly-migrated file as unmigrated."""
+    out = []
+    for name in status_names(cfg):
+        if name == ITEMS_DIR:
+            continue
+        d = Path(tracker_dir) / name
+        if not d.is_dir():
+            continue
+        out.extend(p for p in sorted(d.glob("*.md")) if FILENAME_RE.match(p.name))
+    return out
+
+
 def is_actionable(cfg: dict, name: str) -> bool:
     """Whether `ready`/`next` may propose an issue in this status as work to pick up.
 
@@ -496,9 +517,20 @@ def build_ctx(args, required: bool = True) -> Ctx | None:
     return Ctx(d, load_config(d))
 
 
-def build_ctx_or_die(args) -> Ctx:
+def build_ctx_or_die(args, guard_layout: bool = True) -> Ctx:
+    """Resolve the tracker and load its config, refusing a tracker still laid out
+    by status folder. `guard_layout=False` is for `migrate-layout`, the one verb
+    whose whole job is to operate on such a tracker."""
     d = resolve_tracker_dir_or_die(getattr(args, "dir", None))
-    return Ctx(d, load_config(d))
+    ctx = Ctx(d, load_config(d))
+    if guard_layout:
+        stale = detect_legacy_layout(ctx.cfg, ctx.dir)
+        if stale:
+            folders = ", ".join(sorted({f"{p.parent.name}/" for p in stale}))
+            die(f"legacy status-folder layout: {len(stale)} issue file(s) under "
+                f"{folders} — run `trck repo migrate-layout` to move them into "
+                f"{ITEMS_DIR}/ (status now lives only in index.jsonl)")
+    return ctx
 
 def file_id(m: re.Match) -> str:
     """The issue id from a FILENAME_RE match. A legacy zero-padded numeric name

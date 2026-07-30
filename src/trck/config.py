@@ -2,7 +2,7 @@ from __future__ import annotations
 from pathlib import Path
 import json
 import os
-from .constants import DEFAULT_UPDATE_REPO, PR_URL_RE, SELF_PATH, die
+from .constants import DEFAULT_UPDATE_REPO, FILENAME_RE, ITEMS_DIR, PR_URL_RE, SELF_PATH, die
 
 # --------------------------------------------------------------------------- #
 # config + discovery
@@ -121,6 +121,27 @@ def check_status_flags(cfg: dict) -> list[str]:
             f"({s['actionable']!r})"
             for s in cfg["statuses"]
             if "actionable" in s and not isinstance(s["actionable"], bool)]
+
+
+def detect_legacy_layout(cfg: dict, tracker_dir: Path) -> list[Path]:
+    """Issue markdown still sitting in per-status folders — the pre-0.23 layout,
+    where the containing directory carried the status. Returns the offending paths
+    (sorted, one pass per configured status); empty when the tracker is already
+    flat. Only well-formed issue filenames count, so a README or scratch note
+    parked in an old folder is not mistaken for an unmigrated issue.
+
+    ITEMS_DIR is skipped: statuses no longer name directories, so a tracker may
+    legally configure a status called `items`, and scanning the body directory
+    would report every correctly-migrated file as unmigrated."""
+    out = []
+    for name in status_names(cfg):
+        if name == ITEMS_DIR:
+            continue
+        d = Path(tracker_dir) / name
+        if not d.is_dir():
+            continue
+        out.extend(p for p in sorted(d.glob("*.md")) if FILENAME_RE.match(p.name))
+    return out
 
 
 def is_actionable(cfg: dict, name: str) -> bool:

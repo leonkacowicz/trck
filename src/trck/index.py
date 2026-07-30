@@ -3,7 +3,7 @@ from dataclasses import dataclass, field, fields
 from pathlib import Path
 import json
 import re
-from .config import load_config, resolve_tracker_dir, resolve_tracker_dir_or_die
+from .config import detect_legacy_layout, load_config, resolve_tracker_dir, resolve_tracker_dir_or_die
 from .constants import FIELD_KEY_RE, ITEMS_DIR, die
 
 # --------------------------------------------------------------------------- #
@@ -202,9 +202,20 @@ def build_ctx(args, required: bool = True) -> Ctx | None:
     return Ctx(d, load_config(d))
 
 
-def build_ctx_or_die(args) -> Ctx:
+def build_ctx_or_die(args, guard_layout: bool = True) -> Ctx:
+    """Resolve the tracker and load its config, refusing a tracker still laid out
+    by status folder. `guard_layout=False` is for `migrate-layout`, the one verb
+    whose whole job is to operate on such a tracker."""
     d = resolve_tracker_dir_or_die(getattr(args, "dir", None))
-    return Ctx(d, load_config(d))
+    ctx = Ctx(d, load_config(d))
+    if guard_layout:
+        stale = detect_legacy_layout(ctx.cfg, ctx.dir)
+        if stale:
+            folders = ", ".join(sorted({f"{p.parent.name}/" for p in stale}))
+            die(f"legacy status-folder layout: {len(stale)} issue file(s) under "
+                f"{folders} — run `trck repo migrate-layout` to move them into "
+                f"{ITEMS_DIR}/ (status now lives only in index.jsonl)")
+    return ctx
 
 def file_id(m: re.Match) -> str:
     """The issue id from a FILENAME_RE match. A legacy zero-padded numeric name

@@ -5,8 +5,8 @@
 
 | State | Count |
 |---|---:|
-| backlog | 30 |
-| ongoing | 2 |
+| backlog | 29 |
+| ongoing | 3 |
 | in-review | 0 |
 | done | 94 |
 | **total** | **126** |
@@ -17,7 +17,7 @@
 Spec: [`docs/plans/2026-07-30-flat-items-layout.md`](../docs/plans/2026-07-30-flat-items-layout.md)
 
 - [ ] [#82an2dy release v0.23.0 with the breaking layout change](items/82an2dy-release-v0-23-0-with-the-breaking-layout-change.md) _(backlog)_
-- [ ] [#8fdjhhf detect the legacy status-folder layout and refuse to run](items/8fdjhhf-detect-the-legacy-status-folder-layout-and-refuse-to-run.md) _(backlog)_
+- [ ] [#8fdjhhf detect the legacy status-folder layout and refuse to run](items/8fdjhhf-detect-the-legacy-status-folder-layout-and-refuse-to-run.md) _(ongoing)_
 - [ ] [#nrvcky7 docs: status is an index field, not a directory](items/nrvcky7-docs-status-is-an-index-field-not-a-directory.md) _(backlog)_
 - [ ] [#twgv9jq migrate the bundled example and dogfood migrate-layout](items/twgv9jq-migrate-this-repo-s-tracker-and-the-bundled-example.md) _(backlog)_
 - [x] [#v7zzefd layout: point issue_path/rel_link/scan_files at items/](items/v7zzefd-layout-point-issue-path-rel-link-scan-files-at-items.md)

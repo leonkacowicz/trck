@@ -100,3 +100,66 @@ class TestFlatLayout(unittest.TestCase):
             ctx = self.t.build_ctx_or_die(ns(dir=str(d)))
             found = self.t.scan_files(ctx)
             self.assertEqual(found[iid], ("alpha", f"{iid}-alpha.md"))
+
+
+class TestLegacyLayoutGuard(unittest.TestCase):
+    def setUp(self):
+        self.t = load_trck()
+
+    def legacy(self, tmp):
+        """A tracker laid out the old way: one issue file under backlog/."""
+        d = make_tracker(tmp, {})
+        row = self.t.Issue(id="abc1234", slug="alpha", title="Alpha", kind="task",
+                           status="backlog", priority="high")
+        ctx = self.t.Ctx(d, self.t.load_config(d))
+        old = d / "backlog"
+        old.mkdir(parents=True, exist_ok=True)
+        (old / self.t.filename(row)).write_text("# Alpha\n")
+        self.t.save_index(ctx, [row])
+        return d
+
+    def test_detect_legacy_layout_finds_status_folder_files(self):
+        with TemporaryDirectory() as tmp:
+            d = self.legacy(tmp)
+            cfg = self.t.load_config(d)
+            stale = self.t.detect_legacy_layout(cfg, d)
+            self.assertEqual([p.name for p in stale], ["abc1234-alpha.md"])
+
+    def test_detect_legacy_layout_is_empty_for_a_flat_tracker(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            (d / "items").mkdir()
+            (d / "items" / "abc1234-alpha.md").write_text("# Alpha\n")
+            self.assertEqual(self.t.detect_legacy_layout(self.t.load_config(d), d), [])
+
+    def test_detect_legacy_layout_ignores_non_issue_markdown(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            (d / "done").mkdir()
+            (d / "done" / "NOTES.md").write_text("scratch\n")
+            self.assertEqual(self.t.detect_legacy_layout(self.t.load_config(d), d), [])
+
+    def test_a_status_named_items_is_legal_and_never_self_detects(self):
+        """Statuses no longer name directories, so `items` is an ordinary status
+        value. Detection must not mistake the body dir for that status's folder."""
+        config = {"statuses": [{"name": "backlog", "role": "initial"},
+                               {"name": "items", "role": "active"},
+                               {"name": "done", "role": "terminal"}],
+                  "aliases": {"start": "items", "done": "done"}}
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, config)
+            (d / "items").mkdir()
+            (d / "items" / "abc1234-alpha.md").write_text("# Alpha\n")
+            self.assertEqual(self.t.detect_legacy_layout(self.t.load_config(d), d), [])
+
+    def test_commands_refuse_a_legacy_layout_tracker(self):
+        with TemporaryDirectory() as tmp:
+            d = self.legacy(tmp)
+            with self.assertRaises(SystemExit):
+                self.t.build_ctx_or_die(ns(dir=str(d)))
+
+    def test_guard_can_be_bypassed_for_the_migration_verb(self):
+        with TemporaryDirectory() as tmp:
+            d = self.legacy(tmp)
+            ctx = self.t.build_ctx_or_die(ns(dir=str(d)), guard_layout=False)
+            self.assertEqual(ctx.dir, d)
