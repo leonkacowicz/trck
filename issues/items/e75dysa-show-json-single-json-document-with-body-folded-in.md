@@ -16,8 +16,16 @@ so the whole output is parseable as one document.
 - [ ] Field shape documented in `show` help; test asserts single parseable document with metadata + `body`.
 
 ## Notes
-Depends on #060. Handler `cmd_show` ~line 1404; the current partial branch is the
-`if getattr(args, "json", False)` at ~line 1412 followed by the unconditional
-`--- body ---` print — that body print must become part of the JSON object in the
-`--json` path. Body text = `issue_path(ctx, row).read_text()` (what `show` already
-reads).
+Depends on #060. Handler `cmd_show` — `src/trck/cmd_query.py:12`; the current
+partial branch is the `if getattr(args, "json", False)` at `cmd_query.py:20`,
+followed by the unconditional `--- body ---` print at `cmd_query.py:33` — that
+print must move inside the JSON object on the `--json` path (and stay where it is
+on the human path). Body text = `issue_path(ctx, row).read_text()` —
+`src/trck/index.py:240`.
+
+Note the flat layout (v0.23.0) weakens this issue's unique value: the body path is
+now always `items/{id}-{slug}.md` (`filename()` — `src/trck/index.py:228`, with
+legacy numeric ids zero-padded to 3), derivable straight from index fields, so a
+consumer can already reach the body with jq + `cat`. What `show --json` still
+buys is one parseable document instead of shell glue — and fixing today's
+two-documents-on-stdout bug.

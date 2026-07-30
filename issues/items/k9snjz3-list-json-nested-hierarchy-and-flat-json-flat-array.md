@@ -18,9 +18,11 @@ filter/sort exactly as the human render does.
 - [ ] Field shape documented in `list` help; tests assert parseable JSON + nesting + filter honouring.
 
 ## Notes
-Depends on #060 (emit_json + `--json` flag). Handler `cmd_list` ~line 1455;
-`forest_layout` ~line 1431, `match_closure` builds `shown`/`dim`. For the nested
-form, build the child lists from the same `shown` set and sibling `key` ordering
-the human render uses, so JSON and screen agree. Decide and document whether
+Depends on #060 (emit_json + `--json` flag). Handler `cmd_list` —
+`src/trck/cmd_query.py:68`; `forest_layout` — `src/trck/cmd_query.py:44`;
+`Graph.match_closure` — `src/trck/graph.py:112`, called at `cmd_query.py:155` —
+builds `shown`/`dim`. For the nested form, build the child lists from the same
+`shown` set and sibling `key` ordering the human render uses, so JSON and screen
+agree. Decide and document whether
 dimmed context rows carry a marker (lean: include them as normal nodes; consumers
 filter by status if they want only matches).

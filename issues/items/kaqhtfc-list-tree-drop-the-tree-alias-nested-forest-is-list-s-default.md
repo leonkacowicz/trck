@@ -16,6 +16,13 @@ upcoming `--json` story unambiguous (`list --json` = nested, `list --flat --json
 - [ ] A test asserts `tree` is rejected and `list` still renders the nested forest.
 
 ## Notes
-Engine: subparser at `trck` ~line 2041; handler `cmd_list` ~line 1455. No
-behavioural code change in `cmd_list` — this is parser + help/doc cleanup only.
-`issues/CLAUDE.md` lists `trck tree` in the common-verbs table; update it too.
+Engine: `list` subparser (with `aliases=["tree"]`) at `src/trck/cli.py:209`;
+handler `cmd_list` at `src/trck/cmd_query.py:68`. No behavioural code change in
+`cmd_list` — this is parser + help/doc cleanup only.
+
+Doc/help sites to repoint: the "`tree` is an alias for this command." line in the
+`list` description (`src/trck/cli.py:226`); `trck tree 4` in the top-level TYPICAL
+FLOW epilog (`src/trck/cli.py:73`); `README.md:39`, `README.md:164`, and the
+screenshot caption at `README.md:167-168` (the asset is `docs/img/tree.svg`, whose
+prompt line reads `$ trck tree` — regenerate or recaption); and the common-verbs
+list in `issues/CLAUDE.md`.

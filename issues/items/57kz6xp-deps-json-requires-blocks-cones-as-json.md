@@ -17,9 +17,20 @@ and `blocks` is its dependent cone (what waits on it) — the same two direction
 - [ ] Field shape documented in `deps` help; tests assert parseable JSON + both cones.
 
 ## Notes
-Depends on #060. Handler `cmd_deps` ~line 1666; it derives `up`/`down` and calls
-`_print_deps_graph` (~line 1625). The cone walk lives in the `Graph` (predecessors
-= requires, successors = blocks). Open question to resolve in this issue: the
-no-id (whole graph) and `--full` (whole connected cluster) cases — simplest first
-cut is to support the id form (`requires`/`blocks` cones) and define no-id
-explicitly rather than silently emitting nothing.
+Depends on #060. Handler `cmd_deps` — `src/trck/cmd_query.py:339`; it derives
+`up`/`down` and calls `_print_deps_graph` (`src/trck/cmd_query.py:287`).
+
+The cone walk is `Graph.dependency_line(row, up=…, down=…)` —
+`src/trck/graph.py:272` — which returns one id set covering both sweeps, so for
+`{requires, blocks}` call it once per direction (`up=True, down=False` and the
+reverse) and drop the focal id from each. Both sweeps follow *drawn* edges
+(`drawn_deps_of` / `drawn_dependents_of` — `src/trck/graph.py:72` / `:89`), so
+inferred parent↔child containment edges are in the cones too: decide and document
+whether the JSON marks those as inferred (the human gutter dims them).
+
+Open question to resolve in this issue: the no-id (whole graph) and `--full`
+(whole connected cluster) cases — no-id uses `deps_overview_ids`
+(`src/trck/render.py:428`), `--full` uses `graph_components`
+(`src/trck/render.py:251`). Simplest first cut is to support the id form
+(`requires`/`blocks` cones) and define no-id explicitly rather than silently
+emitting nothing.
