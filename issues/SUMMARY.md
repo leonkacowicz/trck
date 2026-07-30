@@ -5,8 +5,8 @@
 
 | State | Count |
 |---|---:|
-| backlog | 29 |
-| ongoing | 2 |
+| backlog | 28 |
+| ongoing | 3 |
 | in-review | 0 |
 | done | 95 |
 | **total** | **126** |
@@ -112,7 +112,6 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 ## Backlog
 
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](items/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
-- [#qs4zwzr Group the maintenance verbs under 'trck repo'](items/qs4zwzr-group-the-maintenance-verbs-out-of-the-root-command-namespace.md) — _medium_ [tracker-features]
 - [#tfhhp8h mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](items/tfhhp8h-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
 - [#wh3mv52 mv/done: guard closing a parent with open descendants (--recurse to cascade)](items/wh3mv52-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
 - [#5jhvpz4 update: add a minimum-size sanity check on the downloaded engine](items/5jhvpz4-update-add-a-minimum-size-sanity-check-on-the-downloaded-engine.md) — _low_
@@ -132,7 +131,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## Ongoing
 
-_none_
+- [#qs4zwzr Group the maintenance verbs under 'trck repo'](items/qs4zwzr-group-the-maintenance-verbs-out-of-the-root-command-namespace.md) — _medium_ [tracker-features]
 
 ## In-review
 

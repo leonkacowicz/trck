@@ -17,7 +17,7 @@ MODEL
               with look-alike chars removed). Any unambiguous prefix works in
               place of a full id: `trck show k3m` matches k3m9x2a. An ambiguous
               prefix is an error that lists the candidates. Legacy integer-id
-              trackers keep working; `trck renumber` migrates them.
+              trackers keep working; `trck repo renumber` migrates them.
   status      every issue has exactly one; move it with mv / start / review /
               done. A status may set "actionable": false (as in-review does) --
               work waiting there stays out of ready/next, but still blocks.
@@ -342,22 +342,31 @@ def build_parser() -> argparse.ArgumentParser:
                         description="Regenerate SUMMARY.md from the index.")
     su.set_defaults(func=cmd_summary)
 
-    nm = sub.add_parser("normalize", help="rewrite index.jsonl in canonical slim form",
-                        description="Rewrite index.jsonl in canonical slim form "
-                                    "(stable key order, stripped defaults).")
+    # Tracker maintenance lives under `repo`: verbs you run *on a tracker*, rarely,
+    # to migrate or tidy it. `init` and `update` stay at the root — they act on your
+    # setup rather than on a tracker, and `init` runs before one exists at all.
+    rp = sub.add_parser("repo", help="tracker maintenance (normalize, renumber, …)",
+                        description="Maintenance verbs that operate on an existing "
+                                    "tracker. Run them rarely; the daily verbs live "
+                                    "at the top level.")
+    rsub = rp.add_subparsers(dest="repo_cmd", required=True)
+
+    nm = rsub.add_parser("normalize", help="rewrite index.jsonl in canonical slim form",
+                         description="Rewrite index.jsonl in canonical slim form "
+                                     "(stable key order, stripped defaults).")
     nm.set_defaults(func=cmd_normalize)
 
-    rn = sub.add_parser("renumber",
-                        help="convert legacy integer ids to random alphanumeric ids",
-                        description="One-shot migration: replace every legacy integer "
-                                    "id with a random alphanumeric id, rewriting "
-                                    "parent/depends_on, recording the prior id in "
-                                    "legacy_id (a resolvable alias), and renaming files. "
-                                    "Idempotent; random ids are left untouched.")
+    rn = rsub.add_parser("renumber",
+                         help="convert legacy integer ids to random alphanumeric ids",
+                         description="One-shot migration: replace every legacy integer "
+                                     "id with a random alphanumeric id, rewriting "
+                                     "parent/depends_on, recording the prior id in "
+                                     "legacy_id (a resolvable alias), and renaming files. "
+                                     "Idempotent; random ids are left untouched.")
     rn.set_defaults(func=cmd_renumber)
 
-    ih = sub.add_parser("install-hook", help="install the pre-commit consistency hook",
-                        description="Install a git pre-commit hook that runs `trck check`.")
+    ih = rsub.add_parser("install-hook", help="install the pre-commit consistency hook",
+                         description="Install a git pre-commit hook that runs `trck check`.")
     ih.set_defaults(func=cmd_install_hook)
 
     iv = sub.add_parser("init", help="scaffold a tracker into the current repo",

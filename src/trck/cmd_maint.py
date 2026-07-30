@@ -118,7 +118,7 @@ def cmd_install_hook(args) -> None:
         edir = f"$root/{rel}"
     body = (
         "#!/usr/bin/env bash\n"
-        "# Auto-installed by `trck install-hook`. Runs `trck check` when the tracker changes.\n"
+        "# Auto-installed by `trck repo install-hook`. Runs `trck check` when the tracker changes.\n"
         'root="$(git rev-parse --show-toplevel)"\n'
         'staged="$(git diff --cached --name-only)"\n'
         f"{guard}\n"

@@ -43,7 +43,7 @@ Each issue is keyed by a short **random alphanumeric** id (7 chars from a look-a
 base32 alphabet, e.g. `k3m9x2a`) — **not** a sequential integer. Ids are random, so listing
 order is *creation* order, not id order. Anywhere a command wants an `ID`, **any unambiguous
 prefix works** (`trck show k3m` resolves `k3m9x2a`); an ambiguous prefix errors and lists the
-candidates. Legacy integer-id trackers keep working, and `trck renumber` migrates them — a
+candidates. Legacy integer-id trackers keep working, and `trck repo renumber` migrates them — a
 renumbered issue records its old number in `legacy_id`, so stale `#NN` references still resolve.
 
 ## Common verbs (run `trck --help` for all)
@@ -60,8 +60,9 @@ holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
   the PR in one step. An issue there is out of `ready`/`next` (nothing to pick up) but still
   **blocks** whatever depends on it until the PR lands. `trck set ID --pr none` unlinks.
 - `trck list` · `trck tree` · `trck deps ID` · `trck show ID` · `trck check` · `trck summary`
-- `trck normalize` — rewrite `index.jsonl` in canonical slim form (no data change)
-- `trck renumber` — convert legacy integer ids to random alphanumeric ids
+- `trck repo normalize` — rewrite `index.jsonl` in canonical slim form (no data change)
+- `trck repo renumber` — convert legacy integer ids to random alphanumeric ids
+- `trck repo install-hook` — install the pre-commit consistency hook
 - `trck update` — pull the latest engine from the canonical repo.
 
 Statuses, priorities, kinds, resolutions, and aliases are configured in `trck.json`.

@@ -128,7 +128,7 @@ ambiguous prefix is an error that lists all matching candidates.
 
 ### Migrating an existing integer-id tracker
 
-If you started with integer ids (the old default), run `trck renumber` once from the
+If you started with integer ids (the old default), run `trck repo renumber` once from the
 repo. It replaces every integer id with a random alphanumeric id, rewrites
 `parent`/`depends_on` links, renames issue files, and records each issue's prior integer
 in a new `legacy_id` field. After migration, old numeric references still resolve —
@@ -137,7 +137,7 @@ commit messages or issue bodies stay reachable. `renumber` is idempotent: issues
 already have random ids are left untouched.
 
 ```bash
-trck renumber   # one-shot; review the diff and commit the result
+trck repo renumber   # one-shot; review the diff and commit the result
 ```
 
 Integer-id trackers that are not migrated continue to work — integer ids are valid
@@ -146,8 +146,9 @@ opaque string ids and are tolerated on read.
 ## Common verbs
 
 `new` · `mv` · `start` · `review` · `done` · `set` · `dep` · `label` · `show` · `list` · `ready` ·
-`next` · `tree` · `deps` · `path` · `which` · `check` · `summary` · `normalize` · `renumber` ·
-`install-hook` · `init` · `update` · `version`. Run `trck --help` (or `trck <verb> --help`) for details.
+`next` · `tree` · `deps` · `path` · `which` · `check` · `summary` · `init` · `update` ·
+`version`, plus `repo normalize` · `repo renumber` · `repo install-hook` for tracker
+maintenance. Run `trck --help` (or `trck <verb> --help`) for details.
 
 `list` is the structure-aware browse verb. By default it prints a **nested forest** — each
 issue, with children nested under their parent and siblings ordered by `--sort` (default `created`).
