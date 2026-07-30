@@ -30,6 +30,16 @@ MIN_FIELDS = ("created", "started")
 TUPLE_FIELDS = ("status", "closed", "resolution")
 
 
+def conflict_ids(conflicts) -> set:
+    """The ids named by a conflict list. Messages are formatted `#<id>: …` here, so
+    the parsing lives next to the formatting rather than at the call site."""
+    out = set()
+    for c in conflicts:
+        if c.startswith("#") and ":" in c:
+            out.add(c[1:c.index(":")])
+    return out
+
+
 def _by_id(rows) -> dict:
     return {str(r["id"]): r for r in rows}
 

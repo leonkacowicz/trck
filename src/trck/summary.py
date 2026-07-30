@@ -42,8 +42,12 @@ def progress_pct(g: Graph, row) -> str:
     return f" {pct}%"
 
 
-def generate_summary(ctx: Ctx) -> str:
-    g = load_graph(ctx)
+def generate_summary(ctx: Ctx, rows: list | None = None) -> str:
+    """Render the rollup. Pass `rows` to render from an in-memory set instead of
+    re-reading index.jsonl — the merge driver needs this, because during a merge
+    the working-tree index is not yet the merged result and reading it would
+    produce a confidently wrong rollup."""
+    g = Graph(ctx.cfg, rows) if rows is not None else load_graph(ctx)
     rows = g.rows
     names = status_names(ctx.cfg)
 
@@ -113,7 +117,7 @@ def generate_summary(ctx: Ctx) -> str:
     return "\n".join(out).rstrip() + "\n"
 
 
-def write_summary(ctx: Ctx) -> None:
-    (ctx.dir / "SUMMARY.md").write_text(generate_summary(ctx))
+def write_summary(ctx: Ctx, rows: list | None = None) -> None:
+    (ctx.dir / "SUMMARY.md").write_text(generate_summary(ctx, rows))
 
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 import argparse
-from .cmd_maint import cmd_changelog, cmd_check, cmd_done, cmd_init, cmd_install_hook, cmd_migrate_layout, cmd_normalize, cmd_renumber, cmd_review, cmd_start, cmd_summary, cmd_version
+from .cmd_maint import cmd_changelog, cmd_check, cmd_done, cmd_init, cmd_install_hook, cmd_merge_index, cmd_merge_summary, cmd_migrate_layout, cmd_normalize, cmd_renumber, cmd_review, cmd_start, cmd_summary, cmd_version
 from .cmd_mutate import cmd_dep, cmd_label, cmd_mv, cmd_new, cmd_set
 from .cmd_query import cmd_deps, cmd_list, cmd_next, cmd_path, cmd_ready, cmd_show, cmd_which
 from .cmd_selfmgmt import cmd_update
@@ -368,6 +368,33 @@ def build_parser() -> argparse.ArgumentParser:
     ih = rsub.add_parser("install-hook", help="install the pre-commit consistency hook",
                          description="Install a git pre-commit hook that runs `trck check`.")
     ih.set_defaults(func=cmd_install_hook)
+
+    mi = rsub.add_parser(
+        "merge-index", formatter_class=raw,
+        help="git merge driver for index.jsonl (row-wise 3-way merge)",
+        description="Git merge driver for index.jsonl. Merges rows by id using the "
+                    "common ancestor to tell which side changed what, writes the "
+                    "result over the second path, and exits non-zero on conflict.\n\n"
+                    "The two sides are NOT ours/theirs: git hands them over in "
+                    "opposite order for `git merge main` and `git rebase main` on "
+                    "the same branch, so every rule is symmetric or base-derived.",
+        epilog="registered by `trck repo setup-git`; you should not need to run "
+               "this by hand")
+    mi.add_argument("base", help="git's %%O — the common ancestor")
+    mi.add_argument("current", help="git's %%A — also the file the result is written to")
+    mi.add_argument("other", help="git's %%B — the other side")
+    mi.set_defaults(func=cmd_merge_index)
+
+    ms = rsub.add_parser(
+        "merge-summary",
+        help="git merge driver for SUMMARY.md (regenerate, never merge)",
+        description="Git merge driver for SUMMARY.md. The rollup is fully derived "
+                    "from index.jsonl, so both sides are discarded and it is "
+                    "regenerated. A safety net only: the index driver already "
+                    "rewrites SUMMARY.md, which is what makes the order git runs "
+                    "the two drivers in irrelevant.")
+    ms.add_argument("current", help="git's %%A — the file the result is written to")
+    ms.set_defaults(func=cmd_merge_summary)
 
     ml = rsub.add_parser("migrate-layout",
                          help="one-shot: move issue files from status folders into items/",

@@ -700,6 +700,16 @@ MIN_FIELDS = ("created", "started")
 TUPLE_FIELDS = ("status", "closed", "resolution")
 
 
+def conflict_ids(conflicts) -> set:
+    """The ids named by a conflict list. Messages are formatted `#<id>: …` here, so
+    the parsing lives next to the formatting rather than at the call site."""
+    out = set()
+    for c in conflicts:
+        if c.startswith("#") and ":" in c:
+            out.add(c[1:c.index(":")])
+    return out
+
+
 def _by_id(rows) -> dict:
     return {str(r["id"]): r for r in rows}
 
@@ -2022,8 +2032,12 @@ def progress_pct(g: Graph, row) -> str:
     return f" {pct}%"
 
 
-def generate_summary(ctx: Ctx) -> str:
-    g = load_graph(ctx)
+def generate_summary(ctx: Ctx, rows: list | None = None) -> str:
+    """Render the rollup. Pass `rows` to render from an in-memory set instead of
+    re-reading index.jsonl — the merge driver needs this, because during a merge
+    the working-tree index is not yet the merged result and reading it would
+    produce a confidently wrong rollup."""
+    g = Graph(ctx.cfg, rows) if rows is not None else load_graph(ctx)
     rows = g.rows
     names = status_names(ctx.cfg)
 
@@ -2093,8 +2107,8 @@ def generate_summary(ctx: Ctx) -> str:
     return "\n".join(out).rstrip() + "\n"
 
 
-def write_summary(ctx: Ctx) -> None:
-    (ctx.dir / "SUMMARY.md").write_text(generate_summary(ctx))
+def write_summary(ctx: Ctx, rows: list | None = None) -> None:
+    (ctx.dir / "SUMMARY.md").write_text(generate_summary(ctx, rows))
 
 
 # --------------------------------------------------------------------------- #
@@ -3237,6 +3251,107 @@ def cmd_migrate_layout(args) -> None:
     print(f"migrate-layout: moved {len(moves)} file(s) into {ITEMS_DIR}/")
 
 
+def _read_jsonl(path) -> list:
+    """Parse one of git's merge operands. A missing or empty side is legitimate —
+    it means the file did not exist in that revision."""
+    p = Path(path)
+    if not p.exists():
+        return []
+    rows = []
+    for n, line in enumerate(p.read_text().splitlines(), 1):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError as e:
+            die(f"{path} line {n}: invalid JSON ({e})")
+    return rows
+
+
+def cmd_merge_index(args) -> None:
+    """git merge driver for index.jsonl: a row-wise 3-way merge keyed by id.
+
+    Git passes three temp files — %O (common ancestor), %A, %B — and takes the
+    contents of %A as the result. Exit 0 means resolved; non-zero means conflicted.
+
+    The two sides are deliberately NOT named ours/theirs: `%A` is whatever is
+    checked out at that moment, so `git merge main` and `git rebase main` from the
+    same branch hand them over in opposite order. Every rule in `merge_rows` is
+    symmetric or base-derived for that reason.
+
+    On a clean merge this also regenerates SUMMARY.md **from the merged rows** —
+    not by re-reading the working-tree index, which during a merge is not yet the
+    merged result. That is what makes the driver-ordering question moot: git gives
+    no ordering guarantee between per-file drivers, so whichever runs first, the
+    rollup ends up derived from the same rows.
+
+    On a conflicted merge it writes conflict markers and leaves SUMMARY.md alone.
+    A rollup regenerated from a half-merged index would launder the conflict into a
+    plausible-looking file; a stale rollup is obvious, a fabricated one is not."""
+    base = _read_jsonl(args.base)
+    side_a = _read_jsonl(args.current)
+    side_b = _read_jsonl(args.other)
+    rows, conflicts = merge_rows(base, side_a, side_b)
+
+    dest = Path(args.current)
+    if not conflicts:
+        lines = [json.dumps(r.to_canonical(), ensure_ascii=False)
+                 for r in sorted(rows, key=get_id)]
+        dest.write_text("\n".join(lines) + ("\n" if lines else ""))
+        ctx = build_ctx(args, required=False)
+        if ctx is not None:
+            write_summary(ctx, rows)
+        return
+
+    # Conflicted: emit the clean rows plus a marker block per conflicting id, so the
+    # file cannot be parsed — and therefore cannot be `git add`ed unread — until a
+    # human resolves it. Sides are labelled by position, never by ownership.
+    bad = conflict_ids(conflicts)
+    by_a = {str(r["id"]): r for r in side_a}
+    by_b = {str(r["id"]): r for r in side_b}
+    out = [json.dumps(r.to_canonical(), ensure_ascii=False)
+           for r in sorted(rows, key=get_id) if r.id not in bad]
+    for iid in sorted(bad):
+        out.append(f"<<<<<<< one side ({iid})")
+        if iid in by_a:
+            out.append(json.dumps(by_a[iid], ensure_ascii=False))
+        out.append("=======")
+        if iid in by_b:
+            out.append(json.dumps(by_b[iid], ensure_ascii=False))
+        out.append(f">>>>>>> the other side ({iid})")
+    dest.write_text("\n".join(out) + "\n")
+
+    print(f"trck: index.jsonl has {len(conflicts)} unresolved conflict(s):",
+          file=sys.stderr)
+    for c in conflicts:
+        print(f"  {c}", file=sys.stderr)
+    print("resolve the marked rows, then `git add` and re-run `trck check`.",
+          file=sys.stderr)
+    sys.exit(1)
+
+
+def cmd_merge_summary(args) -> None:
+    """git merge driver for SUMMARY.md: discard both sides and regenerate.
+
+    The rollup is derived entirely from index.jsonl, so there is never anything to
+    merge. This is a safety net rather than the authority — `merge-index` already
+    rewrites SUMMARY.md from the rows it merged, which is what makes the order git
+    runs the two drivers in irrelevant. If this fires first it regenerates from a
+    pre-merge index and `merge-index` corrects it; if it fires second it agrees.
+
+    Regeneration is best-effort: a mid-merge index that does not parse is not an
+    error worth failing the whole merge over, and the index driver (or any later
+    trck verb) produces the correct rollup anyway."""
+    ctx = build_ctx(args, required=False)
+    if ctx is None:
+        return
+    try:
+        Path(args.current).write_text(generate_summary(ctx))
+    except SystemExit:
+        pass  # index mid-merge / unparseable — leave whatever is there
+
+
 def cmd_update(args) -> None:
     repo = _update_repo(args)
     cur_ver = _current_version()
@@ -3648,6 +3763,33 @@ def build_parser() -> argparse.ArgumentParser:
     ih = rsub.add_parser("install-hook", help="install the pre-commit consistency hook",
                          description="Install a git pre-commit hook that runs `trck check`.")
     ih.set_defaults(func=cmd_install_hook)
+
+    mi = rsub.add_parser(
+        "merge-index", formatter_class=raw,
+        help="git merge driver for index.jsonl (row-wise 3-way merge)",
+        description="Git merge driver for index.jsonl. Merges rows by id using the "
+                    "common ancestor to tell which side changed what, writes the "
+                    "result over the second path, and exits non-zero on conflict.\n\n"
+                    "The two sides are NOT ours/theirs: git hands them over in "
+                    "opposite order for `git merge main` and `git rebase main` on "
+                    "the same branch, so every rule is symmetric or base-derived.",
+        epilog="registered by `trck repo setup-git`; you should not need to run "
+               "this by hand")
+    mi.add_argument("base", help="git's %%O — the common ancestor")
+    mi.add_argument("current", help="git's %%A — also the file the result is written to")
+    mi.add_argument("other", help="git's %%B — the other side")
+    mi.set_defaults(func=cmd_merge_index)
+
+    ms = rsub.add_parser(
+        "merge-summary",
+        help="git merge driver for SUMMARY.md (regenerate, never merge)",
+        description="Git merge driver for SUMMARY.md. The rollup is fully derived "
+                    "from index.jsonl, so both sides are discarded and it is "
+                    "regenerated. A safety net only: the index driver already "
+                    "rewrites SUMMARY.md, which is what makes the order git runs "
+                    "the two drivers in irrelevant.")
+    ms.add_argument("current", help="git's %%A — the file the result is written to")
+    ms.set_defaults(func=cmd_merge_summary)
 
     ml = rsub.add_parser("migrate-layout",
                          help="one-shot: move issue files from status folders into items/",

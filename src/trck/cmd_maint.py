@@ -14,9 +14,10 @@ from .config import DEFAULT_CONFIG, check_pr, detect_legacy_layout, is_terminal,
 from .constants import DEFAULT_UPDATE_REPO, FILENAME_RE, ID_ALPHABET, ID_LEN, ITEMS_DIR, SELF_PATH, SINCE_RE, __version__, die
 from .finalize import finalize
 from .graph import Graph, _existing_ids
-from .index import build_ctx, build_ctx_or_die, file_id, issue_path, load_index
+from .index import build_ctx, build_ctx_or_die, file_id, get_id, issue_path, load_index
 from .scan import validate
-from .summary import write_summary
+from .merge import conflict_ids, merge_rows
+from .summary import generate_summary, write_summary
 from .templates import CLAUDE_MD_TEMPLATE, README_TEMPLATE
 
 def cmd_check(args) -> None:
@@ -407,3 +408,104 @@ def cmd_migrate_layout(args) -> None:
 
     finalize(ctx, rows)  # rewrite SUMMARY.md with items/ links, then validate
     print(f"migrate-layout: moved {len(moves)} file(s) into {ITEMS_DIR}/")
+
+
+def _read_jsonl(path) -> list:
+    """Parse one of git's merge operands. A missing or empty side is legitimate —
+    it means the file did not exist in that revision."""
+    p = Path(path)
+    if not p.exists():
+        return []
+    rows = []
+    for n, line in enumerate(p.read_text().splitlines(), 1):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError as e:
+            die(f"{path} line {n}: invalid JSON ({e})")
+    return rows
+
+
+def cmd_merge_index(args) -> None:
+    """git merge driver for index.jsonl: a row-wise 3-way merge keyed by id.
+
+    Git passes three temp files — %O (common ancestor), %A, %B — and takes the
+    contents of %A as the result. Exit 0 means resolved; non-zero means conflicted.
+
+    The two sides are deliberately NOT named ours/theirs: `%A` is whatever is
+    checked out at that moment, so `git merge main` and `git rebase main` from the
+    same branch hand them over in opposite order. Every rule in `merge_rows` is
+    symmetric or base-derived for that reason.
+
+    On a clean merge this also regenerates SUMMARY.md **from the merged rows** —
+    not by re-reading the working-tree index, which during a merge is not yet the
+    merged result. That is what makes the driver-ordering question moot: git gives
+    no ordering guarantee between per-file drivers, so whichever runs first, the
+    rollup ends up derived from the same rows.
+
+    On a conflicted merge it writes conflict markers and leaves SUMMARY.md alone.
+    A rollup regenerated from a half-merged index would launder the conflict into a
+    plausible-looking file; a stale rollup is obvious, a fabricated one is not."""
+    base = _read_jsonl(args.base)
+    side_a = _read_jsonl(args.current)
+    side_b = _read_jsonl(args.other)
+    rows, conflicts = merge_rows(base, side_a, side_b)
+
+    dest = Path(args.current)
+    if not conflicts:
+        lines = [json.dumps(r.to_canonical(), ensure_ascii=False)
+                 for r in sorted(rows, key=get_id)]
+        dest.write_text("\n".join(lines) + ("\n" if lines else ""))
+        ctx = build_ctx(args, required=False)
+        if ctx is not None:
+            write_summary(ctx, rows)
+        return
+
+    # Conflicted: emit the clean rows plus a marker block per conflicting id, so the
+    # file cannot be parsed — and therefore cannot be `git add`ed unread — until a
+    # human resolves it. Sides are labelled by position, never by ownership.
+    bad = conflict_ids(conflicts)
+    by_a = {str(r["id"]): r for r in side_a}
+    by_b = {str(r["id"]): r for r in side_b}
+    out = [json.dumps(r.to_canonical(), ensure_ascii=False)
+           for r in sorted(rows, key=get_id) if r.id not in bad]
+    for iid in sorted(bad):
+        out.append(f"<<<<<<< one side ({iid})")
+        if iid in by_a:
+            out.append(json.dumps(by_a[iid], ensure_ascii=False))
+        out.append("=======")
+        if iid in by_b:
+            out.append(json.dumps(by_b[iid], ensure_ascii=False))
+        out.append(f">>>>>>> the other side ({iid})")
+    dest.write_text("\n".join(out) + "\n")
+
+    print(f"trck: index.jsonl has {len(conflicts)} unresolved conflict(s):",
+          file=sys.stderr)
+    for c in conflicts:
+        print(f"  {c}", file=sys.stderr)
+    print("resolve the marked rows, then `git add` and re-run `trck check`.",
+          file=sys.stderr)
+    sys.exit(1)
+
+
+def cmd_merge_summary(args) -> None:
+    """git merge driver for SUMMARY.md: discard both sides and regenerate.
+
+    The rollup is derived entirely from index.jsonl, so there is never anything to
+    merge. This is a safety net rather than the authority — `merge-index` already
+    rewrites SUMMARY.md from the rows it merged, which is what makes the order git
+    runs the two drivers in irrelevant. If this fires first it regenerates from a
+    pre-merge index and `merge-index` corrects it; if it fires second it agrees.
+
+    Regeneration is best-effort: a mid-merge index that does not parse is not an
+    error worth failing the whole merge over, and the index driver (or any later
+    trck verb) produces the correct rollup anyway."""
+    ctx = build_ctx(args, required=False)
+    if ctx is None:
+        return
+    try:
+        Path(args.current).write_text(generate_summary(ctx))
+    except SystemExit:
+        pass  # index mid-merge / unparseable — leave whatever is there
