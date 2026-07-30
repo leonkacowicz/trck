@@ -8,12 +8,14 @@ Both tracked tracker files conflict on every branch merge that touches issues:
 
 Make git handle both hands-free via custom merge drivers declared in `issues/.gitattributes`:
 ```
-index.jsonl  merge=union
+index.jsonl  merge=trck-index
 SUMMARY.md   merge=trck-summary
 ```
-- `index.jsonl → merge=union` keeps all rows from both sides.
-- `SUMMARY.md → trck-summary` is a driver that ignores all three inputs, runs `trck summary`,
-  and writes the fresh rollup into git's `%A` slot — so no conflict ever surfaces.
+- `index.jsonl → trck-index` is a **row-wise 3-way merge keyed by id** — see the design section
+  below. (An earlier draft said `merge=union`; that is wrong and the correction is recorded
+  below.)
+- `SUMMARY.md → trck-summary` resolves a file that is 100% derived, so no conflict need ever
+  surface — but *when* it can regenerate is constrained; see the ordering problem below.
 
 ## CORRECTION — the union half is not sound as originally argued
 
@@ -165,6 +167,32 @@ For conflict *messages*, never write ours/theirs/yours — the words mean opposi
 (2) and (3), so a message using them is wrong half the time. Name what each side contains
 instead: `#x: 'ongoing' on one side, 'done' on the other`.
 
+## The ordering problem, reintroduced
+
+The original design sidestepped this and the note at the bottom still records why: a driver that
+regenerates `SUMMARY.md` *from* `index.jsonl` assumes the index is already merged, but **git
+gives no ordering guarantee between per-file driver runs**. `merge=union` dodged it because a
+union result is stable whenever it happens.
+
+**Abandoning union brings the problem back.** If `trck-summary` fires before `trck-index`, it
+regenerates the rollup from a pre-merge index and writes a confidently wrong `SUMMARY.md` — the
+exact failure class this whole design is built to avoid.
+
+**Resolution: the index driver owns SUMMARY regeneration.** `trck-index` writes `SUMMARY.md`
+itself, as a side effect, after producing a clean merged index. Then order genuinely does not
+matter:
+
+- `trck-summary` first → it regenerates from a stale index, and `trck-index` overwrites it.
+- `trck-index` first → `trck-summary` regenerates from the merged index; same result.
+
+`trck-summary` becomes trivial: regenerate from whatever the index currently says and exit 0. It
+is a safety net, not the authority.
+
+**On a conflicted index merge, neither driver touches SUMMARY.** Regenerating a rollup from a
+half-merged index would launder a conflict into a plausible-looking file. Leave the previous
+`SUMMARY.md` in place, let the human resolve `index.jsonl`, and let any `trck` verb — or the
+pre-commit hook — regenerate it. A stale rollup is obvious and harmless; a fabricated one is not.
+
 ## The thing git makes you do (the crux)
 `.gitattributes` is committed and shared, but it can only *name* a driver — it cannot define
 the driver's command. The actual `driver = …` shell line lives in `.git/config`, which is
@@ -182,9 +210,10 @@ for consumer repos; this self-hosting repo needs a one-time setup (a `trck setup
 fold it into `init`/`update`).
 
 ## Acceptance criteria
-- [ ] `issues/.gitattributes` declares `index.jsonl merge=union` and `SUMMARY.md merge=trck-summary`.
-- [ ] A `trck-summary` merge driver regenerates SUMMARY into `%A` (ignores `%O`/`%A`/`%B`
-      contents) and exits 0.
+- [ ] `issues/.gitattributes` declares `index.jsonl merge=trck-index` and
+      `SUMMARY.md merge=trck-summary`.
+- [ ] `SUMMARY.md` is correct after a clean merge regardless of the order git runs the two
+      drivers in (see the ordering problem above).
 - [ ] Driver command is installed into `.git/config` automatically — by `trck init` for
       consumer repos, and via a documented one-time setup for this repo.
 - [ ] A real two-branch merge (each branch ran `trck new`) completes with **zero manual
@@ -217,10 +246,10 @@ fold it into `init`/`update`).
       an unregistered clone is no worse off than today (no silent one-sided resolution).
 
 ## Notes
-Ordering subtlety avoided by design: a driver that regenerates SUMMARY *from* index.jsonl
-assumes the index is already merged, but git gives no ordering guarantee between per-file
-driver runs. Making `index.jsonl` conflict-free via `merge=union` sidesteps this — the union
-result is stable regardless of when SUMMARY's driver fires. (This is why #066 leans on #65.)
+~~Ordering subtlety avoided by design: … making `index.jsonl` conflict-free via `merge=union`
+sidesteps this.~~ **Superseded.** Dropping union brought the ordering problem back; it is now
+handled explicitly by making the index driver own SUMMARY regeneration — see "The ordering
+problem, reintroduced" above.
 
 Rejected alternative: `SUMMARY.md merge=ours` + a `post-merge` hook running `trck summary`.
 It works but leaves SUMMARY dirty *after* the merge commit, forcing a follow-up commit — worse

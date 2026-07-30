@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 23 |
+| backlog | 27 |
 | ongoing | 1 |
 | in-review | 0 |
 | done | 104 |
-| **total** | **128** |
+| **total** | **132** |
 
 ## Hierarchies
 
@@ -57,6 +57,13 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 ### [#evsw9tr Introduce an Issue class instead of dict-oriented code](items/evsw9tr-introduce-an-issue-class-instead-of-dict-oriented-code.md) — 100% (1/1 pts · 1/1 done) · _medium_ · done
 
 - [x] [#nddf6wg Harden Issue.from_dict with a structural/type contract](items/nddf6wg-harden-issue-from-dict-with-a-structural-type-contract.md)
+
+### [#ey2aruc Auto-resolve index.jsonl and SUMMARY.md merge conflicts via git merge drivers](items/ey2aruc-auto-resolve-index-jsonl-and-summary-md-merge-conflicts-via-git-merge-drivers.md) — 0% (0/10 pts · 0/4 done) · _low_ · backlog
+
+- [ ] [#2ry5d58 integration tests: real git merges and rebases in all three directions](items/2ry5d58-integration-tests-real-git-merges-and-rebases-in-all-three-directions.md) _(backlog)_
+- [ ] [#7ed853j trck repo setup-git: .gitattributes + .git/config driver registration](items/7ed853j-trck-repo-setup-git-gitattributes-git-config-driver-registration.md) _(backlog)_
+- [ ] [#ex5cugg trck repo merge-index: the driver entrypoint (+ SUMMARY regeneration)](items/ex5cugg-trck-repo-merge-index-the-driver-entrypoint-summary-regeneration.md) _(backlog)_
+- [ ] [#pfackaw merge_rows: row-wise 3-way merge of index rows, keyed by id](items/pfackaw-merge-rows-row-wise-3-way-merge-of-index-rows-keyed-by-id.md) _(backlog)_
 
 ### [#fkrp9dh trck-html: static HTML SPA to browse issues in a browser](items/fkrp9dh-trck-html-static-html-spa-to-browse-issues-in-a-browser.md) — 90% (9/10 pts · 9/10 done) · _medium_ · ongoing
 
@@ -119,7 +126,6 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#c2wadyd graph/render: id type annotations still say int after the random-id migration](items/c2wadyd-graph-render-id-type-annotations-still-say-int-after-the-random-id-migration.md) — _low_
 - [#cbf4sxp config: friendly errors for empty statuses/priorities/kinds lists](items/cbf4sxp-config-friendly-errors-for-empty-statuses-priorities-kinds-lists.md) — _low_
 - [#eemqu4g Support configurable custom fields](items/eemqu4g-support-configurable-custom-fields.md) — _low_ [tracker-features]
-- [#ey2aruc Auto-resolve index.jsonl and SUMMARY.md merge conflicts via git merge drivers](items/ey2aruc-auto-resolve-index-jsonl-and-summary-md-merge-conflicts-via-git-merge-drivers.md) — _low_ [conflict-resolution tracker-features]
 - [#kj2c95b validate: suppress redundant bad-slug error when filename-slug mismatch already reported](items/kj2c95b-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
 - [#m3z2ywb summary: include foreign/unknown statuses in the counts table](items/m3z2ywb-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
 - [#me67zba trck-html: mirror demand-cone ranking in the ready/next view](items/me67zba-trck-html-mirror-demand-cone-ranking-in-the-ready-next-view.md) — _low_
