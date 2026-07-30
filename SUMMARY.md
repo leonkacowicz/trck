@@ -6,9 +6,9 @@
 | State | Count |
 |---|---:|
 | backlog | 22 |
-| ongoing | 2 |
+| ongoing | 1 |
 | in-review | 0 |
-| done | 109 |
+| done | 110 |
 | **total** | **133** |
 
 ## Hierarchies
@@ -136,7 +136,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## Ongoing
 
-- [#u8jt8rm extract the pure status transition out of move_issue](items/u8jt8rm-extract-the-pure-status-transition-out-of-move-issue.md) — _medium_
+_none_
 
 ## In-review
 
@@ -176,6 +176,7 @@ _none_
 - [#qs4zwzr Group the maintenance verbs under 'trck repo'](items/qs4zwzr-group-the-maintenance-verbs-out-of-the-root-command-namespace.md) — _medium_ [tracker-features] (closed 2026-07-30)
 - [#rd6rk5e Allow any issue to be a parent (rollup for any parent)](items/rd6rk5e-allow-any-issue-to-be-a-parent-rollup-for-any-parent.md) — _medium_ (closed 2026-06-05)
 - [#tazdgkg deps --graph: lazygit-style dependency DAG renderer](items/tazdgkg-deps-graph-lazygit-style-dependency-dag-renderer.md) — _medium_ (closed 2026-06-10)
+- [#u8jt8rm extract the pure status transition out of move_issue](items/u8jt8rm-extract-the-pure-status-transition-out-of-move-issue.md) — _medium_ (closed 2026-07-30)
 - [#uydwa9h Convert the #002 'richer tracker features' epic into a label](items/uydwa9h-convert-the-002-richer-tracker-features-epic-into-a-label.md) — _medium_ (closed 2026-06-23)
 - [#w8a87ky deps --graph <id>: scope to the focal issue's directed dependency line](items/w8a87ky-deps-graph-id-scope-to-the-focal-issue-s-directed-dependency-line.md) — _medium_ (closed 2026-06-10)
 - [#wwpsa3f Extract config-vocabulary validation helpers](items/wwpsa3f-extract-config-vocabulary-validation-helpers.md) — _medium_ (closed 2026-06-10)
