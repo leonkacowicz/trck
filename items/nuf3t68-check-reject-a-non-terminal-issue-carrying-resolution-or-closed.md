@@ -49,10 +49,11 @@ Emit them as two distinct errors, since a merge can produce either independently
 warnings: unlike the existing "terminal but depends on non-terminal" *warning*, this is not a
 questionable-but-legal graph shape — it is a row the verbs cannot have written.
 
-**Check the fixtures before implementing.** Some tests hand-build `Issue` objects with
-`status="backlog"` and may set `closed`; the timestamp back-compat tests in particular construct
-rows directly. Expect a few to need adjusting, the way the layout change shook out four fixtures
-that had hard-coded a status folder.
+**Fixture note — the predicted breakage did not happen.** I expected hand-built `Issue` rows
+(especially the timestamp back-compat tests) to trip the new check the way the layout change
+shook out four fixtures. None did: the suite went from 718 to 725 tests with no adjustments.
+The existing fixtures that set `closed` also set a terminal status, which is a small piece of
+evidence that the invariant was already being respected everywhere the verbs are used.
 
 Do **not** extend this to `pr`. A terminal issue keeping its pull-request link is desirable — it
 is the review record for the change that resolved the issue, and `pr` is a forge-agnostic URL
