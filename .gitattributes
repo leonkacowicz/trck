@@ -1,0 +1,3 @@
+# Managed by `trck repo setup-git` — trck merge drivers.
+index.jsonl merge=trck-index
+SUMMARY.md merge=trck-summary

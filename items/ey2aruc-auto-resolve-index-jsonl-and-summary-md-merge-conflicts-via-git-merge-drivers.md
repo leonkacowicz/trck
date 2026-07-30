@@ -199,11 +199,18 @@ the driver's command. The actual `driver = …` shell line lives in `.git/config
 **per-clone and intentionally not shared** (otherwise cloning a repo would be remote code
 execution). So the driver does nothing until each clone registers it locally.
 
-**Verified: the unregistered failure mode is safe.** With `.gitattributes` naming a driver that
-`.git/config` does not define, git does not error and does not silently take a side — it falls
-back to the ordinary 3-way merge and writes normal `<<<<<<<` conflict markers. An un-set-up
-clone is therefore exactly as well off as today, which means registration can be rolled out
-gradually without a flag day.
+**Verified: both unregistered states are safe, but they differ.** There are two, and the
+distinction only surfaced when the integration tests exercised it:
+
+| `.git/config` state | git's behaviour |
+|---|---|
+| Driver **never defined** — a fresh clone that has not run `setup-git` | Falls back to the built-in 3-way merge and writes normal `<<<<<<<` markers |
+| `merge.<name>.name` set but **`.driver` missing** — a partially edited config, or a future rename | `fatal: custom merge driver <name> lacks command line`; the operation aborts and the working tree is left untouched |
+
+The first is the case that matters for rollout: an un-set-up clone is exactly as well off as
+today, so registration needs no flag day. The second is louder but equally safe — git refuses
+rather than guessing. **Neither silently picks a side**, which is the property being relied on.
+Both are pinned by tests.
 
 Automating that registration is the real work here — and trck already has the seam: `trck init` installs it
 for consumer repos; this self-hosting repo needs a one-time setup (a `trck setup-git` verb, or
