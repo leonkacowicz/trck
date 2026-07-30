@@ -5,8 +5,8 @@
 
 | State | Count |
 |---|---:|
-| backlog | 25 |
-| ongoing | 2 |
+| backlog | 24 |
+| ongoing | 3 |
 | in-review | 0 |
 | done | 105 |
 | **total** | **132** |
@@ -62,7 +62,7 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 
 - [ ] [#2ry5d58 integration tests: real git merges and rebases in all three directions](items/2ry5d58-integration-tests-real-git-merges-and-rebases-in-all-three-directions.md) _(backlog)_
 - [ ] [#7ed853j trck repo setup-git: .gitattributes + .git/config driver registration](items/7ed853j-trck-repo-setup-git-gitattributes-git-config-driver-registration.md) _(backlog)_
-- [ ] [#ex5cugg trck repo merge-index: the driver entrypoint (+ SUMMARY regeneration)](items/ex5cugg-trck-repo-merge-index-the-driver-entrypoint-summary-regeneration.md) _(backlog)_
+- [ ] [#ex5cugg trck repo merge-index: the driver entrypoint (+ SUMMARY regeneration)](items/ex5cugg-trck-repo-merge-index-the-driver-entrypoint-summary-regeneration.md) _(ongoing)_
 - [x] [#pfackaw merge_rows: row-wise 3-way merge of index rows, keyed by id](items/pfackaw-merge-rows-row-wise-3-way-merge-of-index-rows-keyed-by-id.md)
 
 ### [#fkrp9dh trck-html: static HTML SPA to browse issues in a browser](items/fkrp9dh-trck-html-static-html-spa-to-browse-issues-in-a-browser.md) — 90% (9/10 pts · 9/10 done) · _medium_ · ongoing
