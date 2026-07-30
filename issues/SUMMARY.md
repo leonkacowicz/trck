@@ -5,21 +5,21 @@
 
 | State | Count |
 |---|---:|
-| backlog | 26 |
-| ongoing | 3 |
+| backlog | 25 |
+| ongoing | 2 |
 | in-review | 0 |
-| done | 97 |
+| done | 99 |
 | **total** | **126** |
 
 ## Hierarchies
 
-### [#2srvf6j Flat items/ layout: status lives only in index.jsonl](items/2srvf6j-flat-items-layout-status-lives-only-in-index-jsonl.md) — 64% (9/14 pts · 4/7 done) · _high_ · ongoing
+### [#2srvf6j Flat items/ layout: status lives only in index.jsonl](items/2srvf6j-flat-items-layout-status-lives-only-in-index-jsonl.md) — 79% (11/14 pts · 5/7 done) · _high_ · ongoing
 Spec: [`docs/plans/2026-07-30-flat-items-layout.md`](../docs/plans/2026-07-30-flat-items-layout.md)
 
 - [ ] [#82an2dy release v0.23.0 with the breaking layout change](items/82an2dy-release-v0-23-0-with-the-breaking-layout-change.md) _(backlog)_
 - [x] [#8fdjhhf detect the legacy status-folder layout and refuse to run](items/8fdjhhf-detect-the-legacy-status-folder-layout-and-refuse-to-run.md)
 - [ ] [#nrvcky7 docs: status is an index field, not a directory](items/nrvcky7-docs-status-is-an-index-field-not-a-directory.md) _(backlog)_
-- [ ] [#twgv9jq migrate the bundled example and dogfood migrate-layout](items/twgv9jq-migrate-this-repo-s-tracker-and-the-bundled-example.md) _(ongoing)_
+- [x] [#twgv9jq migrate the bundled example and dogfood migrate-layout](items/twgv9jq-migrate-this-repo-s-tracker-and-the-bundled-example.md)
 - [x] [#v7zzefd layout: point issue_path/rel_link/scan_files at items/](items/v7zzefd-layout-point-issue-path-rel-link-scan-files-at-items.md)
 - [x] [#x2exfdf add the migrate-layout verb](items/x2exfdf-add-the-migrate-layout-verb.md)
 - [x] [#zk5k59n move_issue: drop the now-unreachable file move](items/zk5k59n-move-issue-drop-the-now-unreachable-file-move.md)
@@ -116,7 +116,6 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#wh3mv52 mv/done: guard closing a parent with open descendants (--recurse to cascade)](items/wh3mv52-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
 - [#5jhvpz4 update: add a minimum-size sanity check on the downloaded engine](items/5jhvpz4-update-add-a-minimum-size-sanity-check-on-the-downloaded-engine.md) — _low_
 - [#6ddksge Reconcile id collisions when branches concurrently create issues](items/6ddksge-reconcile-id-collisions-when-branches-concurrently-create-issues.md) — _low_ [conflict-resolution tracker-features]
-- [#av2h8cm docs: refresh docs/img/ready.svg — the screenshot predates the demand marker](items/av2h8cm-docs-refresh-docs-img-ready-svg-the-screenshot-predates-the-demand-marker.md) — _low_
 - [#c2wadyd graph/render: id type annotations still say int after the random-id migration](items/c2wadyd-graph-render-id-type-annotations-still-say-int-after-the-random-id-migration.md) — _low_
 - [#cbf4sxp config: friendly errors for empty statuses/priorities/kinds lists](items/cbf4sxp-config-friendly-errors-for-empty-statuses-priorities-kinds-lists.md) — _low_
 - [#eemqu4g Support configurable custom fields](items/eemqu4g-support-configurable-custom-fields.md) — _low_ [tracker-features]
@@ -176,5 +175,6 @@ _none_
 - [#yvbgt53 Consolidate parent-to-children map building onto Graph](items/yvbgt53-consolidate-parent-to-children-map-building-onto-graph.md) — _medium_ (closed 2026-06-10)
 - [#3qsk26v version/update: suppress no-tracker stderr noise when run outside a tracker](items/3qsk26v-version-update-suppress-no-tracker-stderr-noise-when-run-outside-a-tracker.md) — _low_ (closed 2026-06-05)
 - [#8xdzmr4 summary: sort status sections by priority (highest first)](items/8xdzmr4-summary-sort-status-sections-by-priority-highest-first.md) — _low_ (closed 2026-06-05)
+- [#av2h8cm docs: refresh docs/img/ready.svg — the screenshot predates the demand marker](items/av2h8cm-docs-refresh-docs-img-ready-svg-the-screenshot-predates-the-demand-marker.md) — _low_ (closed 2026-07-30)
 - [#dkbmmrr Clean up minor lint and cruft in the engine](items/dkbmmrr-clean-up-minor-lint-and-cruft-in-the-engine.md) — _low_ (closed 2026-06-10)
 - [#g76mtuw validate: report one error per parent cycle, not one per node](items/g76mtuw-validate-report-one-error-per-parent-cycle-not-one-per-node.md) — _low_ (closed 2026-06-10)
