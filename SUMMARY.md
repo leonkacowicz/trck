@@ -8,8 +8,8 @@
 | backlog | 22 |
 | ongoing | 1 |
 | in-review | 0 |
-| done | 110 |
-| **total** | **133** |
+| done | 111 |
+| **total** | **134** |
 
 ## Hierarchies
 
@@ -181,6 +181,7 @@ _none_
 - [#w8a87ky deps --graph <id>: scope to the focal issue's directed dependency line](items/w8a87ky-deps-graph-id-scope-to-the-focal-issue-s-directed-dependency-line.md) — _medium_ (closed 2026-06-10)
 - [#wwpsa3f Extract config-vocabulary validation helpers](items/wwpsa3f-extract-config-vocabulary-validation-helpers.md) — _medium_ (closed 2026-06-10)
 - [#x5dcpmw Eliminate unnecessary index double-reads](items/x5dcpmw-eliminate-unnecessary-index-double-reads.md) — _medium_ (closed 2026-06-10)
+- [#x8ps68f docs: refresh the shipped trck docs — flat layout, repo setup-git/migrate-layout](items/x8ps68f-docs-refresh-the-claude-md-scaffold-template-flat-layout-repo-setup-git-migrate-layout.md) — _medium_ (closed 2026-07-30)
 - [#yvbgt53 Consolidate parent-to-children map building onto Graph](items/yvbgt53-consolidate-parent-to-children-map-building-onto-graph.md) — _medium_ (closed 2026-06-10)
 - [#3qsk26v version/update: suppress no-tracker stderr noise when run outside a tracker](items/3qsk26v-version-update-suppress-no-tracker-stderr-noise-when-run-outside-a-tracker.md) — _low_ (closed 2026-06-05)
 - [#8xdzmr4 summary: sort status sections by priority (highest first)](items/8xdzmr4-summary-sort-status-sections-by-priority-highest-first.md) — _low_ (closed 2026-06-05)
