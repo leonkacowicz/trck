@@ -5,8 +5,8 @@
 
 | State | Count |
 |---|---:|
-| backlog | 24 |
-| ongoing | 2 |
+| backlog | 23 |
+| ongoing | 3 |
 | in-review | 0 |
 | done | 106 |
 | **total** | **132** |
@@ -61,7 +61,7 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 ### [#ey2aruc Auto-resolve index.jsonl and SUMMARY.md merge conflicts via git merge drivers](items/ey2aruc-auto-resolve-index-jsonl-and-summary-md-merge-conflicts-via-git-merge-drivers.md) — 50% (5/10 pts · 2/4 done) · _low_ · ongoing
 
 - [ ] [#2ry5d58 integration tests: real git merges and rebases in all three directions](items/2ry5d58-integration-tests-real-git-merges-and-rebases-in-all-three-directions.md) _(backlog)_
-- [ ] [#7ed853j trck repo setup-git: .gitattributes + .git/config driver registration](items/7ed853j-trck-repo-setup-git-gitattributes-git-config-driver-registration.md) _(backlog)_
+- [ ] [#7ed853j trck repo setup-git: .gitattributes + .git/config driver registration](items/7ed853j-trck-repo-setup-git-gitattributes-git-config-driver-registration.md) _(ongoing)_
 - [x] [#ex5cugg trck repo merge-index: the driver entrypoint (+ SUMMARY regeneration)](items/ex5cugg-trck-repo-merge-index-the-driver-entrypoint-summary-regeneration.md)
 - [x] [#pfackaw merge_rows: row-wise 3-way merge of index rows, keyed by id](items/pfackaw-merge-rows-row-wise-3-way-merge-of-index-rows-keyed-by-id.md)
 
