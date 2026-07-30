@@ -25,6 +25,12 @@ tracker dir (usually `issues/`). It is driven entirely by the `trck` CLI. This s
 how to invoke it, the mental model, the command surface, and — most importantly — the working
 discipline that keeps the tracker trustworthy.
 
+**The layout is flat.** Every issue body lives in `<tracker-dir>/items/`, regardless of status —
+**status is not encoded in the path**, it lives only in `index.jsonl`. So a `start`/`review`/`done`
+rewrites the index and `SUMMARY.md` and never touches the body file; the filename changes only when
+the title/slug does. A pre-0.23 tracker still laid out by status folder is **refused by every
+verb** with an error naming the fix — run `trck repo migrate-layout` once (see §3) and carry on.
+
 Read this once at the start of a session in a trck repo; you should rarely need `trck --help`
 afterward. For a per-verb option you don't find here, `trck <verb> -h` is the source of truth.
 
@@ -116,7 +122,11 @@ Each relation means something distinct. Using the right one is what keeps the tr
 - **Label = category.** A flat, free-text tag for grouping similar work across the tree. Use
   this, not a parent, when items are merely "the same kind of thing".
 - **Priority = soft ordering (SHOULD).** A preference for what to pick up next, not a
-  constraint. Nothing is blocked by priority.
+  constraint — nothing is ever *blocked* by priority. But it isn't inert either: `ready`/`next`
+  rank by **demand**, propagating urgency backwards along dependency and parent edges, so a
+  medium task blocking an urgent one outranks a high task blocking nothing. Set the priority on
+  the issue that actually carries the urgency and let it flow to the blockers; a row lifted above
+  its own priority is marked `↑<priority>(#id)`, naming what drives it.
 
 Rule of thumb: decomposition → parent/child; "a category of similar things" → label;
 "must come first" → dependency; "ought to come first" → priority.
@@ -125,8 +135,8 @@ Rule of thumb: decomposition → parent/child; "a category of similar things" �
 
 IDs are short random alphanumeric strings; **any unambiguous prefix works** (`trck show k3m`
 resolves `k3m9x2a`). You hand-edit only an issue's **markdown body** (Summary / Acceptance
-criteria / Notes) — never `index.jsonl` or `SUMMARY.md`, and never move/rename issue files by
-hand; the verbs do that.
+criteria / Notes) — never `index.jsonl` or `SUMMARY.md`, and never move or rename issue files by
+hand (the verbs own the filename, and it tracks the slug, not the status).
 
 **Create & modify**
 - `trck new "<title>" [--priority P] [--kind K] [--parent ID] [--depends a,b] [--points N] [--spec PATH] [--pr URL] [--slug S]`
@@ -150,20 +160,35 @@ hand; the verbs do that.
   settled subtrees are hidden; `--all` includes done work, `--flat` gives a globally-sorted list,
   `--paths` prints file paths for piping into rg/grep/fzf.
 - `trck show ID` — full metadata + body.
-- `trck ready` / `trck next` — actionable leaves (not done, not blocked by an unmet dep,
-  directly or inherited, and not parked in a waiting status like `in-review`). `next` is the
-  single best pick; `ready --next` is equivalent.
+- `trck ready [ID]` / `trck next` — actionable leaves (not done, not blocked by an unmet dep,
+  directly or inherited, and not parked in a waiting status like `in-review`), **ranked by
+  demand** (§2): what an issue unblocks lifts it above its own priority. `next` is the single
+  best pick; `ready --next` is equivalent. Pass an `ID` to scope to that epic's subtree — that
+  narrows *what's listed*, never the blocking rules or the ranking, both of which stay global.
 - `trck deps [ID] [--requires|--blocks|--full] [--omit-done|--include-done-chains]` — the
   dependency DAG as a gutter graph. No ID = whole graph; `ID` = that issue's dependency line.
 - `trck tree [ID]` — hierarchy view. `trck path ID` / `trck which FILE` — resolve id↔path.
 - `trck changelog [SINCE]` — issues shipped since a date/timestamp (release notes).
 
-**Validate & maintain**
+**Validate & maintain** — the daily verbs are top-level; everything rare lives under `trck repo`.
 - `trck check` — validate consistency; **nonzero exit on error. Run before every commit.**
-- `trck summary` — regenerate `SUMMARY.md`. `trck normalize` — canonicalize `index.jsonl`.
-- `trck renumber` — migrate legacy integer ids. `trck install-hook` — pre-commit consistency
-  hook. `trck init` — scaffold a tracker. `trck update` — self-update the engine.
-  `trck version`.
+- `trck summary` — regenerate `SUMMARY.md`.
+- `trck init` — scaffold a tracker. `trck update` — self-update the engine. `trck version`.
+- `trck repo <verb>` — tracker maintenance, run rarely:
+  - `normalize` — rewrite `index.jsonl` in canonical slim form.
+  - `migrate-layout [--dry-run]` — one-shot: move issue bodies out of per-status folders into
+    `items/`. Idempotent, and it aborts without writing if a file's folder disagrees with its
+    index status. **This is the fix when a verb dies with `legacy status-folder layout: …`.**
+  - `renumber` — convert legacy integer ids to random alphanumeric ones.
+  - `install-hook` — install the pre-commit consistency hook.
+  - `setup-git` — write `<tracker>/.gitattributes` and register trck's merge drivers in **this
+    clone's** `.git/config`. Needed **once per clone**: git shares `.gitattributes` but never
+    driver commands (that would make cloning remote code execution), so until a clone runs it,
+    merges fall back to ordinary 3-way with conflict markers. Worth offering whenever tracker
+    merge conflicts show up.
+  - `merge-index` / `merge-summary` — the drivers themselves (row-wise 3-way merge of
+    `index.jsonl` keyed by id; `SUMMARY.md` is regenerated, never merged). Git invokes these —
+    you generally don't call them by hand.
 
 ## 4. Working discipline (the point of this skill)
 
@@ -232,13 +257,16 @@ edge that's still true.
 
 ## 6. Guardrails
 
-- **Only ever hand-edit an issue's body prose.** `index.jsonl`, `SUMMARY.md`, and file
-  locations are managed by the verbs. Editing them by hand corrupts the tracker.
+- **Only ever hand-edit an issue's body prose.** `index.jsonl`, `SUMMARY.md`, and filenames are
+  managed by the verbs. Editing them by hand corrupts the tracker.
+- **Never move an issue file between directories to change its status.** Status lives in
+  `index.jsonl` alone; every body sits in `items/` (see the intro). Moving files back into
+  status folders re-creates the legacy layout and every verb will then refuse to run.
 - **Never delete an issue file** — close it with `trck done ID --resolution …` so the outcome
   is preserved.
 - **`trck check` before committing**, always. Keep tracker commits separate from code commits
-  where reasonable (the moved file + `index.jsonl` + `SUMMARY.md` are one tracker change and
-  belong together).
+  where reasonable (`index.jsonl` + `SUMMARY.md` — plus the body file when you wrote prose or the
+  slug changed — are one tracker change and belong together).
 - The **vocabulary is per-repo** — statuses, priorities, kinds, resolutions, and aliases come
   from `trck.json`. Read it (or `trck --help`) rather than assuming names like `backlog`/`done`;
   another repo may configure different ones.

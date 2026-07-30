@@ -2220,6 +2220,14 @@ holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
 - `trck repo normalize` — rewrite `index.jsonl` in canonical slim form (no data change)
 - `trck repo renumber` — convert legacy integer ids to random alphanumeric ids
 - `trck repo install-hook` — install the pre-commit consistency hook
+- `trck repo setup-git` — **run once per clone.** Writes this folder's `.gitattributes` and
+  registers trck's merge drivers in *your* `.git/config`. Git shares `.gitattributes` but never
+  the driver commands (that would make cloning remote code execution), so until a clone runs
+  this, `index.jsonl` and `SUMMARY.md` conflict like ordinary text. `trck repo merge-index` /
+  `merge-summary` are those drivers — git invokes them; you don't call them by hand.
+- `trck repo migrate-layout` — one-shot upgrade of a pre-0.23 tracker whose issue files still sit
+  in per-status folders, into the flat `items/` layout. Such a tracker is **refused by every
+  verb** (`legacy status-folder layout: …`) until this runs; `--dry-run` previews the moves.
 - `trck update` — pull the latest engine from the canonical repo.
 
 Statuses, priorities, kinds, resolutions, and aliases are configured in `trck.json`.
@@ -2261,12 +2269,17 @@ Rule of thumb: decomposition → **parent/child**; "category of similar things" 
 "must come first" → **dependency**; "ought to come first" → **priority**.
 
 ## Commit hygiene
-Keep issue-tracker commits separate from code commits where reasonable. The moved file,
-`index.jsonl`, and `SUMMARY.md` are one tracker change and belong together.
+Keep issue-tracker commits separate from code commits where reasonable. `index.jsonl` and
+`SUMMARY.md` are one tracker change and belong together — plus the issue body file when you
+wrote prose or the title (and so the slug) changed. A plain status move touches only the first
+two: the body file stays put in `items/`.
 
 ## What NOT to do
 - Never hand-edit `index.jsonl` or `SUMMARY.md`, and never move or rename issue files by
   hand — the verbs do that.
+- Never sort issue files into per-status folders. Status lives in `index.jsonl` alone and every
+  body stays in `items/`; re-creating status folders is the legacy layout, and every verb then
+  refuses to run until `trck repo migrate-layout` undoes it.
 - Never delete an issue file — close it with `trck done ID --resolution …` so the outcome
   is recorded without losing history.
 - Don't put status or priority into the markdown body — that metadata lives in the index.
