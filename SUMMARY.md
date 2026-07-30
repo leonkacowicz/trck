@@ -6,9 +6,9 @@
 | State | Count |
 |---|---:|
 | backlog | 23 |
-| ongoing | 2 |
+| ongoing | 1 |
 | in-review | 0 |
-| done | 102 |
+| done | 103 |
 | **total** | **127** |
 
 ## Hierarchies
@@ -130,7 +130,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## Ongoing
 
-- [#s5585hq check: reject duplicate ids in index.jsonl](items/s5585hq-check-reject-duplicate-ids-in-index-jsonl.md) — _urgent_ [conflict-resolution]
+_none_
 
 ## In-review
 
@@ -139,6 +139,7 @@ _none_
 ## Done
 
 - [#9jgarpa list: 'needs' annotation ignores inherited deps, disagreeing with ready/is_blocked](items/9jgarpa-list-needs-annotation-ignores-inherited-deps-disagreeing-with-ready-is-blocked.md) — _urgent_ (closed 2026-07-23)
+- [#s5585hq check: reject duplicate ids in index.jsonl](items/s5585hq-check-reject-duplicate-ids-in-index-jsonl.md) — _urgent_ [conflict-resolution] (closed 2026-07-30)
 - [#dqmp5c5 Cut v0.1.0 release](items/dqmp5c5-cut-v0-1-0-release.md) — _high_ (closed 2026-06-05)
 - [#ejcxwmz pre-commit hook never runs check when trck.json is at repo root](items/ejcxwmz-pre-commit-hook-never-runs-check-when-trck-json-is-at-repo-root.md) — _high_ (closed 2026-06-09)
 - [#mur7gwd Crash instead of clean error when no tracker is found](items/mur7gwd-crash-instead-of-clean-error-when-no-tracker-is-found.md) — _high_ (closed 2026-06-10)
