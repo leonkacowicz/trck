@@ -293,7 +293,7 @@ class TestMetadata(unittest.TestCase):
             self.assertTrue(self.t.issue_path(ctx, r).exists())
             self.assertFalse(any(
                 f.name.endswith("-old-name.md")
-                for f in (d / "backlog").iterdir()
+                for f in (d / "items").iterdir()
             ))
 
     def test_set_slug_rejects_invalid_slug(self):

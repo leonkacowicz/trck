@@ -4,7 +4,7 @@ from pathlib import Path
 import json
 import re
 from .config import load_config, resolve_tracker_dir, resolve_tracker_dir_or_die
-from .constants import FIELD_KEY_RE, die
+from .constants import FIELD_KEY_RE, ITEMS_DIR, die
 
 # --------------------------------------------------------------------------- #
 # context + index I/O
@@ -223,11 +223,11 @@ def filename(row: Issue) -> str:
 
 
 def rel_link(row: Issue) -> str:
-    return f"{row.status}/{filename(row)}"
+    return f"{ITEMS_DIR}/{filename(row)}"
 
 
 def issue_path(ctx: Ctx, row: Issue) -> Path:
-    return ctx.dir / row.status / filename(row)
+    return ctx.dir / ITEMS_DIR / filename(row)
 
 
 def load_index(ctx: Ctx) -> list[Issue]:

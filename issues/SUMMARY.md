@@ -5,130 +5,130 @@
 
 | State | Count |
 |---|---:|
-| backlog | 33 |
-| ongoing | 1 |
+| backlog | 31 |
+| ongoing | 3 |
 | in-review | 0 |
 | done | 92 |
 | **total** | **126** |
 
 ## Hierarchies
 
-### [#2srvf6j Flat items/ layout: status lives only in index.jsonl](backlog/2srvf6j-flat-items-layout-status-lives-only-in-index-jsonl.md) — 0% (0/14 pts · 0/7 done) · _high_ · backlog
+### [#2srvf6j Flat items/ layout: status lives only in index.jsonl](items/2srvf6j-flat-items-layout-status-lives-only-in-index-jsonl.md) — 0% (0/14 pts · 0/7 done) · _high_ · ongoing
 Spec: [`docs/plans/2026-07-30-flat-items-layout.md`](../docs/plans/2026-07-30-flat-items-layout.md)
 
-- [ ] [#82an2dy release v0.23.0 with the breaking layout change](backlog/82an2dy-release-v0-23-0-with-the-breaking-layout-change.md) _(backlog)_
-- [ ] [#8fdjhhf detect the legacy status-folder layout and refuse to run](backlog/8fdjhhf-detect-the-legacy-status-folder-layout-and-refuse-to-run.md) _(backlog)_
-- [ ] [#nrvcky7 docs: status is an index field, not a directory](backlog/nrvcky7-docs-status-is-an-index-field-not-a-directory.md) _(backlog)_
-- [ ] [#twgv9jq migrate this repo's tracker and the bundled example](backlog/twgv9jq-migrate-this-repo-s-tracker-and-the-bundled-example.md) _(backlog)_
-- [ ] [#v7zzefd layout: point issue_path/rel_link/scan_files at items/](backlog/v7zzefd-layout-point-issue-path-rel-link-scan-files-at-items.md) _(backlog)_
-- [ ] [#x2exfdf add the migrate-layout verb](backlog/x2exfdf-add-the-migrate-layout-verb.md) _(backlog)_
-- [ ] [#zk5k59n move_issue: drop the now-unreachable file move](backlog/zk5k59n-move-issue-drop-the-now-unreachable-file-move.md) _(backlog)_
+- [ ] [#82an2dy release v0.23.0 with the breaking layout change](items/82an2dy-release-v0-23-0-with-the-breaking-layout-change.md) _(backlog)_
+- [ ] [#8fdjhhf detect the legacy status-folder layout and refuse to run](items/8fdjhhf-detect-the-legacy-status-folder-layout-and-refuse-to-run.md) _(backlog)_
+- [ ] [#nrvcky7 docs: status is an index field, not a directory](items/nrvcky7-docs-status-is-an-index-field-not-a-directory.md) _(backlog)_
+- [ ] [#twgv9jq migrate this repo's tracker and the bundled example](items/twgv9jq-migrate-this-repo-s-tracker-and-the-bundled-example.md) _(backlog)_
+- [ ] [#v7zzefd layout: point issue_path/rel_link/scan_files at items/](items/v7zzefd-layout-point-issue-path-rel-link-scan-files-at-items.md) _(ongoing)_
+- [ ] [#x2exfdf add the migrate-layout verb](items/x2exfdf-add-the-migrate-layout-verb.md) _(backlog)_
+- [ ] [#zk5k59n move_issue: drop the now-unreachable file move](items/zk5k59n-move-issue-drop-the-now-unreachable-file-move.md) _(backlog)_
 
-### [#9bktptp ready/next: rank by demand cone (inferred priority) + marker](done/9bktptp-ready-next-rank-by-demand-cone-inferred-priority-marker.md) — 100% (8/8 pts · 4/4 done) · _high_ · done
+### [#9bktptp ready/next: rank by demand cone (inferred priority) + marker](items/9bktptp-ready-next-rank-by-demand-cone-inferred-priority-marker.md) — 100% (8/8 pts · 4/4 done) · _high_ · done
 
-- [x] [#5yjce3w graph: demand cone + priority-count vector (effective blocking, reversed)](done/5yjce3w-graph-demand-cone-priority-count-vector-effective-blocking-reversed.md)
-- [x] [#8peq4ea docs: demand ranking in README, help epilog, AGENTS scaffold](done/8peq4ea-docs-demand-ranking-in-readme-help-epilog-agents-scaffold.md)
-- [x] [#aujt85q ready: mark inferred rows with ↑<priority>(#culprit)](done/aujt85q-ready-mark-inferred-rows-with-priority-culprit.md)
-- [x] [#yrre4zn ready/next: rank by the demand vector instead of declared priority](done/yrre4zn-ready-next-rank-by-the-demand-vector-instead-of-declared-priority.md)
+- [x] [#5yjce3w graph: demand cone + priority-count vector (effective blocking, reversed)](items/5yjce3w-graph-demand-cone-priority-count-vector-effective-blocking-reversed.md)
+- [x] [#8peq4ea docs: demand ranking in README, help epilog, AGENTS scaffold](items/8peq4ea-docs-demand-ranking-in-readme-help-epilog-agents-scaffold.md)
+- [x] [#aujt85q ready: mark inferred rows with ↑<priority>(#culprit)](items/aujt85q-ready-mark-inferred-rows-with-priority-culprit.md)
+- [x] [#yrre4zn ready/next: rank by the demand vector instead of declared priority](items/yrre4zn-ready-next-rank-by-the-demand-vector-instead-of-declared-priority.md)
 
-### [#dj5b42j deps: infer hierarchy edges so the graph answers 'what is left to finish this parent'](done/dj5b42j-deps-infer-hierarchy-edges-so-the-graph-answers-what-is-left-to-finish-this-parent.md) — 100% (5/5 pts · 5/5 done) · _high_ · done
+### [#dj5b42j deps: infer hierarchy edges so the graph answers 'what is left to finish this parent'](items/dj5b42j-deps-infer-hierarchy-edges-so-the-graph-answers-what-is-left-to-finish-this-parent.md) — 100% (5/5 pts · 5/5 done) · _high_ · done
 
-- [x] [#atk4umk deps: transitive reduction of the rendered graph (display-only, after done-filtering)](done/atk4umk-deps-transitive-reduction-of-the-rendered-graph-display-only-after-done-filtering.md)
-- [x] [#wr8ybmk deps: hoist uniform inherited fanouts back to the parent; --fanout to opt out](done/wr8ybmk-deps-hoist-uniform-inherited-fanouts-back-to-the-parent-fanout-to-opt-out.md)
-- [x] [#wsqfwc6 check: warn on authored dependency edges made redundant by another path](done/wsqfwc6-check-warn-on-authored-dependency-edges-made-redundant-by-another-path.md)
-- [x] [#zbkkc2a deps: draw inherited dependency edges (child -> ancestor's out-of-subtree deps)](done/zbkkc2a-deps-draw-inherited-dependency-edges-child-ancestor-s-out-of-subtree-deps.md)
-- [x] [#zhhxgcw deps: draw parent->child containment edges in the rendered graph](done/zhhxgcw-deps-draw-parent-child-containment-edges-in-the-rendered-graph.md)
+- [x] [#atk4umk deps: transitive reduction of the rendered graph (display-only, after done-filtering)](items/atk4umk-deps-transitive-reduction-of-the-rendered-graph-display-only-after-done-filtering.md)
+- [x] [#wr8ybmk deps: hoist uniform inherited fanouts back to the parent; --fanout to opt out](items/wr8ybmk-deps-hoist-uniform-inherited-fanouts-back-to-the-parent-fanout-to-opt-out.md)
+- [x] [#wsqfwc6 check: warn on authored dependency edges made redundant by another path](items/wsqfwc6-check-warn-on-authored-dependency-edges-made-redundant-by-another-path.md)
+- [x] [#zbkkc2a deps: draw inherited dependency edges (child -> ancestor's out-of-subtree deps)](items/zbkkc2a-deps-draw-inherited-dependency-edges-child-ancestor-s-out-of-subtree-deps.md)
+- [x] [#zhhxgcw deps: draw parent->child containment edges in the rendered graph](items/zhhxgcw-deps-draw-parent-child-containment-edges-in-the-rendered-graph.md)
 
-### [#ee2crq3 Introduce a derived Graph view over the loaded index](done/ee2crq3-introduce-a-derived-graph-view-over-the-loaded-index.md) — 100% (3/3 pts · 3/3 done) · _medium_ · done
+### [#ee2crq3 Introduce a derived Graph view over the loaded index](items/ee2crq3-introduce-a-derived-graph-view-over-the-loaded-index.md) — 100% (3/3 pts · 3/3 done) · _medium_ · done
 Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-06-09-graph-derived-view-design.md)
 
-- [x] [#bt9pwy8 Graph: migrate ready/next and deps to the Graph view](done/bt9pwy8-graph-migrate-ready-next-and-deps-to-the-graph-view.md)
-- [x] [#chzay3q Graph: add class and load_graph (maps, accessors, predicates)](done/chzay3q-graph-add-class-and-load-graph-maps-accessors-predicates.md)
-- [x] [#n2gdhdd Graph: absorb cycle/parent free functions; migrate validate and dep](done/n2gdhdd-graph-absorb-cycle-parent-free-functions-migrate-validate-and-dep.md)
+- [x] [#bt9pwy8 Graph: migrate ready/next and deps to the Graph view](items/bt9pwy8-graph-migrate-ready-next-and-deps-to-the-graph-view.md)
+- [x] [#chzay3q Graph: add class and load_graph (maps, accessors, predicates)](items/chzay3q-graph-add-class-and-load-graph-maps-accessors-predicates.md)
+- [x] [#n2gdhdd Graph: absorb cycle/parent free functions; migrate validate and dep](items/n2gdhdd-graph-absorb-cycle-parent-free-functions-migrate-validate-and-dep.md)
 
-### [#et9qb2y Split ./trck into a src/ package with an amalgamation build](done/et9qb2y-split-trck-into-a-src-package-with-an-amalgamation-build.md) — 100% (11/11 pts · 5/5 done) · _high_ · done
+### [#et9qb2y Split ./trck into a src/ package with an amalgamation build](items/et9qb2y-split-trck-into-a-src-package-with-an-amalgamation-build.md) — 100% (11/11 pts · 5/5 done) · _high_ · done
 
-- [x] [#4252w2z Bootstrap src/ package by slicing ./trck at band boundaries; reach byte-exact round-trip](done/4252w2z-bootstrap-src-package-by-slicing-trck-at-band-boundaries-reach-byte-exact-round-trip.md)
-- [x] [#4d54c2k Sync-guard: 'trck check' + pre-commit hook fail if ./trck differs from build(src/)](done/4d54c2k-sync-guard-trck-check-pre-commit-hook-fail-if-trck-differs-from-build-src.md)
-- [x] [#5yp7277 Wire build-before-test (conftest/helpers rebuild ./trck from src/ before suite)](done/5yp7277-wire-build-before-test-conftest-helpers-rebuild-trck-from-src-before-suite.md)
-- [x] [#f6ez2tz build.py amalgamator: header template + manifest + strip-imports concat, with round-trip --check](done/f6ez2tz-build-py-amalgamator-header-template-manifest-strip-imports-concat-with-round-trip-check.md)
-- [x] [#htgf9gb Docs: mark ./trck generated (never hand-edit) in CLAUDE.md/README; document build+dev workflow](done/htgf9gb-docs-mark-trck-generated-never-hand-edit-in-claude-md-readme-document-build-dev-workflow.md)
+- [x] [#4252w2z Bootstrap src/ package by slicing ./trck at band boundaries; reach byte-exact round-trip](items/4252w2z-bootstrap-src-package-by-slicing-trck-at-band-boundaries-reach-byte-exact-round-trip.md)
+- [x] [#4d54c2k Sync-guard: 'trck check' + pre-commit hook fail if ./trck differs from build(src/)](items/4d54c2k-sync-guard-trck-check-pre-commit-hook-fail-if-trck-differs-from-build-src.md)
+- [x] [#5yp7277 Wire build-before-test (conftest/helpers rebuild ./trck from src/ before suite)](items/5yp7277-wire-build-before-test-conftest-helpers-rebuild-trck-from-src-before-suite.md)
+- [x] [#f6ez2tz build.py amalgamator: header template + manifest + strip-imports concat, with round-trip --check](items/f6ez2tz-build-py-amalgamator-header-template-manifest-strip-imports-concat-with-round-trip-check.md)
+- [x] [#htgf9gb Docs: mark ./trck generated (never hand-edit) in CLAUDE.md/README; document build+dev workflow](items/htgf9gb-docs-mark-trck-generated-never-hand-edit-in-claude-md-readme-document-build-dev-workflow.md)
 
-### [#evsw9tr Introduce an Issue class instead of dict-oriented code](done/evsw9tr-introduce-an-issue-class-instead-of-dict-oriented-code.md) — 100% (1/1 pts · 1/1 done) · _medium_ · done
+### [#evsw9tr Introduce an Issue class instead of dict-oriented code](items/evsw9tr-introduce-an-issue-class-instead-of-dict-oriented-code.md) — 100% (1/1 pts · 1/1 done) · _medium_ · done
 
-- [x] [#nddf6wg Harden Issue.from_dict with a structural/type contract](done/nddf6wg-harden-issue-from-dict-with-a-structural-type-contract.md)
+- [x] [#nddf6wg Harden Issue.from_dict with a structural/type contract](items/nddf6wg-harden-issue-from-dict-with-a-structural-type-contract.md)
 
-### [#fkrp9dh trck-html: static HTML SPA to browse issues in a browser](ongoing/fkrp9dh-trck-html-static-html-spa-to-browse-issues-in-a-browser.md) — 90% (9/10 pts · 9/10 done) · _medium_ · ongoing
+### [#fkrp9dh trck-html: static HTML SPA to browse issues in a browser](items/fkrp9dh-trck-html-static-html-spa-to-browse-issues-in-a-browser.md) — 90% (9/10 pts · 9/10 done) · _medium_ · ongoing
 
-- [x] [#2ytfth4 v5: board / kanban by status](done/2ytfth4-v5-board-kanban-by-status.md)
-- [x] [#4vbk79y v4: tree / hierarchy view with rolled-up progress %](done/4vbk79y-v4-tree-hierarchy-view-with-rolled-up-progress.md)
-- [x] [#4xh68fa v6: markdown bodies — JS subset renderer, then optional lib, <pre> fallback](done/4xh68fa-v6-markdown-bodies-js-subset-renderer-then-optional-lib-pre-fallback.md)
-- [x] [#6yttx97 v3: dependency graph view (clickable, jump between blockers/blocked)](done/6yttx97-v3-dependency-graph-view-clickable-jump-between-blockers-blocked.md)
-- [x] [#99wkju8 v1 MVP: tools/trck-html — list + detail panel + filter/search, escaped bodies](done/99wkju8-v1-mvp-tools-trck-html-list-detail-panel-filter-search-escaped-bodies.md)
-- [x] [#d9ckqzc trck-html: highlight shortest-unique id prefix (like the CLI)](done/d9ckqzc-trck-html-highlight-shortest-unique-id-prefix-like-the-cli.md)
-- [x] [#ej5772f trck-html: draggable divider to resize left pane vs detail](done/ej5772f-trck-html-draggable-divider-to-resize-left-pane-vs-detail.md)
-- [x] [#qcgr8sy v2: command-copy — stage status/priority edits, show equivalent ./trck commands](done/qcgr8sy-v2-command-copy-stage-status-priority-edits-show-equivalent-trck-commands.md)
-- [ ] [#tcm5s56 v7: trck serve — live process, edits write back to index.jsonl](backlog/tcm5s56-v7-trck-serve-live-process-edits-write-back-to-index-jsonl.md) _(backlog)_
-- [x] [#zssaj4k trck-html: graph view — done-chain filters + filter-as-seeds](done/zssaj4k-trck-html-graph-view-done-chain-filters-filter-as-seeds.md)
+- [x] [#2ytfth4 v5: board / kanban by status](items/2ytfth4-v5-board-kanban-by-status.md)
+- [x] [#4vbk79y v4: tree / hierarchy view with rolled-up progress %](items/4vbk79y-v4-tree-hierarchy-view-with-rolled-up-progress.md)
+- [x] [#4xh68fa v6: markdown bodies — JS subset renderer, then optional lib, <pre> fallback](items/4xh68fa-v6-markdown-bodies-js-subset-renderer-then-optional-lib-pre-fallback.md)
+- [x] [#6yttx97 v3: dependency graph view (clickable, jump between blockers/blocked)](items/6yttx97-v3-dependency-graph-view-clickable-jump-between-blockers-blocked.md)
+- [x] [#99wkju8 v1 MVP: tools/trck-html — list + detail panel + filter/search, escaped bodies](items/99wkju8-v1-mvp-tools-trck-html-list-detail-panel-filter-search-escaped-bodies.md)
+- [x] [#d9ckqzc trck-html: highlight shortest-unique id prefix (like the CLI)](items/d9ckqzc-trck-html-highlight-shortest-unique-id-prefix-like-the-cli.md)
+- [x] [#ej5772f trck-html: draggable divider to resize left pane vs detail](items/ej5772f-trck-html-draggable-divider-to-resize-left-pane-vs-detail.md)
+- [x] [#qcgr8sy v2: command-copy — stage status/priority edits, show equivalent ./trck commands](items/qcgr8sy-v2-command-copy-stage-status-priority-edits-show-equivalent-trck-commands.md)
+- [ ] [#tcm5s56 v7: trck serve — live process, edits write back to index.jsonl](items/tcm5s56-v7-trck-serve-live-process-edits-write-back-to-index-jsonl.md) _(backlog)_
+- [x] [#zssaj4k trck-html: graph view — done-chain filters + filter-as-seeds](items/zssaj4k-trck-html-graph-view-done-chain-filters-filter-as-seeds.md)
 
-### [#h7xp2dm Free-form custom fields: set/filter/sort arbitrary key→value](done/h7xp2dm-free-form-custom-fields-set-filter-sort-arbitrary-key-value.md) — 100% (6/6 pts · 6/6 done) · _medium_ · done
+### [#h7xp2dm Free-form custom fields: set/filter/sort arbitrary key→value](items/h7xp2dm-free-form-custom-fields-set-filter-sort-arbitrary-key-value.md) — 100% (6/6 pts · 6/6 done) · _medium_ · done
 Spec: [`docs/specs/2026-06-11-custom-fields-design.md`](../docs/specs/2026-06-11-custom-fields-design.md)
 
-- [x] [#45mc92r set: --field/--unset to write/clear free-form custom fields, with key-shape and reserved-key guards](done/45mc92r-set-field-unset-to-write-clear-free-form-custom-fields-with-key-shape-and-reserved-key-guards.md)
-- [x] [#s27wb34 list: --sort field:NAME (string compare, missing-value rows sort last)](done/s27wb34-list-sort-field-name-string-compare-missing-value-rows-sort-last.md)
-- [x] [#wn45zbq list: --show-field NAME opt-in trailing column in print_rows](done/wn45zbq-list-show-field-name-opt-in-trailing-column-in-print-rows.md)
-- [x] [#ytk73m2 docs: help/epilog/README examples for custom fields; link the design spec](done/ytk73m2-docs-help-epilog-readme-examples-for-custom-fields-link-the-design-spec.md)
-- [x] [#z65knha list: --field key=value exact-match filter (repeatable, AND-ed, composes with existing filters)](done/z65knha-list-field-key-value-exact-match-filter-repeatable-and-ed-composes-with-existing-filters.md)
-- [x] [#zke8bhp validate/check: enforce extra keys are well-formed and values are strings](done/zke8bhp-validate-check-enforce-extra-keys-are-well-formed-and-values-are-strings.md)
+- [x] [#45mc92r set: --field/--unset to write/clear free-form custom fields, with key-shape and reserved-key guards](items/45mc92r-set-field-unset-to-write-clear-free-form-custom-fields-with-key-shape-and-reserved-key-guards.md)
+- [x] [#s27wb34 list: --sort field:NAME (string compare, missing-value rows sort last)](items/s27wb34-list-sort-field-name-string-compare-missing-value-rows-sort-last.md)
+- [x] [#wn45zbq list: --show-field NAME opt-in trailing column in print_rows](items/wn45zbq-list-show-field-name-opt-in-trailing-column-in-print-rows.md)
+- [x] [#ytk73m2 docs: help/epilog/README examples for custom fields; link the design spec](items/ytk73m2-docs-help-epilog-readme-examples-for-custom-fields-link-the-design-spec.md)
+- [x] [#z65knha list: --field key=value exact-match filter (repeatable, AND-ed, composes with existing filters)](items/z65knha-list-field-key-value-exact-match-filter-repeatable-and-ed-composes-with-existing-filters.md)
+- [x] [#zke8bhp validate/check: enforce extra keys are well-formed and values are strings](items/zke8bhp-validate-check-enforce-extra-keys-are-well-formed-and-values-are-strings.md)
 
-### [#htg2zfw in-review status + first-class pr field](done/htg2zfw-in-review-status-first-class-pr-field.md) — 100% (18/18 pts · 9/9 done) · _medium_ · done
+### [#htg2zfw in-review status + first-class pr field](items/htg2zfw-in-review-status-first-class-pr-field.md) — 100% (18/18 pts · 9/9 done) · _medium_ · done
 Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/specs/2026-07-28-in-review-status-and-pr-field-design.md)
 
-- [x] [#6pvt7fy ready/next: honor the actionable status flag](done/6pvt7fy-ready-next-honor-the-actionable-status-flag.md)
-- [x] [#ecfntpa index/validate: pr as a first-class field](done/ecfntpa-index-validate-pr-as-a-first-class-field.md)
-- [x] [#eqca4v5 docs: help epilog, scaffold templates, README, skill](done/eqca4v5-docs-help-epilog-scaffold-templates-readme-skill.md)
-- [x] [#g6yddkm adopt in-review in this repo trck.json](done/g6yddkm-adopt-in-review-in-this-repo-trck-json.md)
-- [x] [#hmreu38 config: in-review status, actionable flag, review alias](done/hmreu38-config-in-review-status-actionable-flag-review-alias.md)
-- [x] [#jpchmkk trck review ID [URL] alias verb](done/jpchmkk-trck-review-id-url-alias-verb.md)
-- [x] [#kcqe3dj trck-html: export and link the pr field](done/kcqe3dj-trck-html-export-and-link-the-pr-field.md)
-- [x] [#mseqgr5 cli: --pr on new/set/mv](done/mseqgr5-cli-pr-on-new-set-mv.md)
-- [x] [#shaadcs render: PR links in SUMMARY.md, --show-field over canonical fields](done/shaadcs-render-pr-links-in-summary-md-show-field-over-canonical-fields.md)
+- [x] [#6pvt7fy ready/next: honor the actionable status flag](items/6pvt7fy-ready-next-honor-the-actionable-status-flag.md)
+- [x] [#ecfntpa index/validate: pr as a first-class field](items/ecfntpa-index-validate-pr-as-a-first-class-field.md)
+- [x] [#eqca4v5 docs: help epilog, scaffold templates, README, skill](items/eqca4v5-docs-help-epilog-scaffold-templates-readme-skill.md)
+- [x] [#g6yddkm adopt in-review in this repo trck.json](items/g6yddkm-adopt-in-review-in-this-repo-trck-json.md)
+- [x] [#hmreu38 config: in-review status, actionable flag, review alias](items/hmreu38-config-in-review-status-actionable-flag-review-alias.md)
+- [x] [#jpchmkk trck review ID [URL] alias verb](items/jpchmkk-trck-review-id-url-alias-verb.md)
+- [x] [#kcqe3dj trck-html: export and link the pr field](items/kcqe3dj-trck-html-export-and-link-the-pr-field.md)
+- [x] [#mseqgr5 cli: --pr on new/set/mv](items/mseqgr5-cli-pr-on-new-set-mv.md)
+- [x] [#shaadcs render: PR links in SUMMARY.md, --show-field over canonical fields](items/shaadcs-render-pr-links-in-summary-md-show-field-over-canonical-fields.md)
 
-### [#qapvxpz Merge tree into list: structure-aware browse verb](done/qapvxpz-merge-tree-into-list-structure-aware-browse-verb.md) — 100% (4/4 pts · 4/4 done) · _high_ · done
+### [#qapvxpz Merge tree into list: structure-aware browse verb](items/qapvxpz-merge-tree-into-list-structure-aware-browse-verb.md) — 100% (4/4 pts · 4/4 done) · _high_ · done
 
-- [x] [#33frt7s list: extract shared row renderer with connector prefix](done/33frt7s-list-extract-shared-row-renderer-with-connector-prefix.md)
-- [x] [#sdun4vt list: argparse/help/README and acceptance tests for the merged verb](done/sdun4vt-list-argparse-help-readme-and-acceptance-tests-for-the-merged-verb.md)
-- [x] [#ub2ssg4 list: nested forest default (--flat, positional id, dimmed ancestors, tree alias)](done/ub2ssg4-list-nested-forest-default-flat-positional-id-dimmed-ancestors-tree-alias.md)
-- [x] [#uqtjp9p Graph: add ancestor-closure, match-set and sibling-sort traversal](done/uqtjp9p-graph-add-ancestor-closure-match-set-and-sibling-sort-traversal.md)
+- [x] [#33frt7s list: extract shared row renderer with connector prefix](items/33frt7s-list-extract-shared-row-renderer-with-connector-prefix.md)
+- [x] [#sdun4vt list: argparse/help/README and acceptance tests for the merged verb](items/sdun4vt-list-argparse-help-readme-and-acceptance-tests-for-the-merged-verb.md)
+- [x] [#ub2ssg4 list: nested forest default (--flat, positional id, dimmed ancestors, tree alias)](items/ub2ssg4-list-nested-forest-default-flat-positional-id-dimmed-ancestors-tree-alias.md)
+- [x] [#uqtjp9p Graph: add ancestor-closure, match-set and sibling-sort traversal](items/uqtjp9p-graph-add-ancestor-closure-match-set-and-sibling-sort-traversal.md)
 
-### [#r9zefup Add --json output to list/show/deps/tree for scripting](backlog/r9zefup-add-json-output-to-list-show-deps-tree-for-scripting.md) — 0% (0/5 pts · 0/5 done) · _low_ · backlog
+### [#r9zefup Add --json output to list/show/deps/tree for scripting](items/r9zefup-add-json-output-to-list-show-deps-tree-for-scripting.md) — 0% (0/5 pts · 0/5 done) · _low_ · backlog
 
-- [ ] [#57kz6xp deps --json: {requires, blocks} cones as JSON](backlog/57kz6xp-deps-json-requires-blocks-cones-as-json.md) _(backlog)_
-- [ ] [#e75dysa show --json: single JSON document with body folded in](backlog/e75dysa-show-json-single-json-document-with-body-folded-in.md) _(backlog)_
-- [ ] [#k9snjz3 list --json: nested hierarchy (and --flat --json flat array)](backlog/k9snjz3-list-json-nested-hierarchy-and-flat-json-flat-array.md) _(backlog)_
-- [ ] [#kaqhtfc list/tree: drop the tree alias (nested forest is list's default)](backlog/kaqhtfc-list-tree-drop-the-tree-alias-nested-forest-is-list-s-default.md) _(backlog)_
-- [ ] [#v8tmkrt json: shared emit_json stdout seam + --json flag plumbing](backlog/v8tmkrt-json-shared-emit-json-stdout-seam-json-flag-plumbing.md) _(backlog)_
+- [ ] [#57kz6xp deps --json: {requires, blocks} cones as JSON](items/57kz6xp-deps-json-requires-blocks-cones-as-json.md) _(backlog)_
+- [ ] [#e75dysa show --json: single JSON document with body folded in](items/e75dysa-show-json-single-json-document-with-body-folded-in.md) _(backlog)_
+- [ ] [#k9snjz3 list --json: nested hierarchy (and --flat --json flat array)](items/k9snjz3-list-json-nested-hierarchy-and-flat-json-flat-array.md) _(backlog)_
+- [ ] [#kaqhtfc list/tree: drop the tree alias (nested forest is list's default)](items/kaqhtfc-list-tree-drop-the-tree-alias-nested-forest-is-list-s-default.md) _(backlog)_
+- [ ] [#v8tmkrt json: shared emit_json stdout seam + --json flag plumbing](items/v8tmkrt-json-shared-emit-json-stdout-seam-json-flag-plumbing.md) _(backlog)_
 
 ## Backlog
 
-- [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](backlog/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
-- [#qs4zwzr Group the maintenance verbs under 'trck repo'](backlog/qs4zwzr-group-the-maintenance-verbs-out-of-the-root-command-namespace.md) — _medium_ [tracker-features]
-- [#tfhhp8h mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](backlog/tfhhp8h-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
-- [#wh3mv52 mv/done: guard closing a parent with open descendants (--recurse to cascade)](backlog/wh3mv52-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
-- [#5jhvpz4 update: add a minimum-size sanity check on the downloaded engine](backlog/5jhvpz4-update-add-a-minimum-size-sanity-check-on-the-downloaded-engine.md) — _low_
-- [#6ddksge Reconcile id collisions when branches concurrently create issues](backlog/6ddksge-reconcile-id-collisions-when-branches-concurrently-create-issues.md) — _low_ [conflict-resolution tracker-features]
-- [#av2h8cm docs: refresh docs/img/ready.svg — the screenshot predates the demand marker](backlog/av2h8cm-docs-refresh-docs-img-ready-svg-the-screenshot-predates-the-demand-marker.md) — _low_
-- [#c2wadyd graph/render: id type annotations still say int after the random-id migration](backlog/c2wadyd-graph-render-id-type-annotations-still-say-int-after-the-random-id-migration.md) — _low_
-- [#cbf4sxp config: friendly errors for empty statuses/priorities/kinds lists](backlog/cbf4sxp-config-friendly-errors-for-empty-statuses-priorities-kinds-lists.md) — _low_
-- [#eemqu4g Support configurable custom fields](backlog/eemqu4g-support-configurable-custom-fields.md) — _low_ [tracker-features]
-- [#ey2aruc Auto-resolve index.jsonl and SUMMARY.md merge conflicts via git merge drivers](backlog/ey2aruc-auto-resolve-index-jsonl-and-summary-md-merge-conflicts-via-git-merge-drivers.md) — _low_ [conflict-resolution tracker-features]
-- [#kj2c95b validate: suppress redundant bad-slug error when filename-slug mismatch already reported](backlog/kj2c95b-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
-- [#m3z2ywb summary: include foreign/unknown statuses in the counts table](backlog/m3z2ywb-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
-- [#me67zba trck-html: mirror demand-cone ranking in the ready/next view](backlog/me67zba-trck-html-mirror-demand-cone-ranking-in-the-ready-next-view.md) — _low_
-- [#s3d6xyz Add reconfigure verb to rename/reorder statuses](backlog/s3d6xyz-add-reconfigure-verb-to-rename-reorder-statuses.md) — _low_ [tracker-features]
-- [#v9nyy42 Part C: curses TUI for browsing and quick actions](backlog/v9nyy42-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
-- [#xagqqgd deps: optimize node ordering to minimize edge span and crossings (local search)](backlog/xagqqgd-deps-optimize-node-ordering-to-minimize-edge-span-and-crossings-local-search.md) — _low_
-- [#9ax2ny2 deps: --depth N to cut expansion N hops from the seed(s)](backlog/9ax2ny2-deps-depth-n-to-cut-expansion-n-hops-from-the-seed-s.md) — _lowest_
+- [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](items/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
+- [#qs4zwzr Group the maintenance verbs under 'trck repo'](items/qs4zwzr-group-the-maintenance-verbs-out-of-the-root-command-namespace.md) — _medium_ [tracker-features]
+- [#tfhhp8h mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](items/tfhhp8h-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
+- [#wh3mv52 mv/done: guard closing a parent with open descendants (--recurse to cascade)](items/wh3mv52-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
+- [#5jhvpz4 update: add a minimum-size sanity check on the downloaded engine](items/5jhvpz4-update-add-a-minimum-size-sanity-check-on-the-downloaded-engine.md) — _low_
+- [#6ddksge Reconcile id collisions when branches concurrently create issues](items/6ddksge-reconcile-id-collisions-when-branches-concurrently-create-issues.md) — _low_ [conflict-resolution tracker-features]
+- [#av2h8cm docs: refresh docs/img/ready.svg — the screenshot predates the demand marker](items/av2h8cm-docs-refresh-docs-img-ready-svg-the-screenshot-predates-the-demand-marker.md) — _low_
+- [#c2wadyd graph/render: id type annotations still say int after the random-id migration](items/c2wadyd-graph-render-id-type-annotations-still-say-int-after-the-random-id-migration.md) — _low_
+- [#cbf4sxp config: friendly errors for empty statuses/priorities/kinds lists](items/cbf4sxp-config-friendly-errors-for-empty-statuses-priorities-kinds-lists.md) — _low_
+- [#eemqu4g Support configurable custom fields](items/eemqu4g-support-configurable-custom-fields.md) — _low_ [tracker-features]
+- [#ey2aruc Auto-resolve index.jsonl and SUMMARY.md merge conflicts via git merge drivers](items/ey2aruc-auto-resolve-index-jsonl-and-summary-md-merge-conflicts-via-git-merge-drivers.md) — _low_ [conflict-resolution tracker-features]
+- [#kj2c95b validate: suppress redundant bad-slug error when filename-slug mismatch already reported](items/kj2c95b-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
+- [#m3z2ywb summary: include foreign/unknown statuses in the counts table](items/m3z2ywb-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
+- [#me67zba trck-html: mirror demand-cone ranking in the ready/next view](items/me67zba-trck-html-mirror-demand-cone-ranking-in-the-ready-next-view.md) — _low_
+- [#s3d6xyz Add reconfigure verb to rename/reorder statuses](items/s3d6xyz-add-reconfigure-verb-to-rename-reorder-statuses.md) — _low_ [tracker-features]
+- [#v9nyy42 Part C: curses TUI for browsing and quick actions](items/v9nyy42-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
+- [#xagqqgd deps: optimize node ordering to minimize edge span and crossings (local search)](items/xagqqgd-deps-optimize-node-ordering-to-minimize-edge-span-and-crossings-local-search.md) — _low_
+- [#9ax2ny2 deps: --depth N to cut expansion N hops from the seed(s)](items/9ax2ny2-deps-depth-n-to-cut-expansion-n-hops-from-the-seed-s.md) — _lowest_
 
 ## Ongoing
 
@@ -140,41 +140,41 @@ _none_
 
 ## Done
 
-- [#9jgarpa list: 'needs' annotation ignores inherited deps, disagreeing with ready/is_blocked](done/9jgarpa-list-needs-annotation-ignores-inherited-deps-disagreeing-with-ready-is-blocked.md) — _urgent_ (closed 2026-07-23)
-- [#dqmp5c5 Cut v0.1.0 release](done/dqmp5c5-cut-v0-1-0-release.md) — _high_ (closed 2026-06-05)
-- [#ejcxwmz pre-commit hook never runs check when trck.json is at repo root](done/ejcxwmz-pre-commit-hook-never-runs-check-when-trck-json-is-at-repo-root.md) — _high_ (closed 2026-06-09)
-- [#mur7gwd Crash instead of clean error when no tracker is found](done/mur7gwd-crash-instead-of-clean-error-when-no-tracker-is-found.md) — _high_ (closed 2026-06-10)
-- [#nhanp8c Strip null/empty fields from index.jsonl rows to reduce noise](done/nhanp8c-strip-null-empty-fields-from-index-jsonl-rows-to-reduce-noise.md) — _high_ (closed 2026-06-06)
-- [#qc48tds Add 'ready'/'next' command: list unblocked, not-done leaves](done/qc48tds-add-ready-next-command-list-unblocked-not-done-leaves.md) — _high_ [tracker-features] (closed 2026-06-06)
-- [#y8asnbe Write root README.md and CLAUDE.md](done/y8asnbe-write-root-readme-md-and-claude-md.md) — _high_ (closed 2026-06-05)
-- [#3e3cn37 init: accept positional dir and add --no-vendor for self-hosting repos](done/3e3cn37-init-accept-positional-dir-and-add-no-vendor-for-self-hosting-repos.md) — _medium_ (closed 2026-06-05)
-- [#3x6mmhu list: annotate blocked/blocker relationships and clear them when resolved](done/3x6mmhu-list-annotate-blocked-blocker-relationships-and-clear-them-when-resolved.md) — _medium_ [tracker-features] (closed 2026-06-09)
-- [#4vqukyy Part D: richer tracker features](done/4vqukyy-part-d-richer-tracker-features.md) — _medium_ · _superseded_ (closed 2026-06-23)
-- [#5wbwpjv Add full-text search/grep across issue bodies](done/5wbwpjv-add-full-text-search-grep-across-issue-bodies.md) — _medium_ [tracker-features] (closed 2026-06-10)
-- [#9pf42be Add points field with leaves-only deep-recursive weighted rollup](done/9pf42be-add-points-field-with-leaves-only-deep-recursive-weighted-rollup.md) — _medium_ (closed 2026-06-06)
-- [#9sevgpn Enrich 'list' filters: multi/negated status, title match, sort, --blocked, --orphan](done/9sevgpn-enrich-list-filters-multi-negated-status-title-match-sort-blocked-orphan.md) — _medium_ [tracker-features] (closed 2026-06-06)
-- [#9wd4tkf list: hide settled work by default (keep done children under open parents)](done/9wd4tkf-list-hide-settled-work-by-default-keep-done-children-under-open-parents.md) — _medium_ [tracker-features] (closed 2026-06-14)
-- [#b7t7d4q list: show points-weighted percent-complete on parent rows](done/b7t7d4q-list-show-points-weighted-percent-complete-on-parent-rows.md) — _medium_ (closed 2026-06-14)
-- [#bpwuedw Deduplicate parent-cycle detection via Graph.ancestors_of](done/bpwuedw-deduplicate-parent-cycle-detection-via-graph-ancestors-of.md) — _medium_ (closed 2026-06-10)
-- [#cea683t validate/dep: detect and prevent dependency cycles](done/cea683t-validate-dep-detect-and-prevent-dependency-cycles.md) — _medium_ [tracker-features] (closed 2026-06-08)
-- [#dbq2wqn deps: hide done work by default (fully-done chains + --omit-done)](done/dbq2wqn-deps-hide-done-by-default.md) — _medium_ (closed 2026-06-24)
-- [#dscmxng Use random alphanumeric ids to make concurrent creation collision-free](done/dscmxng-use-random-alphanumeric-ids-to-make-concurrent-creation-collision-free.md) — _medium_ [conflict-resolution tracker-features] (closed 2026-06-15)
-- [#fwxbrvc resolve_ref: accept a leading # on id args (paste-back from output)](done/fwxbrvc-resolve-ref-accept-a-leading-on-id-args-paste-back-from-output.md) — _medium_ (closed 2026-07-24)
-- [#ge5jt9s Cascading parent status: derive parent status from children (status rollup)](done/ge5jt9s-cascading-parent-status-derive-parent-status-from-children-status-rollup.md) — _medium_ (closed 2026-06-13)
-- [#gs3vd4w ready/next: scope to a subtree (what can I pick up on this parent now)](done/gs3vd4w-ready-next-scope-to-a-subtree-what-can-i-pick-up-on-this-parent-now.md) — _medium_ (closed 2026-07-24)
-- [#gwcr9qd deps: shorter edges / fewer crossings in the graph layout](done/gwcr9qd-deps-shorter-edges-fewer-crossings-in-the-graph-layout.md) — _medium_ (closed 2026-06-12)
-- [#httj4xf Add labels/tags to issues](done/httj4xf-add-labels-tags-to-issues.md) — _medium_ [tracker-features] (closed 2026-06-06)
-- [#kd8ngqv Improve CLI output presentation (align/icons, color, show, SUMMARY)](done/kd8ngqv-improve-cli-output-presentation-align-icons-color-show-summary.md) — _medium_ (closed 2026-06-05)
-- [#nu939p9 Add normalize command to rewrite index.jsonl in canonical slim form](done/nu939p9-add-normalize-command-to-rewrite-index-jsonl-in-canonical-slim-form.md) — _medium_ (closed 2026-06-06)
-- [#pzmyzv3 deps: inherit dependencies through the parent hierarchy (effective deps) + lifted cycle prevention](done/pzmyzv3-deps-inherit-dependencies-through-the-parent-hierarchy-effective-deps-lifted-cycle-prevention.md) — _medium_ (closed 2026-07-18)
-- [#rd6rk5e Allow any issue to be a parent (rollup for any parent)](done/rd6rk5e-allow-any-issue-to-be-a-parent-rollup-for-any-parent.md) — _medium_ (closed 2026-06-05)
-- [#tazdgkg deps --graph: lazygit-style dependency DAG renderer](done/tazdgkg-deps-graph-lazygit-style-dependency-dag-renderer.md) — _medium_ (closed 2026-06-10)
-- [#uydwa9h Convert the #002 'richer tracker features' epic into a label](done/uydwa9h-convert-the-002-richer-tracker-features-epic-into-a-label.md) — _medium_ (closed 2026-06-23)
-- [#w8a87ky deps --graph <id>: scope to the focal issue's directed dependency line](done/w8a87ky-deps-graph-id-scope-to-the-focal-issue-s-directed-dependency-line.md) — _medium_ (closed 2026-06-10)
-- [#wwpsa3f Extract config-vocabulary validation helpers](done/wwpsa3f-extract-config-vocabulary-validation-helpers.md) — _medium_ (closed 2026-06-10)
-- [#x5dcpmw Eliminate unnecessary index double-reads](done/x5dcpmw-eliminate-unnecessary-index-double-reads.md) — _medium_ (closed 2026-06-10)
-- [#yvbgt53 Consolidate parent-to-children map building onto Graph](done/yvbgt53-consolidate-parent-to-children-map-building-onto-graph.md) — _medium_ (closed 2026-06-10)
-- [#3qsk26v version/update: suppress no-tracker stderr noise when run outside a tracker](done/3qsk26v-version-update-suppress-no-tracker-stderr-noise-when-run-outside-a-tracker.md) — _low_ (closed 2026-06-05)
-- [#8xdzmr4 summary: sort status sections by priority (highest first)](done/8xdzmr4-summary-sort-status-sections-by-priority-highest-first.md) — _low_ (closed 2026-06-05)
-- [#dkbmmrr Clean up minor lint and cruft in the engine](done/dkbmmrr-clean-up-minor-lint-and-cruft-in-the-engine.md) — _low_ (closed 2026-06-10)
-- [#g76mtuw validate: report one error per parent cycle, not one per node](done/g76mtuw-validate-report-one-error-per-parent-cycle-not-one-per-node.md) — _low_ (closed 2026-06-10)
+- [#9jgarpa list: 'needs' annotation ignores inherited deps, disagreeing with ready/is_blocked](items/9jgarpa-list-needs-annotation-ignores-inherited-deps-disagreeing-with-ready-is-blocked.md) — _urgent_ (closed 2026-07-23)
+- [#dqmp5c5 Cut v0.1.0 release](items/dqmp5c5-cut-v0-1-0-release.md) — _high_ (closed 2026-06-05)
+- [#ejcxwmz pre-commit hook never runs check when trck.json is at repo root](items/ejcxwmz-pre-commit-hook-never-runs-check-when-trck-json-is-at-repo-root.md) — _high_ (closed 2026-06-09)
+- [#mur7gwd Crash instead of clean error when no tracker is found](items/mur7gwd-crash-instead-of-clean-error-when-no-tracker-is-found.md) — _high_ (closed 2026-06-10)
+- [#nhanp8c Strip null/empty fields from index.jsonl rows to reduce noise](items/nhanp8c-strip-null-empty-fields-from-index-jsonl-rows-to-reduce-noise.md) — _high_ (closed 2026-06-06)
+- [#qc48tds Add 'ready'/'next' command: list unblocked, not-done leaves](items/qc48tds-add-ready-next-command-list-unblocked-not-done-leaves.md) — _high_ [tracker-features] (closed 2026-06-06)
+- [#y8asnbe Write root README.md and CLAUDE.md](items/y8asnbe-write-root-readme-md-and-claude-md.md) — _high_ (closed 2026-06-05)
+- [#3e3cn37 init: accept positional dir and add --no-vendor for self-hosting repos](items/3e3cn37-init-accept-positional-dir-and-add-no-vendor-for-self-hosting-repos.md) — _medium_ (closed 2026-06-05)
+- [#3x6mmhu list: annotate blocked/blocker relationships and clear them when resolved](items/3x6mmhu-list-annotate-blocked-blocker-relationships-and-clear-them-when-resolved.md) — _medium_ [tracker-features] (closed 2026-06-09)
+- [#4vqukyy Part D: richer tracker features](items/4vqukyy-part-d-richer-tracker-features.md) — _medium_ · _superseded_ (closed 2026-06-23)
+- [#5wbwpjv Add full-text search/grep across issue bodies](items/5wbwpjv-add-full-text-search-grep-across-issue-bodies.md) — _medium_ [tracker-features] (closed 2026-06-10)
+- [#9pf42be Add points field with leaves-only deep-recursive weighted rollup](items/9pf42be-add-points-field-with-leaves-only-deep-recursive-weighted-rollup.md) — _medium_ (closed 2026-06-06)
+- [#9sevgpn Enrich 'list' filters: multi/negated status, title match, sort, --blocked, --orphan](items/9sevgpn-enrich-list-filters-multi-negated-status-title-match-sort-blocked-orphan.md) — _medium_ [tracker-features] (closed 2026-06-06)
+- [#9wd4tkf list: hide settled work by default (keep done children under open parents)](items/9wd4tkf-list-hide-settled-work-by-default-keep-done-children-under-open-parents.md) — _medium_ [tracker-features] (closed 2026-06-14)
+- [#b7t7d4q list: show points-weighted percent-complete on parent rows](items/b7t7d4q-list-show-points-weighted-percent-complete-on-parent-rows.md) — _medium_ (closed 2026-06-14)
+- [#bpwuedw Deduplicate parent-cycle detection via Graph.ancestors_of](items/bpwuedw-deduplicate-parent-cycle-detection-via-graph-ancestors-of.md) — _medium_ (closed 2026-06-10)
+- [#cea683t validate/dep: detect and prevent dependency cycles](items/cea683t-validate-dep-detect-and-prevent-dependency-cycles.md) — _medium_ [tracker-features] (closed 2026-06-08)
+- [#dbq2wqn deps: hide done work by default (fully-done chains + --omit-done)](items/dbq2wqn-deps-hide-done-by-default.md) — _medium_ (closed 2026-06-24)
+- [#dscmxng Use random alphanumeric ids to make concurrent creation collision-free](items/dscmxng-use-random-alphanumeric-ids-to-make-concurrent-creation-collision-free.md) — _medium_ [conflict-resolution tracker-features] (closed 2026-06-15)
+- [#fwxbrvc resolve_ref: accept a leading # on id args (paste-back from output)](items/fwxbrvc-resolve-ref-accept-a-leading-on-id-args-paste-back-from-output.md) — _medium_ (closed 2026-07-24)
+- [#ge5jt9s Cascading parent status: derive parent status from children (status rollup)](items/ge5jt9s-cascading-parent-status-derive-parent-status-from-children-status-rollup.md) — _medium_ (closed 2026-06-13)
+- [#gs3vd4w ready/next: scope to a subtree (what can I pick up on this parent now)](items/gs3vd4w-ready-next-scope-to-a-subtree-what-can-i-pick-up-on-this-parent-now.md) — _medium_ (closed 2026-07-24)
+- [#gwcr9qd deps: shorter edges / fewer crossings in the graph layout](items/gwcr9qd-deps-shorter-edges-fewer-crossings-in-the-graph-layout.md) — _medium_ (closed 2026-06-12)
+- [#httj4xf Add labels/tags to issues](items/httj4xf-add-labels-tags-to-issues.md) — _medium_ [tracker-features] (closed 2026-06-06)
+- [#kd8ngqv Improve CLI output presentation (align/icons, color, show, SUMMARY)](items/kd8ngqv-improve-cli-output-presentation-align-icons-color-show-summary.md) — _medium_ (closed 2026-06-05)
+- [#nu939p9 Add normalize command to rewrite index.jsonl in canonical slim form](items/nu939p9-add-normalize-command-to-rewrite-index-jsonl-in-canonical-slim-form.md) — _medium_ (closed 2026-06-06)
+- [#pzmyzv3 deps: inherit dependencies through the parent hierarchy (effective deps) + lifted cycle prevention](items/pzmyzv3-deps-inherit-dependencies-through-the-parent-hierarchy-effective-deps-lifted-cycle-prevention.md) — _medium_ (closed 2026-07-18)
+- [#rd6rk5e Allow any issue to be a parent (rollup for any parent)](items/rd6rk5e-allow-any-issue-to-be-a-parent-rollup-for-any-parent.md) — _medium_ (closed 2026-06-05)
+- [#tazdgkg deps --graph: lazygit-style dependency DAG renderer](items/tazdgkg-deps-graph-lazygit-style-dependency-dag-renderer.md) — _medium_ (closed 2026-06-10)
+- [#uydwa9h Convert the #002 'richer tracker features' epic into a label](items/uydwa9h-convert-the-002-richer-tracker-features-epic-into-a-label.md) — _medium_ (closed 2026-06-23)
+- [#w8a87ky deps --graph <id>: scope to the focal issue's directed dependency line](items/w8a87ky-deps-graph-id-scope-to-the-focal-issue-s-directed-dependency-line.md) — _medium_ (closed 2026-06-10)
+- [#wwpsa3f Extract config-vocabulary validation helpers](items/wwpsa3f-extract-config-vocabulary-validation-helpers.md) — _medium_ (closed 2026-06-10)
+- [#x5dcpmw Eliminate unnecessary index double-reads](items/x5dcpmw-eliminate-unnecessary-index-double-reads.md) — _medium_ (closed 2026-06-10)
+- [#yvbgt53 Consolidate parent-to-children map building onto Graph](items/yvbgt53-consolidate-parent-to-children-map-building-onto-graph.md) — _medium_ (closed 2026-06-10)
+- [#3qsk26v version/update: suppress no-tracker stderr noise when run outside a tracker](items/3qsk26v-version-update-suppress-no-tracker-stderr-noise-when-run-outside-a-tracker.md) — _low_ (closed 2026-06-05)
+- [#8xdzmr4 summary: sort status sections by priority (highest first)](items/8xdzmr4-summary-sort-status-sections-by-priority-highest-first.md) — _low_ (closed 2026-06-05)
+- [#dkbmmrr Clean up minor lint and cruft in the engine](items/dkbmmrr-clean-up-minor-lint-and-cruft-in-the-engine.md) — _low_ (closed 2026-06-10)
+- [#g76mtuw validate: report one error per parent cycle, not one per node](items/g76mtuw-validate-report-one-error-per-parent-cycle-not-one-per-node.md) — _low_ (closed 2026-06-10)

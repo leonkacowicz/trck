@@ -83,9 +83,9 @@ class TestTimestampBackCompat(unittest.TestCase):
     def test_legacy_date_only_loads_check_clean_and_normalize_preserves(self):
         with TemporaryDirectory() as tmp:
             d = self.setup_dir(tmp)
-            (d / "backlog").mkdir()
+            (d / "items").mkdir()
             # create the issue body file the index points at
-            (d / "backlog" / "001-legacy.md").write_text("# Legacy\n")
+            (d / "items" / "001-legacy.md").write_text("# Legacy\n")
             self.write_index(d, [{
                 "id": 1, "slug": "legacy", "title": "Legacy", "kind": "task",
                 "status": "backlog", "priority": "medium",

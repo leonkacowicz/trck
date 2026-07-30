@@ -1,5 +1,4 @@
 import unittest
-from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from tests.helpers import load_trck, make_tracker
@@ -32,16 +31,6 @@ class TestValidate(unittest.TestCase):
             self.t.save_index(ctx, [row])
             errors, _ = self.t.validate(ctx)
             self.assertEqual(errors, [])
-
-    def test_status_folder_mismatch_is_error(self):
-        with TemporaryDirectory() as tmp:
-            ctx = self.ctx(tmp)
-            row = self.base()
-            self.write(ctx, row)               # file is in backlog/
-            row2 = self.base(status="done")    # but index says done
-            self.t.save_index(ctx, [row2])
-            errors, _ = self.t.validate(ctx)
-            self.assertTrue(any("status" in e for e in errors))
 
     def test_parent_can_be_any_kind(self):
         with TemporaryDirectory() as tmp:

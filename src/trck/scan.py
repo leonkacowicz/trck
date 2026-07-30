@@ -1,6 +1,6 @@
 from __future__ import annotations
 from .config import check_kind, check_points, check_pr, check_priority, check_resolution, check_status_flags, check_status_roles, reconcile, status_names
-from .constants import FIELD_KEY_RE, FILENAME_RE, SLUG_RE, die
+from .constants import FIELD_KEY_RE, FILENAME_RE, ITEMS_DIR, SLUG_RE, die
 from .graph import Graph
 from .index import Ctx, DEFAULT_POINTS, Issue, file_id, filename, load_index
 
@@ -8,20 +8,21 @@ from .index import Ctx, DEFAULT_POINTS, Issue, file_id, filename, load_index
 # filesystem scan + validation
 # --------------------------------------------------------------------------- #
 def scan_files(ctx: Ctx) -> dict:
-    """Map id -> (status_folder, slug, filename) for every issue markdown on disk."""
+    """Map id -> (slug, filename) for every issue markdown in the items dir. Status
+    is not encoded in the path, so the folder component the old layout returned is
+    gone; two files can still claim one id via different slugs, which is fatal."""
     found = {}
-    for name in status_names(ctx.cfg):
-        d = ctx.dir / name
-        if not d.is_dir():
+    d = ctx.dir / ITEMS_DIR
+    if not d.is_dir():
+        return found
+    for p in sorted(d.glob("*.md")):
+        m = FILENAME_RE.match(p.name)
+        if not m:
             continue
-        for p in sorted(d.glob("*.md")):
-            m = FILENAME_RE.match(p.name)
-            if not m:
-                continue
-            iid = file_id(m)
-            if iid in found:
-                die(f"duplicate issue id {iid} on disk: {found[iid][0]} and {name}")
-            found[iid] = (name, m.group(2), p.name)
+        iid = file_id(m)
+        if iid in found:
+            die(f"duplicate issue id {iid} on disk: {found[iid][1]} and {p.name}")
+        found[iid] = (m.group(2), p.name)
     return found
 
 
@@ -45,9 +46,7 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
         if iid not in files:
             errors.append(f"#{iid} in index but no markdown file on disk")
             continue
-        folder, slug, fname = files[iid]
-        if r.status != folder:
-            errors.append(f"#{iid} index status '{r.status}' != folder '{folder}'")
+        slug, fname = files[iid]
         if r.slug != slug:
             errors.append(f"#{iid} index slug '{r.slug}' != filename slug '{slug}'")
         if fname != filename(r):

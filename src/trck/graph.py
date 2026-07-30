@@ -1,7 +1,7 @@
 from __future__ import annotations
 import secrets
-from .config import is_actionable, is_terminal, reconcile, status_names
-from .constants import FILENAME_RE, ID_ALPHABET, ID_LEN
+from .config import is_actionable, is_terminal, reconcile
+from .constants import FILENAME_RE, ID_ALPHABET, ID_LEN, ITEMS_DIR
 from .index import Ctx, DEFAULT_POINTS, Issue, file_id, get_id, get_row, load_index
 from .render import priority_rank
 from .templates import move_issue
@@ -542,13 +542,12 @@ def normalize_statuses(ctx: Ctx, g: Graph) -> None:
 def _existing_ids(ctx: Ctx) -> set[str]:
     """Every id currently visible: index rows ∪ on-disk filenames."""
     ids = {r.id for r in load_index(ctx)}
-    for name in status_names(ctx.cfg):
-        d = ctx.dir / name
-        if d.is_dir():
-            for p in d.glob("*.md"):
-                m = FILENAME_RE.match(p.name)
-                if m:
-                    ids.add(file_id(m))
+    d = ctx.dir / ITEMS_DIR
+    if d.is_dir():
+        for p in d.glob("*.md"):
+            m = FILENAME_RE.match(p.name)
+            if m:
+                ids.add(file_id(m))
     return ids
 
 

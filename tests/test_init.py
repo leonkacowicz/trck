@@ -69,10 +69,10 @@ class TestInit(unittest.TestCase):
                 self.t.cmd_new(ns(dir=str(d), title="X", priority="high", kind=None,
                                   parent=None, depends=None,
                                   spec=None, slug=None))
-            # verify at least one issue file exists in backlog with slug "x"
-            backlog = d / "backlog"
-            self.assertTrue(backlog.is_dir())
-            self.assertTrue(any(f.name.endswith("-x.md") for f in backlog.iterdir()))
+            # verify at least one issue file exists in items/ with slug "x"
+            items = d / "items"
+            self.assertTrue(items.is_dir())
+            self.assertTrue(any(f.name.endswith("-x.md") for f in items.iterdir()))
 
     def test_init_positional_dir(self):
         with TemporaryDirectory() as tmp:

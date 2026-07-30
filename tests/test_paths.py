@@ -119,7 +119,7 @@ class TestWhich(unittest.TestCase):
             ctx = self.t.build_ctx_or_die(ns(dir=str(d)))
             row = self.t.get_row(self.t.load_index(ctx), id1)
             fname = self.t.filename(row)
-            rel = f"issues/backlog/{fname}"
+            rel = f"issues/items/{fname}"
             out = self.which(d, [rel])
             self.assertIn(f"#{id1}", out)
 

@@ -52,6 +52,7 @@ SELF_PATH = Path(__file__).resolve()  # the running engine file; tests may overr
 
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 FILENAME_RE = re.compile(r"^([0-9a-z]+)-([a-z0-9][a-z0-9-]*)\.md$")
+ITEMS_DIR = "items"  # the one directory holding every issue body; status lives in index.jsonl
 ID_ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz"  # base32 minus 0/1/o/l/i, lowercase for typeability
 ID_LEN = 7                                        # 31**7 ≈ 2.75e10 id space
 ID_RE = re.compile(rf"^[{ID_ALPHABET}]+$")
@@ -516,11 +517,11 @@ def filename(row: Issue) -> str:
 
 
 def rel_link(row: Issue) -> str:
-    return f"{row.status}/{filename(row)}"
+    return f"{ITEMS_DIR}/{filename(row)}"
 
 
 def issue_path(ctx: Ctx, row: Issue) -> Path:
-    return ctx.dir / row.status / filename(row)
+    return ctx.dir / ITEMS_DIR / filename(row)
 
 
 def load_index(ctx: Ctx) -> list[Issue]:
@@ -1142,13 +1143,12 @@ def normalize_statuses(ctx: Ctx, g: Graph) -> None:
 def _existing_ids(ctx: Ctx) -> set[str]:
     """Every id currently visible: index rows ∪ on-disk filenames."""
     ids = {r.id for r in load_index(ctx)}
-    for name in status_names(ctx.cfg):
-        d = ctx.dir / name
-        if d.is_dir():
-            for p in d.glob("*.md"):
-                m = FILENAME_RE.match(p.name)
-                if m:
-                    ids.add(file_id(m))
+    d = ctx.dir / ITEMS_DIR
+    if d.is_dir():
+        for p in d.glob("*.md"):
+            m = FILENAME_RE.match(p.name)
+            if m:
+                ids.add(file_id(m))
     return ids
 
 
@@ -1169,20 +1169,21 @@ def gen_id(ctx: Ctx) -> str:
 # filesystem scan + validation
 # --------------------------------------------------------------------------- #
 def scan_files(ctx: Ctx) -> dict:
-    """Map id -> (status_folder, slug, filename) for every issue markdown on disk."""
+    """Map id -> (slug, filename) for every issue markdown in the items dir. Status
+    is not encoded in the path, so the folder component the old layout returned is
+    gone; two files can still claim one id via different slugs, which is fatal."""
     found = {}
-    for name in status_names(ctx.cfg):
-        d = ctx.dir / name
-        if not d.is_dir():
+    d = ctx.dir / ITEMS_DIR
+    if not d.is_dir():
+        return found
+    for p in sorted(d.glob("*.md")):
+        m = FILENAME_RE.match(p.name)
+        if not m:
             continue
-        for p in sorted(d.glob("*.md")):
-            m = FILENAME_RE.match(p.name)
-            if not m:
-                continue
-            iid = file_id(m)
-            if iid in found:
-                die(f"duplicate issue id {iid} on disk: {found[iid][0]} and {name}")
-            found[iid] = (name, m.group(2), p.name)
+        iid = file_id(m)
+        if iid in found:
+            die(f"duplicate issue id {iid} on disk: {found[iid][1]} and {p.name}")
+        found[iid] = (m.group(2), p.name)
     return found
 
 
@@ -1206,9 +1207,7 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
         if iid not in files:
             errors.append(f"#{iid} in index but no markdown file on disk")
             continue
-        folder, slug, fname = files[iid]
-        if r.status != folder:
-            errors.append(f"#{iid} index status '{r.status}' != folder '{folder}'")
+        slug, fname = files[iid]
         if r.slug != slug:
             errors.append(f"#{iid} index slug '{r.slug}' != filename slug '{slug}'")
         if fname != filename(r):

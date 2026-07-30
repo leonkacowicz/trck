@@ -11,6 +11,7 @@ SELF_PATH = Path(__file__).resolve()  # the running engine file; tests may overr
 
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 FILENAME_RE = re.compile(r"^([0-9a-z]+)-([a-z0-9][a-z0-9-]*)\.md$")
+ITEMS_DIR = "items"  # the one directory holding every issue body; status lives in index.jsonl
 ID_ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz"  # base32 minus 0/1/o/l/i, lowercase for typeability
 ID_LEN = 7                                        # 31**7 ≈ 2.75e10 id space
 ID_RE = re.compile(rf"^[{ID_ALPHABET}]+$")
