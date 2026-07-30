@@ -6,14 +6,14 @@
 | State | Count |
 |---|---:|
 | backlog | 30 |
-| ongoing | 3 |
+| ongoing | 2 |
 | in-review | 0 |
-| done | 93 |
+| done | 94 |
 | **total** | **126** |
 
 ## Hierarchies
 
-### [#2srvf6j Flat items/ layout: status lives only in index.jsonl](items/2srvf6j-flat-items-layout-status-lives-only-in-index-jsonl.md) — 21% (3/14 pts · 1/7 done) · _high_ · ongoing
+### [#2srvf6j Flat items/ layout: status lives only in index.jsonl](items/2srvf6j-flat-items-layout-status-lives-only-in-index-jsonl.md) — 29% (4/14 pts · 2/7 done) · _high_ · ongoing
 Spec: [`docs/plans/2026-07-30-flat-items-layout.md`](../docs/plans/2026-07-30-flat-items-layout.md)
 
 - [ ] [#82an2dy release v0.23.0 with the breaking layout change](items/82an2dy-release-v0-23-0-with-the-breaking-layout-change.md) _(backlog)_
@@ -22,7 +22,7 @@ Spec: [`docs/plans/2026-07-30-flat-items-layout.md`](../docs/plans/2026-07-30-fl
 - [ ] [#twgv9jq migrate the bundled example and dogfood migrate-layout](items/twgv9jq-migrate-this-repo-s-tracker-and-the-bundled-example.md) _(backlog)_
 - [x] [#v7zzefd layout: point issue_path/rel_link/scan_files at items/](items/v7zzefd-layout-point-issue-path-rel-link-scan-files-at-items.md)
 - [ ] [#x2exfdf add the migrate-layout verb](items/x2exfdf-add-the-migrate-layout-verb.md) _(backlog)_
-- [ ] [#zk5k59n move_issue: drop the now-unreachable file move](items/zk5k59n-move-issue-drop-the-now-unreachable-file-move.md) _(ongoing)_
+- [x] [#zk5k59n move_issue: drop the now-unreachable file move](items/zk5k59n-move-issue-drop-the-now-unreachable-file-move.md)
 
 ### [#9bktptp ready/next: rank by demand cone (inferred priority) + marker](items/9bktptp-ready-next-rank-by-demand-cone-inferred-priority-marker.md) — 100% (8/8 pts · 4/4 done) · _high_ · done
 
