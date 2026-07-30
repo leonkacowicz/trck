@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 23 |
+| backlog | 24 |
 | ongoing | 1 |
 | in-review | 0 |
 | done | 103 |
-| **total** | **127** |
+| **total** | **128** |
 
 ## Hierarchies
 
@@ -111,6 +111,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## Backlog
 
+- [#nuf3t68 check: reject a non-terminal issue carrying resolution or closed](items/nuf3t68-check-reject-a-non-terminal-issue-carrying-resolution-or-closed.md) — _high_ [conflict-resolution]
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](items/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#tfhhp8h mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](items/tfhhp8h-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
 - [#wh3mv52 mv/done: guard closing a parent with open descendants (--recurse to cascade)](items/wh3mv52-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
