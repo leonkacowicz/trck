@@ -129,35 +129,41 @@ thing left that can help.
 
 Non-negotiable, and easy to get wrong by only ever testing one.
 
-Both paths run the same merge machinery, so a registered driver fires for either — **verified**,
-with a probe driver that printed its three operands (git 2.x, default backend):
+Both paths run the same merge machinery, so a registered driver fires for either. **Verified**
+with a probe driver that printed its three operands (git 2.x, default backend), across all three
+ways of integrating two branches:
 
 ```
-merge  (standing on main, merging feature):    O=BASE  A=MAIN  B=FEATURE
-rebase (standing on feature, onto main):       O=BASE  A=MAIN  B=FEATURE
+(1) on main,    git merge feature   →  O=BASE  A=MAIN     B=FEATURE
+(2) on feature, git rebase main     →  O=BASE  A=MAIN     B=FEATURE
+(3) on feature, git merge main      →  O=BASE  A=FEATURE  B=MAIN
 ```
 
-The slots hold the *same* content in both cases — but the user's relationship to them flips.
-Merging, you are on `main`, so `%A` is your work. Rebasing, you are on `feature`, so `%A` is the
-**upstream** and `%B` is **your own commit** being replayed:
+**(2) and (3) are opposite** — same branch, same user intent ("integrate main into my work"),
+inverted operands. Meanwhile (1) and (2) *agree*, despite being different operations on
+different branches.
 
-| | `%A` ("ours") | `%B` ("theirs") |
-|---|---|---|
-| **merge** | the branch you are on | the branch being merged in |
-| **rebase** | the upstream being replayed onto | your commit being replayed |
+So the variable is **not** merge-vs-rebase. `%A` is simply whatever is checked out at that
+moment in the operation — the side being merged *into*. In a merge that is your branch; in a
+rebase the sequencer checks out the upstream first and replays your commits onto it, so it is
+the upstream. Rebase only looks like the odd one out if you compare it against the wrong merge
+direction, which is the mistake an earlier draft of this section made.
 
-This is harmless for a rule that is genuinely symmetric — union of `labels`, earliest timestamp,
-recompute derived fields. It bites the moment a rule prefers one side, and it bites the
-*wording* of a conflict report, which must not say "yours" when it means the upstream's.
+**The hard consequence: a driver cannot determine which side is "mine".** Not unreliably — not
+at all. No operand, and no combination of operands, answers it. `GIT_REFLOG_ACTION` sometimes
+hints at the operation, but it still cannot separate (2) from (3) without also knowing the
+branch topology, and environment sniffing is not a foundation to build a correctness rule on.
 
-Design consequence: **prefer symmetric rules**, and where a rule cannot be symmetric, drive it
-from the `%O` base — who changed what relative to the ancestor — rather than from an assumption
-about which operand is "mine". The lifecycle-tuple rule above is already base-driven and
-conflicts on divergence, so it is orientation-independent by construction. Keep it that way.
+That turns "prefer symmetric rules" from a design preference into a **hard constraint**: any
+rule needing to know whose change is whose is *unimplementable* in a merge driver. What remains
+available is the `%O` base — who changed what relative to the ancestor — and it is enough,
+because the conflict trigger we chose ("both sides changed this field differently") is itself
+symmetric. Union of `labels`, earliest timestamp, recomputed derived fields, and the
+lifecycle-tuple rule are all already orientation-independent by construction. Keep them that way.
 
-For conflict *messages*, do not use ours/theirs at all. Describe both sides by what they contain
-(`#x: 'ongoing' here, 'done' there`) or pass the orientation in explicitly — git exposes `%L`
-and the `GIT_REFLOG_ACTION`/rebase state, but the robust move is to avoid needing to know.
+For conflict *messages*, never write ours/theirs/yours — the words mean opposite things across
+(2) and (3), so a message using them is wrong half the time. Name what each side contains
+instead: `#x: 'ongoing' on one side, 'done' on the other`.
 
 ## The thing git makes you do (the crux)
 `.gitattributes` is committed and shared, but it can only *name* a driver — it cannot define
@@ -197,10 +203,15 @@ fold it into `init`/`update`).
 - [ ] Non-leaf `status`/`points` are recomputed after the merge, never merged.
 - [ ] Tests/fixtures exercising the union of index rows and the SUMMARY regeneration path.
 - [ ] Tests/fixtures for the same-issue-both-sides merge, asserting the chosen behaviour.
-- [ ] **Every scenario above is exercised under `git merge` *and* `git rebase`**, with identical
-      outcomes. Testing only one is how the `%A`/`%B` orientation trap gets shipped.
+- [ ] **Every scenario above is exercised in all three integration directions** — `git merge`
+      from each side, and `git rebase` — with identical outcomes. Two directions is not enough:
+      merging feature→main and rebasing feature onto main happen to agree, so a driver that is
+      orientation-dependent passes both and still breaks on `git merge main` from the feature
+      branch.
+- [ ] No rule anywhere in the driver branches on which operand is "ours". Symmetric, or derived
+      from `%O`, only.
 - [ ] A conflict message never says "ours"/"theirs"/"yours" — it names what each side contains,
-      so it reads correctly whichever operation produced it.
+      so it reads correctly whichever direction produced it.
 - [ ] With the driver named in `.gitattributes` but **not** registered in `.git/config`, git
       falls back to the ordinary 3-way merge and leaves normal conflict markers — verified, so
       an unregistered clone is no worse off than today (no silent one-sided resolution).
