@@ -6,21 +6,21 @@
 | State | Count |
 |---|---:|
 | backlog | 31 |
-| ongoing | 3 |
+| ongoing | 2 |
 | in-review | 0 |
-| done | 92 |
+| done | 93 |
 | **total** | **126** |
 
 ## Hierarchies
 
-### [#2srvf6j Flat items/ layout: status lives only in index.jsonl](items/2srvf6j-flat-items-layout-status-lives-only-in-index-jsonl.md) — 0% (0/14 pts · 0/7 done) · _high_ · ongoing
+### [#2srvf6j Flat items/ layout: status lives only in index.jsonl](items/2srvf6j-flat-items-layout-status-lives-only-in-index-jsonl.md) — 21% (3/14 pts · 1/7 done) · _high_ · ongoing
 Spec: [`docs/plans/2026-07-30-flat-items-layout.md`](../docs/plans/2026-07-30-flat-items-layout.md)
 
 - [ ] [#82an2dy release v0.23.0 with the breaking layout change](items/82an2dy-release-v0-23-0-with-the-breaking-layout-change.md) _(backlog)_
 - [ ] [#8fdjhhf detect the legacy status-folder layout and refuse to run](items/8fdjhhf-detect-the-legacy-status-folder-layout-and-refuse-to-run.md) _(backlog)_
 - [ ] [#nrvcky7 docs: status is an index field, not a directory](items/nrvcky7-docs-status-is-an-index-field-not-a-directory.md) _(backlog)_
 - [ ] [#twgv9jq migrate this repo's tracker and the bundled example](items/twgv9jq-migrate-this-repo-s-tracker-and-the-bundled-example.md) _(backlog)_
-- [ ] [#v7zzefd layout: point issue_path/rel_link/scan_files at items/](items/v7zzefd-layout-point-issue-path-rel-link-scan-files-at-items.md) _(ongoing)_
+- [x] [#v7zzefd layout: point issue_path/rel_link/scan_files at items/](items/v7zzefd-layout-point-issue-path-rel-link-scan-files-at-items.md)
 - [ ] [#x2exfdf add the migrate-layout verb](items/x2exfdf-add-the-migrate-layout-verb.md) _(backlog)_
 - [ ] [#zk5k59n move_issue: drop the now-unreachable file move](items/zk5k59n-move-issue-drop-the-now-unreachable-file-move.md) _(backlog)_
 
