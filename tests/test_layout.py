@@ -68,6 +68,31 @@ class TestFlatLayout(unittest.TestCase):
             files = sorted(p.name for p in (d / "items").glob("*.md"))
             self.assertEqual(files, [f"{iid}-renamed.md"])
 
+    def test_move_issue_dies_when_the_body_file_is_missing(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            iid = self.seed(d, "Alpha")
+            ctx = self.t.build_ctx_or_die(ns(dir=str(d)))
+            rows = self.t.load_index(ctx)
+            row = self.t.get_row(rows, iid)
+            self.t.issue_path(ctx, row).unlink()
+            with self.assertRaises(SystemExit):
+                self.t.move_issue(ctx, row, "done")
+
+    def test_move_issue_stamps_dates_without_touching_the_file(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            iid = self.seed(d, "Alpha")
+            ctx = self.t.build_ctx_or_die(ns(dir=str(d)))
+            row = self.t.get_row(self.t.load_index(ctx), iid)
+            path = self.t.issue_path(ctx, row)
+            mtime = path.stat().st_mtime_ns
+            self.t.move_issue(ctx, row, "done")
+            self.assertEqual(row.status, "done")
+            self.assertIsNotNone(row.started)
+            self.assertIsNotNone(row.closed)
+            self.assertEqual(path.stat().st_mtime_ns, mtime)  # body untouched
+
     def test_scan_files_maps_id_to_slug_and_filename(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})

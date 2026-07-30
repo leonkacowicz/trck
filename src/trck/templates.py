@@ -1,5 +1,4 @@
 from __future__ import annotations
-import shutil
 from .config import initial_status, is_terminal, status_names
 from .constants import die, now_utc
 from .graph import Graph
@@ -162,18 +161,17 @@ def guard_effective_acyclic(ctx: Ctx, rows: list[Issue]) -> None:
 
 
 def move_issue(ctx: Ctx, row: Issue, new_status: str) -> None:
-    """Move the file between status folders and stamp dates from roles."""
+    """Set an issue's status and stamp the dates its roles imply. The body file
+    does not move — the path encodes id and slug only, so a status change is
+    purely an index edit. The existence check stays so a missing body fails here,
+    loudly, rather than as a `check` error after the fact."""
     if new_status not in status_names(ctx.cfg):
         die(f"unknown status '{new_status}' (configured: {', '.join(status_names(ctx.cfg))})")
+    path = issue_path(ctx, row)
+    if not path.exists():
+        die(f"file missing for #{row.id}: {path}")
     old_status = row.status
-    old = issue_path(ctx, row)
     row.status = new_status
-    new = issue_path(ctx, row)
-    if old.resolve() != new.resolve():
-        new.parent.mkdir(parents=True, exist_ok=True)
-        if not old.exists():
-            die(f"file missing for #{row.id}: {old}")
-        shutil.move(str(old), str(new))
 
     init = initial_status(ctx.cfg)
     if old_status == init and new_status != init and not row.started:
