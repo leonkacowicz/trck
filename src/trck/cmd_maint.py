@@ -509,3 +509,72 @@ def cmd_merge_summary(args) -> None:
         Path(args.current).write_text(generate_summary(ctx))
     except SystemExit:
         pass  # index mid-merge / unparseable — leave whatever is there
+
+
+GITATTRIBUTES_HEADER = "# Managed by `trck repo setup-git` — trck merge drivers."
+GITATTRIBUTES_LINES = [
+    "index.jsonl merge=trck-index",
+    "SUMMARY.md merge=trck-summary",
+]
+
+
+def _engine_invocation(ctx) -> str:
+    """How a git driver should re-invoke this engine. Prefers a vendored copy
+    committed beside the tracker (pinned to the data's version, present in CI with
+    no install); falls back to whatever `trck` is on PATH."""
+    vendored = ctx.dir / "trck"
+    if vendored.exists():
+        return f'python3 "{vendored.resolve()}"'
+    return "trck"
+
+
+def cmd_setup_git(args) -> None:
+    """Declare trck's merge drivers and register them in this clone.
+
+    Two halves, because git separates them on purpose:
+
+    - `<tracker>/.gitattributes` *names* the drivers. Committed, so it is shared.
+    - `.git/config` *defines* what they run. Per-clone and never shared — otherwise
+      cloning a repo would be remote code execution.
+
+    So this must run once per clone. Until it does, git falls back to an ordinary
+    3-way merge with normal conflict markers: an un-set-up clone is exactly as well
+    off as before, which is what lets this roll out gradually."""
+    ctx = build_ctx_or_die(args)
+    common = subprocess.run(["git", "rev-parse", "--git-common-dir"],
+                            cwd=ctx.dir, capture_output=True, text=True)
+    if common.returncode != 0:
+        die("not a git repository")
+
+    # --- shared half: name the drivers ---
+    path = ctx.dir / ".gitattributes"
+    existing = path.read_text().splitlines() if path.exists() else []
+    missing = [ln for ln in GITATTRIBUTES_LINES if ln not in existing]
+    if missing:
+        out = list(existing)
+        if out and out[-1].strip():
+            out.append("")
+        out.append(GITATTRIBUTES_HEADER)
+        out.extend(missing)
+        path.write_text("\n".join(out) + "\n")
+        print(f"wrote {path}")
+    else:
+        print(f"{path} already declares the trck drivers")
+
+    # --- per-clone half: define what they run ---
+    engine = _engine_invocation(ctx)
+    drivers = {
+        "trck-index": (f"{engine} repo merge-index %O %A %B",
+                       "trck index.jsonl row-wise 3-way merge"),
+        "trck-summary": (f"{engine} repo merge-summary %A",
+                         "trck SUMMARY.md regeneration"),
+    }
+    for name, (cmd, label) in drivers.items():
+        for key, value in ((f"merge.{name}.driver", cmd), (f"merge.{name}.name", label)):
+            r = subprocess.run(["git", "config", key, value], cwd=ctx.dir,
+                               capture_output=True, text=True)
+            if r.returncode != 0:
+                die(f"git config {key} failed: {r.stderr.strip()}")
+    print(f"registered merge drivers in this clone ({', '.join(sorted(drivers))})")
+    print("note: .gitattributes is shared, but the driver commands are per-clone — "
+          "every clone must run `trck repo setup-git` for auto-resolution to apply.")

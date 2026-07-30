@@ -1,6 +1,6 @@
 from __future__ import annotations
 import argparse
-from .cmd_maint import cmd_changelog, cmd_check, cmd_done, cmd_init, cmd_install_hook, cmd_merge_index, cmd_merge_summary, cmd_migrate_layout, cmd_normalize, cmd_renumber, cmd_review, cmd_start, cmd_summary, cmd_version
+from .cmd_maint import cmd_changelog, cmd_check, cmd_done, cmd_init, cmd_install_hook, cmd_merge_index, cmd_merge_summary, cmd_migrate_layout, cmd_normalize, cmd_renumber, cmd_review, cmd_setup_git, cmd_start, cmd_summary, cmd_version
 from .cmd_mutate import cmd_dep, cmd_label, cmd_mv, cmd_new, cmd_set
 from .cmd_query import cmd_deps, cmd_list, cmd_next, cmd_path, cmd_ready, cmd_show, cmd_which
 from .cmd_selfmgmt import cmd_update
@@ -395,6 +395,16 @@ def build_parser() -> argparse.ArgumentParser:
                     "the two drivers in irrelevant.")
     ms.add_argument("current", help="git's %%A — the file the result is written to")
     ms.set_defaults(func=cmd_merge_summary)
+
+    sg = rsub.add_parser(
+        "setup-git", help="declare + register trck's git merge drivers",
+        description="Write <tracker>/.gitattributes naming trck's merge drivers, "
+                    "and register what they run in this clone's .git/config. "
+                    "Run once per clone: .gitattributes is shared, but git never "
+                    "shares driver commands (that would make cloning remote code "
+                    "execution). Until a clone runs this, git falls back to an "
+                    "ordinary 3-way merge with normal conflict markers.")
+    sg.set_defaults(func=cmd_setup_git)
 
     ml = rsub.add_parser("migrate-layout",
                          help="one-shot: move issue files from status folders into items/",
