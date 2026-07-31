@@ -5,8 +5,8 @@
 
 | State | Count |
 |---|---:|
-| backlog | 29 |
-| ongoing | 2 |
+| backlog | 28 |
+| ongoing | 3 |
 | in-review | 0 |
 | done | 114 |
 | **total** | **145** |
@@ -130,7 +130,6 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## Backlog
 
-- [#at6pwut release v0.24.0](items/at6pwut-release-v0-24-0.md) — _medium_
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](items/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#tfhhp8h mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](items/tfhhp8h-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
 - [#wh3mv52 mv/done: guard closing a parent with open descendants (--recurse to cascade)](items/wh3mv52-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
@@ -149,7 +148,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## Ongoing
 
-_none_
+- [#at6pwut release v0.24.0](items/at6pwut-release-v0-24-0.md) — _medium_
 
 ## In-review
 
