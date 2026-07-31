@@ -259,6 +259,10 @@ _CSS = """\
   }
 }
 * { box-sizing: border-box; }
+/* `setView` swaps panes with the `hidden` attribute, and a pane that declares its own
+   `display` (`.board`, `.filters`, …) would otherwise win: author rules outrank the UA's
+   `[hidden] { display: none }` at any specificity. Keep this ahead of every layout rule. */
+[hidden] { display: none !important; }
 body { margin: 0; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
        color: var(--fg); background: var(--bg); }
 .topbar { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap;

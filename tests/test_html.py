@@ -391,6 +391,18 @@ class TestReadyView(HtmlTestBase):
             self.assertIn('id="ready"', html)
             self.assertIn('data-view="ready"', html)
 
+    def test_hidden_panes_stay_hidden_despite_their_own_display(self):
+        """`setView` hides the inactive panes with the `hidden` attribute, but a pane
+        that sets `display` in our own stylesheet (`.board { display: flex }`) outranks
+        the UA's `[hidden] { display: none }` — author styles beat user-agent styles at
+        any specificity. Without an author-level override the board keeps painting over
+        every pane declared after it, which is every pane added from here on."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")
+            css = self.render(d)
+            self.assertRegex(css, r"\[hidden\]\s*\{[^}]*display:\s*none\s*!important")
+
     def test_ready_flag_marks_actionable_leaves_only(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
