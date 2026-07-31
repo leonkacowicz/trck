@@ -26,17 +26,17 @@ Sources this issue provides:
 combination is expressible without git.
 
 ## Acceptance criteria
-- [ ] `trck diff --from <index.jsonl>` works in a directory that is not a git repository, with git
+- [x] `trck diff --from <index.jsonl>` works in a directory that is not a git repository, with git
       absent from `PATH`.
-- [ ] `git show main:issues/index.jsonl | trck diff --from -` produces the same result as the git
+- [x] `git show main:issues/index.jsonl | trck diff --from -` produces the same result as the git
       provider would for the same revision.
-- [ ] `--from <tracker-dir>` yields bodies; `--from <index.jsonl>` and `--from -` return `None` from
+- [x] `--from <tracker-dir>` yields bodies; `--from <index.jsonl>` and `--from -` return `None` from
       `body()` rather than pretending bodies are empty.
-- [ ] `--to` accepts the same forms and defaults to the working tree.
-- [ ] The change model (#u8qaqwr) and every renderer consume snapshots only — no module below this
+- [x] `--to` accepts the same forms and defaults to the working tree.
+- [x] The change model (#u8qaqwr) and every renderer consume snapshots only — no module below this
       seam imports `subprocess` or mentions a revision.
-- [ ] Tests build snapshots from fixture files, with no git repository or fixture commits involved.
-- [ ] A malformed or unreadable source fails with a clear message naming the path, not a traceback.
+- [x] Tests build snapshots from fixture files, with no git repository or fixture commits involved.
+- [x] A malformed or unreadable source fails with a clear message naming the path, not a traceback.
 
 ## Notes
 - The payoff beyond VCS-neutrality is testability: every layer above can be tested from plain
