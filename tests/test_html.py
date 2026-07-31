@@ -299,6 +299,25 @@ class TestTreeView(HtmlTestBase):
             self.assertIn('id="tree"', html)
             self.assertIn('data-view="tree"', html)
 
+    def test_tree_rows_mark_ready_leaves(self):
+        """Actionable work should be visible in context, not only in the ready view —
+        the tree is where you go to ask "what's left under this epic?"."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")
+            m = re.search(r"function renderTreeNode\(.*?\n\}", self.render(d), re.S)
+            self.assertIsNotNone(m, "no renderTreeNode builder found")
+            self.assertIn("i.ready", m.group(0))
+            self.assertIn("badge ready", m.group(0))
+
+    def test_the_ready_badge_is_styled(self):
+        """A class the stylesheet never mentions renders as a plain badge, which is
+        exactly what this one must not look like."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")
+            self.assertRegex(self.render(d), r"\.badge\.ready\s*\{")
+
 
 class TestMarkdownBodies(HtmlTestBase):
     def test_body_render_toggle_and_renderer_present(self):

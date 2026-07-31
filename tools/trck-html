@@ -303,6 +303,9 @@ main { display: grid; grid-template-columns: minmax(12rem, var(--leftw, 40%)) 6p
 .pct { color: var(--muted); font-size: .8rem; }
 .badge { font-size: .72rem; padding: .05rem .4rem; border-radius: 999px;
          border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+/* Actionable, not just another attribute — the ready badge reads as a call to act,
+   so it takes the accent the neutral status/priority badges deliberately don't. */
+.badge.ready { border-color: var(--accent); color: var(--accent); }
 /* ready view: the `next` pick and the ↑<priority>(#id) demand marker. Tinting is
    positional (top / bottom of the configured order), mirroring `priority_codes`. */
 .rmark { display: flex; align-items: center; gap: .4rem; white-space: nowrap; }
@@ -1023,6 +1026,10 @@ function renderTreeNode(container, id, depth, vis, active) {
   } else {
     r.append(el('span', { class: 'badge', text: i.priority }),
       el('span', { class: 'badge', text: i.status }));
+    // `is_ready` is leaf-only, so this always lands on the badge branch — a parent
+    // shows its progress bar instead and is never itself actionable.
+    if (i.ready) r.append(el('span', { class: 'badge ready',
+      title: 'nothing blocks this — see the ready view for where it ranks', text: 'ready' }));
   }
   const pl = prLink(i, 'PR');
   if (pl) r.append(pl);
