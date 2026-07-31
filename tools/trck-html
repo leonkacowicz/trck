@@ -275,6 +275,15 @@ body { margin: 0; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", 
 .filters input, .filters select { font: inherit; padding: .35rem .5rem;
            border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); }
 .filters input { flex: 1 1 16rem; }
+/* Facet groups: a caption plus one checkbox per configured value. They wrap with
+   the rest of the bar, and setView hides the ones the active view doesn't apply. */
+.facets { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+          padding: .2rem .5rem; border: 1px solid var(--line); border-radius: 6px; }
+.facets .fcap { color: var(--muted); font-size: .78rem; text-transform: uppercase;
+                letter-spacing: .04em; }
+.fbox { display: inline-flex; align-items: center; gap: .25rem; cursor: pointer;
+        white-space: nowrap; }
+.fbox input { flex: none; margin: 0; }
 main { display: grid; grid-template-columns: minmax(12rem, var(--leftw, 40%)) 6px minmax(16rem, 1fr);
        gap: 0; height: calc(100vh - 92px); }
 @media (max-width: 720px) { main { grid-template-columns: 1fr; height: auto; } .divider { display: none; } }
@@ -428,8 +437,8 @@ _SHELL = """\
     <button data-view="ready" type="button">ready</button>
   </div>
   <input id="q" type="search" placeholder="Search id / title / body / label…" autocomplete="off">
-  <select id="fstatus"></select>
-  <select id="fpriority"></select>
+  <div id="ffstatus" class="facets"></div>
+  <div id="ffpriority" class="facets"></div>
 </div>
 <main>
   <div class="leftpane">
@@ -473,8 +482,31 @@ function el(tag, props = {}, ...kids) {
 const byId = Object.fromEntries(DATA.issues.map(i => [i.id, i]));
 const terminal = new Set(DATA.config.statuses.filter(s => s.role === 'terminal').map(s => s.name));
 const prio = DATA.config.priorities;
-const state = { q: '', status: '', priority: '', selected: null, edits: {}, view: 'list',
-  collapsed: new Set(), bodyRaw: false, graphIncludeDone: false, graphOmitDone: false };
+const state = { q: '', status: new Set(), priority: new Set(), selected: null, edits: {},
+  view: 'list', collapsed: new Set(), bodyRaw: false,
+  graphIncludeDone: false, graphOmitDone: false };
+
+// --- filter facets (pure; exercised directly by the test suite) --------------
+// Status and priority are multi-select: an empty selection means "no filter", so
+// the default state shows everything and checking boxes narrows from there.
+//
+// Not every view has a use for them. A board already lays issues out *by* status,
+// so filtering by it would blank columns rather than narrow anything; ready is a
+// single ranked answer to "what now?", and slicing it by either facet just hides
+// the answer. A view therefore declares which facets it applies, and the rest are
+// not consulted — the selection is kept, not cleared, so a trip through board or
+// ready leaves the list's filter exactly as it was.
+const VIEW_FACETS = {
+  list: ['status', 'priority'],
+  graph: ['status', 'priority'],
+  tree: ['status', 'priority'],
+  board: ['priority'],
+  ready: [],
+};
+const facetsFor = v => VIEW_FACETS[v] || [];
+const passesFacet = (view, facet, sel, value) =>
+  !facetsFor(view).includes(facet) || !sel.size || sel.has(value);
+// --- end filter facets -------------------------------------------------------
 
 // --- staged edits (v2 command-copy): key `${id}::${field}` -> new value ------
 const editKey = (id, field) => id + '::' + field;
@@ -487,7 +519,7 @@ function setEdit(i, field, value) {
   const k = editKey(i.id, field);
   if (value === i[field]) delete state.edits[k];
   else state.edits[k] = value;
-  renderList(); renderDetail(); renderPending(); renderActiveView();
+  renderDetail(); renderPending(); renderActiveView();
 }
 function commandFor(id, field, value) {
   const c = DATA.config.cmd;
@@ -522,7 +554,7 @@ async function copyAll() {
   }
   flash('#pcopy', 'Copied!');
 }
-function clearEdits() { state.edits = {}; renderList(); renderDetail(); renderPending(); renderActiveView(); }
+function clearEdits() { state.edits = {}; renderDetail(); renderPending(); renderActiveView(); }
 function editSelect(i, field, values) {
   const cur = stagedValue(i, field);
   const sel = el('select', { class: 'sedit', onchange: e => setEdit(i, field, e.target.value) });
@@ -535,8 +567,8 @@ function editSelect(i, field, values) {
 }
 
 function matches(i) {
-  if (state.status && i.status !== state.status) return false;
-  if (state.priority && i.priority !== state.priority) return false;
+  if (!passesFacet(state.view, 'status', state.status, i.status)) return false;
+  if (!passesFacet(state.view, 'priority', state.priority, i.priority)) return false;
   if (state.q) {
     const hay = (i.id + ' ' + i.title + ' ' + (i.body || '') + ' ' + i.labels.join(' ')).toLowerCase();
     if (!hay.includes(state.q.toLowerCase())) return false;
@@ -731,14 +763,17 @@ function renderDetail() {
 }
 
 function renderActiveView() {
-  if (state.view === 'graph') renderGraph();
+  // The list is a view like any other: which facets apply depends on state.view, so
+  // it must be rebuilt on a view change too, not only when the filter bar moves.
+  if (state.view === 'list') renderList();
+  else if (state.view === 'graph') renderGraph();
   else if (state.view === 'tree') renderTree();
   else if (state.view === 'board') renderBoard();
   else if (state.view === 'ready') renderReady();
 }
 function select(id) {
   state.selected = id;
-  renderList(); renderDetail();
+  renderDetail();
   renderActiveView();
 }
 
@@ -788,11 +823,11 @@ function restrictedAdj(nodeSet) {
 function graphSeeds() {
   return [...new Set(DATA.edges.flatMap(e => [e.from, e.to]))].filter(id => byId[id] && matches(byId[id]));
 }
-function checkbox(label, checked, onchange) {
+function checkbox(label, checked, onchange, cls = 'gcheck') {
   const cb = el('input', { type: 'checkbox' });
   cb.checked = checked;
   cb.addEventListener('change', () => onchange(cb.checked));
-  return el('label', { class: 'gcheck' }, cb, ' ' + label);
+  return el('label', { class: cls }, cb, ' ' + label);
 }
 function graphToolbar() {
   const bar = el('div', { class: 'gbar' });
@@ -846,8 +881,16 @@ function layoutComponent(comp, preds) {
     h: keys.length * NODE_H + Math.max(0, keys.length - 1) * ROW_GAP,
   };
 }
+// Show only the facets the active view applies. The hidden ones keep their state;
+// `passesFacet` already declines to consult them, so nothing filters invisibly.
+function syncFacetBar() {
+  const on = facetsFor(state.view);
+  $('#ffstatus').hidden = !on.includes('status');
+  $('#ffpriority').hidden = !on.includes('priority');
+}
 function setView(v) {
   state.view = v;
+  syncFacetBar();
   $('#list').hidden = v !== 'list';
   $('#graph').hidden = v !== 'graph';
   $('#tree').hidden = v !== 'tree';
@@ -940,7 +983,11 @@ function toggleCollapse(id) {
   else state.collapsed.add(id);
   renderTree();
 }
-const filterActive = () => !!(state.q || state.status || state.priority);
+// Only the facets the current view actually applies count as "filtering" — a
+// leftover status selection must not make board claim it is showing a subset.
+const filterActive = () => !!(state.q
+  || (facetsFor(state.view).includes('status') && state.status.size)
+  || (facetsFor(state.view).includes('priority') && state.priority.size));
 // A node is visible when it matches the filter, or any descendant does — so a
 // matching leaf keeps its ancestor path. Post-order, cycle-guarded.
 function visibleNodes() {
@@ -1071,13 +1118,18 @@ function renderGraph() {
 }
 
 function applyFilter() {
-  renderList();
-  renderActiveView();   // tree/board narrow to matches; graph stays full (v3-deferred)
+  renderActiveView();   // tree/board narrow to matches; graph reseeds from them
 }
 
-function fill(sel, values, label) {
-  sel.append(el('option', { value: '', text: label }));
-  for (const v of values) sel.append(el('option', { value: v, text: v }));
+// One checkbox per configured value, so a tracker with a custom vocabulary gets
+// its own facets with no change here. `sel` is the live Set the boxes mutate.
+function fillFacet(box, caption, values, sel) {
+  box.append(el('span', { class: 'fcap', text: caption }));
+  for (const v of values)
+    box.append(checkbox(v, sel.has(v), on => {
+      if (on) sel.add(v); else sel.delete(v);
+      applyFilter();
+    }, 'fbox'));
 }
 
 // Drag the divider to resize the left pane vs. the detail panel; the width is
@@ -1111,17 +1163,16 @@ function initSplit() {
 function init() {
   $('#repo').textContent = DATA.repo || 'trck';
   renderCounts();
-  fill($('#fstatus'), DATA.config.statuses.map(s => s.name), 'all statuses');
-  fill($('#fpriority'), DATA.config.priorities, 'all priorities');
+  fillFacet($('#ffstatus'), 'status', DATA.config.statuses.map(s => s.name), state.status);
+  fillFacet($('#ffpriority'), 'priority', DATA.config.priorities, state.priority);
+  syncFacetBar();
   $('#q').addEventListener('input', e => { state.q = e.target.value; applyFilter(); });
-  $('#fstatus').addEventListener('change', e => { state.status = e.target.value; applyFilter(); });
-  $('#fpriority').addEventListener('change', e => { state.priority = e.target.value; applyFilter(); });
   $('#pcopy').addEventListener('click', copyAll);
   $('#pclear').addEventListener('click', clearEdits);
   for (const b of document.querySelectorAll('.viewtoggle button'))
     b.addEventListener('click', () => setView(b.dataset.view));
   initSplit();
-  renderList();
+  renderActiveView();
   renderDetail();
   renderPending();
 }

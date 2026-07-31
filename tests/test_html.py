@@ -413,6 +413,91 @@ class TestReadyView(HtmlTestBase):
             self.assertFalse(by_id[waiting]["ready"])
 
 
+class TestFilterCheckboxes(HtmlTestBase):
+    """Status and priority are multi-select checkbox facets, not single-choice
+    dropdowns, and not every view applies them."""
+
+    def test_facet_containers_replace_the_dropdowns(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")
+            html = self.render(d)
+            self.assertIn('id="ffstatus"', html)
+            self.assertIn('id="ffpriority"', html)
+            self.assertNotIn('<select id="fstatus">', html)
+            self.assertNotIn('<select id="fpriority">', html)
+
+    def test_facet_boxes_reuse_the_shared_checkbox_helper(self):
+        """`checkbox()` already backs the graph's toggles; the facets are the same
+        control, so a bare `assertIn('checkbox')` would pass without them."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")
+            m = re.search(r"function fillFacet\(.*?\n\}", self.render(d), re.S)
+            self.assertIsNotNone(m, "no fillFacet builder found")
+            self.assertIn("checkbox(", m.group(0))
+
+
+@unittest.skipUnless(shutil.which("node"), "node not installed")
+class TestFilterFacetSemantics(HtmlTestBase):
+    """Which facets a view applies, and what an empty selection means, are decided by
+    a pure core the page brackets with sentinel comments. These tests slice that core
+    out of the rendered document and run it — the shipped code, not a copy of it."""
+
+    CORE = re.compile(r"// --- filter facets \(pure.*?\n(.*?)// --- end filter facets",
+                      re.S)
+
+    def probe(self, tmp, expr):
+        d = make_tracker(tmp, {})
+        self.seed(d, "A")
+        js = re.findall(r'<script>\n(.*?)\n</script>', self.render(d), re.S)[-1]
+        m = self.CORE.search(js)
+        self.assertIsNotNone(m, "filter-facet sentinel comments not found")
+        drv = Path(tmp) / "drv.mjs"
+        drv.write_text(m.group(1) + "\nconsole.log(JSON.stringify(" + expr + "));\n")
+        r = subprocess.run(["node", str(drv)], capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        return json.loads(r.stdout)
+
+    def test_list_and_tree_apply_both_facets(self):
+        with TemporaryDirectory() as tmp:
+            self.assertEqual(self.probe(tmp, "[facetsFor('list'), facetsFor('tree')]"),
+                             [["status", "priority"], ["status", "priority"]])
+
+    def test_graph_applies_both_facets(self):
+        with TemporaryDirectory() as tmp:
+            self.assertEqual(self.probe(tmp, "facetsFor('graph')"), ["status", "priority"])
+
+    def test_board_applies_priority_but_not_status(self):
+        with TemporaryDirectory() as tmp:
+            self.assertEqual(self.probe(tmp, "facetsFor('board')"), ["priority"])
+
+    def test_ready_applies_neither_facet(self):
+        with TemporaryDirectory() as tmp:
+            self.assertEqual(self.probe(tmp, "facetsFor('ready')"), [])
+
+    def test_an_empty_selection_means_no_filter(self):
+        with TemporaryDirectory() as tmp:
+            self.assertTrue(
+                self.probe(tmp, "passesFacet('list', 'status', new Set(), 'done')"))
+
+    def test_a_selection_admits_only_what_is_checked(self):
+        with TemporaryDirectory() as tmp:
+            self.assertEqual(
+                self.probe(tmp, "[passesFacet('list', 'status', new Set(['todo']), 'todo'),"
+                                " passesFacet('list', 'status', new Set(['todo']), 'done')]"),
+                [True, False])
+
+    def test_a_view_ignores_a_facet_it_does_not_apply(self):
+        """The selection survives a trip through board or ready — it is simply not
+        consulted there — so returning to list restores what was checked."""
+        with TemporaryDirectory() as tmp:
+            self.assertEqual(
+                self.probe(tmp, "[passesFacet('board', 'status', new Set(['todo']), 'done'),"
+                                " passesFacet('ready', 'priority', new Set(['high']), 'low')]"),
+                [True, True])
+
+
 class TestBodyEscaping(HtmlTestBase):
     def test_body_cannot_break_out_of_the_script_island(self):
         payload = 'Danger: </script><script>alert(1)</script> & <b>bold</b> "q"'
