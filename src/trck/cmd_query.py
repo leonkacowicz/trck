@@ -4,6 +4,7 @@ import json
 import sys
 from .cmd_maint import ns_like
 from .constants import FILENAME_RE, date_slice, die
+from .diff import Change, diff_snapshots, resolve_source
 from .graph import Graph, load_graph
 from .index import CANON_KEYS, Ctx, Issue, build_ctx_or_die, check_field_key, file_id, get_id, get_row, issue_path, load_index, resolve_ref, unique_prefix_lens
 from .render import block_annotations, demand_annotation, deps_overview_ids, filter_deps_graph_ids, graph_components, hl_id, node_label, paint, paint_lane, parse_status_filter, priority_codes, priority_rank, render_graph, status_codes, status_icon
@@ -215,6 +216,40 @@ def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None
         progstr = paint(prog, "dim") if prog else ""
         tagstr = paint(plain_tags, "dim") if tags else ""
         print(f"{icon} {iid} {status}  {prio}  {pre}{r.title}{progstr}{tagstr}{ann}{fsuf}")
+
+
+def change_summary(c: Change) -> str:
+    """A compact, plain-text account of what moved on one issue."""
+    bits = [f"{f.name} {f.old} → {f.new}" for f in c.fields]
+    for s in c.sets:
+        members = " ".join([f"+{v}" for v in s.added] + [f"-{v}" for v in s.removed])
+        bits.append(f"{s.name} {members}")
+    if not bits:  # a timestamp-only edit still changed something; say what
+        bits = [f"{k} {a} → {b}" for k, (a, b) in sorted(c.timestamps.items())]
+    return ", ".join(bits)
+
+
+def cmd_diff(args) -> None:
+    """Compare the tracker at two points and report what changed.
+
+    The output here is deliberately minimal — one plain line per changed issue.
+    The real layouts (epic rollup, --flat ledger, --stat headline, -v field
+    blocks) are separate issues that replace this; it exists so the verb and its
+    source plumbing are usable and testable on their own.
+    """
+    ctx = build_ctx_or_die(args)
+    old = resolve_source(getattr(args, "from", None), ctx)
+    new = resolve_source(getattr(args, "to", None), ctx)
+    d = diff_snapshots(ctx.cfg, old, new)
+    print(f"{old.label} → {new.label}")
+    if not d.changes:
+        print("no changes")
+        return
+    for c in d.changes:
+        row = c.new or c.old
+        sigil = {"added": "+", "removed": "-"}.get(c.kind, "~")
+        detail = {"added": "new", "removed": "removed"}.get(c.kind) or change_summary(c)
+        print(f"{sigil} #{c.id} {detail} — {row.title}")
 
 
 def cmd_which(args) -> None:

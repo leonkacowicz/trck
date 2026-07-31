@@ -51,6 +51,7 @@ MANIFEST = [
     "constants",
     "config",
     "index",
+    "diff",
     "merge",
     "graph",
     "scan",

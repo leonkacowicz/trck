@@ -241,27 +241,35 @@ def issue_path(ctx: Ctx, row: Issue) -> Path:
     return ctx.dir / ITEMS_DIR / filename(row)
 
 
-def load_index(ctx: Ctx) -> list[Issue]:
-    if not ctx.index_path.exists():
-        return []
+def parse_index(text: str, origin: str = "index.jsonl") -> list[Issue]:
+    """Parse index text into rows, naming `origin` in any failure. Split out from
+    `load_index` so a source that isn't the working tree's index.jsonl — a file
+    handed to `trck diff`, a revision's blob, stdin — parses through exactly the
+    same contract and reports errors against its own name."""
     rows = []
-    for n, line in enumerate(ctx.index_path.read_text().splitlines(), 1):
+    for n, line in enumerate(text.splitlines(), 1):
         line = line.strip()
         if not line:
             continue
         try:
             raw = json.loads(line)
         except json.JSONDecodeError as e:
-            die(f"index.jsonl line {n}: invalid JSON ({e})")
+            die(f"{origin} line {n}: invalid JSON ({e})")
         try:
             rows.append(Issue.from_dict(raw))
         except ValueError as e:
-            die(f"index.jsonl line {n}: {e}")
-    check_unique_ids(rows)
+            die(f"{origin} line {n}: {e}")
+    check_unique_ids(rows, origin)
     return rows
 
 
-def check_unique_ids(rows: list[Issue]) -> None:
+def load_index(ctx: Ctx) -> list[Issue]:
+    if not ctx.index_path.exists():
+        return []
+    return parse_index(ctx.index_path.read_text())
+
+
+def check_unique_ids(rows: list[Issue], origin: str = "index.jsonl") -> None:
     """Refuse an index that keys two rows to one id.
 
     A duplicate id is a structural defect, not a recoverable inconsistency: it makes
@@ -288,7 +296,7 @@ def check_unique_ids(rows: list[Issue]) -> None:
              f"{', '.join(sorted({x.status for x in rs}))})"
              for iid, rs in sorted(dupes.items())]
     detail = "\n  ".join(lines)
-    die(f"index.jsonl: ids must be unique, but {len(dupes)} id(s) are repeated:\n"
+    die(f"{origin}: ids must be unique, but {len(dupes)} id(s) are repeated:\n"
         f"  {detail}")
 
 

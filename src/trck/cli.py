@@ -2,7 +2,7 @@ from __future__ import annotations
 import argparse
 from .cmd_maint import cmd_changelog, cmd_check, cmd_done, cmd_init, cmd_install_hook, cmd_merge_index, cmd_merge_summary, cmd_migrate_layout, cmd_normalize, cmd_renumber, cmd_review, cmd_setup_git, cmd_start, cmd_summary, cmd_version
 from .cmd_mutate import cmd_dep, cmd_label, cmd_mv, cmd_new, cmd_set
-from .cmd_query import cmd_deps, cmd_list, cmd_next, cmd_path, cmd_ready, cmd_show, cmd_which
+from .cmd_query import cmd_deps, cmd_diff, cmd_list, cmd_next, cmd_path, cmd_ready, cmd_show, cmd_which
 from .cmd_selfmgmt import cmd_update
 
 TOP_EPILOG = """\
@@ -72,6 +72,7 @@ TYPICAL FLOW
   trck list --status '!done' --show-field assignee       # add a custom-field column
   trck tree 4                                    # hierarchy view
   trck deps          /  trck deps 7              # dependency DAG (whole / one issue's line)
+  trck diff --from old-index.jsonl               # what changed between two tracker states
   trck check                                     # MUST pass before you commit
 
 DISCOVERY
@@ -332,6 +333,24 @@ def build_parser() -> argparse.ArgumentParser:
     cl.add_argument("--since", required=True, metavar="DATE|TIMESTAMP",
                     help="cutoff (inclusive): a date (2026-06-10) or timestamp (2026-06-10T14:00:00Z)")
     cl.set_defaults(func=cmd_changelog)
+
+    df = sub.add_parser(
+        "diff", help="show what changed in the tracker between two points",
+        formatter_class=raw,
+        description="Compare the tracker at two points and report what changed "
+                    "-- statuses, priorities, parents, labels, dependencies -- in "
+                    "the tracker's own vocabulary, rather than as raw index.jsonl "
+                    "text. Sources are VCS-agnostic: any index.jsonl file, a whole "
+                    "tracker dir (bodies included), or '-' for stdin.",
+        epilog="examples:\n"
+               "  trck diff --from old-index.jsonl        # against the working tree\n"
+               "  trck diff --from a.jsonl --to b.jsonl   # two explicit sides\n"
+               "  git show main:issues/index.jsonl | trck diff --from -")
+    df.add_argument("--from", required=True, metavar="SRC",
+                    help="the older side: an index.jsonl, a tracker dir, or '-' for stdin")
+    df.add_argument("--to", metavar="SRC",
+                    help="the newer side (default: the working tree)")
+    df.set_defaults(func=cmd_diff)
 
     ck = sub.add_parser("check", help="validate consistency (nonzero exit on error)",
                         description="Validate index/file/graph consistency; nonzero "
