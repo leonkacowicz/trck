@@ -50,3 +50,43 @@ structural: without routing slots there is no ordering that removes them.
 - Ought to land before `budhpcw` (hover highlighting). Not a hard dependency — hover can be
   built on today's model — but a long edge becomes several path elements here, and highlight
   logic written against one-path-per-edge would need reworking to group them.
+
+## Outcome
+
+`splitLongEdges` builds the routed graph; `layoutComponent` lays out real nodes and
+placeholders together and returns the placeholder positions as `bends`, which the edge loop
+in `renderGraph` draws through. An edge is still one path — a curve into each row it
+crosses, straight down that row's band, then a curve on — so a routed edge reads like a
+short one and `orient: auto` still aims the head down.
+
+Placement had to learn variable widths. A placeholder is a line, not a box, so it claims no
+column of its own; spacing became centre-to-centre and per-pair rather than one uniform
+step. The isotonic fit survived that unchanged — the substitution still lands on
+"non-decreasing", just against per-row offsets instead of `i * STEP`.
+
+**The crossing floor did not move here, and that is now proven rather than assumed.** With
+placeholders this repo's tangled component is 2x7x1 (was 2x5x1), and brute force over all
+10,080 orderings still gives 6. Those crossings are structural: two blockers feeding
+overlapping subsets of the same children, which routing slots cannot help.
+
+The example tracker is where the win landed, and only after a second change. Splitting
+alone left it at 2 crossings — but brute force over its 2x7x5x2 component said the optimum
+was now **0**, a gap that did not exist before because the long edge was not being counted
+at all. Closing it needed the ordering sweeps to use a **median** barycentre rather than a
+mean: an outlier drags a mean, so a row gets ordered by a position no neighbour occupies,
+and the extra neighbours placeholders introduce make that bite. Median is also the variant
+with a proven bound (Eades-Wormald). With both changes the example graph draws at 0.
+
+Relocation could not close that gap on its own — nor could adding pairwise exchange to its
+neighbourhood, which was tried and rejected: relocation already subsumes adjacent swaps, and
+exchange found nothing further.
+
+`REFINE_MAX` stays at 40 but now counts placeholders, so a component full of long edges
+reaches it at fewer issues. Re-measured on a dense synthetic *with* long edges: 37 total
+nodes costs 10.9ms, still inside a frame. Whole-graph layout went 0.21ms to 1.05ms here and
+0.78ms to 1.09ms for the example — more nodes to order, still far under budget.
+
+The layer-skipping guard in `crossings` stayed rather than being deleted as the criteria
+said. Every edge reaching it is unit-length now, so it never fires; keeping it means an
+unsplit edge is ignored rather than silently scored against an index from the wrong row.
+Its comment says so.

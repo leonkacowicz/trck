@@ -5,10 +5,10 @@
 
 | State | Count |
 |---|---:|
-| backlog | 28 |
+| backlog | 27 |
 | ongoing | 2 |
 | in-review | 0 |
-| done | 117 |
+| done | 118 |
 | **total** | **147** |
 
 ## Hierarchies
@@ -65,12 +65,12 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 - [x] [#ex5cugg trck repo merge-index: the driver entrypoint (+ SUMMARY regeneration)](items/ex5cugg-trck-repo-merge-index-the-driver-entrypoint-summary-regeneration.md)
 - [x] [#pfackaw merge_rows: row-wise 3-way merge of index rows, keyed by id](items/pfackaw-merge-rows-row-wise-3-way-merge-of-index-rows-keyed-by-id.md)
 
-### [#fkrp9dh trck-html: static HTML SPA to browse issues in a browser](items/fkrp9dh-trck-html-static-html-spa-to-browse-issues-in-a-browser.md) — 67% (10/15 pts · 10/13 done) · _medium_ · ongoing
+### [#fkrp9dh trck-html: static HTML SPA to browse issues in a browser](items/fkrp9dh-trck-html-static-html-spa-to-browse-issues-in-a-browser.md) — 87% (13/15 pts · 11/13 done) · _medium_ · ongoing
 
 - [x] [#2ytfth4 v5: board / kanban by status](items/2ytfth4-v5-board-kanban-by-status.md)
 - [x] [#4vbk79y v4: tree / hierarchy view with rolled-up progress %](items/4vbk79y-v4-tree-hierarchy-view-with-rolled-up-progress.md)
 - [x] [#4xh68fa v6: markdown bodies — JS subset renderer, then optional lib, <pre> fallback](items/4xh68fa-v6-markdown-bodies-js-subset-renderer-then-optional-lib-pre-fallback.md)
-- [ ] [#6yptz6p trck-html: route layer-skipping graph edges through dummy nodes](items/6yptz6p-trck-html-route-layer-skipping-graph-edges-through-dummy-nodes.md) _(backlog)_
+- [x] [#6yptz6p trck-html: route layer-skipping graph edges through dummy nodes](items/6yptz6p-trck-html-route-layer-skipping-graph-edges-through-dummy-nodes.md)
 - [x] [#6yttx97 v3: dependency graph view (clickable, jump between blockers/blocked)](items/6yttx97-v3-dependency-graph-view-clickable-jump-between-blockers-blocked.md)
 - [x] [#99wkju8 v1 MVP: tools/trck-html — list + detail panel + filter/search, escaped bodies](items/99wkju8-v1-mvp-tools-trck-html-list-detail-panel-filter-search-escaped-bodies.md)
 - [ ] [#budhpcw trck-html: highlight a node's edges on hover](items/budhpcw-trck-html-highlight-a-node-s-edges-on-hover.md) _(backlog)_
