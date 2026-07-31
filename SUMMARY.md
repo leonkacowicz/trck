@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 22 |
+| backlog | 29 |
 | ongoing | 1 |
 | in-review | 0 |
 | done | 111 |
-| **total** | **134** |
+| **total** | **141** |
 
 ## Hierarchies
 
@@ -115,6 +115,15 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#k9snjz3 list --json: nested hierarchy (and --flat --json flat array)](items/k9snjz3-list-json-nested-hierarchy-and-flat-json-flat-array.md) _(backlog)_
 - [ ] [#kaqhtfc list/tree: drop the tree alias (nested forest is list's default)](items/kaqhtfc-list-tree-drop-the-tree-alias-nested-forest-is-list-s-default.md) _(backlog)_
 - [ ] [#v8tmkrt json: shared emit_json stdout seam + --json flag plumbing](items/v8tmkrt-json-shared-emit-json-stdout-seam-json-flag-plumbing.md) _(backlog)_
+
+### [#u5fc5vm trck diff: semantic diff of tracker state between revisions](items/u5fc5vm-trck-diff-semantic-diff-of-tracker-state-between-revisions.md) — 0% (0/13 pts · 0/6 done) · _medium_ · backlog
+
+- [ ] [#6xcseef diff: body-file edits — flag with a ± line count, --body to inline the real git diff](items/6xcseef-diff-body-file-edits-flag-with-a-line-count-body-to-inline-the-real-git-diff.md) _(backlog)_
+- [ ] [#jxxz2fm diff: epic-rollup layout (default) — progress deltas with moved children nested](items/jxxz2fm-diff-epic-rollup-layout-default-progress-deltas-with-moved-children-nested.md) _(backlog)_
+- [ ] [#kch7b6r diff --stat: counts headline (net status flow across the workflow)](items/kch7b6r-diff-stat-counts-headline-net-status-flow-across-the-workflow.md) _(backlog)_
+- [ ] [#u8qaqwr diff: revision loading + change model (join by id, classify per-field deltas)](items/u8qaqwr-diff-revision-loading-change-model-join-by-id-classify-per-field-deltas.md) _(backlog)_
+- [ ] [#xvgdq25 diff -v: per-issue field-level change blocks](items/xvgdq25-diff-v-per-issue-field-level-change-blocks.md) _(backlog)_
+- [ ] [#yfxtkd8 diff --flat: ledger layout, one line per changed issue](items/yfxtkd8-diff-flat-ledger-layout-one-line-per-changed-issue.md) _(backlog)_
 
 ## Backlog
 
