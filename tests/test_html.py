@@ -302,17 +302,29 @@ class TestGraphLayout(HtmlTestBase):
     here — but the layout helpers are pure, so they are lifted out and run alone. That
     buys actual coordinates to assert on instead of string matches against the source."""
 
+    # Recover the rows the layout settled on from the coordinates it returned, and score
+    # them, so a test can assert on crossings without reaching past `layoutComponent`.
+    HARNESS = """
+const out = layoutComponent(%s, %s);
+const ys = [...new Set(Object.values(out.local).map(p => p.y))].sort((a, b) => a - b);
+const rows = ys.map(y => Object.keys(out.local).filter(id => out.local[id].y === y)
+                                               .sort((a, b) => out.local[a].x - out.local[b].x));
+const ri = {};
+rows.forEach((r, li) => r.forEach(id => { ri[id] = li; }));
+console.log(JSON.stringify({ out, rows, xings: crossings(rows, %s, ri),
+                             NODE_W, NODE_H, COL_GAP, ROW_GAP, REFINE_MAX }));
+"""
+
     def layout(self, comp, preds):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d, "A")
             js = re.findall(r'<script>\n(.*?)\n</script>', self.render(d), re.S)[-1]
-            src = js_pieces(js, "NODE_W", "layerOf", "isotonic", "crossings", "orderRows",
-                            "layoutComponent")
+            src = js_pieces(js, "NODE_W", "REFINE_MAX", "layerOf", "isotonic", "crossings",
+                            "refine", "orderRows", "layoutComponent")
             f = Path(tmp) / "layout.js"
-            f.write_text(src + "\nconsole.log(JSON.stringify({ out: layoutComponent(%s, %s),"
-                               " NODE_W, NODE_H, COL_GAP, ROW_GAP }));\n"
-                         % (json.dumps(comp), json.dumps(preds)))
+            f.write_text(src + self.HARNESS % (json.dumps(comp), json.dumps(preds),
+                                               json.dumps(preds)))
             r = subprocess.run(["node", str(f)], capture_output=True, text=True)
             self.assertEqual(r.returncode, 0, r.stderr)
             return json.loads(r.stdout)
@@ -353,6 +365,31 @@ class TestGraphLayout(HtmlTestBase):
         x = r["out"]["local"]
         self.assertLess(x["p"]["x"], x["q"]["x"])
         self.assertLess(x["s"]["x"], x["t"]["x"])
+
+    # A 3x3 found by exhaustive search: the sweeps settle at two crossings and cannot see
+    # the single relocation that reaches the optimum of one. The sweeps move a whole row
+    # at a time, so no reordering they can express improves on where they stopped.
+    STALLED = (["n0", "n1", "n2", "n3", "n4", "n5"],
+               {"n3": ["n0", "n1", "n2"], "n4": ["n0", "n2"], "n5": ["n0"]})
+
+    def test_relocating_one_node_finishes_what_the_sweeps_could_not(self):
+        self.assertEqual(self.layout(*self.STALLED)["xings"], 1)
+
+    def test_a_component_past_the_refine_cap_keeps_the_sweeps_result(self):
+        """Refinement is quadratic in the row and recounts crossings per candidate, so it
+        is skipped on big components and the sweep's order stands. Same stalled shape,
+        padded over the cap by a chain that adds rows without adding crossings."""
+        comp, preds = self.STALLED
+        comp, preds = list(comp), dict(preds)
+        prev = "n5"
+        for i in range(70):
+            nxt = f"p{i:02d}"
+            comp.append(nxt)
+            preds[nxt] = [prev]
+            prev = nxt
+        r = self.layout(comp, preds)
+        self.assertGreater(len(comp), r["REFINE_MAX"])
+        self.assertEqual(r["xings"], 2)
 
     def test_layers_stack_by_row_gap_and_the_box_covers_the_nodes(self):
         r = self.layout(["a", "b", "c"], {"b": ["a"], "c": ["a"]})

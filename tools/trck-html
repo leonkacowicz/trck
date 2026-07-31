@@ -905,6 +905,36 @@ function crossings(rows, preds, ri) {
   }
   return n;
 }
+// Relocate one node at a time within its own row, taking the first improvement, until
+// nothing helps. The sweeps move a whole row at once and can settle where a single node
+// stepping sideways would do better — on the action-game example this finishes 5
+// crossings down to 2. Termination is free: crossings are a non-negative integer and
+// every accepted move drops at least one.
+function refine(rows, preds, ri, n) {
+  for (let moved = true; moved && n; ) {
+    moved = false;
+    for (let li = 0; li < rows.length; li++)
+      for (let i = 0; i < rows[li].length; i++)
+        for (let j = 0; j < rows[li].length; j++) {
+          if (i === j) continue;
+          const was = rows[li], cand = was.slice();
+          cand.splice(j, 0, cand.splice(i, 1)[0]);
+          rows[li] = cand;
+          const c = crossings(rows, preds, ri);
+          if (c < n) { n = c; moved = true; break; }
+          rows[li] = was;
+        }
+  }
+  return rows;
+}
+// Node count past which `refine` is skipped and the sweeps' order stands. It tries every
+// relocation in a row and recounts crossings for each, twice over (see below), and all of
+// it runs on every keystroke in the search box. Measured on a densely tangled component —
+// the worst case, several times what a real tracker produces — 30 nodes costs 5 ms, 40
+// costs 12, 50 costs 26. 40 keeps that inside a frame. A component past it is unreadable
+// as a drawing long before it is slow, so what gets dropped is the refinement, not the
+// graph: the sweeps still run and the result is what it was before this existed.
+const REFINE_MAX = 40;
 // Reorder rows to cut crossings, by barycentre sweeps alternating down and up.
 //
 // The pass count is a budget, not a convergence test — this has no fixed point to reach
@@ -914,7 +944,8 @@ function crossings(rows, preds, ri) {
 // component gives up its by-name order only when that actually buys fewer crossings,
 // which for most of them it does not, and those are left untouched.
 function orderRows(rows, preds, succs, ri) {
-  let best = rows, bestN = crossings(rows, preds, ri);
+  const alphaN = crossings(rows, preds, ri);
+  let best = rows, bestN = alphaN;
   const cur = rows.map(r => r.slice()), idx = {};
   cur.forEach(r => r.forEach((id, i) => { idx[id] = i; }));
   const sweep = (li, nbrs, from) => {
@@ -933,7 +964,16 @@ function orderRows(rows, preds, succs, ri) {
     const n = crossings(cur, preds, ri);
     if (n < bestN) { bestN = n; best = cur.map(r => r.slice()); }
   }
-  return best;
+  const size = rows.reduce((s, r) => s + r.length, 0);
+  if (!bestN || size > REFINE_MAX) return best;
+  // Refine from both ends. A swept row is not the better start it looks like: the sweeps
+  // can land in a basin the relocations cannot climb out of, and on the 3x3 stall the
+  // tests use they reach 2 and stick there while refining the untouched alphabetical
+  // rows reaches 1. Ties go to that one, keeping the result as close to by-name as it can.
+  const a = refine(rows.map(r => r.slice()), preds, ri, alphaN);
+  if (best === rows) return a;
+  const b = refine(best.map(r => r.slice()), preds, ri, bestN);
+  return crossings(a, preds, ri) <= crossings(b, preds, ri) ? a : b;
 }
 // Lay one component out in local coords (origin 0,0): longest-path layers stacked
 // top→bottom, ordered within a layer to cut crossings. Returns {local, w, h}.
