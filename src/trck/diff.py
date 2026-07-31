@@ -26,35 +26,44 @@ SCALAR_FIELDS = tuple(k for k in CANON_KEYS
 class Snapshot:
     """The tracker's state at one point, plus a label for display.
 
-    `bodies` is the directory issue bodies live in, or None when the source cannot
-    supply them (a bare index.jsonl, stdin). That distinction is load-bearing:
-    `body()` returning None means "unavailable from this source", which is NOT the
-    same as "" meaning "the body is empty" — reporting the first as the second
-    would silently under-report body edits.
+    `body_reader` maps a row to its markdown text, or is None when the source
+    cannot supply bodies at all (a bare index.jsonl, stdin). That distinction is
+    load-bearing: `body()` returning None means "unavailable from this source",
+    which is NOT the same as "" meaning "the body is empty" — reporting the first
+    as the second would silently under-report body edits.
 
+    A reader, rather than a directory, is what lets a provider that has no
+    directory to point at (a git revision, say) supply bodies on the same terms.
     Bodies are read lazily, so a diff that never asks for one costs nothing.
     """
-    def __init__(self, rows: list[Issue], label: str, bodies: Path | None = None):
+    def __init__(self, rows: list[Issue], label: str, body_reader=None):
         self.rows = rows
         self.label = label
-        self._bodies = bodies
+        self._read_body = body_reader
         self._by_id = {r.id: r for r in rows}
 
     @property
     def has_bodies(self) -> bool:
-        return self._bodies is not None
+        return self._read_body is not None
 
     def row(self, iid: str) -> Issue | None:
         return self._by_id.get(iid)
 
     def body(self, iid: str) -> str | None:
         """The issue's markdown body, or None when unavailable — either because the
-        source has no bodies at all, or because this issue has no body file in it."""
+        source has no bodies at all, or because this issue has none in it."""
         row = self._by_id.get(iid)
-        if self._bodies is None or row is None:
+        if self._read_body is None or row is None:
             return None
-        p = self._bodies / filename(row)
+        return self._read_body(row)
+
+
+def dir_body_reader(items: Path):
+    """Read bodies out of an on-disk `items/` directory."""
+    def read(row: Issue) -> str | None:
+        p = items / filename(row)
         return p.read_text() if p.exists() else None
+    return read
 
 
 def snapshot_from_text(text: str, label: str) -> Snapshot:
@@ -81,7 +90,7 @@ def snapshot_from_dir(path: Path, label: str | None = None) -> Snapshot:
     label = label or path.name
     index = path / "index.jsonl"
     rows = parse_index(index.read_text(), label) if index.exists() else []
-    return Snapshot(rows, label, bodies=path / ITEMS_DIR)
+    return Snapshot(rows, label, body_reader=dir_body_reader(path / ITEMS_DIR))
 
 
 def snapshot_working_tree(ctx: Ctx) -> Snapshot:

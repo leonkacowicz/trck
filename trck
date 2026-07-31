@@ -699,35 +699,44 @@ SCALAR_FIELDS = tuple(k for k in CANON_KEYS
 class Snapshot:
     """The tracker's state at one point, plus a label for display.
 
-    `bodies` is the directory issue bodies live in, or None when the source cannot
-    supply them (a bare index.jsonl, stdin). That distinction is load-bearing:
-    `body()` returning None means "unavailable from this source", which is NOT the
-    same as "" meaning "the body is empty" — reporting the first as the second
-    would silently under-report body edits.
+    `body_reader` maps a row to its markdown text, or is None when the source
+    cannot supply bodies at all (a bare index.jsonl, stdin). That distinction is
+    load-bearing: `body()` returning None means "unavailable from this source",
+    which is NOT the same as "" meaning "the body is empty" — reporting the first
+    as the second would silently under-report body edits.
 
+    A reader, rather than a directory, is what lets a provider that has no
+    directory to point at (a git revision, say) supply bodies on the same terms.
     Bodies are read lazily, so a diff that never asks for one costs nothing.
     """
-    def __init__(self, rows: list[Issue], label: str, bodies: Path | None = None):
+    def __init__(self, rows: list[Issue], label: str, body_reader=None):
         self.rows = rows
         self.label = label
-        self._bodies = bodies
+        self._read_body = body_reader
         self._by_id = {r.id: r for r in rows}
 
     @property
     def has_bodies(self) -> bool:
-        return self._bodies is not None
+        return self._read_body is not None
 
     def row(self, iid: str) -> Issue | None:
         return self._by_id.get(iid)
 
     def body(self, iid: str) -> str | None:
         """The issue's markdown body, or None when unavailable — either because the
-        source has no bodies at all, or because this issue has no body file in it."""
+        source has no bodies at all, or because this issue has none in it."""
         row = self._by_id.get(iid)
-        if self._bodies is None or row is None:
+        if self._read_body is None or row is None:
             return None
-        p = self._bodies / filename(row)
+        return self._read_body(row)
+
+
+def dir_body_reader(items: Path):
+    """Read bodies out of an on-disk `items/` directory."""
+    def read(row: Issue) -> str | None:
+        p = items / filename(row)
         return p.read_text() if p.exists() else None
+    return read
 
 
 def snapshot_from_text(text: str, label: str) -> Snapshot:
@@ -754,7 +763,7 @@ def snapshot_from_dir(path: Path, label: str | None = None) -> Snapshot:
     label = label or path.name
     index = path / "index.jsonl"
     rows = parse_index(index.read_text(), label) if index.exists() else []
-    return Snapshot(rows, label, bodies=path / ITEMS_DIR)
+    return Snapshot(rows, label, body_reader=dir_body_reader(path / ITEMS_DIR))
 
 
 def snapshot_working_tree(ctx: Ctx) -> Snapshot:
@@ -880,6 +889,88 @@ def diff_snapshots(cfg: dict, old: Snapshot, new: Snapshot) -> Diff:
         elif (c := _compare(cfg, o, n)) is not None:
             changes.append(c)
     return Diff(old=old, new=new, changes=changes)
+
+
+# --------------------------------------------------------------------------- #
+# diff: the git convenience layer
+# --------------------------------------------------------------------------- #
+# The ergonomic layer over the source seam: `trck diff` with no arguments, or with
+# a bare revision spec, instead of spelling out `--from`. This is the ONLY part of
+# `diff` that shells out — it produces the same Snapshot as any other source, so
+# nothing downstream behaves differently for having been fed by git.
+USE_FROM = "use --from to compare tracker files directly"
+
+
+def git_run(args: list[str], cwd: Path) -> subprocess.CompletedProcess:
+    """Run git, turning "no git at all" into an error that names the way out."""
+    try:
+        return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True)
+    except FileNotFoundError:
+        die(f"git is not on PATH, so revision specs are unavailable; {USE_FROM}")
+
+
+def git_tracker_prefix(ctx: Ctx) -> str:
+    """The tracker dir as a repo-relative path prefix, as `git show <rev>:<path>`
+    wants it. Derived the way `install-hook` derives it, so it works from any
+    subdirectory; a tracker dir that IS the repo root yields an empty prefix."""
+    r = git_run(["rev-parse", "--show-toplevel"], ctx.dir)
+    if r.returncode != 0:
+        die(f"not a git repository, so revision specs are unavailable; {USE_FROM}")
+    root = Path(r.stdout.strip())
+    try:
+        rel = ctx.dir.resolve().relative_to(root.resolve()).as_posix()
+    except ValueError:
+        die(f"tracker dir {ctx.dir} is not inside the git repo at {root}")
+    return "" if rel == "." else f"{rel}/"
+
+
+def git_verify_rev(ctx: Ctx, rev: str) -> None:
+    """Fail on a revision git can't resolve — separately from a path that isn't in
+    it, so 'you typo'd the branch' and 'the tracker didn't exist yet' stay
+    distinguishable."""
+    r = git_run(["rev-parse", "--verify", "--quiet", f"{rev}^{{commit}}"], ctx.dir)
+    if r.returncode != 0:
+        die(f"unknown revision '{rev}'")
+
+
+def git_show(ctx: Ctx, rev: str, path: str) -> str | None:
+    """The blob at `<rev>:<path>`, or None when that path isn't in that revision."""
+    r = git_run(["show", f"{rev}:{path}"], ctx.dir)
+    return r.stdout if r.returncode == 0 else None
+
+
+def git_snapshot(ctx: Ctx, rev: str) -> Snapshot:
+    """The tracker as of `rev`.
+
+    The tracker dir being absent at that revision is NOT an error — comparing
+    against a commit from before the tracker existed is a legitimate question, and
+    the answer is that every issue was added since. Bodies are fetched lazily, one
+    `git show` per issue, so a run that never asks for one costs nothing.
+    """
+    prefix = git_tracker_prefix(ctx)
+    git_verify_rev(ctx, rev)
+    origin = f"{rev}:{prefix}index.jsonl"
+    text = git_show(ctx, rev, f"{prefix}index.jsonl")
+    rows = parse_index(text, origin) if text is not None else []
+
+    def read_body(row: Issue) -> str | None:
+        return git_show(ctx, rev, f"{prefix}{ITEMS_DIR}/{filename(row)}")
+
+    return Snapshot(rows, rev, body_reader=read_body)
+
+
+def parse_rev_spec(spec: str) -> tuple[str, str | None]:
+    """Split a revision spec into (old, new); a None `new` means the working tree.
+    `a..b` names both sides; a bare `a` compares that revision to the working tree."""
+    if "..." in spec:
+        die("three-dot (merge-base) revision specs are not supported; "
+            "use `a..b` to compare two revisions directly")
+    if ".." not in spec:
+        return spec, None
+    old, _, new = spec.partition("..")
+    if not old or not new:
+        die(f"incomplete revision range '{spec}'; both sides of `..` are required")
+    return old, new
 
 
 # --------------------------------------------------------------------------- #
@@ -2983,14 +3074,28 @@ def change_summary(c: Change) -> str:
 def cmd_diff(args) -> None:
     """Compare the tracker at two points and report what changed.
 
+    A bare revision spec goes through git; `--from`/`--to` name sources directly
+    and never touch it. With neither, the default is HEAD vs the working tree —
+    "what have I not committed?" — which is the git path too.
+
     The output here is deliberately minimal — one plain line per changed issue.
     The real layouts (epic rollup, --flat ledger, --stat headline, -v field
     blocks) are separate issues that replace this; it exists so the verb and its
     source plumbing are usable and testable on their own.
     """
     ctx = build_ctx_or_die(args)
-    old = resolve_source(getattr(args, "from", None), ctx)
-    new = resolve_source(getattr(args, "to", None), ctx)
+    rev = getattr(args, "rev", None)
+    to_spec = getattr(args, "to", None)
+    if rev is not None:
+        old_rev, new_rev = parse_rev_spec(rev)
+        old = git_snapshot(ctx, old_rev)
+        new = git_snapshot(ctx, new_rev) if new_rev else resolve_source(to_spec, ctx)
+    elif (from_spec := getattr(args, "from", None)) is not None:
+        old = resolve_source(from_spec, ctx)
+        new = resolve_source(to_spec, ctx)
+    else:
+        old = git_snapshot(ctx, "HEAD")
+        new = resolve_source(to_spec, ctx)
     d = diff_snapshots(ctx.cfg, old, new)
     print(f"{old.label} → {new.label}")
     if not d.changes:
@@ -4089,14 +4194,25 @@ def build_parser() -> argparse.ArgumentParser:
         description="Compare the tracker at two points and report what changed "
                     "-- statuses, priorities, parents, labels, dependencies -- in "
                     "the tracker's own vocabulary, rather than as raw index.jsonl "
-                    "text. Sources are VCS-agnostic: any index.jsonl file, a whole "
-                    "tracker dir (bodies included), or '-' for stdin.",
+                    "text. With no arguments, HEAD vs the working tree. Sources "
+                    "are VCS-agnostic underneath: --from/--to accept any "
+                    "index.jsonl file, a whole tracker dir (bodies included), or "
+                    "'-' for stdin, and never invoke git.",
         epilog="examples:\n"
-               "  trck diff --from old-index.jsonl        # against the working tree\n"
+               "  trck diff                               # HEAD vs the working tree\n"
+               "  trck diff main                          # main vs the working tree\n"
+               "  trck diff v0.22..v0.23                  # between two tags\n"
+               "  trck diff --from old-index.jsonl        # no git involved\n"
                "  trck diff --from a.jsonl --to b.jsonl   # two explicit sides\n"
                "  git show main:issues/index.jsonl | trck diff --from -")
-    df.add_argument("--from", required=True, metavar="SRC",
-                    help="the older side: an index.jsonl, a tracker dir, or '-' for stdin")
+    # `rev` and `--from` are alternatives: one names the old side through git, the
+    # other bypasses git entirely. argparse enforces it (a positional may join a
+    # mutually exclusive group when its nargs is '?').
+    src = df.add_mutually_exclusive_group()
+    src.add_argument("rev", nargs="?", metavar="REV",
+                     help="revision spec: <rev> (vs the working tree) or <a>..<b>")
+    src.add_argument("--from", metavar="SRC",
+                     help="the older side without git: an index.jsonl, a tracker dir, or '-'")
     df.add_argument("--to", metavar="SRC",
                     help="the newer side (default: the working tree)")
     df.set_defaults(func=cmd_diff)

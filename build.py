@@ -52,6 +52,7 @@ MANIFEST = [
     "config",
     "index",
     "diff",
+    "gitsrc",
     "merge",
     "graph",
     "scan",

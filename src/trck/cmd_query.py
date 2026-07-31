@@ -5,6 +5,7 @@ import sys
 from .cmd_maint import ns_like
 from .constants import FILENAME_RE, date_slice, die
 from .diff import Change, diff_snapshots, resolve_source
+from .gitsrc import git_snapshot, parse_rev_spec
 from .graph import Graph, load_graph
 from .index import CANON_KEYS, Ctx, Issue, build_ctx_or_die, check_field_key, file_id, get_id, get_row, issue_path, load_index, resolve_ref, unique_prefix_lens
 from .render import block_annotations, demand_annotation, deps_overview_ids, filter_deps_graph_ids, graph_components, hl_id, node_label, paint, paint_lane, parse_status_filter, priority_codes, priority_rank, render_graph, status_codes, status_icon
@@ -232,14 +233,28 @@ def change_summary(c: Change) -> str:
 def cmd_diff(args) -> None:
     """Compare the tracker at two points and report what changed.
 
+    A bare revision spec goes through git; `--from`/`--to` name sources directly
+    and never touch it. With neither, the default is HEAD vs the working tree —
+    "what have I not committed?" — which is the git path too.
+
     The output here is deliberately minimal — one plain line per changed issue.
     The real layouts (epic rollup, --flat ledger, --stat headline, -v field
     blocks) are separate issues that replace this; it exists so the verb and its
     source plumbing are usable and testable on their own.
     """
     ctx = build_ctx_or_die(args)
-    old = resolve_source(getattr(args, "from", None), ctx)
-    new = resolve_source(getattr(args, "to", None), ctx)
+    rev = getattr(args, "rev", None)
+    to_spec = getattr(args, "to", None)
+    if rev is not None:
+        old_rev, new_rev = parse_rev_spec(rev)
+        old = git_snapshot(ctx, old_rev)
+        new = git_snapshot(ctx, new_rev) if new_rev else resolve_source(to_spec, ctx)
+    elif (from_spec := getattr(args, "from", None)) is not None:
+        old = resolve_source(from_spec, ctx)
+        new = resolve_source(to_spec, ctx)
+    else:
+        old = git_snapshot(ctx, "HEAD")
+        new = resolve_source(to_spec, ctx)
     d = diff_snapshots(ctx.cfg, old, new)
     print(f"{old.label} → {new.label}")
     if not d.changes:

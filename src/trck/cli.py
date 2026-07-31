@@ -340,14 +340,25 @@ def build_parser() -> argparse.ArgumentParser:
         description="Compare the tracker at two points and report what changed "
                     "-- statuses, priorities, parents, labels, dependencies -- in "
                     "the tracker's own vocabulary, rather than as raw index.jsonl "
-                    "text. Sources are VCS-agnostic: any index.jsonl file, a whole "
-                    "tracker dir (bodies included), or '-' for stdin.",
+                    "text. With no arguments, HEAD vs the working tree. Sources "
+                    "are VCS-agnostic underneath: --from/--to accept any "
+                    "index.jsonl file, a whole tracker dir (bodies included), or "
+                    "'-' for stdin, and never invoke git.",
         epilog="examples:\n"
-               "  trck diff --from old-index.jsonl        # against the working tree\n"
+               "  trck diff                               # HEAD vs the working tree\n"
+               "  trck diff main                          # main vs the working tree\n"
+               "  trck diff v0.22..v0.23                  # between two tags\n"
+               "  trck diff --from old-index.jsonl        # no git involved\n"
                "  trck diff --from a.jsonl --to b.jsonl   # two explicit sides\n"
                "  git show main:issues/index.jsonl | trck diff --from -")
-    df.add_argument("--from", required=True, metavar="SRC",
-                    help="the older side: an index.jsonl, a tracker dir, or '-' for stdin")
+    # `rev` and `--from` are alternatives: one names the old side through git, the
+    # other bypasses git entirely. argparse enforces it (a positional may join a
+    # mutually exclusive group when its nargs is '?').
+    src = df.add_mutually_exclusive_group()
+    src.add_argument("rev", nargs="?", metavar="REV",
+                     help="revision spec: <rev> (vs the working tree) or <a>..<b>")
+    src.add_argument("--from", metavar="SRC",
+                     help="the older side without git: an index.jsonl, a tracker dir, or '-'")
     df.add_argument("--to", metavar="SRC",
                     help="the newer side (default: the working tree)")
     df.set_defaults(func=cmd_diff)
