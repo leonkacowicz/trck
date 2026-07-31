@@ -184,6 +184,20 @@ class TestGraphRender(unittest.TestCase):
             for dep in r.depends_on:
                 self.assertLess(order.index(dep), order.index(r.id))
 
+    def test_shortening_is_independent_of_the_input_id_order(self):
+        """Same graph, ids handed over in a different order, byte-identical rows.
+
+        The search runs off sets and dict lookups in places, so the guard that matters is
+        not "no RNG" but that nothing downstream of a set's iteration order reaches the
+        output. A canonical start order plus order-free accumulation is what buys that."""
+        g = self.graph(self.issue(1), self.issue(2), self.issue(3, depends=[2]),
+                       self.issue(4, depends=[1, 3]), self.issue(5, depends=[1]),
+                       self.issue(6, depends=[4, 5]))
+        ids = ["1", "2", "3", "4", "5", "6"]
+        first = self.t.render_graph(g, ids)
+        for shuffled in (list(reversed(ids)), ["4", "1", "6", "3", "5", "2"]):
+            self.assertEqual(self.t.render_graph(g, shuffled), first)
+
     def test_separates_components_with_a_blank_row(self):
         g = self.graph(self.issue(1), self.issue(2, depends=[1]),
                        self.issue(10), self.issue(11, depends=[10]))
