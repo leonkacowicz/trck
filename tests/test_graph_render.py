@@ -163,6 +163,27 @@ class TestGraphRender(unittest.TestCase):
             for dep in r.depends_on:
                 self.assertLess(order.index(dep), order.index(r.id))
 
+    def test_a_lone_blocker_moves_down_to_shorten_its_lane(self):
+        # 1 blocks only 4; 2 -> 3 -> 4 is a chain. Prerequisites-first alone puts 1 first
+        # (lowest id among the roots), so its lane hangs open beside the whole chain.
+        # Nothing forces that: 1 need only precede 4, and sliding it down to just above
+        # 4 costs the chain one row and saves 1 two, for a shorter gutter overall.
+        g = self.graph(self.issue(1), self.issue(2), self.issue(3, depends=[2]),
+                       self.issue(4, depends=[1, 3]))
+        self.assertEqual(self.order(self.t.render_graph(g, ["1", "2", "3", "4"])),
+                         ["2", "3", "1", "4"])
+
+    def test_shortening_never_breaks_prerequisites_first(self):
+        g = self.graph(self.issue(1), self.issue(2), self.issue(3, depends=[2]),
+                       self.issue(4, depends=[1, 3]), self.issue(5, depends=[1]),
+                       self.issue(6, depends=[4, 5]))
+        ids = ["1", "2", "3", "4", "5", "6"]
+        order = self.order(self.t.render_graph(g, ids))
+        self.assertCountEqual(order, ids)
+        for r in g.rows:
+            for dep in r.depends_on:
+                self.assertLess(order.index(dep), order.index(r.id))
+
     def test_separates_components_with_a_blank_row(self):
         g = self.graph(self.issue(1), self.issue(2, depends=[1]),
                        self.issue(10), self.issue(11, depends=[10]))

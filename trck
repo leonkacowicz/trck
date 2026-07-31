@@ -2111,6 +2111,73 @@ def graph_components(g: Graph, ids, hier: bool = True, edges: dict | None = None
     return sorted(comps, key=min)
 
 
+def _shorten_lanes(order: list, pairs) -> list:
+    """Slide single nodes down or up the order to shorten the gutter, keeping the result
+    a linear extension. Returns a new order; `pairs` are the drawn `(prerequisite,
+    dependent)` edges.
+
+    The cost is total lane length. A lane opens at its prerequisite's row and closes at
+    its dependent's, so the sum of those spans is exactly what fills the gutter with idle
+    `│` — shrink it and lanes close sooner, which narrows the graph and shortens the
+    bridges. Prerequisites-first alone does not care: it will happily emit a root whose
+    only dependent is at the bottom, leaving its lane open the whole way down.
+
+    Gathered per node instead of per edge the cost collapses to
+    `sum(pos[v] * (indeg[v] - outdeg[v]))` — linear in the positions. That is what makes
+    this cheap. Moving one node shifts a contiguous block by exactly one row, so a
+    candidate's delta reads off a prefix sum in constant time rather than costing a walk
+    over the edges; without that the search is unusable (80 nodes took five seconds,
+    against two milliseconds here). 200 nodes settle in ~40ms and 400 in ~280ms, both far
+    past any real component — this repo's largest is 17.
+
+    First improvement, repeated until nothing helps. Termination needs no iteration cap:
+    the cost is a non-negative integer and every accepted move drops it by at least one.
+    """
+    order = list(order)
+    n = len(order)
+    weight = dict.fromkeys(order, 0)
+    after: dict = {}                         # after[v]:  v's prerequisites
+    before: dict = {}                        # before[v]: v's dependents
+    for a, b in pairs:
+        weight[b] += 1
+        weight[a] -= 1
+        after.setdefault(b, set()).add(a)
+        before.setdefault(a, set()).add(b)
+
+    def prefix():
+        run, out = 0, [0] * (n + 1)
+        for k, v in enumerate(order):
+            run += weight[v]
+            out[k + 1] = run
+        return out
+
+    while True:
+        moved = False
+        at = {v: k for k, v in enumerate(order)}
+        pref = prefix()
+        for i in range(n):
+            u = order[i]
+            # Between the last prerequisite and the first dependent: every slot in that
+            # window keeps the order a linear extension, and no slot outside it does.
+            lo = max((at[p] for p in after.get(u, ())), default=-1) + 1
+            hi = min((at[d] for d in before.get(u, ())), default=n) - 1
+            for j in range(lo, hi + 1):
+                if j == i:
+                    continue
+                # u itself travels j - i rows; everything it steps over shifts one row
+                # the other way, and the prefix sum totals that block's weight at once.
+                delta = (weight[u] * (j - i) - (pref[j + 1] - pref[i + 1])) if j > i else \
+                        (weight[u] * (j - i) + (pref[i] - pref[j]))
+                if delta < 0:
+                    order.insert(j, order.pop(i))
+                    at = {v: k for k, v in enumerate(order)}
+                    pref = prefix()
+                    moved = True
+                    break
+        if not moved:
+            return order
+
+
 def _graph_topo(g: Graph, ids, hier: bool = True,
                 edges: dict | None = None) -> tuple[list[int], dict[int, list[int]], dict]:
     """Topological order over the drawn edges within `ids`, prerequisites first. Returns
@@ -2123,7 +2190,11 @@ def _graph_topo(g: Graph, ids, hier: bool = True,
     lingering open beside a parallel branch. This keeps bullets in a single column
     per branch (fewer crossings, shorter edges) versus an id-priority queue, which
     interleaves branches breadth-first. Siblings unblocked together are visited in
-    ascending id order, so the layout stays fully deterministic."""
+    ascending id order, so the layout stays fully deterministic.
+
+    Locality is a local rule, though: it settles each step without seeing what the choice
+    costs further down, so it strands a root whose only dependent is far below. The order
+    it produces is therefore the *starting* order, handed to `_shorten_lanes` to finish."""
     idset = set(ids)
     if edges is None:
         edges = drawn_edges(g, idset, hier, reduce=False)
@@ -2149,7 +2220,8 @@ def _graph_topo(g: Graph, ids, hier: bool = True,
             if indeg[dep] == 0:
                 newly.append(dep)
         stack.extend(sorted(newly, reverse=True))
-    return order, dependents, kinds
+    pairs = [(d, i) for i in idset for d in requires[i]]
+    return _shorten_lanes(order, pairs), dependents, kinds
 
 
 def _graph_component_rows(g: Graph, comp, hier: bool = True,
