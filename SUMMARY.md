@@ -5,10 +5,10 @@
 
 | State | Count |
 |---|---:|
-| backlog | 27 |
+| backlog | 26 |
 | ongoing | 2 |
 | in-review | 0 |
-| done | 116 |
+| done | 117 |
 | **total** | **145** |
 
 ## Hierarchies
@@ -142,7 +142,6 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#m3z2ywb summary: include foreign/unknown statuses in the counts table](items/m3z2ywb-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
 - [#s3d6xyz Add reconfigure verb to rename/reorder statuses](items/s3d6xyz-add-reconfigure-verb-to-rename-reorder-statuses.md) — _low_ [tracker-features]
 - [#v9nyy42 Part C: curses TUI for browsing and quick actions](items/v9nyy42-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
-- [#xagqqgd deps: optimize node ordering to minimize edge span and crossings (local search)](items/xagqqgd-deps-optimize-node-ordering-to-minimize-edge-span-and-crossings-local-search.md) — _low_
 - [#9ax2ny2 deps: --depth N to cut expansion N hops from the seed(s)](items/9ax2ny2-deps-depth-n-to-cut-expansion-n-hops-from-the-seed-s.md) — _lowest_
 
 ## Ongoing
@@ -201,3 +200,4 @@ _none_
 - [#av2h8cm docs: refresh docs/img/ready.svg — the screenshot predates the demand marker](items/av2h8cm-docs-refresh-docs-img-ready-svg-the-screenshot-predates-the-demand-marker.md) — _low_ (closed 2026-07-30)
 - [#dkbmmrr Clean up minor lint and cruft in the engine](items/dkbmmrr-clean-up-minor-lint-and-cruft-in-the-engine.md) — _low_ (closed 2026-06-10)
 - [#g76mtuw validate: report one error per parent cycle, not one per node](items/g76mtuw-validate-report-one-error-per-parent-cycle-not-one-per-node.md) — _low_ (closed 2026-06-10)
+- [#xagqqgd deps: optimize node ordering to minimize edge span and crossings (local search)](items/xagqqgd-deps-optimize-node-ordering-to-minimize-edge-span-and-crossings-local-search.md) — _low_ (closed 2026-07-31)
