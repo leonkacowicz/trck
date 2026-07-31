@@ -889,9 +889,12 @@ function isotonic(vals) {
   v.forEach((val, i) => { for (let k = 0; k < w[i]; k++) out.push(val); });
   return out;
 }
-// Crossings between consecutive rows, `ri` giving each node's row. Edges that skip a
-// layer sit this out: with no dummy nodes they hold no slot in the rows they fly over,
-// and the sweep below cannot see them either, so scoring them would only add noise.
+// Crossings between consecutive rows, `ri` giving each node's row. Every edge is scored:
+// `splitLongEdges` has already routed anything spanning more than one layer through a
+// placeholder per row, so by the time an ordering is judged there is nothing left that
+// skips a row and holds no slot to be compared at. (The row guard below is what makes
+// that assumption explicit rather than assumed — an unsplit edge is ignored, not
+// misplaced against an index from the wrong row.)
 function crossings(rows, preds, ri) {
   const idx = {};
   rows.forEach(r => r.forEach((id, i) => { idx[id] = i; }));
@@ -934,6 +937,10 @@ function refine(rows, preds, ri, n) {
 // costs 12, 50 costs 26. 40 keeps that inside a frame. A component past it is unreadable
 // as a drawing long before it is slow, so what gets dropped is the refinement, not the
 // graph: the sweeps still run and the result is what it was before this existed.
+//
+// The count includes the placeholders `splitLongEdges` adds, which is the honest measure —
+// they cost the same to order as any other node — but it does mean a component full of
+// long edges reaches the cap at fewer issues than one without.
 const REFINE_MAX = 40;
 // Reorder rows to cut crossings, by barycentre sweeps alternating down and up.
 //
@@ -948,11 +955,16 @@ function orderRows(rows, preds, succs, ri) {
   let best = rows, bestN = alphaN;
   const cur = rows.map(r => r.slice()), idx = {};
   cur.forEach(r => r.forEach((id, i) => { idx[id] = i; }));
+  // Median, not mean: an outlying neighbour drags a mean, so a row can end up ordered by a
+  // position none of its neighbours actually occupies, while a median always names one of
+  // them. It is also the variant with a proven bound (Eades-Wormald, 3-approximate on the
+  // one-sided problem) — and it is what takes the example tracker's graph from two
+  // crossings to its optimum of zero, the mean having stalled there.
   const sweep = (li, nbrs, from) => {
     const bary = {};
     for (const id of cur[li]) {
-      const ns = (nbrs[id] || []).filter(n => ri[n] === from);
-      bary[id] = ns.length ? ns.reduce((s, n) => s + idx[n], 0) / ns.length : idx[id];
+      const ns = (nbrs[id] || []).filter(n => ri[n] === from).map(n => idx[n]).sort((a, b) => a - b);
+      bary[id] = ns.length ? ns[(ns.length - 1) >> 1] : idx[id];
     }
     // Ties hold their current relative order, so a render never depends on sort internals.
     cur[li] = cur[li].slice().sort((a, b) => bary[a] - bary[b] || idx[a] - idx[b]);
@@ -975,57 +987,114 @@ function orderRows(rows, preds, succs, ri) {
   const b = refine(best.map(r => r.slice()), preds, ri, bestN);
   return crossings(a, preds, ri) <= crossings(b, preds, ri) ? a : b;
 }
+// Placeholders standing in for a long edge on the rows it crosses. A leading space cannot
+// collide with an issue id, which comes from a look-alike-free base32 alphabet, and it
+// sorts ahead of every real id so the starting order stays fixed.
+const isBend = id => id.charCodeAt(0) === 32;
+// Split every edge spanning more than one layer into unit-length hops through a
+// placeholder in each row it crosses, and return the graph to actually lay out.
+//
+// Until this ran, such an edge held no slot in the rows it flew over: `crossings` had no
+// index to compare it at, so it crossed for free and neither the sweeps nor the
+// relocations could see it, let alone fix it. It also had nothing between its endpoints
+// to pull on, so it bowed across the layout instead of running down a channel. Placing
+// the placeholders solves all three — they order and settle exactly like real nodes and
+// then draw as the edge's own path rather than as boxes.
+//
+// Returns {nodes, preds, succs, ri, bends}: `bends` maps "from to" to that edge's
+// placeholders, top row first, for the drawing code to route through.
+function splitLongEdges(comp, preds, ri) {
+  const nodes = comp.slice(), out = {}, bends = {};
+  let seq = 0;
+  for (const v of comp)
+    for (const u of (preds[v] || [])) {
+      if (ri[u] === undefined) continue;                 // an edge out of this component
+      const span = ri[v] - ri[u];
+      if (span <= 1) { (out[v] = out[v] || []).push(u); continue; }
+      const chain = [];
+      for (let k = 1; k < span; k++) {
+        const d = ' ' + (seq++);
+        chain.push(d); nodes.push(d); ri[d] = ri[u] + k;
+      }
+      bends[u + ' ' + v] = chain;
+      let prev = u;
+      for (const d of chain) { (out[d] = out[d] || []).push(prev); prev = d; }
+      (out[v] = out[v] || []).push(prev);
+    }
+  const succs = {};
+  for (const v of nodes) for (const u of (out[v] || [])) (succs[u] = succs[u] || []).push(v);
+  return { nodes, preds: out, succs, ri, bends };
+}
 // Lay one component out in local coords (origin 0,0): longest-path layers stacked
-// top→bottom, ordered within a layer to cut crossings. Returns {local, w, h}.
+// top→bottom, ordered within a layer to cut crossings. Returns {local, w, h, bends,
+// xings} — `local` holds only the real nodes, `bends` the points long edges route
+// through, and `xings` the crossing count the ordering settled on.
 function layoutComponent(comp, preds) {
   const memo = {};
   for (const id of comp) layerOf(id, preds, memo, new Set());
-  const layers = {};
-  for (const id of comp) (layers[memo[id]] = layers[memo[id]] || []).push(id);
-  const keys = Object.keys(layers).map(Number).sort((a, b) => a - b);
-  const succs = {};
-  for (const id of comp) for (const p of (preds[id] || [])) (succs[p] = succs[p] || []).push(id);
   const ri = {};
+  for (const id of comp) ri[id] = memo[id];
+  const split = splitLongEdges(comp, preds, ri);
+  const layers = {};
+  for (const id of split.nodes) (layers[ri[id]] = layers[ri[id]] || []).push(id);
+  const keys = Object.keys(layers).map(Number).sort((a, b) => a - b);
+  // Re-index rows from 0: a layer is only empty if the component had none there to begin
+  // with, but the placeholders' rows are addressed by position from here on.
   keys.forEach((L, li) => layers[L].forEach(id => { ri[id] = li; }));
   // Alphabetical is the starting order and the order kept unless a sweep beats it, so a
-  // tangle-free component stays readable by name from left to right.
+  // tangle-free component stays readable by name from left to right. Placeholders sort
+  // ahead of every real id, which is arbitrary but fixed — the sweeps move them anyway.
   const rows = orderRows(keys.map(L => layers[L].sort((a, b) => a.localeCompare(b))),
-                         preds, succs, ri);
+                         split.preds, split.succs, ri);
 
-  const STEP = NODE_W + COL_GAP;
-  const rowW = r => r.length * STEP - COL_GAP;
-  const widest = Math.max(...rows.map(rowW));
-  const x = {};
-  // Start from the grid with every row centred. That alone drops the left-edge bias that
-  // parked a lone child of a right-hand parent in column 0, edge raking across the row.
-  for (const r of rows) {
-    const off = (widest - rowW(r)) / 2;
-    r.forEach((id, i) => { x[id] = off + i * STEP; });
-  }
+  // A placeholder is a line, not a box, so it claims no width of its own. Spacing is
+  // therefore centre-to-centre and per-pair rather than one uniform column step, and
+  // `offsets` turns a row's minimum legal spacing into the running offsets the isotonic
+  // fit needs — the substitution still lands on "non-decreasing", just against these.
+  const half = id => (isBend(id) ? 0 : NODE_W / 2);
+  const offsets = r => {
+    const o = [0];
+    for (let i = 1; i < r.length; i++) o.push(o[i - 1] + half(r[i - 1]) + half(r[i]) + COL_GAP);
+    return o;
+  };
+  const span = (r, o) => half(r[0]) + o[o.length - 1] + half(r[r.length - 1]);
+  const offs = rows.map(offsets);
+  const widest = Math.max(...rows.map((r, li) => span(r, offs[li])));
+  const cx = {};
+  // Start from that spacing with every row centred. That alone drops the left-edge bias
+  // that parked a lone child of a right-hand parent in column 0, edge raking across.
+  rows.forEach((r, li) => {
+    const start = (widest - span(r, offs[li])) / 2 + half(r[0]);
+    r.forEach((id, i) => { cx[id] = start + offs[li][i]; });
+  });
   // Then pull each node towards the mean of what it touches, sweeping down (settle on
   // blockers) then up (settle on dependents) so both ends of an edge get their turn.
-  const relax = (row, nbrs) => {
+  const relax = (li, nbrs) => {
+    const row = rows[li], o = offs[li];
     const want = row.map(id => {
-      const ns = (nbrs[id] || []).filter(n => n in x);
-      return ns.length ? ns.reduce((s, n) => s + x[n], 0) / ns.length : x[id];
+      const ns = (nbrs[id] || []).filter(n => n in cx);
+      return ns.length ? ns.reduce((s, n) => s + cx[n], 0) / ns.length : cx[id];
     });
-    isotonic(want.map((d, i) => d - i * STEP))
-      .forEach((y, i) => { x[row[i]] = y + i * STEP; });
+    isotonic(want.map((d, i) => d - o[i]))
+      .forEach((y, i) => { cx[row[i]] = y + o[i]; });
   };
   for (let pass = 0; pass < 4; pass++) {
-    for (let i = 1; i < rows.length; i++) relax(rows[i], preds);
-    for (let i = rows.length - 2; i >= 0; i--) relax(rows[i], succs);
+    for (let i = 1; i < rows.length; i++) relax(i, split.preds);
+    for (let i = rows.length - 2; i >= 0; i--) relax(i, split.succs);
   }
 
-  const left = Math.min(...comp.map(id => x[id]));
+  const rowY = li => li * (NODE_H + ROW_GAP);
+  const left = Math.min(...split.nodes.map(id => cx[id] - half(id)));
   const local = {};
-  rows.forEach((r, li) => r.forEach(id => {
-    local[id] = { x: x[id] - left, y: li * (NODE_H + ROW_GAP) };
-  }));
+  for (const id of comp) local[id] = { x: cx[id] - NODE_W / 2 - left, y: rowY(ri[id]) };
+  const bends = {};
+  for (const k in split.bends)
+    bends[k] = split.bends[k].map(d => ({ x: cx[d] - left, y: rowY(ri[d]) }));
   return {
-    local,
+    local, bends,
+    xings: crossings(rows, split.preds, ri),
     // Nodes no longer sit on the column grid, so the box is measured, not counted.
-    w: Math.max(...comp.map(id => local[id].x)) + NODE_W,
+    w: Math.max(...split.nodes.map(id => cx[id] + half(id))) - left,
     h: rows.length * NODE_H + Math.max(0, rows.length - 1) * ROW_GAP,
   };
 }
@@ -1228,11 +1297,12 @@ function renderGraph() {
   // exceeded, so the graph grows down (natural scroll) rather than out.
   const laid = components(nodeList, adj).map(c => ({ comp: c, ...layoutComponent(c, preds) }));
   const avail = Math.max(box.clientWidth - PAD * 2, ...laid.map(l => l.w), 320);
-  const pos = {};
+  const pos = {}, bend = {};
   let x = PAD, y = PAD, rowH = 0, W = 0;
   for (const l of laid) {
     if (x > PAD && x + l.w > PAD + avail) { x = PAD; y += rowH + COMP_GAP; rowH = 0; }
     for (const id of l.comp) pos[id] = { x: x + l.local[id].x, y: y + l.local[id].y };
+    for (const k in l.bends) bend[k] = l.bends[k].map(p => ({ x: x + p.x, y: y + p.y }));
     x += l.w + COMP_GAP;
     rowH = Math.max(rowH, l.h);
     W = Math.max(W, x - COMP_GAP);
@@ -1247,14 +1317,24 @@ function renderGraph() {
     { id: 'arrow', viewBox: '0 0 10 10', refX: '0', refY: '5', markerWidth: ARROW, markerHeight: ARROW,
       markerUnits: 'userSpaceOnUse', orient: 'auto' },
     sv('path', { d: 'M0,0 L10,5 L0,10 z', fill: 'var(--muted)' }))));
+  // One path per edge, routed through whatever placeholders the layout gave it: a curve
+  // into each row it crosses, straight down that row's band, then a curve on. Every hop
+  // uses the same half-gap vertical handles as a direct edge, so a routed edge reads the
+  // same as a short one — and because each hop arrives vertically, `orient: auto` still
+  // points the head straight down.
+  const hop = (px, py, qx, qy) =>
+    ' C' + px + ',' + (py + ROW_GAP / 2) + ' ' + qx + ',' + (qy - ROW_GAP / 2) + ' ' + qx + ',' + qy;
   for (const e of edges) {
     const a = pos[e.from], b = pos[e.to];
     if (!a || !b) continue;
-    const x1 = a.x + NODE_W / 2, y1 = a.y + NODE_H, x2 = b.x + NODE_W / 2, y2 = b.y;
-    // The curve arrives vertically (its second handle sits straight above the target),
-    // so trimming ARROW off the y leaves the head to cover exactly the missing stretch.
-    s.append(sv('path', { class: 'gedge', 'marker-end': 'url(#arrow)',
-      d: 'M' + x1 + ',' + y1 + ' C' + x1 + ',' + (y1 + ROW_GAP / 2) + ' ' + x2 + ',' + (y2 - ROW_GAP / 2) + ' ' + x2 + ',' + (y2 - ARROW) }));
+    const x2 = b.x + NODE_W / 2, y2 = b.y - ARROW;
+    let px = a.x + NODE_W / 2, py = a.y + NODE_H, d = 'M' + px + ',' + py;
+    for (const p of (bend[e.from + ' ' + e.to] || [])) {
+      d += hop(px, py, p.x, p.y) + ' L' + p.x + ',' + (p.y + NODE_H);
+      px = p.x; py = p.y + NODE_H;
+    }
+    // Trimming ARROW off the final y leaves the head to cover exactly the missing stretch.
+    s.append(sv('path', { class: 'gedge', 'marker-end': 'url(#arrow)', d: d + hop(px, py, x2, y2) }));
   }
   for (const id of nodes) {
     const i = byId[id], p = pos[id];

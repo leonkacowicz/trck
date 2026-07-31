@@ -52,16 +52,19 @@ def island(html):
 def js_pieces(js, *names):
     """Lift top-level `const` lines and `function` blocks out of the app script by name.
 
-    Every top-level function in the emitted script closes with a `}` in column 0, so the
-    block boundary is unambiguous without parsing JavaScript. Names in SCREAMING_CASE are
-    read as constants and matched to their whole (possibly multi-declarator) line."""
+    A name is looked for as a single-line `const` declaration first — which covers both
+    plain constants and one-line arrow helpers — and then as a `function` block. Every
+    top-level function in the emitted script closes with a `}` in column 0, so the block
+    boundary is unambiguous without parsing JavaScript."""
     out = []
     for n in names:
-        pat = (rf"^const {re.escape(n)}\b.*$" if n.isupper()
-               else rf"^function {re.escape(n)}\([\s\S]*?^\}}")
-        m = re.search(pat, js, re.M)
-        assert m, f"could not lift `{n}` out of the app script"
-        out.append(m.group(0))
+        for pat in (rf"^const {re.escape(n)}\b.*$", rf"^function {re.escape(n)}\([\s\S]*?^\}}"):
+            m = re.search(pat, js, re.M)
+            if m:
+                out.append(m.group(0))
+                break
+        else:
+            raise AssertionError(f"could not lift `{n}` out of the app script")
     return "\n".join(out)
 
 
@@ -292,7 +295,9 @@ class TestDependencyGraph(HtmlTestBase):
             # Sized in user units, so the head length is independent of stroke-width and
             # matches the gap the curve leaves for it exactly.
             self.assertIn("markerUnits: 'userSpaceOnUse'", html)
-            self.assertIn("(y2 - ARROW)", html)
+            # The trim lives on the shared endpoint now that an edge can arrive there
+            # after several routed hops, rather than being applied at the one curve.
+            self.assertIn("y2 = b.y - ARROW", html)
 
 
 class TestGraphLayout(HtmlTestBase):
@@ -302,16 +307,15 @@ class TestGraphLayout(HtmlTestBase):
     here — but the layout helpers are pure, so they are lifted out and run alone. That
     buys actual coordinates to assert on instead of string matches against the source."""
 
-    # Recover the rows the layout settled on from the coordinates it returned, and score
-    # them, so a test can assert on crossings without reaching past `layoutComponent`.
+    # Recover the left-to-right rows the layout settled on from the coordinates it returned.
+    # The crossing count comes back from `layoutComponent` itself rather than being recomputed
+    # here: scoring needs the split graph, which only the layout builds.
     HARNESS = """
 const out = layoutComponent(%s, %s);
 const ys = [...new Set(Object.values(out.local).map(p => p.y))].sort((a, b) => a - b);
 const rows = ys.map(y => Object.keys(out.local).filter(id => out.local[id].y === y)
                                                .sort((a, b) => out.local[a].x - out.local[b].x));
-const ri = {};
-rows.forEach((r, li) => r.forEach(id => { ri[id] = li; }));
-console.log(JSON.stringify({ out, rows, xings: crossings(rows, %s, ri),
+console.log(JSON.stringify({ out, rows, xings: out.xings,
                              NODE_W, NODE_H, COL_GAP, ROW_GAP, REFINE_MAX }));
 """
 
@@ -320,14 +324,17 @@ console.log(JSON.stringify({ out, rows, xings: crossings(rows, %s, ri),
             d = make_tracker(tmp, {})
             self.seed(d, "A")
             js = re.findall(r'<script>\n(.*?)\n</script>', self.render(d), re.S)[-1]
-            src = js_pieces(js, "NODE_W", "REFINE_MAX", "layerOf", "isotonic", "crossings",
-                            "refine", "orderRows", "layoutComponent")
+            src = js_pieces(js, "NODE_W", "REFINE_MAX", "isBend", "layerOf", "isotonic",
+                            "crossings", "refine", "orderRows", "splitLongEdges",
+                            "layoutComponent")
             f = Path(tmp) / "layout.js"
-            f.write_text(src + self.HARNESS % (json.dumps(comp), json.dumps(preds),
-                                               json.dumps(preds)))
+            f.write_text(src + self.HARNESS % (json.dumps(comp), json.dumps(preds)))
             r = subprocess.run(["node", str(f)], capture_output=True, text=True)
             self.assertEqual(r.returncode, 0, r.stderr)
             return json.loads(r.stdout)
+
+    def bend(self, out, frm, to):
+        return out["bends"].get(f"{frm} {to}", [])
 
     def test_a_lone_child_sits_under_its_only_parent(self):
         # Two roots share the top row; only the right-hand one has a child. On the plain
@@ -390,6 +397,46 @@ console.log(JSON.stringify({ out, rows, xings: crossings(rows, %s, ri),
         r = self.layout(comp, preds)
         self.assertGreater(len(comp), r["REFINE_MAX"])
         self.assertEqual(r["xings"], 2)
+
+    def test_an_edge_skipping_a_layer_bends_through_the_row_it_crosses(self):
+        # a -> b -> z puts z two layers below a, so a's own edge to z flies over row 1.
+        # It gets a placeholder there, which is the point on the row the edge routes through.
+        r = self.layout(["a", "b", "z"], {"b": ["a"], "z": ["a", "b"]})
+        out = r["out"]
+        self.assertEqual(len(self.bend(out, "a", "z")), 1)
+        self.assertEqual(self.bend(out, "a", "z")[0]["y"], r["NODE_H"] + r["ROW_GAP"])
+        # A unit-length edge has no row to cross and so no placeholder.
+        self.assertEqual(self.bend(out, "b", "z"), [])
+
+    def test_placeholders_do_not_leak_into_the_drawn_nodes(self):
+        comp = ["a", "b", "z"]
+        r = self.layout(comp, {"b": ["a"], "z": ["a", "b"]})
+        self.assertCountEqual(r["out"]["local"].keys(), comp)
+
+    def test_a_long_edge_is_ordered_around_rather_than_across(self):
+        """Without a placeholder the long edge holds no slot in the row it crosses, so
+        nothing scores it and nothing can move it out of the way. With one, the crossing
+        count sees it and the ordering puts it on the side that keeps the row clean."""
+        # a and b lead; p sits under b; z waits on both a and p. a's edge to z crosses row 1,
+        # where p already lives — and it must pass to p's left, since a is left of b.
+        r = self.layout(["a", "b", "p", "z"], {"p": ["b"], "z": ["a", "p"]})
+        out = r["out"]
+        self.assertEqual(r["xings"], 0)
+        self.assertLess(self.bend(out, "a", "z")[0]["x"], out["local"]["p"]["x"])
+
+    def test_the_median_barycentre_reaches_an_order_the_mean_misses(self):
+        """Eight nodes, found by search, that a mean barycentre settles on at two crossings
+        and a median clears entirely. An outlying neighbour drags the mean, so a row can be
+        ordered by a position no neighbour actually occupies; the median only ever names one
+        of them. It also carries a proven bound (Eades-Wormald) where the mean does not.
+
+        Long edges are what make this bite: the six rows here come from splitting, and every
+        placeholder is one more neighbour with a say in where its row sits."""
+        r = self.layout(["n0", "n1", "n2", "n3", "n4", "n5", "n6", "n7"],
+                        {"n2": ["n1"], "n3": ["n1"], "n4": ["n3"],
+                         "n5": ["n0", "n1", "n3", "n4"],
+                         "n6": ["n1", "n2", "n3", "n4", "n5"], "n7": ["n5", "n6"]})
+        self.assertEqual(r["xings"], 0)
 
     def test_layers_stack_by_row_gap_and_the_box_covers_the_nodes(self):
         r = self.layout(["a", "b", "c"], {"b": ["a"], "c": ["a"]})
