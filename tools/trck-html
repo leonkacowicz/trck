@@ -793,7 +793,9 @@ function sv(tag, props = {}, ...kids) {
   for (const kid of kids) if (kid != null) n.append(kid);
   return n;
 }
-const NODE_W = 150, NODE_H = 32, COL_GAP = 20, ROW_GAP = 46, PAD = 14, COMP_GAP = 30;
+// ROW_GAP is twice NODE_H: a fan-out from one blocker leaves its node as a bundle, and
+// the taller the gap the sooner those curves separate enough to follow individually.
+const NODE_W = 150, NODE_H = 32, COL_GAP = 20, ROW_GAP = 64, PAD = 14, COMP_GAP = 30;
 // Arrowhead length in user units. The edge curve stops this far short of the target
 // node and the head fills the gap, so the line meets the triangle's base rather than
 // running under it to the tip (which left a stroke-width nub poking past the point).
