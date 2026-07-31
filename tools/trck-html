@@ -889,19 +889,68 @@ function isotonic(vals) {
   v.forEach((val, i) => { for (let k = 0; k < w[i]; k++) out.push(val); });
   return out;
 }
+// Crossings between consecutive rows, `ri` giving each node's row. Edges that skip a
+// layer sit this out: with no dummy nodes they hold no slot in the rows they fly over,
+// and the sweep below cannot see them either, so scoring them would only add noise.
+function crossings(rows, preds, ri) {
+  const idx = {};
+  rows.forEach(r => r.forEach((id, i) => { idx[id] = i; }));
+  let n = 0;
+  for (let li = 1; li < rows.length; li++) {
+    const es = [];
+    for (const v of rows[li]) for (const u of (preds[v] || [])) if (ri[u] === li - 1) es.push([idx[u], idx[v]]);
+    for (let i = 0; i < es.length; i++)
+      for (let j = i + 1; j < es.length; j++)
+        if ((es[i][0] - es[j][0]) * (es[i][1] - es[j][1]) < 0) n++;
+  }
+  return n;
+}
+// Reorder rows to cut crossings, by barycentre sweeps alternating down and up.
+//
+// The pass count is a budget, not a convergence test — this has no fixed point to reach
+// in general. A row's blockers can demand one order while its dependents demand the
+// reverse, and then the two sweeps flip it back and forth forever. So every pass is
+// scored and the best is kept, with the alphabetical start entered as a candidate: a
+// component gives up its by-name order only when that actually buys fewer crossings,
+// which for most of them it does not, and those are left untouched.
+function orderRows(rows, preds, succs, ri) {
+  let best = rows, bestN = crossings(rows, preds, ri);
+  const cur = rows.map(r => r.slice()), idx = {};
+  cur.forEach(r => r.forEach((id, i) => { idx[id] = i; }));
+  const sweep = (li, nbrs, from) => {
+    const bary = {};
+    for (const id of cur[li]) {
+      const ns = (nbrs[id] || []).filter(n => ri[n] === from);
+      bary[id] = ns.length ? ns.reduce((s, n) => s + idx[n], 0) / ns.length : idx[id];
+    }
+    // Ties hold their current relative order, so a render never depends on sort internals.
+    cur[li] = cur[li].slice().sort((a, b) => bary[a] - bary[b] || idx[a] - idx[b]);
+    cur[li].forEach((id, i) => { idx[id] = i; });
+  };
+  for (let pass = 0; pass < 4 && bestN; pass++) {
+    for (let li = 1; li < cur.length; li++) sweep(li, preds, li - 1);
+    for (let li = cur.length - 2; li >= 0; li--) sweep(li, succs, li + 1);
+    const n = crossings(cur, preds, ri);
+    if (n < bestN) { bestN = n; best = cur.map(r => r.slice()); }
+  }
+  return best;
+}
 // Lay one component out in local coords (origin 0,0): longest-path layers stacked
-// top→bottom, nodes ordered by id within a layer. Returns {local, w, h}.
+// top→bottom, ordered within a layer to cut crossings. Returns {local, w, h}.
 function layoutComponent(comp, preds) {
   const memo = {};
   for (const id of comp) layerOf(id, preds, memo, new Set());
   const layers = {};
   for (const id of comp) (layers[memo[id]] = layers[memo[id]] || []).push(id);
   const keys = Object.keys(layers).map(Number).sort((a, b) => a - b);
-  // Rows hold their alphabetical order for good: only x moves below, so two nodes never
-  // trade places between renders and the eye can still find one by name along a row.
-  const rows = keys.map(L => layers[L].sort((a, b) => a.localeCompare(b)));
   const succs = {};
   for (const id of comp) for (const p of (preds[id] || [])) (succs[p] = succs[p] || []).push(id);
+  const ri = {};
+  keys.forEach((L, li) => layers[L].forEach(id => { ri[id] = li; }));
+  // Alphabetical is the starting order and the order kept unless a sweep beats it, so a
+  // tangle-free component stays readable by name from left to right.
+  const rows = orderRows(keys.map(L => layers[L].sort((a, b) => a.localeCompare(b))),
+                         preds, succs, ri);
 
   const STEP = NODE_W + COL_GAP;
   const rowW = r => r.length * STEP - COL_GAP;

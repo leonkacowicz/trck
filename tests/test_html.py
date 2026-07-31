@@ -307,7 +307,8 @@ class TestGraphLayout(HtmlTestBase):
             d = make_tracker(tmp, {})
             self.seed(d, "A")
             js = re.findall(r'<script>\n(.*?)\n</script>', self.render(d), re.S)[-1]
-            src = js_pieces(js, "NODE_W", "layerOf", "isotonic", "layoutComponent")
+            src = js_pieces(js, "NODE_W", "layerOf", "isotonic", "crossings", "orderRows",
+                            "layoutComponent")
             f = Path(tmp) / "layout.js"
             f.write_text(src + "\nconsole.log(JSON.stringify({ out: layoutComponent(%s, %s),"
                                " NODE_W, NODE_H, COL_GAP, ROW_GAP }));\n"
@@ -328,13 +329,30 @@ class TestGraphLayout(HtmlTestBase):
         x = r["out"]["local"]
         self.assertAlmostEqual(x["a"]["x"], (x["b"]["x"] + x["c"]["x"]) / 2)
 
-    def test_a_row_keeps_alphabetical_order_and_its_minimum_gap(self):
-        # `p` wants to be under `c` (rightmost) and `q` under `a` (leftmost), so their
-        # barycentres ask them to swap. Order is fixed, so they settle side by side.
-        r = self.layout(["a", "b", "c", "p", "q"], {"p": ["c"], "q": ["a"]})
+    def test_two_nodes_wanting_the_same_place_stay_ordered_and_apart(self):
+        # Both children hang off the one parent, so both barycentres land on it. Placement
+        # cannot honour that, and what it must not do is stack them or let them swap.
+        r = self.layout(["a", "p", "q"], {"p": ["a"], "q": ["a"]})
         x, step = r["out"]["local"], r["NODE_W"] + r["COL_GAP"]
         self.assertLess(x["p"]["x"], x["q"]["x"])
         self.assertGreaterEqual(x["q"]["x"] - x["p"]["x"], step)
+
+    def test_a_row_is_reordered_when_that_removes_a_crossing(self):
+        # Alphabetically row 1 is [s, t] while their blockers are [p, q] — s hangs off q
+        # and t off p, so the two edges cross. Swapping the row undoes it.
+        r = self.layout(["p", "q", "s", "t"], {"s": ["q"], "t": ["p"]})
+        x = r["out"]["local"]
+        self.assertLess(x["t"]["x"], x["s"]["x"])
+        self.assertEqual(x["t"]["x"], x["p"]["x"])
+        self.assertEqual(x["s"]["x"], x["q"]["x"])
+
+    def test_a_crossing_free_component_keeps_its_alphabetical_order(self):
+        # Same shape, untangled: the sweep has nothing to win, so the row is left alone
+        # and can still be read by name from left to right.
+        r = self.layout(["p", "q", "s", "t"], {"s": ["p"], "t": ["q"]})
+        x = r["out"]["local"]
+        self.assertLess(x["p"]["x"], x["q"]["x"])
+        self.assertLess(x["s"]["x"], x["t"]["x"])
 
     def test_layers_stack_by_row_gap_and_the_box_covers_the_nodes(self):
         r = self.layout(["a", "b", "c"], {"b": ["a"], "c": ["a"]})
