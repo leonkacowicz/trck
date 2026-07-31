@@ -264,6 +264,20 @@ class TestDependencyGraph(HtmlTestBase):
             self.assertIn("include done chains", html)
             self.assertIn("omit done", html)
 
+    def test_edges_stop_at_the_arrowhead_base(self):
+        """The head is anchored by its base (refX 0) at a curve that ends ARROW short of
+        the node, so the stroke never runs under the triangle and out past its tip."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")
+            html = self.render(d)
+            self.assertIn("const ARROW = 10;", html)
+            self.assertIn("refX: '0'", html)
+            # Sized in user units, so the head length is independent of stroke-width and
+            # matches the gap the curve leaves for it exactly.
+            self.assertIn("markerUnits: 'userSpaceOnUse'", html)
+            self.assertIn("(y2 - ARROW)", html)
+
 
 class TestTreeView(HtmlTestBase):
     def test_model_lists_roots(self):

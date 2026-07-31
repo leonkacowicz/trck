@@ -794,6 +794,10 @@ function sv(tag, props = {}, ...kids) {
   return n;
 }
 const NODE_W = 150, NODE_H = 32, COL_GAP = 20, ROW_GAP = 46, PAD = 14, COMP_GAP = 30;
+// Arrowhead length in user units. The edge curve stops this far short of the target
+// node and the head fills the gap, so the line meets the triangle's base rather than
+// running under it to the tip (which left a stroke-width nub poking past the point).
+const ARROW = 10;
 const trunc = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
 // The dependency cone of a set of seeds: everything reachable up (blockers) and
@@ -1095,15 +1099,21 @@ function renderGraph() {
   const H = y + rowH + PAD;
   W += PAD;
   const s = sv('svg', { width: W, height: H, viewBox: '0 0 ' + W + ' ' + H });
+  // `userSpaceOnUse` pins the head to ARROW user units regardless of stroke width, so
+  // the curve's shortening below stays exactly as long as the triangle. refX 0 anchors
+  // the base — not the tip — at the path's end, and the head grows forward from there.
   s.append(sv('defs', {}, sv('marker',
-    { id: 'arrow', viewBox: '0 0 10 10', refX: '9', refY: '5', markerWidth: '7', markerHeight: '7', orient: 'auto' },
+    { id: 'arrow', viewBox: '0 0 10 10', refX: '0', refY: '5', markerWidth: ARROW, markerHeight: ARROW,
+      markerUnits: 'userSpaceOnUse', orient: 'auto' },
     sv('path', { d: 'M0,0 L10,5 L0,10 z', fill: 'var(--muted)' }))));
   for (const e of edges) {
     const a = pos[e.from], b = pos[e.to];
     if (!a || !b) continue;
     const x1 = a.x + NODE_W / 2, y1 = a.y + NODE_H, x2 = b.x + NODE_W / 2, y2 = b.y;
+    // The curve arrives vertically (its second handle sits straight above the target),
+    // so trimming ARROW off the y leaves the head to cover exactly the missing stretch.
     s.append(sv('path', { class: 'gedge', 'marker-end': 'url(#arrow)',
-      d: 'M' + x1 + ',' + y1 + ' C' + x1 + ',' + (y1 + ROW_GAP / 2) + ' ' + x2 + ',' + (y2 - ROW_GAP / 2) + ' ' + x2 + ',' + y2 }));
+      d: 'M' + x1 + ',' + y1 + ' C' + x1 + ',' + (y1 + ROW_GAP / 2) + ' ' + x2 + ',' + (y2 - ROW_GAP / 2) + ' ' + x2 + ',' + (y2 - ARROW) }));
   }
   for (const id of nodes) {
     const i = byId[id], p = pos[id];
