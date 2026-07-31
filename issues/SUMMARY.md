@@ -6,9 +6,9 @@
 | State | Count |
 |---|---:|
 | backlog | 28 |
-| ongoing | 3 |
+| ongoing | 2 |
 | in-review | 0 |
-| done | 114 |
+| done | 115 |
 | **total** | **145** |
 
 ## Hierarchies
@@ -148,7 +148,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## Ongoing
 
-- [#at6pwut release v0.24.0](items/at6pwut-release-v0-24-0.md) — _medium_
+_none_
 
 ## In-review
 
@@ -172,6 +172,7 @@ _none_
 - [#9pf42be Add points field with leaves-only deep-recursive weighted rollup](items/9pf42be-add-points-field-with-leaves-only-deep-recursive-weighted-rollup.md) — _medium_ (closed 2026-06-06)
 - [#9sevgpn Enrich 'list' filters: multi/negated status, title match, sort, --blocked, --orphan](items/9sevgpn-enrich-list-filters-multi-negated-status-title-match-sort-blocked-orphan.md) — _medium_ [tracker-features] (closed 2026-06-06)
 - [#9wd4tkf list: hide settled work by default (keep done children under open parents)](items/9wd4tkf-list-hide-settled-work-by-default-keep-done-children-under-open-parents.md) — _medium_ [tracker-features] (closed 2026-06-14)
+- [#at6pwut release v0.24.0](items/at6pwut-release-v0-24-0.md) — _medium_ (closed 2026-07-31)
 - [#b7t7d4q list: show points-weighted percent-complete on parent rows](items/b7t7d4q-list-show-points-weighted-percent-complete-on-parent-rows.md) — _medium_ (closed 2026-06-14)
 - [#bpwuedw Deduplicate parent-cycle detection via Graph.ancestors_of](items/bpwuedw-deduplicate-parent-cycle-detection-via-graph-ancestors-of.md) — _medium_ (closed 2026-06-10)
 - [#cea683t validate/dep: detect and prevent dependency cycles](items/cea683t-validate-dep-detect-and-prevent-dependency-cycles.md) — _medium_ [tracker-features] (closed 2026-06-08)
