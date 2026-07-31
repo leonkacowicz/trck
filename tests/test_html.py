@@ -333,6 +333,74 @@ class TestBoardView(HtmlTestBase):
             self.assertIn('data-view="board"', html)
 
 
+class TestReadyView(HtmlTestBase):
+    """The ready view mirrors `trck ready`: actionable leaves ranked by the demand
+    cone. The ranking itself is authored once in the engine and shipped as data —
+    these tests pin the exported values, which is what the client sorts on."""
+
+    def test_demand_vector_counts_the_cone_by_priority(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            blocker = self.seed(d, "Blocker", priority="low")
+            self.seed(d, "Urgent dependent", priority="urgent", depends=blocker)
+            by_id = {i["id"]: i for i in island(self.render(d))["issues"]}
+            # priorities are urgent, high, medium, low, lowest (+ a trailing bucket
+            # for unconfigured ones): the cone is the low blocker plus its urgent
+            # dependent, so slot 0 and slot 3 each hold one.
+            self.assertEqual(by_id[blocker]["demand"], [1, 0, 0, 1, 0, 0])
+
+    def test_a_lone_issue_is_its_own_cone(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            iid = self.seed(d, "Lonely", priority="high")
+            by_id = {i["id"]: i for i in island(self.render(d))["issues"]}
+            self.assertEqual(by_id[iid]["demand"], [0, 1, 0, 0, 0, 0])
+
+    def test_demand_source_names_the_issue_that_lifts_a_row(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            blocker = self.seed(d, "Blocker", priority="low")
+            urgent = self.seed(d, "Urgent dependent", priority="urgent", depends=blocker)
+            by_id = {i["id"]: i for i in island(self.render(d))["issues"]}
+            self.assertEqual(by_id[blocker]["demand_source"], urgent)
+
+    def test_demand_source_is_null_when_the_row_already_leads_its_cone(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            blocker = self.seed(d, "Blocker", priority="urgent")
+            self.seed(d, "Low dependent", priority="low", depends=blocker)
+            by_id = {i["id"]: i for i in island(self.render(d))["issues"]}
+            self.assertIsNone(by_id[blocker]["demand_source"])
+
+    def test_a_low_blocker_outranks_a_high_issue_blocking_nothing(self):
+        """The whole point of the ranking, expressed in the shipped vectors: the
+        client compares them slot by slot, highest priority first."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            blocker = self.seed(d, "Blocker", priority="low")
+            self.seed(d, "Urgent dependent", priority="urgent", depends=blocker)
+            lone = self.seed(d, "Lone high", priority="high")
+            by_id = {i["id"]: i for i in island(self.render(d))["issues"]}
+            self.assertGreater(by_id[blocker]["demand"], by_id[lone]["demand"])
+
+    def test_ready_view_ui_is_present(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")
+            html = self.render(d)
+            self.assertIn('id="ready"', html)
+            self.assertIn('data-view="ready"', html)
+
+    def test_ready_flag_marks_actionable_leaves_only(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            blocker = self.seed(d, "Blocker")
+            waiting = self.seed(d, "Waiting", depends=blocker)
+            by_id = {i["id"]: i for i in island(self.render(d))["issues"]}
+            self.assertTrue(by_id[blocker]["ready"])
+            self.assertFalse(by_id[waiting]["ready"])
+
+
 class TestBodyEscaping(HtmlTestBase):
     def test_body_cannot_break_out_of_the_script_island(self):
         payload = 'Danger: </script><script>alert(1)</script> & <b>bold</b> "q"'

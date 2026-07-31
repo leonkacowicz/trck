@@ -96,7 +96,20 @@ def _progress(g, r):
     }
 
 
+def _demand(g, r):
+    """The demand-cone ranking data the ready view sorts and annotates by, taken
+    straight from the engine (`Graph.demand_vector` / `demand_source`) so the page
+    ships the same order `trck ready` prints and re-derives no cone math in JS.
+
+    `demand_source` is `None` exactly when `r` already leads its own cone, which is
+    also exactly when no `↑<priority>` marker is warranted — so the client renders
+    the marker iff the field is set, with no rank comparison of its own."""
+    src = g.demand_source(r)
+    return list(g.demand_vector(r)), (src.id if src is not None else None)
+
+
 def _issue_dict(g, ctx, r):
+    demand, demand_source = _demand(g, r)
     return {
         "id": r.id,
         "title": r.title,
@@ -112,6 +125,8 @@ def _issue_dict(g, ctx, r):
         "dependents": [x.id for x in g.dependents_of(r)],
         "blocked": g.is_blocked(r),
         "ready": g.is_ready(r),
+        "demand": demand,
+        "demand_source": demand_source,
         "leaf": g.is_leaf(r),
         "terminal": g.is_terminal(r),
         "progress": _progress(g, r),
@@ -235,12 +250,12 @@ def main(argv=None):
 _CSS = """\
 :root {
   --bg: #ffffff; --fg: #1b1f24; --muted: #6a737d; --line: #e1e4e8;
-  --panel: #f6f8fa; --accent: #0969da; --sel: #ddf4ff; --done: #8b949e;
+  --panel: #f6f8fa; --accent: #0969da; --sel: #ddf4ff; --done: #8b949e; --hot: #cf222e;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #0d1117; --fg: #e6edf3; --muted: #8b949e; --line: #30363d;
-    --panel: #161b22; --accent: #4493f8; --sel: #163356; --done: #6e7681;
+    --panel: #161b22; --accent: #4493f8; --sel: #163356; --done: #6e7681; --hot: #ff7b72;
   }
 }
 * { box-sizing: border-box; }
@@ -275,6 +290,16 @@ main { display: grid; grid-template-columns: minmax(12rem, var(--leftw, 40%)) 6p
 .pct { color: var(--muted); font-size: .8rem; }
 .badge { font-size: .72rem; padding: .05rem .4rem; border-radius: 999px;
          border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+/* ready view: the `next` pick and the ↑<priority>(#id) demand marker. Tinting is
+   positional (top / bottom of the configured order), mirroring `priority_codes`. */
+.rmark { display: flex; align-items: center; gap: .4rem; white-space: nowrap; }
+.nextpill { font-size: .68rem; letter-spacing: .04em; text-transform: uppercase;
+            padding: .05rem .4rem; border-radius: 999px; color: var(--bg);
+            background: var(--accent); }
+.up { font-size: .74rem; color: var(--muted); }
+.up.top { color: var(--hot); }
+.up.bottom { opacity: .7; }
+.up .idpre, .up .idrest { color: inherit; font-size: inherit; }
 .detail { overflow: auto; padding: 1rem 1.3rem; }
 .detail h2 { margin: .2rem 0 1rem; font-size: 1.15rem; }
 .detail .rid { font-size: .9rem; }
@@ -396,6 +421,7 @@ _SHELL = """\
     <button data-view="graph" type="button">graph</button>
     <button data-view="tree" type="button">tree</button>
     <button data-view="board" type="button">board</button>
+    <button data-view="ready" type="button">ready</button>
   </div>
   <input id="q" type="search" placeholder="Search id / title / body / label…" autocomplete="off">
   <select id="fstatus"></select>
@@ -407,6 +433,7 @@ _SHELL = """\
     <div id="graph" class="graph" hidden></div>
     <div id="tree" class="tree" hidden></div>
     <div id="board" class="board" hidden></div>
+    <ul id="ready" class="list" hidden></ul>
   </div>
   <div id="split" class="divider" title="drag to resize"></div>
   <section id="detail" class="detail"><p class="empty">Select an issue.</p></section>
@@ -544,7 +571,9 @@ function links(ids) {
   return w;
 }
 
-function row(i) {
+// `extra` is an optional trailing node (the ready view's ↑-marker and next pill);
+// it rides after the badges so both views share one row shape.
+function row(i, extra) {
   const cls = 'row' + (terminal.has(i.status) ? ' done' : '')
     + (i.id === state.selected ? ' sel' : '') + (issueEdited(i.id) ? ' edited' : '');
   const r = el('li', { class: cls, onclick: () => select(i.id) },
@@ -556,6 +585,7 @@ function row(i) {
   const pl = prLink(i, 'PR');
   if (pl) r.append(pl);
   if (i.progress) r.append(el('span', { class: 'pct', text: i.progress.pct + '%' }));
+  if (extra) r.append(extra);
   return r;
 }
 
@@ -700,6 +730,7 @@ function renderActiveView() {
   if (state.view === 'graph') renderGraph();
   else if (state.view === 'tree') renderTree();
   else if (state.view === 'board') renderBoard();
+  else if (state.view === 'ready') renderReady();
 }
 function select(id) {
   state.selected = id;
@@ -817,6 +848,7 @@ function setView(v) {
   $('#graph').hidden = v !== 'graph';
   $('#tree').hidden = v !== 'tree';
   $('#board').hidden = v !== 'board';
+  $('#ready').hidden = v !== 'ready';
   for (const b of document.querySelectorAll('.viewtoggle button'))
     b.classList.toggle('on', b.dataset.view === v);
   renderActiveView();
@@ -849,6 +881,54 @@ function renderBoard() {
     col.append(cards);
     box.append(col);
   }
+}
+// --- ready view: actionable leaves, ranked by demand (mirrors `trck ready`) ---
+// The ranking is the engine's, shipped as data: `demand` is the cone's population
+// per configured priority, highest first, so comparing the vectors slot by slot IS
+// the whole rule — the first differing slot is the higher-priority thing waiting,
+// and within a slot more dependents win. Then the CLI's `-points`, `id` tie-breaks.
+// Every vector is the same length — one slot per configured priority plus a trailing
+// bucket — because they all come from the one config this island was built with.
+function demandCmp(a, b) {
+  for (let k = 0; k < a.demand.length; k++) {
+    const d = b.demand[k] - a.demand[k];
+    if (d) return d;
+  }
+  return (b.points - a.points) || a.id.localeCompare(b.id);
+}
+// Position-based, like the CLI's `priority_codes`: only the top and bottom of the
+// configured order are tinted, so a custom vocabulary needs no CSS of its own.
+function prioClass(p) {
+  if (prio.length && p === prio[0]) return ' top';
+  if (prio.length && p === prio[prio.length - 1]) return ' bottom';
+  return '';
+}
+// ` ↑<priority>(#id)` naming the issue that lifts a row above its own priority.
+// `demand_source` is set by the engine exactly when such an issue exists, so the
+// client never compares ranks itself.
+function demandMark(i) {
+  const src = i.demand_source && byId[i.demand_source];
+  if (!src) return null;
+  return el('span', { class: 'up' + prioClass(src.priority),
+    title: 'ranked up by #' + src.id + ' — ' + src.title },
+    '↑' + src.priority + '(', ridSpan(src.id, 'upid'), ')');
+}
+function renderReady() {
+  const box = $('#ready'); box.textContent = '';
+  const rows = DATA.issues.filter(i => i.ready).filter(matches).sort(demandCmp);
+  if (!rows.length) {
+    box.append(el('li', { class: 'empty',
+      text: filterActive() ? 'No matching ready issues.' : 'Nothing is ready.' }));
+    return;
+  }
+  rows.forEach((i, n) => {
+    const extra = el('span', { class: 'rmark' });
+    // `trck next` is `ready[:1]` — the top row is that single best pick.
+    if (n === 0) extra.append(el('span', { class: 'nextpill', title: 'trck next', text: 'next' }));
+    const mark = demandMark(i);
+    if (mark) extra.append(mark);
+    box.append(row(i, extra));
+  });
 }
 // --- v4 tree / hierarchy view: collapsible forest from roots -> children -----
 function toggleCollapse(id) {
