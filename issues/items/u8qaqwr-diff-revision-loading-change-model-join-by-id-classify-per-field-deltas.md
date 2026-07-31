@@ -15,14 +15,14 @@ Classification:
   `backlog → ongoing` start, since every layer renders the two differently.
 
 ## Acceptance criteria
-- [ ] A function takes two snapshots and returns per-issue change records plus both row sets
+- [x] A function takes two snapshots and returns per-issue change records plus both row sets
       (renderers need full rows for titles, icons, and rollups).
-- [ ] Field classification is data-driven — no hard-coded status or priority names; direction comes
+- [x] Field classification is data-driven — no hard-coded status or priority names; direction comes
       from the config's status order, as with the `status_*` helpers.
-- [ ] Timestamp fields (`created`/`started`/`closed`) are recorded but not reported as ordinary field
+- [x] Timestamp fields (`created`/`started`/`closed`) are recorded but not reported as ordinary field
       edits — they are the evidence for a status change, not a separate change.
-- [ ] Nothing in this module imports `subprocess` or knows what a revision is.
-- [ ] Tests cover: added, removed, status forward/backward, multi-field edit, label/dep set deltas,
+- [x] Nothing in this module imports `subprocess` or knows what a revision is.
+- [x] Tests cover: added, removed, status forward/backward, multi-field edit, label/dep set deltas,
       and an empty old snapshot (everything reads as added) — all from fixture snapshots, no git.
 
 ## Notes
