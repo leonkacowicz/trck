@@ -5,10 +5,10 @@
 
 | State | Count |
 |---|---:|
-| backlog | 28 |
+| backlog | 27 |
 | ongoing | 2 |
 | in-review | 0 |
-| done | 113 |
+| done | 114 |
 | **total** | **143** |
 
 ## Hierarchies
@@ -65,7 +65,7 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 - [x] [#ex5cugg trck repo merge-index: the driver entrypoint (+ SUMMARY regeneration)](items/ex5cugg-trck-repo-merge-index-the-driver-entrypoint-summary-regeneration.md)
 - [x] [#pfackaw merge_rows: row-wise 3-way merge of index rows, keyed by id](items/pfackaw-merge-rows-row-wise-3-way-merge-of-index-rows-keyed-by-id.md)
 
-### [#fkrp9dh trck-html: static HTML SPA to browse issues in a browser](items/fkrp9dh-trck-html-static-html-spa-to-browse-issues-in-a-browser.md) — 90% (9/10 pts · 9/10 done) · _medium_ · ongoing
+### [#fkrp9dh trck-html: static HTML SPA to browse issues in a browser](items/fkrp9dh-trck-html-static-html-spa-to-browse-issues-in-a-browser.md) — 91% (10/11 pts · 10/11 done) · _medium_ · ongoing
 
 - [x] [#2ytfth4 v5: board / kanban by status](items/2ytfth4-v5-board-kanban-by-status.md)
 - [x] [#4vbk79y v4: tree / hierarchy view with rolled-up progress %](items/4vbk79y-v4-tree-hierarchy-view-with-rolled-up-progress.md)
@@ -74,6 +74,7 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 - [x] [#99wkju8 v1 MVP: tools/trck-html — list + detail panel + filter/search, escaped bodies](items/99wkju8-v1-mvp-tools-trck-html-list-detail-panel-filter-search-escaped-bodies.md)
 - [x] [#d9ckqzc trck-html: highlight shortest-unique id prefix (like the CLI)](items/d9ckqzc-trck-html-highlight-shortest-unique-id-prefix-like-the-cli.md)
 - [x] [#ej5772f trck-html: draggable divider to resize left pane vs detail](items/ej5772f-trck-html-draggable-divider-to-resize-left-pane-vs-detail.md)
+- [x] [#me67zba trck-html: mirror demand-cone ranking in the ready/next view](items/me67zba-trck-html-mirror-demand-cone-ranking-in-the-ready-next-view.md)
 - [x] [#qcgr8sy v2: command-copy — stage status/priority edits, show equivalent ./trck commands](items/qcgr8sy-v2-command-copy-stage-status-priority-edits-show-equivalent-trck-commands.md)
 - [ ] [#tcm5s56 v7: trck serve — live process, edits write back to index.jsonl](items/tcm5s56-v7-trck-serve-live-process-edits-write-back-to-index-jsonl.md) _(backlog)_
 - [x] [#zssaj4k trck-html: graph view — done-chain filters + filter-as-seeds](items/zssaj4k-trck-html-graph-view-done-chain-filters-filter-as-seeds.md)
@@ -139,7 +140,6 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#eemqu4g Support configurable custom fields](items/eemqu4g-support-configurable-custom-fields.md) — _low_ [tracker-features]
 - [#kj2c95b validate: suppress redundant bad-slug error when filename-slug mismatch already reported](items/kj2c95b-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
 - [#m3z2ywb summary: include foreign/unknown statuses in the counts table](items/m3z2ywb-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
-- [#me67zba trck-html: mirror demand-cone ranking in the ready/next view](items/me67zba-trck-html-mirror-demand-cone-ranking-in-the-ready-next-view.md) — _low_
 - [#s3d6xyz Add reconfigure verb to rename/reorder statuses](items/s3d6xyz-add-reconfigure-verb-to-rename-reorder-statuses.md) — _low_ [tracker-features]
 - [#v9nyy42 Part C: curses TUI for browsing and quick actions](items/v9nyy42-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
 - [#xagqqgd deps: optimize node ordering to minimize edge span and crossings (local search)](items/xagqqgd-deps-optimize-node-ordering-to-minimize-edge-span-and-crossings-local-search.md) — _low_
