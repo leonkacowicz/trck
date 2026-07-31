@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 29 |
+| backlog | 31 |
 | ongoing | 1 |
 | in-review | 0 |
 | done | 111 |
-| **total** | **141** |
+| **total** | **143** |
 
 ## Hierarchies
 
@@ -116,12 +116,14 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#kaqhtfc list/tree: drop the tree alias (nested forest is list's default)](items/kaqhtfc-list-tree-drop-the-tree-alias-nested-forest-is-list-s-default.md) _(backlog)_
 - [ ] [#v8tmkrt json: shared emit_json stdout seam + --json flag plumbing](items/v8tmkrt-json-shared-emit-json-stdout-seam-json-flag-plumbing.md) _(backlog)_
 
-### [#u5fc5vm trck diff: semantic diff of tracker state between revisions](items/u5fc5vm-trck-diff-semantic-diff-of-tracker-state-between-revisions.md) — 0% (0/13 pts · 0/6 done) · _medium_ · backlog
+### [#u5fc5vm trck diff: semantic diff of tracker state between revisions](items/u5fc5vm-trck-diff-semantic-diff-of-tracker-state-between-revisions.md) — 0% (0/17 pts · 0/8 done) · _medium_ · backlog
 
 - [ ] [#6xcseef diff: body-file edits — flag with a ± line count, --body to inline the real git diff](items/6xcseef-diff-body-file-edits-flag-with-a-line-count-body-to-inline-the-real-git-diff.md) _(backlog)_
 - [ ] [#jxxz2fm diff: epic-rollup layout (default) — progress deltas with moved children nested](items/jxxz2fm-diff-epic-rollup-layout-default-progress-deltas-with-moved-children-nested.md) _(backlog)_
 - [ ] [#kch7b6r diff --stat: counts headline (net status flow across the workflow)](items/kch7b6r-diff-stat-counts-headline-net-status-flow-across-the-workflow.md) _(backlog)_
-- [ ] [#u8qaqwr diff: revision loading + change model (join by id, classify per-field deltas)](items/u8qaqwr-diff-revision-loading-change-model-join-by-id-classify-per-field-deltas.md) _(backlog)_
+- [ ] [#q9cq65c diff: VCS-agnostic source seam — the diff subcommand and --from FILE|-](items/q9cq65c-diff-vcs-agnostic-source-seam-the-diff-subcommand-and-from-file.md) _(backlog)_
+- [ ] [#u8qaqwr diff: change model — join snapshots by id, classify per-field deltas](items/u8qaqwr-diff-revision-loading-change-model-join-by-id-classify-per-field-deltas.md) _(backlog)_
+- [ ] [#wtmfdhr diff: git convenience layer — revision specs, default HEAD vs working tree](items/wtmfdhr-diff-git-convenience-layer-revision-specs-default-head-vs-working-tree.md) _(backlog)_
 - [ ] [#xvgdq25 diff -v: per-issue field-level change blocks](items/xvgdq25-diff-v-per-issue-field-level-change-blocks.md) _(backlog)_
 - [ ] [#yfxtkd8 diff --flat: ledger layout, one line per changed issue](items/yfxtkd8-diff-flat-ledger-layout-one-line-per-changed-issue.md) _(backlog)_
 
