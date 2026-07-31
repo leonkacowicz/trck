@@ -49,6 +49,22 @@ def island(html):
     return json.loads(m.group(1))
 
 
+def js_pieces(js, *names):
+    """Lift top-level `const` lines and `function` blocks out of the app script by name.
+
+    Every top-level function in the emitted script closes with a `}` in column 0, so the
+    block boundary is unambiguous without parsing JavaScript. Names in SCREAMING_CASE are
+    read as constants and matched to their whole (possibly multi-declarator) line."""
+    out = []
+    for n in names:
+        pat = (rf"^const {re.escape(n)}\b.*$" if n.isupper()
+               else rf"^function {re.escape(n)}\([\s\S]*?^\}}")
+        m = re.search(pat, js, re.M)
+        assert m, f"could not lift `{n}` out of the app script"
+        out.append(m.group(0))
+    return "\n".join(out)
+
+
 class HtmlTestBase(unittest.TestCase):
     def setUp(self):
         self.t = load_trck()
@@ -277,6 +293,57 @@ class TestDependencyGraph(HtmlTestBase):
             # matches the gap the curve leaves for it exactly.
             self.assertIn("markerUnits: 'userSpaceOnUse'", html)
             self.assertIn("(y2 - ARROW)", html)
+
+
+class TestGraphLayout(HtmlTestBase):
+    """Drive `layoutComponent` for real, under node.
+
+    The app script binds itself to the DOM as it loads, so it cannot be evaluated whole
+    here — but the layout helpers are pure, so they are lifted out and run alone. That
+    buys actual coordinates to assert on instead of string matches against the source."""
+
+    def layout(self, comp, preds):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")
+            js = re.findall(r'<script>\n(.*?)\n</script>', self.render(d), re.S)[-1]
+            src = js_pieces(js, "NODE_W", "layerOf", "isotonic", "layoutComponent")
+            f = Path(tmp) / "layout.js"
+            f.write_text(src + "\nconsole.log(JSON.stringify({ out: layoutComponent(%s, %s),"
+                               " NODE_W, NODE_H, COL_GAP, ROW_GAP }));\n"
+                         % (json.dumps(comp), json.dumps(preds)))
+            r = subprocess.run(["node", str(f)], capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            return json.loads(r.stdout)
+
+    def test_a_lone_child_sits_under_its_only_parent(self):
+        # Two roots share the top row; only the right-hand one has a child. On the plain
+        # grid that child took column 0 and its edge raked across to the left.
+        r = self.layout(["a", "b", "c"], {"c": ["b"]})
+        x = r["out"]["local"]
+        self.assertEqual(x["c"]["x"], x["b"]["x"])
+
+    def test_a_parent_centres_over_its_children(self):
+        r = self.layout(["a", "b", "c"], {"b": ["a"], "c": ["a"]})
+        x = r["out"]["local"]
+        self.assertAlmostEqual(x["a"]["x"], (x["b"]["x"] + x["c"]["x"]) / 2)
+
+    def test_a_row_keeps_alphabetical_order_and_its_minimum_gap(self):
+        # `p` wants to be under `c` (rightmost) and `q` under `a` (leftmost), so their
+        # barycentres ask them to swap. Order is fixed, so they settle side by side.
+        r = self.layout(["a", "b", "c", "p", "q"], {"p": ["c"], "q": ["a"]})
+        x, step = r["out"]["local"], r["NODE_W"] + r["COL_GAP"]
+        self.assertLess(x["p"]["x"], x["q"]["x"])
+        self.assertGreaterEqual(x["q"]["x"] - x["p"]["x"], step)
+
+    def test_layers_stack_by_row_gap_and_the_box_covers_the_nodes(self):
+        r = self.layout(["a", "b", "c"], {"b": ["a"], "c": ["a"]})
+        out, x = r["out"], r["out"]["local"]
+        self.assertEqual(x["a"]["y"], 0)
+        self.assertEqual(x["b"]["y"], r["NODE_H"] + r["ROW_GAP"])
+        # Shifting nodes off the grid means w can no longer be counted in columns.
+        self.assertEqual(min(v["x"] for v in x.values()), 0)
+        self.assertEqual(out["w"], max(v["x"] for v in x.values()) + r["NODE_W"])
 
 
 class TestTreeView(HtmlTestBase):

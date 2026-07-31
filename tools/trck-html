@@ -870,6 +870,25 @@ function components(nodes, adj) {
   // Widest/tallest clusters first tends to pack the wrapping flow more tidily.
   return comps.sort((a, b) => b.length - a.length || a[0].localeCompare(b[0]));
 }
+// Closest non-decreasing sequence to `vals` in least squares — pool adjacent violators.
+// Placing one row reduces to exactly this: substituting y[i] = x[i] - i * STEP turns
+// "keep the order, stay STEP apart" into "y is non-decreasing", so the legal row nearest
+// a set of wished-for centres is the isotonic fit of the wishes in y.
+function isotonic(vals) {
+  const v = [], w = [];
+  for (const t of vals) {
+    let val = t, wt = 1;
+    while (v.length && v[v.length - 1] > val) {   // last block sits right of this one
+      const pv = v.pop(), pw = w.pop();           // merge them and take the joint mean
+      val = (pv * pw + val * wt) / (pw + wt);
+      wt += pw;
+    }
+    v.push(val); w.push(wt);
+  }
+  const out = [];
+  v.forEach((val, i) => { for (let k = 0; k < w[i]; k++) out.push(val); });
+  return out;
+}
 // Lay one component out in local coords (origin 0,0): longest-path layers stacked
 // top→bottom, nodes ordered by id within a layer. Returns {local, w, h}.
 function layoutComponent(comp, preds) {
@@ -878,16 +897,47 @@ function layoutComponent(comp, preds) {
   const layers = {};
   for (const id of comp) (layers[memo[id]] = layers[memo[id]] || []).push(id);
   const keys = Object.keys(layers).map(Number).sort((a, b) => a - b);
-  const local = {}; let cols = 0;
-  keys.forEach((L, li) => {
-    const ids = layers[L].sort((a, b) => a.localeCompare(b));
-    ids.forEach((id, i) => { local[id] = { x: i * (NODE_W + COL_GAP), y: li * (NODE_H + ROW_GAP) }; });
-    cols = Math.max(cols, ids.length);
-  });
+  // Rows hold their alphabetical order for good: only x moves below, so two nodes never
+  // trade places between renders and the eye can still find one by name along a row.
+  const rows = keys.map(L => layers[L].sort((a, b) => a.localeCompare(b)));
+  const succs = {};
+  for (const id of comp) for (const p of (preds[id] || [])) (succs[p] = succs[p] || []).push(id);
+
+  const STEP = NODE_W + COL_GAP;
+  const rowW = r => r.length * STEP - COL_GAP;
+  const widest = Math.max(...rows.map(rowW));
+  const x = {};
+  // Start from the grid with every row centred. That alone drops the left-edge bias that
+  // parked a lone child of a right-hand parent in column 0, edge raking across the row.
+  for (const r of rows) {
+    const off = (widest - rowW(r)) / 2;
+    r.forEach((id, i) => { x[id] = off + i * STEP; });
+  }
+  // Then pull each node towards the mean of what it touches, sweeping down (settle on
+  // blockers) then up (settle on dependents) so both ends of an edge get their turn.
+  const relax = (row, nbrs) => {
+    const want = row.map(id => {
+      const ns = (nbrs[id] || []).filter(n => n in x);
+      return ns.length ? ns.reduce((s, n) => s + x[n], 0) / ns.length : x[id];
+    });
+    isotonic(want.map((d, i) => d - i * STEP))
+      .forEach((y, i) => { x[row[i]] = y + i * STEP; });
+  };
+  for (let pass = 0; pass < 4; pass++) {
+    for (let i = 1; i < rows.length; i++) relax(rows[i], preds);
+    for (let i = rows.length - 2; i >= 0; i--) relax(rows[i], succs);
+  }
+
+  const left = Math.min(...comp.map(id => x[id]));
+  const local = {};
+  rows.forEach((r, li) => r.forEach(id => {
+    local[id] = { x: x[id] - left, y: li * (NODE_H + ROW_GAP) };
+  }));
   return {
     local,
-    w: cols * NODE_W + Math.max(0, cols - 1) * COL_GAP,
-    h: keys.length * NODE_H + Math.max(0, keys.length - 1) * ROW_GAP,
+    // Nodes no longer sit on the column grid, so the box is measured, not counted.
+    w: Math.max(...comp.map(id => local[id].x)) + NODE_W,
+    h: rows.length * NODE_H + Math.max(0, rows.length - 1) * ROW_GAP,
   };
 }
 // Show only the facets the active view applies. The hidden ones keep their state;
