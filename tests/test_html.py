@@ -112,6 +112,43 @@ class TestRenderShell(HtmlTestBase):
             html = self.render(d)
             self.assertIn('id="split"', html)
 
+    def test_font_stacks_are_declared_once(self):
+        """Seven literal copies of a stack is how they drift apart. Both live in a custom
+        property, and a sentinel family from each must therefore appear exactly once."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")
+            html = self.render(d)
+            self.assertRegex(html, r"--sans:")
+            self.assertRegex(html, r"--mono:")
+            self.assertEqual(html.count("SFMono-Regular"), 1)
+            self.assertEqual(html.count("Liberation Sans"), 1)
+
+    def test_preferred_families_lead_the_fallbacks(self):
+        """A stack is the whole mechanism: name the good fonts first and the browser takes
+        the first one installed, resolving locally with no network. The mono list stays
+        conservative on purpose — graph labels are truncated by character count against a
+        fixed box, so a family with a wider advance would overflow it."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")
+            html = self.render(d)
+            sans = re.search(r"--sans:([^;]*);", html).group(1)
+            mono = re.search(r"--mono:([^;]*);", html).group(1)
+            self.assertLess(sans.index("Inter"), sans.index("system-ui"))
+            self.assertLess(sans.index("system-ui"), sans.index("sans-serif"))
+            # Nothing ahead of the system mono, and every name in it sits at the same
+            # ~0.6em advance the label budget assumes.
+            self.assertTrue(mono.strip().startswith("ui-monospace"), mono)
+            self.assertIn("monospace", mono)
+
+    def test_counts_and_percentages_use_tabular_figures(self):
+        """Digits that change width make a re-render look like a layout shift."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")
+            self.assertIn("tabular-nums", self.render(d))
+
     def test_document_is_self_contained_no_external_refs(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})

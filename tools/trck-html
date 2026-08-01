@@ -254,6 +254,18 @@ _CSS = """\
 :root {
   --bg: #ffffff; --fg: #1b1f24; --muted: #6a737d; --line: #e1e4e8;
   --panel: #f6f8fa; --accent: #0969da; --sel: #ddf4ff; --done: #8b949e; --hot: #cf222e;
+  /* A stack is the whole mechanism for "use something nice if it is there": the browser
+     takes the first family installed and resolves it locally, so naming good fonts up
+     front costs nothing and needs no network. The tail is what everyone else gets.
+
+     The mono list deliberately names nothing ahead of the system font. Graph labels are
+     truncated by character count against a fixed NODE_W, and that budget is already
+     tight — 20 characters of 12px Menlo is about 144px in a 142px gap — so every family
+     here sits at the same ~0.6em advance. Adding a wider one would overflow the box. */
+  --sans: Inter, "SF Pro Text", "IBM Plex Sans", system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono",
+          "Liberation Mono", monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -266,13 +278,17 @@ _CSS = """\
    `display` (`.board`, `.filters`, …) would otherwise win: author rules outrank the UA's
    `[hidden] { display: none }` at any specificity. Keep this ahead of every layout rule. */
 [hidden] { display: none !important; }
-body { margin: 0; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+body { margin: 0; font: 14px/1.5 var(--sans);
        color: var(--fg); background: var(--bg); }
 .topbar { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap;
           padding: .7rem 1rem; border-bottom: 1px solid var(--line); }
 .topbar h1 { font-size: 1.05rem; margin: 0; }
 .counts { color: var(--muted); display: flex; gap: .9rem; flex-wrap: wrap; }
 .counts .count b { color: var(--fg); }
+/* Proportional digits change width with their value, so a count ticking over or a
+   progress figure landing on 100% reads as the row shifting rather than the number
+   changing. These are all figures that move. */
+.counts, .pct, .tpct { font-variant-numeric: tabular-nums; }
 .filters { display: flex; gap: .5rem; padding: .6rem 1rem; border-bottom: 1px solid var(--line);
            flex-wrap: wrap; position: sticky; top: 0; background: var(--bg); z-index: 1; }
 .filters input, .filters select { font: inherit; padding: .35rem .5rem;
@@ -299,7 +315,7 @@ main { display: grid; grid-template-columns: minmax(12rem, var(--leftw, 40%)) 6p
 .row:hover { background: var(--panel); }
 .row.sel { background: var(--sel); }
 .row.done .rtitle { color: var(--done); text-decoration: line-through; }
-.rid { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .82rem; }
+.rid { color: var(--muted); font-family: var(--mono); font-size: .82rem; }
 .idpre { color: var(--fg); font-weight: 600; }
 .idrest { color: var(--muted); }
 .rtitle { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -327,7 +343,7 @@ main { display: grid; grid-template-columns: minmax(12rem, var(--leftw, 40%)) 6p
 .meta .mk { color: var(--muted); text-align: right; }
 .body { background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
         padding: .8rem 1rem; white-space: pre-wrap; word-wrap: break-word;
-        font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
+        font: 13px/1.55 var(--mono); }
 .bodybar { display: flex; justify-content: flex-end; margin-bottom: .3rem; }
 .bodytog { font: inherit; font-size: .78rem; padding: .12rem .55rem; border: 1px solid var(--line);
            border-radius: 6px; background: var(--bg); color: var(--muted); cursor: pointer; }
@@ -343,7 +359,7 @@ main { display: grid; grid-template-columns: minmax(12rem, var(--leftw, 40%)) 6p
 .body.md li.md-task { list-style: none; margin-left: -1.2rem; }
 .body.md li.md-task input { margin-right: .45rem; vertical-align: middle; }
 .body.md code { background: var(--bg); border: 1px solid var(--line); border-radius: 4px;
-                padding: .03rem .3rem; font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
+                padding: .03rem .3rem; font: 12px var(--mono); }
 .body.md pre.md-code { background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
                        padding: .7rem .9rem; overflow: auto; white-space: pre; }
 .body.md pre.md-code code { background: none; border: 0; padding: 0; }
@@ -377,7 +393,7 @@ main { display: grid; grid-template-columns: minmax(12rem, var(--leftw, 40%)) 6p
                   border-radius: 6px; background: var(--bg); color: var(--fg); cursor: pointer; }
 .pending button:hover { border-color: var(--accent); color: var(--accent); }
 .plist { list-style: none; margin: 0; padding: .5rem .9rem; overflow: auto; }
-.pcmd { font: 13px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; user-select: all; white-space: pre-wrap; }
+.pcmd { font: 13px/1.7 var(--mono); user-select: all; white-space: pre-wrap; }
 .viewtoggle { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
 .viewtoggle button { font: inherit; padding: .35rem .8rem; border: 0; background: var(--bg);
                      color: var(--muted); cursor: pointer; }
@@ -393,7 +409,7 @@ main { display: grid; grid-template-columns: minmax(12rem, var(--leftw, 40%)) 6p
 .gnode:hover rect { stroke: var(--accent); }
 .gnode.sel rect { stroke: var(--accent); stroke-width: 2.5; fill: var(--sel); }
 .gnode.done { opacity: .5; }
-.gnode text { fill: var(--fg); font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.gnode text { fill: var(--fg); font: 12px var(--mono); }
 .gnode .gidpre { font-weight: 600; }
 .gnode .gidrest { fill: var(--muted); }
 .gedge { stroke: var(--muted); stroke-width: 1.5; fill: none; }
@@ -429,7 +445,7 @@ main { display: grid; grid-template-columns: minmax(12rem, var(--leftw, 40%)) 6p
 .card.done { opacity: .6; }
 .card.done .ct { text-decoration: line-through; }
 .card.edited { box-shadow: inset 3px 0 0 var(--accent); }
-.card .cid { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .76rem; }
+.card .cid { color: var(--muted); font-family: var(--mono); font-size: .76rem; }
 .card .ct { display: block; margin: .15rem 0; }
 .card .cmeta { display: flex; gap: .35rem; align-items: center; flex-wrap: wrap; }
 .bempty { color: var(--muted); font-size: .82rem; padding: .3rem; }
