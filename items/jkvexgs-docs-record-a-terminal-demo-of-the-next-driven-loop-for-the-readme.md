@@ -31,10 +31,10 @@ changes often, and a stale demo is worse than none.
 4. The unattended loop: repeatedly take `next`, do the work, close it, repeat — a backlog
    walked in dependency order with no planner deciding anything.
 
-Frames 1-3 can be recorded today. Frame 4 needs machine-readable `ready`/`next` output, which
-is not yet covered by the `--json` epic #r9zefup (it has `list`/`show`/`deps` children, no
-`ready`/`next`). Either add that child and depend on it, or ship frames 1-3 first and extend
-the tape later.
+Frames 1-3 could be recorded today, but frame 4 — the unattended loop, the frame the whole
+demo exists for — needs machine-readable `ready`/`next` output. That is #j4x5uvd (under the
+`--json` epic #r9zefup), and this issue depends on it: record once, with the loop, rather than
+shipping a partial tape and re-cutting it later.
 
 ### Open decision — which recorder
 
