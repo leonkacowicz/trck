@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 26 |
+| backlog | 38 |
 | ongoing | 2 |
 | in-review | 0 |
-| done | 119 |
-| **total** | **147** |
+| done | 120 |
+| **total** | **160** |
 
 ## Hierarchies
 
@@ -23,6 +23,11 @@ Spec: [`docs/plans/2026-07-30-flat-items-layout.md`](../docs/plans/2026-07-30-fl
 - [x] [#v7zzefd layout: point issue_path/rel_link/scan_files at items/](items/v7zzefd-layout-point-issue-path-rel-link-scan-files-at-items.md)
 - [x] [#x2exfdf add the migrate-layout verb](items/x2exfdf-add-the-migrate-layout-verb.md)
 - [x] [#zk5k59n move_issue: drop the now-unreachable file move](items/zk5k59n-move-issue-drop-the-now-unreachable-file-move.md)
+
+### [#922fmtw dates: derived durations and staleness in ad-hoc views](items/922fmtw-dates-derived-durations-and-staleness-in-ad-hoc-views.md) — 0% (0/5 pts · 0/2 done) · _medium_ · backlog
+
+- [ ] [#hfbe4n2 dates: duration helpers (age, lead time, cycle time) and show them in trck show](items/hfbe4n2-dates-duration-helpers-age-lead-time-cycle-time-and-show-them-in-trck-show.md) [dates] _(backlog)_
+- [ ] [#teawzv6 list/ready: --show-age column and a staleness marker on rows](items/teawzv6-list-ready-show-age-column-and-a-staleness-marker-on-rows.md) [dates] _(backlog)_
 
 ### [#9bktptp ready/next: rank by demand cone (inferred priority) + marker](items/9bktptp-ready-next-rank-by-demand-cone-inferred-priority-marker.md) — 100% (8/8 pts · 4/4 done) · _high_ · done
 
@@ -65,7 +70,7 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 - [x] [#ex5cugg trck repo merge-index: the driver entrypoint (+ SUMMARY regeneration)](items/ex5cugg-trck-repo-merge-index-the-driver-entrypoint-summary-regeneration.md)
 - [x] [#pfackaw merge_rows: row-wise 3-way merge of index rows, keyed by id](items/pfackaw-merge-rows-row-wise-3-way-merge-of-index-rows-keyed-by-id.md)
 
-### [#fkrp9dh trck-html: static HTML SPA to browse issues in a browser](items/fkrp9dh-trck-html-static-html-spa-to-browse-issues-in-a-browser.md) — 87% (13/15 pts · 11/13 done) · _medium_ · ongoing
+### [#fkrp9dh trck-html: static HTML SPA to browse issues in a browser](items/fkrp9dh-trck-html-static-html-spa-to-browse-issues-in-a-browser.md) — 78% (14/18 pts · 12/14 done) · _medium_ · ongoing
 
 - [x] [#2ytfth4 v5: board / kanban by status](items/2ytfth4-v5-board-kanban-by-status.md)
 - [x] [#4vbk79y v4: tree / hierarchy view with rolled-up progress %](items/4vbk79y-v4-tree-hierarchy-view-with-rolled-up-progress.md)
@@ -73,13 +78,20 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 - [x] [#6yptz6p trck-html: route layer-skipping graph edges through dummy nodes](items/6yptz6p-trck-html-route-layer-skipping-graph-edges-through-dummy-nodes.md)
 - [x] [#6yttx97 v3: dependency graph view (clickable, jump between blockers/blocked)](items/6yttx97-v3-dependency-graph-view-clickable-jump-between-blockers-blocked.md)
 - [x] [#99wkju8 v1 MVP: tools/trck-html — list + detail panel + filter/search, escaped bodies](items/99wkju8-v1-mvp-tools-trck-html-list-detail-panel-filter-search-escaped-bodies.md)
-- [ ] [#budhpcw trck-html: highlight a node's edges on hover](items/budhpcw-trck-html-highlight-a-node-s-edges-on-hover.md) _(backlog)_
+- [x] [#budhpcw trck-html: highlight a node's edges on hover](items/budhpcw-trck-html-highlight-a-node-s-edges-on-hover.md)
 - [x] [#d9ckqzc trck-html: highlight shortest-unique id prefix (like the CLI)](items/d9ckqzc-trck-html-highlight-shortest-unique-id-prefix-like-the-cli.md)
 - [x] [#ej5772f trck-html: draggable divider to resize left pane vs detail](items/ej5772f-trck-html-draggable-divider-to-resize-left-pane-vs-detail.md)
 - [x] [#me67zba trck-html: mirror demand-cone ranking in the ready/next view](items/me67zba-trck-html-mirror-demand-cone-ranking-in-the-ready-next-view.md)
+- [ ] [#mf7ue8j trck-html: timeline view over created/started/closed](items/mf7ue8j-trck-html-timeline-view-over-created-started-closed.md) [dates] _(backlog)_
 - [x] [#qcgr8sy v2: command-copy — stage status/priority edits, show equivalent ./trck commands](items/qcgr8sy-v2-command-copy-stage-status-priority-edits-show-equivalent-trck-commands.md)
 - [ ] [#tcm5s56 v7: trck serve — live process, edits write back to index.jsonl](items/tcm5s56-v7-trck-serve-live-process-edits-write-back-to-index-jsonl.md) _(backlog)_
 - [x] [#zssaj4k trck-html: graph view — done-chain filters + filter-as-seeds](items/zssaj4k-trck-html-graph-view-done-chain-filters-filter-as-seeds.md)
+
+### [#gke345p dates: due dates as a first-class field](items/gke345p-dates-due-dates-as-a-first-class-field.md) — 0% (0/6 pts · 0/3 done) · _low_ · backlog
+
+- [ ] [#3dtnmtv list/ready: overdue and due-soon markers on rows](items/3dtnmtv-list-ready-overdue-and-due-soon-markers-on-rows.md) [dates] _(backlog)_
+- [ ] [#h8yezpf decide whether due feeds the ready/next demand ranking](items/h8yezpf-decide-whether-due-feeds-the-ready-next-demand-ranking.md) [dates] _(backlog)_
+- [ ] [#x6argpr index/set: due as a first-class validated date field](items/x6argpr-index-set-due-as-a-first-class-validated-date-field.md) [dates] _(backlog)_
 
 ### [#h7xp2dm Free-form custom fields: set/filter/sort arbitrary key→value](items/h7xp2dm-free-form-custom-fields-set-filter-sort-arbitrary-key-value.md) — 100% (6/6 pts · 6/6 done) · _medium_ · done
 Spec: [`docs/specs/2026-06-11-custom-fields-design.md`](../docs/specs/2026-06-11-custom-fields-design.md)
@@ -134,15 +146,20 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](items/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#tfhhp8h mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](items/tfhhp8h-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
+- [#v5wvabj list: --since/--until date-range filters over created/started/closed](items/v5wvabj-list-since-until-date-range-filters-over-created-started-closed.md) — _medium_ [dates]
 - [#wh3mv52 mv/done: guard closing a parent with open descendants (--recurse to cascade)](items/wh3mv52-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
+- [#ycg7egx dates: shared cutoff parser — accept relative forms (7d, 2w, yesterday) and resolve to absolute](items/ycg7egx-dates-shared-cutoff-parser-accept-relative-forms-7d-2w-yesterday-and-resolve-to-absolute.md) — _medium_ [dates]
 - [#5jhvpz4 update: add a minimum-size sanity check on the downloaded engine](items/5jhvpz4-update-add-a-minimum-size-sanity-check-on-the-downloaded-engine.md) — _low_
 - [#c2wadyd graph/render: id type annotations still say int after the random-id migration](items/c2wadyd-graph-render-id-type-annotations-still-say-int-after-the-random-id-migration.md) — _low_
 - [#cbf4sxp config: friendly errors for empty statuses/priorities/kinds lists](items/cbf4sxp-config-friendly-errors-for-empty-statuses-priorities-kinds-lists.md) — _low_
 - [#eemqu4g Support configurable custom fields](items/eemqu4g-support-configurable-custom-fields.md) — _low_ [tracker-features]
+- [#gybeetp decide how to record status-transition history: event log vs. git reconstruction](items/gybeetp-decide-how-to-record-status-transition-history-event-log-vs-git-reconstruction.md) — _low_ [dates]
 - [#kj2c95b validate: suppress redundant bad-slug error when filename-slug mismatch already reported](items/kj2c95b-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
 - [#m3z2ywb summary: include foreign/unknown statuses in the counts table](items/m3z2ywb-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
 - [#s3d6xyz Add reconfigure verb to rename/reorder statuses](items/s3d6xyz-add-reconfigure-verb-to-rename-reorder-statuses.md) — _low_ [tracker-features]
+- [#ut9bqm4 dates: time-in-status and per-status cycle time reporting](items/ut9bqm4-dates-time-in-status-and-per-status-cycle-time-reporting.md) — _low_ [dates]
 - [#v9nyy42 Part C: curses TUI for browsing and quick actions](items/v9nyy42-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
+- [#xr994r6 list --as-of DATE: reconstruct and browse tracker state at a past date](items/xr994r6-list-as-of-date-reconstruct-and-browse-tracker-state-at-a-past-date.md) — _low_ [dates]
 - [#9ax2ny2 deps: --depth N to cut expansion N hops from the seed(s)](items/9ax2ny2-deps-depth-n-to-cut-expansion-n-hops-from-the-seed-s.md) — _lowest_
 
 ## Ongoing
