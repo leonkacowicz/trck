@@ -4,6 +4,7 @@ import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest import mock
 
 from tests.helpers import load_trck, make_tracker, ns
 
@@ -865,10 +866,17 @@ class TestScopedReady(unittest.TestCase):
             self.assertIn(f"#{leaf}", self.ready(d, epic))
 
     def test_an_id_prefix_resolves(self):
+        # Ids are random, so slicing a fixed number of characters off one is not
+        # reliably unambiguous — two of three ids sharing their first two chars is
+        # rare, not impossible, and made this flake. Pin the ids instead, so "ab"
+        # can only mean the epic and the assertion is about resolution, not luck.
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            epic, kid1, _kid2 = self.epic_with_two_kids(d)
-            self.assertIn(f"#{kid1}", self.ready(d, epic[:2]))
+            ids = iter(["abcdefg", "mnpqrst", "wxyz234"])
+            with mock.patch.object(self.t, "gen_id", lambda ctx: next(ids)):
+                epic, kid1, _kid2 = self.epic_with_two_kids(d)
+            self.assertEqual((epic, kid1), ("abcdefg", "mnpqrst"))
+            self.assertIn(f"#{kid1}", self.ready(d, "ab"))
 
     # --- blocking stays effective ------------------------------------------ #
 

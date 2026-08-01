@@ -5,10 +5,10 @@
 
 | State | Count |
 |---|---:|
-| backlog | 27 |
+| backlog | 26 |
 | ongoing | 2 |
 | in-review | 0 |
-| done | 118 |
+| done | 119 |
 | **total** | **147** |
 
 ## Hierarchies
@@ -138,7 +138,6 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#5jhvpz4 update: add a minimum-size sanity check on the downloaded engine](items/5jhvpz4-update-add-a-minimum-size-sanity-check-on-the-downloaded-engine.md) — _low_
 - [#c2wadyd graph/render: id type annotations still say int after the random-id migration](items/c2wadyd-graph-render-id-type-annotations-still-say-int-after-the-random-id-migration.md) — _low_
 - [#cbf4sxp config: friendly errors for empty statuses/priorities/kinds lists](items/cbf4sxp-config-friendly-errors-for-empty-statuses-priorities-kinds-lists.md) — _low_
-- [#cggyyxc tests: test_an_id_prefix_resolves flakes when a 2-char id prefix collides](items/cggyyxc-tests-test-an-id-prefix-resolves-flakes-when-a-2-char-id-prefix-collides.md) — _low_
 - [#eemqu4g Support configurable custom fields](items/eemqu4g-support-configurable-custom-fields.md) — _low_ [tracker-features]
 - [#kj2c95b validate: suppress redundant bad-slug error when filename-slug mismatch already reported](items/kj2c95b-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
 - [#m3z2ywb summary: include foreign/unknown statuses in the counts table](items/m3z2ywb-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
@@ -200,6 +199,7 @@ _none_
 - [#6ddksge Reconcile id collisions when branches concurrently create issues](items/6ddksge-reconcile-id-collisions-when-branches-concurrently-create-issues.md) — _low_ [conflict-resolution tracker-features] · _superseded_ (closed 2026-07-31)
 - [#8xdzmr4 summary: sort status sections by priority (highest first)](items/8xdzmr4-summary-sort-status-sections-by-priority-highest-first.md) — _low_ (closed 2026-06-05)
 - [#av2h8cm docs: refresh docs/img/ready.svg — the screenshot predates the demand marker](items/av2h8cm-docs-refresh-docs-img-ready-svg-the-screenshot-predates-the-demand-marker.md) — _low_ (closed 2026-07-30)
+- [#cggyyxc tests: test_an_id_prefix_resolves flakes when a 2-char id prefix collides](items/cggyyxc-tests-test-an-id-prefix-resolves-flakes-when-a-2-char-id-prefix-collides.md) — _low_ (closed 2026-08-01)
 - [#dkbmmrr Clean up minor lint and cruft in the engine](items/dkbmmrr-clean-up-minor-lint-and-cruft-in-the-engine.md) — _low_ (closed 2026-06-10)
 - [#g76mtuw validate: report one error per parent cycle, not one per node](items/g76mtuw-validate-report-one-error-per-parent-cycle-not-one-per-node.md) — _low_ (closed 2026-06-10)
 - [#xagqqgd deps: optimize node ordering to minimize edge span and crossings (local search)](items/xagqqgd-deps-optimize-node-ordering-to-minimize-edge-span-and-crossings-local-search.md) — _low_ (closed 2026-07-31)
