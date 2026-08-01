@@ -397,6 +397,12 @@ main { display: grid; grid-template-columns: minmax(12rem, var(--leftw, 40%)) 6p
 .gnode .gidpre { font-weight: 600; }
 .gnode .gidrest { fill: var(--muted); }
 .gedge { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+/* Hovering a node lifts the edges it touches. Both directions take the same accent the
+   hovered box itself takes — the arrowhead already says which way an edge runs, and two
+   colours here would collide with the accent `.gnode.sel` is using a few lines up. The
+   head has to be swapped rather than recoloured: a shared <marker> paints with its own
+   fill and cannot inherit the stroke of the path referencing it. */
+.gedge.hi { stroke: var(--accent); marker-end: url(#arrow-hi); }
 .gempty { color: var(--muted); padding: 1rem; }
 .tree { height: 100%; overflow: auto; padding: .3rem 0; }
 .trow { display: flex; align-items: center; gap: .4rem; padding: .3rem .6rem; cursor: pointer; }
@@ -1316,10 +1322,18 @@ function renderGraph() {
   // `userSpaceOnUse` pins the head to ARROW user units regardless of stroke width, so
   // the curve's shortening below stays exactly as long as the triangle. refX 0 anchors
   // the base — not the tip — at the path's end, and the head grows forward from there.
-  s.append(sv('defs', {}, sv('marker',
-    { id: 'arrow', viewBox: '0 0 10 10', refX: '0', refY: '5', markerWidth: ARROW, markerHeight: ARROW,
+  // Two heads, identical but for their fill, because a <marker> paints with its own and
+  // cannot take the stroke of the path that references it. `.gedge.hi` swaps to the second.
+  const head = (id, fill) => sv('marker',
+    { id, viewBox: '0 0 10 10', refX: '0', refY: '5', markerWidth: ARROW, markerHeight: ARROW,
       markerUnits: 'userSpaceOnUse', orient: 'auto' },
-    sv('path', { d: 'M0,0 L10,5 L0,10 z', fill: 'var(--muted)' }))));
+    sv('path', { d: 'M0,0 L10,5 L0,10 z', fill }));
+  s.append(sv('defs', {}, head('arrow', 'var(--muted)'), head('arrow-hi', 'var(--accent)')));
+  // Edges share one group so that lifting a highlighted one — which means re-appending it,
+  // SVG having no z-index — raises it above its neighbours but never above a node box.
+  const edgeLayer = sv('g', {});
+  s.append(edgeLayer);
+  const incident = {};
   // One path per edge, routed through whatever placeholders the layout gave it: a curve
   // into each row it crosses, straight down that row's band, then a curve on. Every hop
   // uses the same half-gap vertical handles as a direct edge, so a routed edge reads the
@@ -1337,12 +1351,26 @@ function renderGraph() {
       px = p.x; py = p.y + NODE_H;
     }
     // Trimming ARROW off the final y leaves the head to cover exactly the missing stretch.
-    s.append(sv('path', { class: 'gedge', 'marker-end': 'url(#arrow)', d: d + hop(px, py, x2, y2) }));
+    const path = sv('path', { class: 'gedge', 'marker-end': 'url(#arrow)', d: d + hop(px, py, x2, y2) });
+    edgeLayer.append(path);
+    (incident[e.from] = incident[e.from] || []).push(path);
+    (incident[e.to] = incident[e.to] || []).push(path);
   }
+  // Hovering a node pulls the edges it touches out of the tangle: accent them, and
+  // re-append so they sit above the ones they cross. Transient by design — selection
+  // already owns the accent persistently and drives the detail pane, whereas this only
+  // answers "what is this joined to" for as long as the pointer is on it.
+  const lift = (id, on) => {
+    for (const p of (incident[id] || [])) {
+      p.classList.toggle('hi', on);
+      if (on) edgeLayer.append(p);
+    }
+  };
   for (const id of nodes) {
     const i = byId[id], p = pos[id];
     const cls = 'gnode' + (i && terminal.has(i.status) ? ' done' : '') + (id === state.selected ? ' sel' : '');
-    const g = sv('g', { class: cls, transform: 'translate(' + p.x + ',' + p.y + ')', onclick: () => select(id) });
+    const g = sv('g', { class: cls, transform: 'translate(' + p.x + ',' + p.y + ')', onclick: () => select(id),
+                        onmouseenter: () => lift(id, true), onmouseleave: () => lift(id, false) });
     g.append(sv('rect', { width: NODE_W, height: NODE_H, rx: 7 }));
     g.append(sv('title', { text: (i ? i.title : id) }));
     // Label with the id prefix emphasised (tspans), then the title truncated to fit ~20 chars.

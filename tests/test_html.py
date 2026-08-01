@@ -288,6 +288,34 @@ class TestDependencyGraph(HtmlTestBase):
             self.assertIn('id="graph"', html)
             self.assertIn('data-view="graph"', html)
 
+    def test_hovering_a_node_accents_its_edges(self):
+        """Hover wiring is DOM-bound, so what is checkable here is that every piece exists:
+        the handlers on the node group, a rule that accents a lifted edge, and the accented
+        arrowhead it switches to. A `.gedge.hi` the stylesheet never mentions would leave a
+        hover that changes nothing, which is the regression worth catching."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")
+            html = self.render(d)
+            self.assertIn("onmouseenter:", html)
+            self.assertIn("onmouseleave:", html)
+            self.assertRegex(html, r"\.gedge\.hi\s*\{")
+            # A shared marker cannot take the accent from the path, so the highlighted
+            # state swaps in its own head rather than recolouring the one it has. Both
+            # heads must be defined, and the rule must point at the accented one.
+            self.assertRegex(html, r"head\('arrow',\s*'var\(--muted\)'\)")
+            self.assertRegex(html, r"head\('arrow-hi',\s*'var\(--accent\)'\)")
+            self.assertRegex(html, r"\.gedge\.hi\s*\{[^}]*url\(#arrow-hi\)")
+
+    def test_edges_are_grouped_so_a_lifted_one_stays_under_the_nodes(self):
+        """Raising a highlighted edge above its neighbours means re-appending it, and SVG
+        paints in document order — so if edges were siblings of the nodes it would climb
+        over the boxes too. They go in their own group, which bounds how far it can rise."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")
+            self.assertIn("edgeLayer", self.render(d))
+
     def test_graph_has_done_filter_controls(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
