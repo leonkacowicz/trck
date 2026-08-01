@@ -494,13 +494,26 @@ function el(tag, props = {}, ...kids) {
 const byId = Object.fromEntries(DATA.issues.map(i => [i.id, i]));
 const terminal = new Set(DATA.config.statuses.filter(s => s.role === 'terminal').map(s => s.name));
 const prio = DATA.config.priorities;
-const state = { q: '', status: new Set(), priority: new Set(), selected: null, edits: {},
+// What each facet offers a box for. Also the seed for its selection: everything starts
+// checked, so the bar states what is on screen instead of sitting empty beside an
+// unfiltered list, and unchecking is the whole gesture.
+const FACET_VALUES = {
+  status: new Set(DATA.config.statuses.map(s => s.name)),
+  priority: new Set(DATA.config.priorities),
+};
+const state = { q: '', status: new Set(FACET_VALUES.status),
+  priority: new Set(FACET_VALUES.priority), selected: null, edits: {},
   view: 'list', collapsed: new Set(), bodyRaw: false,
   graphIncludeDone: false, graphOmitDone: false };
 
 // --- filter facets (pure; exercised directly by the test suite) --------------
-// Status and priority are multi-select: an empty selection means "no filter", so
-// the default state shows everything and checking boxes narrows from there.
+// Status and priority are multi-select, and every box starts checked, so a selection
+// says exactly what is showing and narrowing means unchecking. It has to mean that all
+// the way down: emptying the selection shows nothing rather than wrapping back around
+// to showing everything, which is the reading that makes the boxes trustworthy.
+//
+// A value the facet offers no box for is exempt — an issue can carry a status the
+// config no longer lists, and nothing that cannot be checked may hide it.
 //
 // Not every view has a use for them. A board already lays issues out *by* status,
 // so filtering by it would blank columns rather than narrow anything; ready is a
@@ -516,8 +529,8 @@ const VIEW_FACETS = {
   ready: [],
 };
 const facetsFor = v => VIEW_FACETS[v] || [];
-const passesFacet = (view, facet, sel, value) =>
-  !facetsFor(view).includes(facet) || !sel.size || sel.has(value);
+const passesFacet = (view, facet, sel, value, vocab) =>
+  !facetsFor(view).includes(facet) || !vocab.has(value) || sel.has(value);
 // --- end filter facets -------------------------------------------------------
 
 // --- staged edits (v2 command-copy): key `${id}::${field}` -> new value ------
@@ -579,8 +592,8 @@ function editSelect(i, field, values) {
 }
 
 function matches(i) {
-  if (!passesFacet(state.view, 'status', state.status, i.status)) return false;
-  if (!passesFacet(state.view, 'priority', state.priority, i.priority)) return false;
+  if (!passesFacet(state.view, 'status', state.status, i.status, FACET_VALUES.status)) return false;
+  if (!passesFacet(state.view, 'priority', state.priority, i.priority, FACET_VALUES.priority)) return false;
   if (state.q) {
     const hay = (i.id + ' ' + i.title + ' ' + (i.body || '') + ' ' + i.labels.join(' ')).toLowerCase();
     if (!hay.includes(state.q.toLowerCase())) return false;
@@ -1211,9 +1224,10 @@ function toggleCollapse(id) {
 }
 // Only the facets the current view actually applies count as "filtering" — a
 // leftover status selection must not make board claim it is showing a subset.
-const filterActive = () => !!(state.q
-  || (facetsFor(state.view).includes('status') && state.status.size)
-  || (facetsFor(state.view).includes('priority') && state.priority.size));
+// A facet narrows when a box is *un*checked now, everything starting checked, so a
+// full selection is the neutral state rather than an empty one.
+const filterActive = () => !!state.q
+  || facetsFor(state.view).some(f => state[f].size < FACET_VALUES[f].size);
 // A node is visible when it matches the filter, or any descendant does — so a
 // matching leaf keeps its ancestor path. Post-order, cycle-guarded.
 function visibleNodes() {

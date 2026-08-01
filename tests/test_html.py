@@ -719,16 +719,29 @@ class TestFilterFacetSemantics(HtmlTestBase):
         with TemporaryDirectory() as tmp:
             self.assertEqual(self.probe(tmp, "facetsFor('ready')"), [])
 
-    def test_an_empty_selection_means_no_filter(self):
+    def test_an_empty_selection_admits_nothing(self):
+        """The boxes start checked, so they say what is showing. That only holds if they
+        mean it all the way down: unchecking the last one shows nothing, rather than
+        wrapping around to showing everything again."""
         with TemporaryDirectory() as tmp:
-            self.assertTrue(
-                self.probe(tmp, "passesFacet('list', 'status', new Set(), 'done')"))
+            self.assertFalse(
+                self.probe(tmp, f"passesFacet('list', 'status', new Set(), 'done', {self.VOCAB})"))
+
+    def test_a_value_the_facet_never_offers_is_not_filtered_out(self):
+        """An issue can carry a status the config no longer lists. There is no box for it,
+        so it can never be checked — and must not be hidden by one nobody can see."""
+        with TemporaryDirectory() as tmp:
+            self.assertTrue(self.probe(
+                tmp, f"passesFacet('list', 'status', new Set(['todo']), 'retired', {self.VOCAB})"))
+
+    VOCAB = "new Set(['todo', 'done'])"
 
     def test_a_selection_admits_only_what_is_checked(self):
         with TemporaryDirectory() as tmp:
             self.assertEqual(
-                self.probe(tmp, "[passesFacet('list', 'status', new Set(['todo']), 'todo'),"
-                                " passesFacet('list', 'status', new Set(['todo']), 'done')]"),
+                self.probe(tmp,
+                           f"[passesFacet('list', 'status', new Set(['todo']), 'todo', {self.VOCAB}),"
+                           f" passesFacet('list', 'status', new Set(['todo']), 'done', {self.VOCAB})]"),
                 [True, False])
 
     def test_a_view_ignores_a_facet_it_does_not_apply(self):
@@ -736,8 +749,9 @@ class TestFilterFacetSemantics(HtmlTestBase):
         consulted there — so returning to list restores what was checked."""
         with TemporaryDirectory() as tmp:
             self.assertEqual(
-                self.probe(tmp, "[passesFacet('board', 'status', new Set(['todo']), 'done'),"
-                                " passesFacet('ready', 'priority', new Set(['high']), 'low')]"),
+                self.probe(tmp,
+                           f"[passesFacet('board', 'status', new Set(['todo']), 'done', {self.VOCAB}),"
+                           f" passesFacet('ready', 'priority', new Set(['high']), 'low', {self.VOCAB})]"),
                 [True, True])
 
 
