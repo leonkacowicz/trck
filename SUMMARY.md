@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 38 |
+| backlog | 45 |
 | ongoing | 2 |
 | in-review | 0 |
 | done | 120 |
-| **total** | **160** |
+| **total** | **167** |
 
 ## Hierarchies
 
@@ -35,6 +35,14 @@ Spec: [`docs/plans/2026-07-30-flat-items-layout.md`](../docs/plans/2026-07-30-fl
 - [x] [#8peq4ea docs: demand ranking in README, help epilog, AGENTS scaffold](items/8peq4ea-docs-demand-ranking-in-readme-help-epilog-agents-scaffold.md)
 - [x] [#aujt85q ready: mark inferred rows with ↑<priority>(#culprit)](items/aujt85q-ready-mark-inferred-rows-with-priority-culprit.md)
 - [x] [#yrre4zn ready/next: rank by the demand vector instead of declared priority](items/yrre4zn-ready-next-rank-by-the-demand-vector-instead-of-declared-priority.md)
+
+### [#9echsrh shell completion for bash, zsh and fish](items/9echsrh-shell-completion-for-bash-zsh-and-fish.md) — 0% (0/11 pts · 0/5 done) · _medium_ · backlog
+
+- [ ] [#c37tmn5 completion: value providers for ids, statuses, priorities, kinds, resolutions, labels, fields](items/c37tmn5-completion-value-providers-for-ids-statuses-priorities-kinds-resolutions-labels-fields.md) _(backlog)_
+- [ ] [#k44jft7 cli: annotate which arguments take ids/statuses/priorities (metavar convention + overrides)](items/k44jft7-cli-annotate-which-arguments-take-ids-statuses-priorities-metavar-convention-overrides.md) _(backlog)_
+- [ ] [#qhf5fa2 completion: __complete callback — parse the command line, walk the argparse tree, emit candidates](items/qhf5fa2-completion-complete-callback-parse-the-command-line-walk-the-argparse-tree-emit-candidates.md) _(backlog)_
+- [ ] [#vyg43dm completion: install path (--install) and README/help documentation](items/vyg43dm-completion-install-path-install-and-readme-help-documentation.md) _(backlog)_
+- [ ] [#wct2nav completion: bash/zsh/fish stubs emitted by 'trck completion <shell>'](items/wct2nav-completion-bash-zsh-fish-stubs-emitted-by-trck-completion-shell.md) _(backlog)_
 
 ### [#dj5b42j deps: infer hierarchy edges so the graph answers 'what is left to finish this parent'](items/dj5b42j-deps-infer-hierarchy-edges-so-the-graph-answers-what-is-left-to-finish-this-parent.md) — 100% (5/5 pts · 5/5 done) · _high_ · done
 
@@ -145,6 +153,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 ## Backlog
 
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](items/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
+- [#jkvexgs docs: record a terminal demo of the next-driven loop for the README](items/jkvexgs-docs-record-a-terminal-demo-of-the-next-driven-loop-for-the-readme.md) — _medium_
 - [#tfhhp8h mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](items/tfhhp8h-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
 - [#v5wvabj list: --since/--until date-range filters over created/started/closed](items/v5wvabj-list-since-until-date-range-filters-over-created-started-closed.md) — _medium_ [dates]
 - [#wh3mv52 mv/done: guard closing a parent with open descendants (--recurse to cascade)](items/wh3mv52-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
