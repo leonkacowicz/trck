@@ -523,6 +523,31 @@ class TestTreeView(HtmlTestBase):
             self.assertIn('id="tree"', html)
             self.assertIn('data-view="tree"', html)
 
+    def test_parents_start_collapsed(self):
+        """The tree opens on its roots, not on every leaf in the tracker — the point of a
+        hierarchy view is to choose what to expand."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")
+            self.assertRegex(self.render(d),
+                             r"collapsed:\s*new Set\(DATA\.issues\.filter\(")
+
+    def test_only_a_search_overrides_a_collapsed_parent(self):
+        """A text query is a hunt for something that may be buried, so it expands past a
+        collapsed parent — a match hidden inside one looks like no match. Unchecking a
+        facet is not that: it narrows the population on show, and blowing the whole tree
+        open because `done` was hidden loses the shape the user arranged.
+
+        The empty-state wording still keys off the wider `filterActive`, since a facet that
+        leaves nothing does owe the reader "no matching issues" rather than "no issues"."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "A")
+            html = self.render(d)
+            self.assertIn("const searching = !!state.q;", html)
+            self.assertRegex(html, r"collapsed\s*=\s*!searching && state\.collapsed\.has\(id\)")
+            self.assertRegex(html, r"text:\s*filterActive\(\)\s*\?\s*'No matching issues\.'")
+
     def test_tree_rows_mark_ready_leaves(self):
         """Actionable work should be visible in context, not only in the ready view —
         the tree is where you go to ask "what's left under this epic?"."""

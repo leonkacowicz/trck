@@ -503,7 +503,10 @@ const FACET_VALUES = {
 };
 const state = { q: '', status: new Set(FACET_VALUES.status),
   priority: new Set(FACET_VALUES.priority), selected: null, edits: {},
-  view: 'list', collapsed: new Set(), bodyRaw: false,
+  // Every parent starts collapsed, so the tree opens on its roots and expanding is the
+  // gesture. A hierarchy view whose default is every leaf at once is just the list.
+  view: 'list', collapsed: new Set(DATA.issues.filter(i => (i.children || []).length)
+                                              .map(i => i.id)), bodyRaw: false,
   graphIncludeDone: false, graphOmitDone: false };
 
 // --- filter facets (pure; exercised directly by the test suite) --------------
@@ -1244,12 +1247,16 @@ function visibleNodes() {
   for (const id of DATA.roots) walk(id, new Set());
   return vis;
 }
-function renderTreeNode(container, id, depth, vis, active) {
+function renderTreeNode(container, id, depth, vis, searching) {
   const i = byId[id];
   if (!i) return;
   const kids = (i.children || []).filter(k => vis.has(k));
   const hasKids = kids.length > 0;
-  const collapsed = !active && state.collapsed.has(id);   // active filter auto-expands
+  // A search expands past a collapsed parent — a match buried inside one reads as no
+  // match at all. Unchecking a facet is a different gesture: it narrows the population
+  // on show, and throwing the whole tree open because `done` was hidden would discard
+  // the shape the reader arranged. The collapsed set is kept either way, never cleared.
+  const collapsed = !searching && state.collapsed.has(id);
   const cls = 'trow' + (terminal.has(i.status) ? ' done' : '') + (id === state.selected ? ' sel' : '');
   const r = el('div', { class: cls, style: 'padding-left:' + (0.6 + depth * 1.1) + 'rem',
     onclick: () => select(id) });
@@ -1271,18 +1278,20 @@ function renderTreeNode(container, id, depth, vis, active) {
   const pl = prLink(i, 'PR');
   if (pl) r.append(pl);
   container.append(r);
-  if (hasKids && !collapsed) for (const k of kids) renderTreeNode(container, k, depth + 1, vis, active);
+  if (hasKids && !collapsed) for (const k of kids) renderTreeNode(container, k, depth + 1, vis, searching);
 }
 function renderTree() {
   const box = $('#tree'); box.textContent = '';
-  const active = filterActive();
+  const searching = !!state.q;
   const vis = visibleNodes();
   const roots = DATA.roots.filter(id => vis.has(id));
   if (!roots.length) {
-    box.append(el('p', { class: 'gempty', text: active ? 'No matching issues.' : 'No issues.' }));
+    // The wording keys off the wider test: a facet that leaves nothing owes the reader
+    // "no matching issues", even though it is not the thing that forces an expand.
+    box.append(el('p', { class: 'gempty', text: filterActive() ? 'No matching issues.' : 'No issues.' }));
     return;
   }
-  for (const id of roots) renderTreeNode(box, id, 0, vis, active);
+  for (const id of roots) renderTreeNode(box, id, 0, vis, searching);
 }
 function renderGraph() {
   const box = $('#graph'); box.textContent = '';
