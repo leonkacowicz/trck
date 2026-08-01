@@ -168,6 +168,19 @@ class TestDataIsland(HtmlTestBase):
                              ["backlog", "ongoing", "in-review", "done"])
             self.assertIn("medium", data["config"]["priorities"])
 
+    def test_repo_is_the_tracker_parent_dir_name(self):
+        # The page header names the *project*, so it comes from the directory that
+        # holds the tracker — never from `update.repo`, which is the engine's release
+        # channel (and is always populated from DEFAULT_CONFIG, so it would otherwise
+        # title every consumer's page with trck's own upstream slug).
+        with TemporaryDirectory() as tmp:
+            proj = Path(tmp) / "prjname"
+            proj.mkdir()
+            d = make_tracker(proj, {"update": {"repo": "someone/upstream"}})
+            self.seed(d, "Alpha")
+            data = island(self.render(d))
+            self.assertEqual(data["repo"], "prjname")
+
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")
 class TestGeneratedJsSyntax(HtmlTestBase):

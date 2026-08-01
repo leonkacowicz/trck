@@ -158,7 +158,10 @@ def _default_cmd():
 def build_model(ctx, cmd=None):
     g = E.load_graph(ctx)
     cfg = ctx.cfg
-    repo = (cfg.get("update") or {}).get("repo") or ctx.dir.parent.name
+    # The project the tracker belongs to: the directory holding it. Deliberately not
+    # `update.repo` — that is the engine's release channel (and DEFAULT_CONFIG always
+    # fills it in, so it would title every consumer's page with trck's upstream slug).
+    repo = ctx.dir.parent.name
     issues = [_issue_dict(g, ctx, r) for r in g.rows]
     # Each id's shortest-unique-prefix length (git-short-hash style), computed with the
     # very helper the CLI uses so the page's highlight matches `trck list` exactly.
