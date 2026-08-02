@@ -6,10 +6,10 @@
 | State | Count |
 |---|---:|
 | backlog | 46 |
-| ongoing | 2 |
+| ongoing | 3 |
 | in-review | 0 |
 | done | 120 |
-| **total** | **168** |
+| **total** | **169** |
 
 ## Hierarchies
 
@@ -174,7 +174,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## Ongoing
 
-_none_
+- [#3f8mb3n release v0.25.0](items/3f8mb3n-release-v0-25-0.md) — _medium_
 
 ## In-review
 
