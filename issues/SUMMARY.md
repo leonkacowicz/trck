@@ -6,9 +6,9 @@
 | State | Count |
 |---|---:|
 | backlog | 46 |
-| ongoing | 3 |
+| ongoing | 2 |
 | in-review | 0 |
-| done | 120 |
+| done | 121 |
 | **total** | **169** |
 
 ## Hierarchies
@@ -174,7 +174,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## Ongoing
 
-- [#3f8mb3n release v0.25.0](items/3f8mb3n-release-v0-25-0.md) — _medium_
+_none_
 
 ## In-review
 
@@ -192,6 +192,7 @@ _none_
 - [#qc48tds Add 'ready'/'next' command: list unblocked, not-done leaves](items/qc48tds-add-ready-next-command-list-unblocked-not-done-leaves.md) — _high_ [tracker-features] (closed 2026-06-06)
 - [#y8asnbe Write root README.md and CLAUDE.md](items/y8asnbe-write-root-readme-md-and-claude-md.md) — _high_ (closed 2026-06-05)
 - [#3e3cn37 init: accept positional dir and add --no-vendor for self-hosting repos](items/3e3cn37-init-accept-positional-dir-and-add-no-vendor-for-self-hosting-repos.md) — _medium_ (closed 2026-06-05)
+- [#3f8mb3n release v0.25.0](items/3f8mb3n-release-v0-25-0.md) — _medium_ (closed 2026-08-02)
 - [#3x6mmhu list: annotate blocked/blocker relationships and clear them when resolved](items/3x6mmhu-list-annotate-blocked-blocker-relationships-and-clear-them-when-resolved.md) — _medium_ [tracker-features] (closed 2026-06-09)
 - [#4vqukyy Part D: richer tracker features](items/4vqukyy-part-d-richer-tracker-features.md) — _medium_ · _superseded_ (closed 2026-06-23)
 - [#5wbwpjv Add full-text search/grep across issue bodies](items/5wbwpjv-add-full-text-search-grep-across-issue-bodies.md) — _medium_ [tracker-features] (closed 2026-06-10)
