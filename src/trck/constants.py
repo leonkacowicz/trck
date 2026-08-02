@@ -5,7 +5,7 @@ from typing import NoReturn
 import re
 import sys
 
-__version__ = "0.24.0"
+__version__ = "0.25.0"
 DEFAULT_UPDATE_REPO = "leonkacowicz/trck"
 SELF_PATH = Path(__file__).resolve()  # the running engine file; tests may override
 
