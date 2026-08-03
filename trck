@@ -81,16 +81,32 @@ def slugify(text: str) -> str:
 # --------------------------------------------------------------------------- #
 # config + discovery
 # --------------------------------------------------------------------------- #
-# `in-review` is a review state, not a lifecycle anchor: it carries no role (the
-# rollup's one-each initial/active/terminal constraint is untouched) and opts out of
-# `actionable`, so ready/next never propose work that is only waiting on a review.
+# The four states a status can stand for. Every decision the engine makes about a status is
+# one of these — does it satisfy a dependency, does it count as started, may `ready` propose
+# it — so a tracker names statuses freely but never invents a state to put them in.
+#
+# `review` is the one that needs a rule, because it looks like it overlaps `depends_on`:
+#
+#   depends_on  when the blocker is real work that someone will do and close.
+#   review      when making it a task would be inventing one.
+#
+# A review is the case that forces the distinction. The reviewer is not producing a
+# deliverable, they are judging yours, so a task for it would be a fiction — and one per
+# reviewable issue would double the tracker. The same holds for a vendor reply or a
+# sign-off: nobody here will ever close it.
+STATES = ("todo", "doing", "review", "done")
+_ROLE_STATE = {"initial": "todo", "active": "doing", "terminal": "done"}
+
+# The shipped vocabulary spells out its states, which is what a tracker written today
+# should look like. `role` and `actionable` still read (see `state_of`) so every config
+# written before states does too, but nothing new should use them.
 DEFAULT_CONFIG = {
     "update": {"repo": DEFAULT_UPDATE_REPO, "channel": "stable"},
     "statuses": [
-        {"name": "backlog", "role": "initial"},
-        {"name": "ongoing", "role": "active"},
-        {"name": "in-review", "actionable": False},
-        {"name": "done", "role": "terminal"},
+        {"state": "todo", "name": "backlog"},
+        {"state": "doing", "name": "ongoing"},
+        {"state": "review", "name": "in-review"},
+        {"state": "done", "name": "done"},
     ],
     "aliases": {"start": "ongoing", "review": "in-review", "done": "done"},
     "priorities": ["urgent", "high", "medium", "low", "lowest"],
@@ -115,6 +131,14 @@ def load_config(tracker_dir: Path) -> dict:
                 cfg["update"].update(v)
             else:
                 cfg[k] = v
+    # One status per state means the vocabulary is only names, so a tracker may write it
+    # as a `state -> name` table. Normalise that to the list form here, once, and every
+    # consumer below stays unaware there are two spellings. Order follows STATES rather
+    # than the table's own, since board columns and summary sections read left to right
+    # and must not depend on how the JSON happened to be typed.
+    if isinstance(cfg.get("statuses"), dict):
+        table = cfg["statuses"]
+        cfg["statuses"] = [{"state": s, "name": table[s]} for s in STATES if s in table]
     return cfg
 
 
@@ -122,21 +146,6 @@ def status_names(cfg: dict) -> list[str]:
     return [s["name"] for s in cfg["statuses"]]
 
 
-# The four states a status can stand for. Every decision the engine makes about a status is
-# one of these — does it satisfy a dependency, does it count as started, may `ready` propose
-# it — so a tracker names statuses freely but never invents a state to put them in.
-#
-# `review` is the one that needs a rule, because it looks like it overlaps `depends_on`:
-#
-#   depends_on  when the blocker is real work that someone will do and close.
-#   review      when making it a task would be inventing one.
-#
-# A review is the case that forces the distinction. The reviewer is not producing a
-# deliverable, they are judging yours, so a task for it would be a fiction — and one per
-# reviewable issue would double the tracker. The same holds for a vendor reply or a
-# sign-off: nobody here will ever close it.
-STATES = ("todo", "doing", "review", "done")
-_ROLE_STATE = {"initial": "todo", "active": "doing", "terminal": "done"}
 
 
 def state_of(cfg: dict, name: str) -> str | None:
@@ -164,6 +173,12 @@ def state_of(cfg: dict, name: str) -> str | None:
 
 def statuses_in(cfg: dict, state: str) -> list[str]:
     return [s["name"] for s in cfg["statuses"] if state_of(cfg, s["name"]) == state]
+
+
+def status_for(cfg: dict, state: str) -> str | None:
+    """The name this tracker calls `state`. One status per state, so there is at most one
+    answer; None when the vocabulary names no status for it."""
+    return next(iter(statuses_in(cfg, state)), None)
 
 
 def default_priority(cfg: dict) -> str:
@@ -214,19 +229,21 @@ def check_points(value: int) -> str | None:
 
 
 def check_status_states(cfg: dict) -> list[str]:
-    """The vocabulary must name exactly one `todo`, one `doing` and one `done`. Rollup
-    derives a parent's status from its children, so each of those three has to resolve to
-    a single status for it to pick.
+    """The vocabulary must name each of the four states exactly once — four states, four
+    statuses, no exemptions. Rollup has to resolve each state to a single status to pick.
 
-    `review` is deliberately exempt: a tracker may want review, QA and awaiting-deploy at
-    once, and rollup never picks a review status — a parent is doing, or it is not.
+    An earlier draft let several statuses share `review`, so a tracker could name `qa` and
+    `awaiting-deploy` apart. That is redundant with custom fields, which already give one
+    value per key and can declare their allowed values — and however issue history is
+    eventually recorded, a field change is as visible as a status change. One vocabulary
+    beats two overlapping ones, and the distinction it was buying has a better home.
 
     Also rejects a `state` outside the four. `state_of` ignores an unknown one and falls
     back to derivation rather than throwing, so the typo has to surface here or nowhere."""
     out = [f"config: status '{s.get('name')}' declares unknown state {s['state']!r} "
            f"(expected one of {', '.join(STATES)})"
            for s in cfg["statuses"] if "state" in s and s["state"] not in STATES]
-    for state in ("todo", "doing", "done"):
+    for state in STATES:
         n = len(statuses_in(cfg, state))
         if n != 1:
             out.append(f"config: exactly one status must mean '{state}' (found {n})")
@@ -276,13 +293,13 @@ def initial_status(cfg: dict) -> str:
     """The status meaning `todo`: what `new` assigns, and what a parent rolls up to while
     none of its children have started. Falls back to the first configured status so a
     vocabulary that names no state is still usable."""
-    return next(iter(statuses_in(cfg, "todo")), cfg["statuses"][0]["name"])
+    return status_for(cfg, "todo") or cfg["statuses"][0]["name"]
 
 
 def active_status(cfg: dict) -> str | None:
     """The status a parent rolls up to while work is in progress (the one status
     meaning `doing`), or None if the vocabulary names no such status."""
-    return next(iter(statuses_in(cfg, "doing")), None)
+    return status_for(cfg, "doing")
 
 
 def terminal_statuses(cfg: dict) -> list[str]:
@@ -3597,6 +3614,11 @@ def cmd_init(args) -> None:
 
     config = json.loads(json.dumps(DEFAULT_CONFIG))
     config["update"]["repo"] = DEFAULT_UPDATE_REPO
+    # Scaffold the vocabulary as the `state -> name` table rather than the list form the
+    # engine works in. Both read (see `load_config`), but this is the one that says what
+    # the tracker actually offers: four states, and these are what you call them. Someone
+    # opening trck.json for the first time should see four names, not four objects.
+    config["statuses"] = {s["state"]: s["name"] for s in config["statuses"]}
     cfgfile.write_text(json.dumps(config, indent=2) + "\n")
 
     if not no_vendor:

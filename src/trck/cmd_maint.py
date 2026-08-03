@@ -260,6 +260,11 @@ def cmd_init(args) -> None:
 
     config = json.loads(json.dumps(DEFAULT_CONFIG))
     config["update"]["repo"] = DEFAULT_UPDATE_REPO
+    # Scaffold the vocabulary as the `state -> name` table rather than the list form the
+    # engine works in. Both read (see `load_config`), but this is the one that says what
+    # the tracker actually offers: four states, and these are what you call them. Someone
+    # opening trck.json for the first time should see four names, not four objects.
+    config["statuses"] = {s["state"]: s["name"] for s in config["statuses"]}
     cfgfile.write_text(json.dumps(config, indent=2) + "\n")
 
     if not no_vendor:

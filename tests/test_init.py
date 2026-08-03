@@ -47,7 +47,13 @@ class TestInit(unittest.TestCase):
             self.assertTrue((d / "CLAUDE.md").exists())
             cfg = json.loads((d / "trck.json").read_text())
             self.assertEqual(cfg["update"]["repo"], self.t.DEFAULT_UPDATE_REPO)
-            self.assertEqual([s["name"] for s in cfg["statuses"]],
+            # Scaffolded as the `state -> name` table: what a new tracker offers is four
+            # states, and the config's job is to say what this repo calls them.
+            self.assertEqual(cfg["statuses"],
+                             {"todo": "backlog", "doing": "ongoing",
+                              "review": "in-review", "done": "done"})
+            # and it loads back to the list form the engine works in
+            self.assertEqual(self.t.status_names(self.t.load_config(d)),
                              ["backlog", "ongoing", "in-review", "done"])
 
     def test_init_refuses_existing_without_force(self):

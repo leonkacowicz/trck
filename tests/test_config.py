@@ -94,17 +94,46 @@ class TestSemanticStates(unittest.TestCase):
         errs = self.t.check_status_states(cfg)
         self.assertTrue(any("pondering" in e for e in errs), errs)
 
-    def test_the_rollup_anchors_must_each_be_named_once(self):
-        """Rollup derives a parent's status from its children, so it needs exactly one
-        status to mean todo, one doing and one done. `review` is exempt — a tracker may
-        have several review states, and rollup never picks one."""
+    def test_every_state_must_be_named_exactly_once(self):
+        """Four states, four statuses, no exemptions.
+
+        An earlier draft let several statuses mean `review`, so a tracker could name
+        `qa` and `awaiting-deploy` separately. That is redundant with custom fields,
+        which already give one value per key and can declare their allowed values — and
+        whichever way issue history lands, a field change is as visible as a status
+        change. One vocabulary beats two overlapping ones."""
         two = {"statuses": [{"name": "a", "state": "todo"}, {"name": "b", "state": "todo"},
                             {"name": "c", "state": "doing"}, {"name": "d", "state": "done"}]}
         self.assertTrue(any("todo" in e for e in self.t.check_status_states(two)))
         many_reviews = {"statuses": [{"name": "a", "state": "todo"}, {"name": "b", "state": "doing"},
-                                   {"name": "c", "state": "review"}, {"name": "d", "state": "review"},
-                                   {"name": "e", "state": "done"}]}
-        self.assertEqual(self.t.check_status_states(many_reviews), [])
+                                     {"name": "c", "state": "review"}, {"name": "d", "state": "review"},
+                                     {"name": "e", "state": "done"}]}
+        self.assertTrue(any("review" in e for e in self.t.check_status_states(many_reviews)))
+        missing = {"statuses": [{"name": "a", "state": "todo"}, {"name": "b", "state": "doing"},
+                                {"name": "c", "state": "done"}]}
+        self.assertTrue(any("review" in e for e in self.t.check_status_states(missing)))
+
+    def test_the_vocabulary_can_be_written_as_a_naming_table(self):
+        """With one status per state the vocabulary is just names, so a tracker may say so
+        directly instead of repeating `state` alongside `name` four times. The list form
+        still reads, because every config written before this one uses it."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {"statuses": {"todo": "icebox", "doing": "wip",
+                                                "review": "review", "done": "shipped"}})
+            cfg = self.t.load_config(d)
+            self.assertEqual(self.t.status_names(cfg), ["icebox", "wip", "review", "shipped"])
+            self.assertEqual(self.t.state_of(cfg, "wip"), "doing")
+            self.assertEqual(self.t.status_for(cfg, "done"), "shipped")
+            self.assertEqual(self.t.check_status_states(cfg), [])
+
+    def test_the_naming_table_orders_statuses_by_state(self):
+        """Board columns and summary sections follow the configured order, so it cannot
+        depend on how the table happened to be written."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {"statuses": {"done": "shipped", "todo": "icebox",
+                                                "review": "checking", "doing": "wip"}})
+            self.assertEqual(self.t.status_names(self.t.load_config(d)),
+                             ["icebox", "wip", "checking", "shipped"])
 
     def test_active_status_from_role(self):
         # the shipped default marks `ongoing` as the active-role status
