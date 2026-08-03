@@ -41,10 +41,18 @@ STATUSES = (BACKLOG, ONGOING, IN_REVIEW, DONE)
 # vocabulary is.
 VERB_STATUS = {"start": ONGOING, "review": IN_REVIEW, "done": DONE}
 
+# The five priorities, likewise fixed. The plan had allowed per-tracker display names —
+# P0..P4 and the like — and that is struck for the same reason it was struck for
+# statuses: two words for one concept costs more in every message and conversation than
+# renaming buys. The middle one is the default, which is what `new` assigns.
+#
+# Fixing the count also fixes the shape of the demand vector, which is one slot per
+# priority; it used to be sized from config.
+PRIORITIES = ("urgent", "high", "medium", "low", "lowest")
+DEFAULT_PRIORITY = PRIORITIES[len(PRIORITIES) // 2]
+
 DEFAULT_CONFIG = {
     "update": {"repo": DEFAULT_UPDATE_REPO, "channel": "stable"},
-    "priorities": ["urgent", "high", "medium", "low", "lowest"],
-    "default_priority": "medium",
     "resolutions": ["superseded", "wontfix", "duplicate"],
 }
 
@@ -78,15 +86,9 @@ def status_names(cfg: dict) -> list[str]:
 
 
 def default_priority(cfg: dict) -> str:
-    """The priority `trck new` assigns when none is given. An explicit
-    `default_priority` wins when it's one of the configured priorities;
-    otherwise fall back to the median of the list (a sensible middle, so
-    repos that override `priorities` without setting a default still work)."""
-    prios = cfg.get("priorities") or []
-    dp = cfg.get("default_priority")
-    if dp in prios:
-        return dp
-    return prios[len(prios) // 2] if prios else ""
+    """What `new` assigns when none is given. `cfg` is accepted and ignored, as with
+    `status_names` — it was configurable once and every caller still threads one."""
+    return DEFAULT_PRIORITY
 
 
 # --- value-vocabulary checks ------------------------------------------------ #
@@ -95,9 +97,9 @@ def default_priority(cfg: dict) -> str:
 # returns None when the value is acceptable, else a human-readable message that
 # still names the configured options.
 def check_priority(cfg: dict, value: str) -> str | None:
-    if value in cfg["priorities"]:
+    if value in PRIORITIES:
         return None
-    return f"bad priority '{value}' (configured: {', '.join(cfg['priorities'])})"
+    return f"bad priority '{value}' (expected one of: {', '.join(PRIORITIES)})"
 
 
 def check_resolution(cfg: dict, value: str) -> str | None:
@@ -126,6 +128,8 @@ def check_vestigial_vocabulary(cfg: dict) -> list[str]:
         "statuses": f"the vocabulary is fixed: {', '.join(STATUSES)}",
         "aliases": f"the verbs map to fixed statuses: {', '.join(STATUSES)}",
         "kinds": "`kind` is an ordinary custom field now (`set --field kind=bug`)",
+        "priorities": f"the priorities are fixed: {', '.join(PRIORITIES)}",
+        "default_priority": f"the default is fixed: {DEFAULT_PRIORITY}",
     }
     return [f"config: '{k}' is no longer configurable and is being ignored ({why})"
             for k, why in gone.items() if k in cfg]

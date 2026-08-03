@@ -180,7 +180,7 @@ def build_model(ctx, cmd=None):
             # and neither should hardcode names the engine owns.
             "statuses": [{"name": n, "terminal": E.is_terminal(cfg, n)}
                          for n in E.status_names(cfg)],
-            "priorities": list(cfg.get("priorities", [])),
+            "priorities": list(E.PRIORITIES),
             "kinds": list(cfg.get("kinds", [])),
             "cmd": cmd or _default_cmd(),
         },

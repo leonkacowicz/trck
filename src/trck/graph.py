@@ -1,6 +1,6 @@
 from __future__ import annotations
 import secrets
-from .config import is_actionable, is_terminal, reconcile
+from .config import PRIORITIES, is_actionable, is_terminal, reconcile
 from .constants import FILENAME_RE, ID_ALPHABET, ID_LEN, ITEMS_DIR
 from .index import Ctx, DEFAULT_POINTS, Issue, file_id, get_id, get_row, load_index
 from .render import priority_rank
@@ -247,8 +247,9 @@ class Graph:
         priority (blocking an urgent issue beats being high), and within a slot a
         larger count wins (blocking two high issues beats blocking one). Levels
         never trade, so no pile of mediums adds up to a high."""
-        order = self.cfg.get("priorities") or []
-        counts = [0] * (len(order) + 1)
+        # One slot per priority plus a trailing bucket, which `priority_rank` sorts an
+        # unrecognised value into — the one way junk still reaches here is a hand edit.
+        counts = [0] * (len(PRIORITIES) + 1)
         for i in self.demand_cone(r):
             counts[priority_rank(self.cfg, self.by_id[i].priority)] += 1
         return tuple(counts)

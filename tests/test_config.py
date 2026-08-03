@@ -22,8 +22,7 @@ class TestConfigDefaults(unittest.TestCase):
             self.assertEqual(self.t.initial_status(cfg), "backlog")
             self.assertTrue(self.t.is_terminal(cfg, "done"))
             self.assertFalse(self.t.is_terminal(cfg, "ongoing"))
-            self.assertEqual(cfg["priorities"],
-                             ["urgent", "high", "medium", "low", "lowest"])
+            self.assertNotIn("priorities", cfg)
             self.assertNotIn("kinds", cfg)
 
 class TestFixedVocabulary(unittest.TestCase):
@@ -91,19 +90,6 @@ class TestConfigRemainder(unittest.TestCase):
     def setUp(self):
         self.t = load_trck()
 
-    def test_default_priority_explicit_invalid_and_fallback(self):
-        dp = self.t.default_priority
-        # explicit, valid -> wins
-        self.assertEqual(dp({"priorities": ["a", "b", "c"],
-                             "default_priority": "b"}), "b")
-        # explicit, not in list -> median fallback
-        self.assertEqual(dp({"priorities": ["a", "b", "c"],
-                             "default_priority": "z"}), "b")
-        # no key -> median of the configured list
-        self.assertEqual(dp({"priorities": ["p0", "p1"]}), "p1")
-        # shipped defaults resolve to medium
-        self.assertEqual(dp(self.t.DEFAULT_CONFIG), "medium")
-
     def test_partial_config_overrides_only_given_keys(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {"priorities": ["p0", "p1"]})
@@ -130,11 +116,11 @@ class TestVocabularyChecks(unittest.TestCase):
         self.cfg = {"priorities": ["high", "low"], "kinds": ["task", "bug"],
                     "resolutions": ["fixed", "wontfix"]}
 
-    def test_check_priority(self):
+    def test_check_priority_names_the_fixed_five(self):
         self.assertIsNone(self.t.check_priority(self.cfg, "high"))
         msg = self.t.check_priority(self.cfg, "bogus")
         self.assertIn("bad priority 'bogus'", msg)
-        self.assertIn("high, low", msg)  # lists the configured set
+        self.assertIn("urgent, high, medium, low, lowest", msg)  # names the fixed set
 
     def test_check_resolution(self):
         self.assertIsNone(self.t.check_resolution(self.cfg, "fixed"))
@@ -236,3 +222,46 @@ class TestDiscovery(unittest.TestCase):
             out = err.getvalue()
             self.assertIn("is not a tracker", out)
             self.assertIn(str(Path(tmp).resolve()), out)
+
+
+class TestFixedPriorities(unittest.TestCase):
+    """Five priorities, fixed — the same treatment the statuses got, for the same reason.
+
+    The plan had said "names as display aliases", so a team could call them P0-P4. That
+    criterion is struck: it is exactly what was deleted for statuses, and two words for
+    one concept costs more than renaming buys. The names shipped are the names."""
+
+    def setUp(self):
+        self.t = load_trck()
+
+    def test_the_five_are_constants(self):
+        self.assertEqual(self.t.PRIORITIES,
+                         ("urgent", "high", "medium", "low", "lowest"))
+
+    def test_the_config_carries_no_priority_vocabulary(self):
+        self.assertNotIn("priorities", self.t.DEFAULT_CONFIG)
+        self.assertNotIn("default_priority", self.t.DEFAULT_CONFIG)
+
+    def test_a_tracker_cannot_redefine_them(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {"priorities": ["p0", "p1"], "default_priority": "p0"})
+            cfg = self.t.load_config(d)
+            self.assertIsNone(self.t.check_priority(cfg, "urgent"))
+            self.assertIsNotNone(self.t.check_priority(cfg, "p0"))
+            self.assertEqual(self.t.default_priority(cfg), "medium")
+
+    def test_the_leftover_keys_warn(self):
+        warns = self.t.check_vestigial_vocabulary(
+            {"priorities": [], "default_priority": "x"})
+        self.assertEqual(len(warns), 2)
+        self.assertTrue(all("no longer configurable" in w for w in warns), warns)
+
+    def test_the_default_is_the_middle_one(self):
+        self.assertEqual(self.t.default_priority(self.t.DEFAULT_CONFIG), "medium")
+        self.assertEqual(self.t.PRIORITIES[len(self.t.PRIORITIES) // 2], "medium")
+
+    def test_rank_orders_them_and_sinks_anything_else(self):
+        rank = lambda p: self.t.priority_rank(self.t.DEFAULT_CONFIG, p)
+        self.assertEqual([rank(p) for p in self.t.PRIORITIES], [0, 1, 2, 3, 4])
+        # A hand-edited row can still carry junk; it sorts last rather than throwing.
+        self.assertEqual(rank("nonesuch"), len(self.t.PRIORITIES))

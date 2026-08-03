@@ -32,10 +32,10 @@ MODEL
               subtree; a parent's deps are inherited by its children. A node
               and its own ancestor/descendant can't depend on each other.
   points      a leaf's weight; rolls up to its epic for progress totals.
-  config      priorities, resolutions, and
-              resolutions all come from trck.json (defaults: backlog ->
-              ongoing -> in-review -> done; start=ongoing, review=in-review,
-              done=done).
+  config      the status and priority vocabularies are fixed: backlog ->
+              ongoing -> in-review -> done, and urgent/high/medium/low/lowest.
+              trck.json holds only what a tracker may actually change --
+              resolutions and the update channel.
 
 RECOMMENDED USAGE
   parent      decomposition, not categorization: make B a child of A only when

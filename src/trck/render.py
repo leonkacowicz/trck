@@ -1,7 +1,7 @@
 from __future__ import annotations
 import os
 import sys
-from .config import BACKLOG, DONE, IN_REVIEW, ONGOING
+from .config import BACKLOG, DONE, IN_REVIEW, ONGOING, PRIORITIES
 from .graph import Graph, transitive_reduction
 from .index import Ctx, Issue
 
@@ -88,19 +88,18 @@ def parse_status_filter(spec: str | None) -> tuple[set, set]:
 
 
 def priority_rank(cfg: dict, prio: str) -> int:
-    """Sort key: 0 = highest configured priority. Unknown priorities sort last."""
-    order = cfg.get("priorities") or []
+    """Sort key: 0 = highest priority. Anything unrecognised sorts last — a hand-edited
+    row can still carry junk, and it should sink rather than throw."""
     try:
-        return order.index(prio)
+        return PRIORITIES.index(prio)
     except ValueError:
-        return len(order)
+        return len(PRIORITIES)
 
 
 def priority_codes(cfg: dict, prio: str) -> tuple:
-    order = cfg.get("priorities") or []
-    if order and prio == order[0]:
+    if prio == PRIORITIES[0]:
         return ("red",)
-    if order and prio == order[-1]:
+    if prio == PRIORITIES[-1]:
         return ("dim",)
     return ()
 
