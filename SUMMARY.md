@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 46 |
+| backlog | 70 |
 | ongoing | 2 |
 | in-review | 0 |
 | done | 121 |
-| **total** | **169** |
+| **total** | **193** |
 
 ## Hierarchies
 
@@ -139,6 +139,32 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#k9snjz3 list --json: nested hierarchy (and --flat --json flat array)](items/k9snjz3-list-json-nested-hierarchy-and-flat-json-flat-array.md) _(backlog)_
 - [ ] [#kaqhtfc list/tree: drop the tree alias (nested forest is list's default)](items/kaqhtfc-list-tree-drop-the-tree-alias-nested-forest-is-list-s-default.md) _(backlog)_
 - [ ] [#v8tmkrt json: shared emit_json stdout seam + --json flag plumbing](items/v8tmkrt-json-shared-emit-json-stdout-seam-json-flag-plumbing.md) _(backlog)_
+
+### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 0% (0/94 pts · 0/23 done) · _medium_ · backlog
+
+- [ ] [#2w5panf rust: diff and changelog](items/2w5panf-rust-diff-and-changelog.md) _(backlog)_
+- [ ] [#4susb3g rust: query verbs — list, tree, show](items/4susb3g-rust-query-verbs-list-tree-show.md) _(backlog)_
+- [ ] [#5p738hu conformance: fixture format and the Python runner](items/5p738hu-conformance-fixture-format-and-the-python-runner.md) _(backlog)_
+- [ ] [#88ax67p conformance: convert the graph-semantics tests](items/88ax67p-conformance-convert-the-graph-semantics-tests.md) _(backlog)_
+- [ ] [#8pwztvy rust: ready and next, with the demand annotations](items/8pwztvy-rust-ready-and-next-with-the-demand-annotations.md) _(backlog)_
+- [ ] [#9898xru rust: release artifacts per platform, and self-update](items/9898xru-rust-release-artifacts-per-platform-and-self-update.md) _(backlog)_
+- [ ] [#9fajv3x format: version trck.json and refuse a tracker newer than the engine](items/9fajv3x-format-version-trck-json-and-refuse-a-tracker-newer-than-the-engine.md) _(backlog)_
+- [ ] [#av3efth conformance: convert the on-disk artifact tests](items/av3efth-conformance-convert-the-on-disk-artifact-tests.md) _(backlog)_
+- [ ] [#b2r89au rust: fold in the html view](items/b2r89au-rust-fold-in-the-html-view.md) _(backlog)_
+- [ ] [#bdmgj7r rust: the deps gutter renderer](items/bdmgj7r-rust-the-deps-gutter-renderer.md) _(backlog)_
+- [ ] [#d7y2emr rust: config, vocabulary and tracker discovery](items/d7y2emr-rust-config-vocabulary-and-tracker-discovery.md) _(backlog)_
+- [ ] [#djx63gk cutover: un-vendor, retire the Python engine, rewrite the docs](items/djx63gk-cutover-un-vendor-retire-the-python-engine-rewrite-the-docs.md) _(backlog)_
+- [ ] [#eek4hat rust: check, validate and the repo maintenance verbs](items/eek4hat-rust-check-validate-and-the-repo-maintenance-verbs.md) _(backlog)_
+- [ ] [#ehqv6sk rust: graph semantics — parents, effective deps, demand, readiness](items/ehqv6sk-rust-graph-semantics-parents-effective-deps-demand-readiness.md) _(backlog)_
+- [ ] [#gh363h3 rust: --json output for list, show, deps and ready](items/gh363h3-rust-json-output-for-list-show-deps-and-ready.md) _(backlog)_
+- [ ] [#gtkastb rust: mutating verbs and SUMMARY generation](items/gtkastb-rust-mutating-verbs-and-summary-generation.md) _(backlog)_
+- [ ] [#h8nxqx7 vocabulary: fix priorities at five canonical levels, names as display aliases](items/h8nxqx7-vocabulary-fix-priorities-at-five-canonical-levels-names-as-display-aliases.md) _(backlog)_
+- [ ] [#n8v8qba rust: workspace, CI, and the conformance runner](items/n8v8qba-rust-workspace-ci-and-the-conformance-runner.md) _(backlog)_
+- [ ] [#qgpk65t vocabulary: fix statuses to four semantic states, names as labels over them](items/qgpk65t-vocabulary-fix-statuses-to-four-semantic-states-names-as-labels-over-them.md) _(backlog)_
+- [ ] [#rbast9r repo: migrate an existing tracker to the fixed vocabulary and the new format](items/rbast9r-repo-migrate-an-existing-tracker-to-the-fixed-vocabulary-and-the-new-format.md) _(backlog)_
+- [ ] [#s5uw8mx rust: issue model, index I/O and canonical serialisation](items/s5uw8mx-rust-issue-model-index-i-o-and-canonical-serialisation.md) _(backlog)_
+- [ ] [#uq2zc2p conformance: convert the deps gutter tests](items/uq2zc2p-conformance-convert-the-deps-gutter-tests.md) _(backlog)_
+- [ ] [#xm6h2qn conformance: convert the command-output tests](items/xm6h2qn-conformance-convert-the-command-output-tests.md) _(backlog)_
 
 ### [#u5fc5vm trck diff: semantic diff of tracker state between revisions](items/u5fc5vm-trck-diff-semantic-diff-of-tracker-state-between-revisions.md) — 29% (5/17 pts · 2/8 done) · _medium_ · ongoing
 
