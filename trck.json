@@ -3,13 +3,6 @@
     "repo": "leonkacowicz/trck",
     "channel": "stable"
   },
-  "priorities": [
-    "urgent",
-    "high",
-    "medium",
-    "low",
-    "lowest"
-  ],
   "resolutions": [
     "superseded",
     "wontfix",
