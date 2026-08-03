@@ -64,11 +64,13 @@ class TestInReviewVocabulary(Base):
         cfg = self.t.DEFAULT_CONFIG
         self.assertEqual(self.t.status_names(cfg),
                          ["backlog", "ongoing", "in-review", "done"])
-        # it is a waiting state, not a lifecycle anchor: no role at all
-        self.assertIsNone(self.t.status_role(cfg, "in-review"))
+        # it stands for the `review` state: in flight, but its own output is pending
+        # someone else's judgement, so there is nothing here to pick up
+        self.assertEqual(self.t.state_of(cfg, "in-review"), "review")
         self.assertFalse(self.t.is_terminal(cfg, "in-review"))
-        # the one-each role constraint still holds
-        self.assertEqual(self.t.check_status_roles(cfg), [])
+        self.assertFalse(self.t.is_actionable(cfg, "in-review"))
+        # the one-each constraint holds for the three rollup anchors; review is exempt
+        self.assertEqual(self.t.check_status_states(cfg), [])
         self.assertEqual(self.t.initial_status(cfg), "backlog")
         self.assertEqual(self.t.active_status(cfg), "ongoing")
         self.assertEqual(self.t.terminal_statuses(cfg), ["done"])
@@ -77,14 +79,16 @@ class TestInReviewVocabulary(Base):
         self.assertEqual(self.t.resolve_alias(self.t.DEFAULT_CONFIG, "review"),
                          "in-review")
 
-    def test_is_actionable_defaults_true_and_honours_opt_out(self):
+    def test_only_todo_and_doing_offer_work_to_pick_up(self):
+        """Actionability reads the state now, rather than failing open for anything that
+        did not opt out. `done` therefore answers False where it used to answer True —
+        readiness always excluded it separately, so nothing downstream changes, but the
+        predicate no longer claims a finished issue is something to start."""
         cfg = self.t.DEFAULT_CONFIG
-        for name in ("backlog", "ongoing", "done"):
-            self.assertTrue(self.t.is_actionable(cfg, name), name)
-        self.assertFalse(self.t.is_actionable(cfg, "in-review"))
-        # a status the vocabulary doesn't know is actionable (fail-open)
+        self.assertEqual([self.t.is_actionable(cfg, n) for n in self.t.status_names(cfg)],
+                         [True, True, False, False])
+        # a status the vocabulary doesn't describe still fails open
         self.assertTrue(self.t.is_actionable(cfg, "nonesuch"))
-        # an explicit true is honoured
         self.assertTrue(self.t.is_actionable(
             {"statuses": [{"name": "qa", "actionable": True}]}, "qa"))
 

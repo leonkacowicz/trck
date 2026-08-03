@@ -81,7 +81,7 @@ def slugify(text: str) -> str:
 # --------------------------------------------------------------------------- #
 # config + discovery
 # --------------------------------------------------------------------------- #
-# `in-review` is a waiting state, not a lifecycle anchor: it carries no role (the
+# `in-review` is a review state, not a lifecycle anchor: it carries no role (the
 # rollup's one-each initial/active/terminal constraint is untouched) and opts out of
 # `actionable`, so ready/next never propose work that is only waiting on a review.
 DEFAULT_CONFIG = {
@@ -122,11 +122,48 @@ def status_names(cfg: dict) -> list[str]:
     return [s["name"] for s in cfg["statuses"]]
 
 
-def status_role(cfg: dict, name: str) -> str | None:
+# The four states a status can stand for. Every decision the engine makes about a status is
+# one of these — does it satisfy a dependency, does it count as started, may `ready` propose
+# it — so a tracker names statuses freely but never invents a state to put them in.
+#
+# `review` is the one that needs a rule, because it looks like it overlaps `depends_on`:
+#
+#   depends_on  when the blocker is real work that someone will do and close.
+#   review      when making it a task would be inventing one.
+#
+# A review is the case that forces the distinction. The reviewer is not producing a
+# deliverable, they are judging yours, so a task for it would be a fiction — and one per
+# reviewable issue would double the tracker. The same holds for a vendor reply or a
+# sign-off: nobody here will ever close it.
+STATES = ("todo", "doing", "review", "done")
+_ROLE_STATE = {"initial": "todo", "active": "doing", "terminal": "done"}
+
+
+def state_of(cfg: dict, name: str) -> str | None:
+    """The state a status stands for; None if the vocabulary has no such status, or has one
+    that says nothing about where it sits.
+
+    A status may declare `state` outright and that always wins — otherwise migrating a
+    config could never correct a mapping the older fields got wrong. Failing that the state
+    is derived from those fields, so a tracker written before states reads correctly:
+    opting out of `actionable` is the whole content of `review`, and the three lifecycle
+    roles are the other three states under their old names.
+
+    A `state` outside the four is ignored here and reported by `check_status_states` — a
+    typo should fail validation loudly, not make every read of the vocabulary throw."""
     for s in cfg["statuses"]:
-        if s["name"] == name:
-            return s.get("role")
+        if s["name"] != name:
+            continue
+        if s.get("state") in STATES:
+            return s["state"]
+        if s.get("actionable") is False:
+            return "review"
+        return _ROLE_STATE.get(s.get("role"))
     return None
+
+
+def statuses_in(cfg: dict, state: str) -> list[str]:
+    return [s["name"] for s in cfg["statuses"] if state_of(cfg, s["name"]) == state]
 
 
 def default_priority(cfg: dict) -> str:
@@ -176,15 +213,23 @@ def check_points(value: int) -> str | None:
     return f"bad points {value} (must be a non-negative integer)"
 
 
-def check_status_roles(cfg: dict) -> list[str]:
-    """The status vocabulary must name exactly one `initial`, one `active`, and one
-    `terminal` status — the three lifecycle anchors the rollup (#67) reasons about.
-    Returns one message per role that is missing or duplicated."""
-    out = []
-    for role in ("initial", "active", "terminal"):
-        n = sum(1 for s in cfg["statuses"] if s.get("role") == role)
+def check_status_states(cfg: dict) -> list[str]:
+    """The vocabulary must name exactly one `todo`, one `doing` and one `done`. Rollup
+    derives a parent's status from its children, so each of those three has to resolve to
+    a single status for it to pick.
+
+    `review` is deliberately exempt: a tracker may want review, QA and awaiting-deploy at
+    once, and rollup never picks a review status — a parent is doing, or it is not.
+
+    Also rejects a `state` outside the four. `state_of` ignores an unknown one and falls
+    back to derivation rather than throwing, so the typo has to surface here or nowhere."""
+    out = [f"config: status '{s.get('name')}' declares unknown state {s['state']!r} "
+           f"(expected one of {', '.join(STATES)})"
+           for s in cfg["statuses"] if "state" in s and s["state"] not in STATES]
+    for state in ("todo", "doing", "done"):
+        n = len(statuses_in(cfg, state))
         if n != 1:
-            out.append(f"config: exactly one status must carry role '{role}' (found {n})")
+            out.append(f"config: exactly one status must mean '{state}' (found {n})")
     return out
 
 
@@ -221,37 +266,31 @@ def detect_legacy_layout(cfg: dict, tracker_dir: Path) -> list[Path]:
 def is_actionable(cfg: dict, name: str) -> bool:
     """Whether `ready`/`next` may propose an issue in this status as work to pick up.
 
-    True unless the status opts out with `"actionable": false` — the generic way to
-    model a waiting state (in-review, qa, awaiting-deploy) where the issue is in
-    flight but there is nothing for anyone to start. Unknown statuses fail open."""
-    for s in cfg["statuses"]:
-        if s["name"] == name:
-            return s.get("actionable", True)
-    return True
+    False for `review` — the issue is in flight but its own output is pending someone
+    else's judgement, so there is nothing to start — and for `done`. A status the
+    vocabulary does not describe fails open, as it did before states existed."""
+    return state_of(cfg, name) not in ("review", "done")
 
 
 def initial_status(cfg: dict) -> str:
-    for s in cfg["statuses"]:
-        if s.get("role") == "initial":
-            return s["name"]
-    return cfg["statuses"][0]["name"]
+    """The status meaning `todo`: what `new` assigns, and what a parent rolls up to while
+    none of its children have started. Falls back to the first configured status so a
+    vocabulary that names no state is still usable."""
+    return next(iter(statuses_in(cfg, "todo")), cfg["statuses"][0]["name"])
 
 
 def active_status(cfg: dict) -> str | None:
     """The status a parent rolls up to while work is in progress (the one status
-    carrying `role: active`), or None if the vocabulary declares no active role."""
-    for s in cfg["statuses"]:
-        if s.get("role") == "active":
-            return s["name"]
-    return None
+    meaning `doing`), or None if the vocabulary names no such status."""
+    return next(iter(statuses_in(cfg, "doing")), None)
 
 
 def terminal_statuses(cfg: dict) -> list[str]:
-    return [s["name"] for s in cfg["statuses"] if s.get("role") == "terminal"]
+    return statuses_in(cfg, "done")
 
 
 def is_terminal(cfg: dict, name: str) -> bool:
-    return status_role(cfg, name) == "terminal"
+    return state_of(cfg, name) == "done"
 
 
 def reconcile(cfg: dict, child_statuses: list[str]) -> str | None:
@@ -1739,7 +1778,7 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
     filesystem-vs-index consistency check is unaffected. Omit `rows` to validate the
     persisted index as loaded from disk."""
     errors, warnings = [], []
-    errors.extend(check_status_roles(ctx.cfg))
+    errors.extend(check_status_states(ctx.cfg))
     errors.extend(check_status_flags(ctx.cfg))
     if rows is None:
         rows = load_index(ctx)
@@ -1842,11 +1881,11 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
 # --------------------------------------------------------------------------- #
 # tree rendering helpers (used by SUMMARY, tree, deps)
 # --------------------------------------------------------------------------- #
-STATUS_ICON = {"terminal": "●", "initial": "○", "active": "◐", None: "◐"}  # single-width, aligned
+STATUS_ICON = {"done": "●", "todo": "○", "doing": "◐", "review": "◐", None: "◐"}  # single-width, aligned
 
 
 def status_icon(ctx: Ctx, name: str) -> str:
-    return STATUS_ICON.get(status_role(ctx.cfg, name), "⏳")
+    return STATUS_ICON.get(state_of(ctx.cfg, name), "⏳")
 
 
 # colour: TTY-gated, honors NO_COLOR. Never used for SUMMARY.md (a persisted file).
@@ -1940,10 +1979,10 @@ def priority_codes(cfg: dict, prio: str) -> tuple:
 
 
 def status_codes(cfg: dict, name: str) -> tuple:
-    role = status_role(cfg, name)
-    if role == "terminal":
+    state = state_of(cfg, name)
+    if state == "done":
         return ("green",)
-    if role == "initial":
+    if state == "todo":
         return ("dim",)
     return ("yellow",)
 

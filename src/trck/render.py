@@ -1,18 +1,18 @@
 from __future__ import annotations
 import os
 import sys
-from .config import status_role
+from .config import state_of
 from .graph import Graph, transitive_reduction
 from .index import Ctx, Issue
 
 # --------------------------------------------------------------------------- #
 # tree rendering helpers (used by SUMMARY, tree, deps)
 # --------------------------------------------------------------------------- #
-STATUS_ICON = {"terminal": "●", "initial": "○", "active": "◐", None: "◐"}  # single-width, aligned
+STATUS_ICON = {"done": "●", "todo": "○", "doing": "◐", "review": "◐", None: "◐"}  # single-width, aligned
 
 
 def status_icon(ctx: Ctx, name: str) -> str:
-    return STATUS_ICON.get(status_role(ctx.cfg, name), "⏳")
+    return STATUS_ICON.get(state_of(ctx.cfg, name), "⏳")
 
 
 # colour: TTY-gated, honors NO_COLOR. Never used for SUMMARY.md (a persisted file).
@@ -106,10 +106,10 @@ def priority_codes(cfg: dict, prio: str) -> tuple:
 
 
 def status_codes(cfg: dict, name: str) -> tuple:
-    role = status_role(cfg, name)
-    if role == "terminal":
+    state = state_of(cfg, name)
+    if state == "done":
         return ("green",)
-    if role == "initial":
+    if state == "todo":
         return ("dim",)
     return ("yellow",)
 

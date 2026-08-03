@@ -51,7 +51,7 @@ class TestValidate(unittest.TestCase):
             errors, _ = self.t.validate(ctx)
             self.assertTrue(any("does not exist" in e for e in errors))
 
-    def test_missing_active_role_is_config_error(self):
+    def test_a_vocabulary_naming_no_doing_state_is_a_config_error(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp, {"statuses": [
                 {"name": "backlog", "role": "initial"},
@@ -60,9 +60,11 @@ class TestValidate(unittest.TestCase):
             self.write(ctx, row)
             self.t.save_index(ctx, [row])
             errors, _ = self.t.validate(ctx)
-            self.assertTrue(any("active" in e and "role" in e for e in errors))
+            # the old `role:` keys still derive, so this is legal input — what it lacks
+            # is any status meaning `doing`, which rollup has to have one of to pick.
+            self.assertTrue(any("doing" in e for e in errors), errors)
 
-    def test_duplicate_initial_role_is_config_error(self):
+    def test_two_statuses_meaning_todo_is_a_config_error(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp, {"statuses": [
                 {"name": "backlog", "role": "initial"},
@@ -73,7 +75,7 @@ class TestValidate(unittest.TestCase):
             self.write(ctx, row)
             self.t.save_index(ctx, [row])
             errors, _ = self.t.validate(ctx)
-            self.assertTrue(any("initial" in e and "role" in e for e in errors))
+            self.assertTrue(any("todo" in e for e in errors), errors)
 
     def test_non_pinned_parent_off_its_rollup_is_error(self):
         with TemporaryDirectory() as tmp:

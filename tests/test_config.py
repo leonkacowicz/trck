@@ -27,6 +27,85 @@ class TestConfigDefaults(unittest.TestCase):
             self.assertEqual(cfg["kinds"],
                              ["task", "epic", "bug", "story", "investigation"])
 
+class TestSemanticStates(unittest.TestCase):
+    """A status is a label over one of four states, not a free-form lifecycle position.
+
+    The states were always there — `role` plus `actionable` encode exactly these four —
+    but they were secondary, derived by each caller from two independent fields. Making
+    the state primary is what lets the engine ask "is this in review?" instead of "does it
+    lack a role and opt out of actionable?", and it is the vocabulary a Rust port and any
+    cross-tracker tool can rely on."""
+
+    def setUp(self):
+        self.t = load_trck()
+
+    def test_the_shipped_vocabulary_covers_every_state(self):
+        cfg = self.t.DEFAULT_CONFIG
+        self.assertEqual([self.t.state_of(cfg, n) for n in self.t.status_names(cfg)],
+                         ["todo", "doing", "review", "done"])
+
+    def test_a_state_may_be_declared_outright(self):
+        cfg = {"statuses": [{"name": "icebox", "state": "todo"},
+                            {"name": "qa", "state": "review"}]}
+        self.assertEqual(self.t.state_of(cfg, "icebox"), "todo")
+        self.assertEqual(self.t.state_of(cfg, "qa"), "review")
+
+    def test_a_declared_state_wins_over_the_derived_one(self):
+        """Derivation exists to read configs written before states did. Where a tracker
+        says what it means, that is the answer — otherwise migrating a config would be
+        unable to correct a mapping the old fields got wrong."""
+        cfg = {"statuses": [{"name": "x", "role": "initial", "state": "doing"}]}
+        self.assertEqual(self.t.state_of(cfg, "x"), "doing")
+
+    def test_states_are_derived_from_the_old_role_and_flag(self):
+        cfg = {"statuses": [{"name": "a", "role": "initial"},
+                            {"name": "b", "role": "active"},
+                            {"name": "c", "actionable": False},
+                            {"name": "d", "role": "terminal"}]}
+        self.assertEqual([self.t.state_of(cfg, n) for n in "abcd"],
+                         ["todo", "doing", "review", "done"])
+
+    def test_a_status_that_only_opts_out_of_actionable_is_in_review(self):
+        # `actionable: false` says "in flight, nothing to pick up" whatever else it
+        # carries — that is the whole content of `review`.
+        cfg = {"statuses": [{"name": "blocked", "role": "active", "actionable": False}]}
+        self.assertEqual(self.t.state_of(cfg, "blocked"), "review")
+
+    def test_an_unknown_status_is_not_guessed_at(self):
+        self.assertIsNone(self.t.state_of(self.t.DEFAULT_CONFIG, "nonesuch"))
+
+    def test_predicates_read_the_state_not_the_old_fields(self):
+        cfg = {"statuses": [{"name": "a", "state": "todo"}, {"name": "b", "state": "doing"},
+                            {"name": "c", "state": "review"}, {"name": "d", "state": "done"}]}
+        self.assertEqual(self.t.initial_status(cfg), "a")
+        self.assertEqual(self.t.active_status(cfg), "b")
+        self.assertEqual(self.t.terminal_statuses(cfg), ["d"])
+        self.assertTrue(self.t.is_terminal(cfg, "d"))
+        self.assertEqual([self.t.is_actionable(cfg, n) for n in "abcd"],
+                         [True, True, False, False])
+
+    def test_a_terminal_status_is_never_actionable(self):
+        """`is_actionable` used to fail open for anything not opting out, so a terminal
+        status answered True and readiness had to exclude it separately."""
+        self.assertFalse(self.t.is_actionable(self.t.DEFAULT_CONFIG, "done"))
+
+    def test_a_state_outside_the_four_is_rejected(self):
+        cfg = {"statuses": [{"name": "x", "state": "pondering"}]}
+        errs = self.t.check_status_states(cfg)
+        self.assertTrue(any("pondering" in e for e in errs), errs)
+
+    def test_the_rollup_anchors_must_each_be_named_once(self):
+        """Rollup derives a parent's status from its children, so it needs exactly one
+        status to mean todo, one doing and one done. `review` is exempt — a tracker may
+        have several review states, and rollup never picks one."""
+        two = {"statuses": [{"name": "a", "state": "todo"}, {"name": "b", "state": "todo"},
+                            {"name": "c", "state": "doing"}, {"name": "d", "state": "done"}]}
+        self.assertTrue(any("todo" in e for e in self.t.check_status_states(two)))
+        many_reviews = {"statuses": [{"name": "a", "state": "todo"}, {"name": "b", "state": "doing"},
+                                   {"name": "c", "state": "review"}, {"name": "d", "state": "review"},
+                                   {"name": "e", "state": "done"}]}
+        self.assertEqual(self.t.check_status_states(many_reviews), [])
+
     def test_active_status_from_role(self):
         # the shipped default marks `ongoing` as the active-role status
         self.assertEqual(self.t.active_status(self.t.DEFAULT_CONFIG), "ongoing")
