@@ -10,14 +10,6 @@
     "low",
     "lowest"
   ],
-  "kinds": [
-    "task",
-    "epic",
-    "bug",
-    "story",
-    "investigation",
-    "decision"
-  ],
   "resolutions": [
     "superseded",
     "wontfix",
