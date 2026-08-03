@@ -1,4 +1,4 @@
-# vocabulary: fix priorities at five canonical levels, names as display aliases
+# vocabulary: fix priorities at five canonical levels
 
 ## Summary
 Five priorities cover the cases that matter, and fixing the count turns the demand vector from a
@@ -25,3 +25,25 @@ possible.
 
 ## Notes
 Must land before the conformance goldens are frozen, or every priority-bearing fixture churns.
+
+## Outcome
+
+`PRIORITIES` and `DEFAULT_PRIORITY` are constants; `priorities` and `default_priority` are gone
+from `trck.json`, which now holds only `update` and `resolutions`.
+
+**The display-aliases criterion is struck.** It was written before the statuses collapsed, and it
+is exactly what that collapse deleted: two words for one concept, in every message, doc and
+conversation. `P0`-`P4` is admittedly more common house vocabulary than renaming `done` is, so
+this is the strongest case for an exception — and it still is not strong enough to be
+inconsistent over. With it struck, "store canonical, show alias" collapses to "store the value",
+and the CLI has nothing extra to accept.
+
+No rows were rewritten. The five canonical names are what every tracker already stores, here and
+in the bundled example.
+
+`priority_rank` keeps its trailing bucket for an unrecognised value, and `demand_vector` keeps the
+matching slot. Validation rejects a bad priority on the way in, so the only route left is a hand
+edit — which should sink to the bottom of the ranking, not throw.
+
+Landed with the statuses work in the same sweep: `86e5a80` demoted `kind`, and this is the last
+of the three vocabularies.
