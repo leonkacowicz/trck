@@ -19,7 +19,7 @@ class TestIdArgs(unittest.TestCase):
 
     def test_get_row_coerces_int_token(self):
         t = self.t
-        row = t.Issue(id="5", slug="s", title="T", kind="task",
+        row = t.Issue(id="5", slug="s", title="T",
                       status="backlog", priority="high")
         self.assertIs(t.get_row([row], 5), row)    # int token still resolves
         self.assertIs(t.get_row([row], "5"), row)
@@ -32,7 +32,7 @@ class TestAliases(unittest.TestCase):
     def seed(self, d):
         buf = io.StringIO()
         with redirect_stdout(buf):
-            self.t.cmd_new(ns(dir=str(d), title="Item", priority="high", kind=None,
+            self.t.cmd_new(ns(dir=str(d), title="Item", priority="high",
                               parent=None, depends=None, spec=None, slug=None))
         prefix = Path(buf.getvalue().strip()).name.split("-")[0]
         return str(int(prefix)) if prefix.isdigit() else prefix

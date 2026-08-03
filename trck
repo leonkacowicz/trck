@@ -119,7 +119,6 @@ DEFAULT_CONFIG = {
     "update": {"repo": DEFAULT_UPDATE_REPO, "channel": "stable"},
     "priorities": ["urgent", "high", "medium", "low", "lowest"],
     "default_priority": "medium",
-    "kinds": ["task", "epic", "bug", "story", "investigation"],
     "resolutions": ["superseded", "wontfix", "duplicate"],
 }
 
@@ -175,12 +174,6 @@ def check_priority(cfg: dict, value: str) -> str | None:
     return f"bad priority '{value}' (configured: {', '.join(cfg['priorities'])})"
 
 
-def check_kind(cfg: dict, value: str) -> str | None:
-    if value in cfg["kinds"]:
-        return None
-    return f"bad kind '{value}' (configured: {', '.join(cfg['kinds'])})"
-
-
 def check_resolution(cfg: dict, value: str) -> str | None:
     if value in cfg["resolutions"]:
         return None
@@ -200,12 +193,16 @@ def check_points(value: int) -> str | None:
 
 
 def check_vestigial_vocabulary(cfg: dict) -> list[str]:
-    """`statuses` and `aliases` used to configure the vocabulary and no longer do. A
-    tracker that still carries them is not broken — the keys are simply ignored — so this
-    is a warning naming the migration, not an error that would lock the tracker out."""
-    return [f"config: '{k}' is no longer configurable and is being ignored "
-            f"(the vocabulary is fixed: {', '.join(STATUSES)})"
-            for k in ("statuses", "aliases") if k in cfg]
+    """Config keys that used to define a vocabulary and no longer do. A tracker still
+    carrying one is not broken — the key is ignored — so this is a warning naming the
+    replacement, not an error that would lock the tracker out of every verb."""
+    gone = {
+        "statuses": f"the vocabulary is fixed: {', '.join(STATUSES)}",
+        "aliases": f"the verbs map to fixed statuses: {', '.join(STATUSES)}",
+        "kinds": "`kind` is an ordinary custom field now (`set --field kind=bug`)",
+    }
+    return [f"config: '{k}' is no longer configurable and is being ignored ({why})"
+            for k, why in gone.items() if k in cfg]
 
 
 def detect_legacy_layout(cfg: dict, tracker_dir: Path) -> list[Path]:
@@ -323,7 +320,7 @@ def resolve_tracker_dir_or_die(dir_opt, env=None) -> Path:
 # context + index I/O
 # --------------------------------------------------------------------------- #
 CANON_KEYS = [
-    "id", "slug", "title", "kind", "status", "priority", "points", "parent",
+    "id", "slug", "title", "status", "priority", "points", "parent",
     "labels", "depends_on", "spec", "pr", "created", "started", "closed",
     "resolution", "manual_status", "legacy_id",
 ]
@@ -380,7 +377,6 @@ class Issue:
     id: str
     slug: str
     title: str
-    kind: str
     status: str
     priority: str
     points: int = 1
@@ -436,11 +432,11 @@ class Issue:
             if isinstance(v, str) and not v:
                 bad(name, "must not be empty")
 
-        for k in ("id", "slug", "title", "kind", "status", "priority"):
+        for k in ("id", "slug", "title", "status", "priority"):
             if d.get(k) is None:
                 bad(k, "is required")
         want_id("id", d["id"])
-        for k in ("slug", "title", "kind", "status", "priority"):
+        for k in ("slug", "title", "status", "priority"):
             if not isinstance(d[k], str):
                 bad(k, f"must be a string, got {d[k]!r}")
         if "points" in d:
@@ -1758,8 +1754,6 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
             errors.append(f"#{iid} bad slug '{r.slug}'")
         if r.status not in names:
             errors.append(f"#{iid} unknown status '{r.status}'")
-        if (m := check_kind(ctx.cfg, r.kind)):
-            errors.append(f"#{iid} {m}")
         if (m := check_priority(ctx.cfg, r.priority)):
             errors.append(f"#{iid} {m}")
         pts = r.points  # parse guarantees an int; here we check the value/placement
@@ -2014,8 +2008,10 @@ def demand_annotation(g: Graph, r: Issue, abbrev=None) -> str:
     return f"  {prio}({hl_id(src.id, abbrev)})"
 
 
-def node_label(ctx: Ctx, r: Issue, focal: bool = False, abbrev=None) -> str:
-    tag = " ·epic·" if r.kind == "epic" else ""
+def node_label(ctx: Ctx, g: Graph, r: Issue, focal: bool = False, abbrev=None) -> str:
+    # `·epic·` is derived from the hierarchy, not from a stored kind: an issue with
+    # children *is* an epic, and a declared marker only drifts from that.
+    tag = " ·epic·" if g.children_of(r) else ""
     icon = paint(status_icon(ctx, r.status), *status_codes(ctx.cfg, r.status))
     labels = paint(label_tag(r), "dim") if r.labels else ""  # dim, as in print_rows
     emph = ("bold",) if focal else ()                        # focal row of `deps NNN`
@@ -2758,16 +2754,13 @@ def cmd_new(args) -> None:
     points = DEFAULT_POINTS if rawpoints is None else rawpoints
     if (m := check_points(points)):
         die(m)
-    kind = args.kind or ctx.cfg["kinds"][0]
-    if (m := check_kind(ctx.cfg, kind)):
-        die(m)
     pr = getattr(args, "pr", None)
     if pr is not None and (m := check_pr(pr)):
         die(m)
     parent = None if args.parent is None else resolve_ref(rows, args.parent).id
     deps = [resolve_ref(rows, tok).id for tok in parse_ids(args.depends)]
     row = Issue(
-        id=iid, slug=slug, title=args.title, kind=kind,
+        id=iid, slug=slug, title=args.title,
         status=initial_status(ctx.cfg), priority=priority, points=points,
         parent=parent, depends_on=deps, spec=args.spec, pr=pr, created=now_utc(),
     )
@@ -2845,10 +2838,6 @@ def cmd_set(args) -> None:
         if pr != "none" and (m := check_pr(pr)):
             die(m)
         row.pr = None if pr == "none" else pr
-    if args.kind:
-        if (m := check_kind(ctx.cfg, args.kind)):
-            die(m)
-        row.kind = args.kind
     for spec in (getattr(args, "field", None) or []):
         if "=" not in spec:
             die(f"--field expects key=value, got '{spec}'")
@@ -3012,7 +3001,6 @@ def cmd_list(args) -> None:
     def keep(r):
         return ((not keep_st or r.status in keep_st)
                 and r.status not in drop_st
-                and (not args.kind or r.kind == args.kind)
                 and (not args.priority or r.priority == args.priority)
                 and (not getattr(args, "label", None) or args.label in (r.labels or []))
                 and (parent_filter is None or r.parent == parent_filter)
@@ -3057,7 +3045,7 @@ def cmd_list(args) -> None:
 
     if getattr(args, "flat", False):
         rows = sorted([r for r in g.rows if keep(r)], key=key)
-        print_rows(ctx, rows, annotate=annotate_over(rows), show_fields=show_fields,
+        print_rows(ctx, g, rows, annotate=annotate_over(rows), show_fields=show_fields,
                    progress=progress, abbrev=abbrev)
         return
 
@@ -3072,12 +3060,12 @@ def cmd_list(args) -> None:
         roots = [r for r in g.rows
                  if (r.parent is None or r.parent not in g.by_id) and r.id in shown]
     ordered, prefix_of = forest_layout(g, roots, shown, key)
-    print_rows(ctx, ordered, annotate=annotate_over(ordered),
+    print_rows(ctx, g, ordered, annotate=annotate_over(ordered),
                prefix=lambda r: prefix_of[r.id], dim=lambda r: r.id in dim,
                show_fields=show_fields, progress=progress, abbrev=abbrev)
 
 
-def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None,
+def print_rows(ctx: Ctx, g: Graph, rows: list[Issue], annotate=None, prefix=None, dim=None,
                show_fields=None, progress=None, abbrev=None) -> None:
     """Render issues as aligned one-line summaries (shared by `list` and `ready`).
     `annotate`, if given, maps a row to a trailing suffix (e.g. the blocking graph);
@@ -3098,7 +3086,10 @@ def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None
         pre = prefix(r) if prefix else ""
         prog = progress(r) if progress else ""
         tags = []
-        if r.kind == "epic":
+        # Derived, not declared: an issue with children *is* an epic. As a stored kind
+        # the two drifted — this repo carried three childless "epics" and one unmarked
+        # parent — and nothing ever stopped them.
+        if g.children_of(r):
             tags.append("EPIC")
         if r.parent and not pre:  # the connector already shows parentage when nested
             tags.append(f"↳{r.parent}")
@@ -3211,7 +3202,7 @@ def cmd_which(args) -> None:
         for r in picked:
             print(r.id)
     else:
-        print_rows(ctx, picked)
+        print_rows(ctx, load_graph(ctx), picked)
 
 
 def cmd_ready(args) -> None:
@@ -3235,7 +3226,7 @@ def cmd_ready(args) -> None:
     if getattr(args, "next", False):
         rows = rows[:1]
     abbrev = unique_prefix_lens([r.id for r in g.rows])
-    print_rows(ctx, rows, abbrev=abbrev,
+    print_rows(ctx, g, rows, abbrev=abbrev,
                annotate=lambda r: demand_annotation(g, r, abbrev))
 
 
@@ -3262,7 +3253,7 @@ def _print_deps_graph(ctx: Ctx, g: Graph, root_id, full: bool = False,
         if not g.drawn_deps_of(root) and not g.drawn_dependents_of(root):
             if omit_done and g.is_terminal(root):
                 return
-            print(node_label(ctx, root, focal=True, abbrev=abbrev) + "  (no dependencies)")
+            print(node_label(ctx, g, root, focal=True, abbrev=abbrev) + "  (no dependencies)")
             return
         # --full means the focal node's whole weakly-connected component, computed
         # over every issue — not over the overview set, which drops the components
@@ -3292,7 +3283,7 @@ def _print_deps_graph(ctx: Ctx, g: Graph, root_id, full: bool = False,
         marker = "" if root_id is None else (paint("▸", "bold") + " " if focal else "  ")
         painted = "".join(paint_lane(ch, ow) for ch, ow in zip(gutter, owners))
         print(f"{marker}{painted}{' ' * (width - len(gutter))}  "
-              f"{node_label(ctx, g.row(iid), focal=focal, abbrev=abbrev)}")
+              f"{node_label(ctx, g, g.row(iid), focal=focal, abbrev=abbrev)}")
 
 
 def cmd_deps(args) -> None:
@@ -3934,17 +3925,18 @@ MODEL
   status      every issue has exactly one; move it with mv / start / review /
               done. A status may set "actionable": false (as in-review does) --
               work waiting there stays out of ready/next, but still blocks.
-  metadata    priority, points, parent, spec, pr, kind, title, slug -- change
+  metadata    priority, points, parent, spec, pr, title, slug -- change
               with `trck set` (NOT by editing index.jsonl). labels -- a flat
               set of free-text tags; change with `trck label`.
-  hierarchy   --parent / --kind epic build an epic tree (containment).
+  hierarchy   --parent builds an epic tree (containment); an issue with
+              children is an epic, no marking needed.
   deps        dep / --depends build a blocking graph (ordering). A parent is
               "part of"; a dep is "must come first" -- they are independent.
               Deps climb the tree: depending on a parent depends on its whole
               subtree; a parent's deps are inherited by its children. A node
               and its own ancestor/descendant can't depend on each other.
   points      a leaf's weight; rolls up to its epic for progress totals.
-  config      the status vocabulary, aliases, priorities, kinds, and
+  config      priorities, resolutions, and
               resolutions all come from trck.json (defaults: backlog ->
               ongoing -> in-review -> done; start=ongoing, review=in-review,
               done=done).
@@ -4011,7 +4003,6 @@ def build_parser() -> argparse.ArgumentParser:
     n.add_argument("title", help="short title (also derives the slug)")
     n.add_argument("--priority", help="configured priority (default: first in trck.json)")
     n.add_argument("--points", type=int, help="leaf weight for rollups (default 1)")
-    n.add_argument("--kind", help="configured kind (default: first in trck.json, e.g. task)")
     n.add_argument("--parent", help="id of the epic to nest this under")
     n.add_argument("--depends", help="comma-separated ids this issue depends on (must be done first)")
     n.add_argument("--spec", help="path to a spec/design doc")
@@ -4063,7 +4054,6 @@ def build_parser() -> argparse.ArgumentParser:
     se.add_argument("--parent", help="epic id, or 'none' to clear")
     se.add_argument("--spec", help="path, or 'none' to clear")
     se.add_argument("--pr", help="pull-request URL, or 'none' to clear")
-    se.add_argument("--kind", help="configured kind")
     se.add_argument("--title", help="new title (also rewrites the body's H1)")
     se.add_argument("--slug", help="override the filename slug (renames the file)")
     se.add_argument("--field", action="append", metavar="KEY=VALUE",
@@ -4147,7 +4137,6 @@ def build_parser() -> argparse.ArgumentParser:
     ls.add_argument("--status",
                     help="filter by status; comma-lists alternatives and a leading "
                          "'!' negates (e.g. 'ongoing,backlog' or '!done')")
-    ls.add_argument("--kind", help="filter by kind")
     ls.add_argument("--priority", help="filter by priority")
     ls.add_argument("--label", help="filter to issues carrying this label")
     ls.add_argument("--parent", help="filter to children of this epic/parent id")

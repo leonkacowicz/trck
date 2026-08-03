@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .config import check_kind, check_points, check_pr, check_priority, check_resolution, check_vestigial_vocabulary, reconcile, status_names
+from .config import check_points, check_pr, check_priority, check_resolution, check_vestigial_vocabulary, reconcile, status_names
 from .constants import FIELD_KEY_RE, FILENAME_RE, ITEMS_DIR, SLUG_RE, die
 from .graph import Graph
 from .index import Ctx, DEFAULT_POINTS, Issue, file_id, filename, load_index
@@ -54,8 +54,6 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
             errors.append(f"#{iid} bad slug '{r.slug}'")
         if r.status not in names:
             errors.append(f"#{iid} unknown status '{r.status}'")
-        if (m := check_kind(ctx.cfg, r.kind)):
-            errors.append(f"#{iid} {m}")
         if (m := check_priority(ctx.cfg, r.priority)):
             errors.append(f"#{iid} {m}")
         pts = r.points  # parse guarantees an int; here we check the value/placement

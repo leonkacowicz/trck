@@ -14,7 +14,7 @@ class TestIndexIO(unittest.TestCase):
         return self.t.Ctx(d, self.t.load_config(d))
 
     def issue(self, **over):
-        fields = dict(id=1, slug="a", title="A", kind="task",
+        fields = dict(id=1, slug="a", title="A",
                       status="backlog", priority="high")
         fields.update(over)
         return self.t.Issue(**fields)
@@ -55,7 +55,7 @@ class TestIndexIO(unittest.TestCase):
                              "started", "closed", "resolution"):
                 self.assertNotIn(stripped, obj)
             self.assertEqual(list(obj.keys()),
-                             ["id", "slug", "title", "kind", "status",
+                             ["id", "slug", "title", "status",
                               "priority", "created"])
 
     def test_keeps_non_default_known_fields_in_canon_order(self):
@@ -72,7 +72,7 @@ class TestIndexIO(unittest.TestCase):
             self.assertEqual(obj["resolution"], "fixed")
             self.assertNotIn("spec", obj)  # still default -> stripped
             self.assertEqual(list(obj.keys()),
-                             ["id", "slug", "title", "kind", "status",
+                             ["id", "slug", "title", "status",
                               "priority", "parent", "labels", "depends_on",
                               "created", "resolution"])
 

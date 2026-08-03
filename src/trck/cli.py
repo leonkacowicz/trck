@@ -21,17 +21,18 @@ MODEL
   status      every issue has exactly one; move it with mv / start / review /
               done. A status may set "actionable": false (as in-review does) --
               work waiting there stays out of ready/next, but still blocks.
-  metadata    priority, points, parent, spec, pr, kind, title, slug -- change
+  metadata    priority, points, parent, spec, pr, title, slug -- change
               with `trck set` (NOT by editing index.jsonl). labels -- a flat
               set of free-text tags; change with `trck label`.
-  hierarchy   --parent / --kind epic build an epic tree (containment).
+  hierarchy   --parent builds an epic tree (containment); an issue with
+              children is an epic, no marking needed.
   deps        dep / --depends build a blocking graph (ordering). A parent is
               "part of"; a dep is "must come first" -- they are independent.
               Deps climb the tree: depending on a parent depends on its whole
               subtree; a parent's deps are inherited by its children. A node
               and its own ancestor/descendant can't depend on each other.
   points      a leaf's weight; rolls up to its epic for progress totals.
-  config      the status vocabulary, aliases, priorities, kinds, and
+  config      priorities, resolutions, and
               resolutions all come from trck.json (defaults: backlog ->
               ongoing -> in-review -> done; start=ongoing, review=in-review,
               done=done).
@@ -98,7 +99,6 @@ def build_parser() -> argparse.ArgumentParser:
     n.add_argument("title", help="short title (also derives the slug)")
     n.add_argument("--priority", help="configured priority (default: first in trck.json)")
     n.add_argument("--points", type=int, help="leaf weight for rollups (default 1)")
-    n.add_argument("--kind", help="configured kind (default: first in trck.json, e.g. task)")
     n.add_argument("--parent", help="id of the epic to nest this under")
     n.add_argument("--depends", help="comma-separated ids this issue depends on (must be done first)")
     n.add_argument("--spec", help="path to a spec/design doc")
@@ -150,7 +150,6 @@ def build_parser() -> argparse.ArgumentParser:
     se.add_argument("--parent", help="epic id, or 'none' to clear")
     se.add_argument("--spec", help="path, or 'none' to clear")
     se.add_argument("--pr", help="pull-request URL, or 'none' to clear")
-    se.add_argument("--kind", help="configured kind")
     se.add_argument("--title", help="new title (also rewrites the body's H1)")
     se.add_argument("--slug", help="override the filename slug (renames the file)")
     se.add_argument("--field", action="append", metavar="KEY=VALUE",
@@ -234,7 +233,6 @@ def build_parser() -> argparse.ArgumentParser:
     ls.add_argument("--status",
                     help="filter by status; comma-lists alternatives and a leading "
                          "'!' negates (e.g. 'ongoing,backlog' or '!done')")
-    ls.add_argument("--kind", help="filter by kind")
     ls.add_argument("--priority", help="filter by priority")
     ls.add_argument("--label", help="filter to issues carrying this label")
     ls.add_argument("--parent", help="filter to children of this epic/parent id")

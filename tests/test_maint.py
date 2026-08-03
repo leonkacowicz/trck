@@ -14,7 +14,7 @@ class TestMaint(unittest.TestCase):
     def seed(self, d, title="Item"):
         buf = io.StringIO()
         with redirect_stdout(buf):
-            self.t.cmd_new(ns(dir=str(d), title=title, priority="high", kind=None,
+            self.t.cmd_new(ns(dir=str(d), title=title, priority="high",
                               parent=None, depends=None, spec=None, slug=None))
         prefix = Path(buf.getvalue().strip()).name.split("-")[0]
         return str(int(prefix)) if prefix.isdigit() else prefix

@@ -20,7 +20,7 @@ class TestGraphRender(unittest.TestCase):
 
     def issue(self, iid, status="backlog", depends=None, parent=None):
         return self.t.Issue(id=iid, slug=f"i{iid}", title=f"Item {iid}",
-                            kind="task", status=status, priority="medium",
+                            status=status, priority="medium",
                             parent=parent, depends_on=list(depends or []))
 
     def graph(self, *issues):
@@ -219,7 +219,7 @@ class TestGraphRender(unittest.TestCase):
         from pathlib import Path
         buf = io.StringIO()
         with redirect_stdout(buf):
-            self.t.cmd_new(ns(dir=str(d), title=title, priority="high", kind=None,
+            self.t.cmd_new(ns(dir=str(d), title=title, priority="high",
                               parent=None, points=None, depends=depends, spec=None,
                               slug=None))
         return Path(buf.getvalue().strip()).name.split("-")[0]
@@ -470,10 +470,11 @@ class TestGraphRender(unittest.TestCase):
 
     def node_label_out(self, d, **over):
         ctx = self.t.build_ctx_or_die(ns(dir=str(d)))
-        base = dict(id=1, slug="i1", title="Alpha", kind="task",
+        base = dict(id=1, slug="i1", title="Alpha",
                     status="backlog", priority="high")
         base.update(over)
-        return self.t.node_label(ctx, self.t.Issue(**base))
+        row = self.t.Issue(**base)
+        return self.t.node_label(ctx, self.t.Graph(ctx.cfg, [row]), row)
 
     def test_node_label_dims_the_label_tag_like_list_and_tree(self):
         with TemporaryDirectory() as tmp:
@@ -507,7 +508,7 @@ class TestContainmentEdges(unittest.TestCase):
 
     def issue(self, iid, status="backlog", depends=None, parent=None):
         return self.t.Issue(id=iid, slug=f"i{iid}", title=f"Item {iid}",
-                            kind="task", status=status, priority="medium",
+                            status=status, priority="medium",
                             parent=parent, depends_on=list(depends or []))
 
     def graph(self, *issues):
@@ -583,7 +584,7 @@ class TestContainmentEdges(unittest.TestCase):
         from pathlib import Path
         buf = io.StringIO()
         with redirect_stdout(buf):
-            self.t.cmd_new(ns(dir=str(d), title=title, priority="high", kind=None,
+            self.t.cmd_new(ns(dir=str(d), title=title, priority="high",
                               parent=parent, points=None, depends=depends, spec=None,
                               slug=None))
         return Path(buf.getvalue().strip()).name.split("-")[0]
@@ -702,7 +703,7 @@ class TestTransitiveReduction(unittest.TestCase):
 
     def issue(self, iid, status="backlog", depends=None, parent=None):
         return self.t.Issue(id=iid, slug=f"i{iid}", title=f"Item {iid}",
-                            kind="task", status=status, priority="medium",
+                            status=status, priority="medium",
                             parent=parent, depends_on=list(depends or []))
 
     def graph(self, *issues):
@@ -840,7 +841,7 @@ class TestTransitiveReduction(unittest.TestCase):
         from pathlib import Path
         buf = io.StringIO()
         with redirect_stdout(buf):
-            self.t.cmd_new(ns(dir=str(d), title=title, priority="high", kind=None,
+            self.t.cmd_new(ns(dir=str(d), title=title, priority="high",
                               parent=parent, points=None, depends=depends, spec=None,
                               slug=None))
         return Path(buf.getvalue().strip()).name.split("-")[0]
@@ -888,7 +889,7 @@ class TestInheritedEdges(unittest.TestCase):
 
     def issue(self, iid, status="backlog", depends=None, parent=None):
         return self.t.Issue(id=iid, slug=f"i{iid}", title=f"Item {iid}",
-                            kind="task", status=status, priority="medium",
+                            status=status, priority="medium",
                             parent=parent, depends_on=list(depends or []))
 
     def graph(self, *issues):
@@ -994,7 +995,7 @@ class TestInheritedEdges(unittest.TestCase):
         from pathlib import Path
         buf = io.StringIO()
         with redirect_stdout(buf):
-            self.t.cmd_new(ns(dir=str(d), title=title, priority="high", kind=None,
+            self.t.cmd_new(ns(dir=str(d), title=title, priority="high",
                               parent=parent, points=None, depends=depends, spec=None,
                               slug=None))
         return Path(buf.getvalue().strip()).name.split("-")[0]

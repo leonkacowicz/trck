@@ -45,7 +45,6 @@ DEFAULT_CONFIG = {
     "update": {"repo": DEFAULT_UPDATE_REPO, "channel": "stable"},
     "priorities": ["urgent", "high", "medium", "low", "lowest"],
     "default_priority": "medium",
-    "kinds": ["task", "epic", "bug", "story", "investigation"],
     "resolutions": ["superseded", "wontfix", "duplicate"],
 }
 
@@ -101,12 +100,6 @@ def check_priority(cfg: dict, value: str) -> str | None:
     return f"bad priority '{value}' (configured: {', '.join(cfg['priorities'])})"
 
 
-def check_kind(cfg: dict, value: str) -> str | None:
-    if value in cfg["kinds"]:
-        return None
-    return f"bad kind '{value}' (configured: {', '.join(cfg['kinds'])})"
-
-
 def check_resolution(cfg: dict, value: str) -> str | None:
     if value in cfg["resolutions"]:
         return None
@@ -126,12 +119,16 @@ def check_points(value: int) -> str | None:
 
 
 def check_vestigial_vocabulary(cfg: dict) -> list[str]:
-    """`statuses` and `aliases` used to configure the vocabulary and no longer do. A
-    tracker that still carries them is not broken — the keys are simply ignored — so this
-    is a warning naming the migration, not an error that would lock the tracker out."""
-    return [f"config: '{k}' is no longer configurable and is being ignored "
-            f"(the vocabulary is fixed: {', '.join(STATUSES)})"
-            for k in ("statuses", "aliases") if k in cfg]
+    """Config keys that used to define a vocabulary and no longer do. A tracker still
+    carrying one is not broken — the key is ignored — so this is a warning naming the
+    replacement, not an error that would lock the tracker out of every verb."""
+    gone = {
+        "statuses": f"the vocabulary is fixed: {', '.join(STATUSES)}",
+        "aliases": f"the verbs map to fixed statuses: {', '.join(STATUSES)}",
+        "kinds": "`kind` is an ordinary custom field now (`set --field kind=bug`)",
+    }
+    return [f"config: '{k}' is no longer configurable and is being ignored ({why})"
+            for k, why in gone.items() if k in cfg]
 
 
 def detect_legacy_layout(cfg: dict, tracker_dir: Path) -> list[Path]:

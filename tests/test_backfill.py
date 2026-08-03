@@ -42,10 +42,10 @@ class TestRewriteLines(unittest.TestCase):
             (1, "created"): "2026-06-05T09:00:00+00:00",
             (1, "closed"): "2026-06-06T12:00:00-03:00",
         }
-        line1 = self.canonical(id=1, slug="x", title="X", kind="task",
+        line1 = self.canonical(id=1, slug="x", title="X",
                                status="done", priority="medium",
                                created="2026-06-05", closed="2026-06-06")
-        line2 = self.canonical(id=2, slug="y", title="Y", kind="task",
+        line2 = self.canonical(id=2, slug="y", title="Y",
                                status="backlog", priority="low",
                                created="2026-06-05T08:00:00Z")
         new_lines, changes, warnings = self.b.rewrite_lines([line1, line2], recovered)
@@ -62,7 +62,7 @@ class TestRewriteLines(unittest.TestCase):
         self.assertEqual(warnings, [])
 
     def test_rewrite_warns_when_no_history_and_leaves_value(self):
-        line = self.canonical(id=3, slug="z", title="Z", kind="task",
+        line = self.canonical(id=3, slug="z", title="Z",
                               status="done", priority="medium", created="2026-06-05")
         new_lines, changes, warnings = self.b.rewrite_lines([line], {})
         self.assertEqual(new_lines[0], line)  # unchanged
@@ -79,9 +79,9 @@ class TestRewriteLines(unittest.TestCase):
         # A row with no integer id and a day-only date must NOT produce a warning
         # with a None id (which would later crash the #{:03d} report). It is left
         # byte-identical and ignored.
-        noid = self.canonical(slug="noid", title="No id", kind="task",
+        noid = self.canonical(slug="noid", title="No id",
                               status="done", priority="medium", created="2026-06-05")
-        boolid = self.canonical(id=True, slug="b", title="B", kind="task",
+        boolid = self.canonical(id=True, slug="b", title="B",
                                status="done", priority="medium", created="2026-06-05")
         new_lines, changes, warnings = self.b.rewrite_lines([noid, boolid], {})
         self.assertEqual(new_lines, [noid, boolid])  # unchanged, byte-identical

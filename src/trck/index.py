@@ -10,7 +10,7 @@ from .constants import FIELD_KEY_RE, ITEMS_DIR, die
 # context + index I/O
 # --------------------------------------------------------------------------- #
 CANON_KEYS = [
-    "id", "slug", "title", "kind", "status", "priority", "points", "parent",
+    "id", "slug", "title", "status", "priority", "points", "parent",
     "labels", "depends_on", "spec", "pr", "created", "started", "closed",
     "resolution", "manual_status", "legacy_id",
 ]
@@ -67,7 +67,6 @@ class Issue:
     id: str
     slug: str
     title: str
-    kind: str
     status: str
     priority: str
     points: int = 1
@@ -123,11 +122,11 @@ class Issue:
             if isinstance(v, str) and not v:
                 bad(name, "must not be empty")
 
-        for k in ("id", "slug", "title", "kind", "status", "priority"):
+        for k in ("id", "slug", "title", "status", "priority"):
             if d.get(k) is None:
                 bad(k, "is required")
         want_id("id", d["id"])
-        for k in ("slug", "title", "kind", "status", "priority"):
+        for k in ("slug", "title", "status", "priority"):
             if not isinstance(d[k], str):
                 bad(k, f"must be a string, got {d[k]!r}")
         if "points" in d:

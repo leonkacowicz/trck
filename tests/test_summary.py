@@ -18,7 +18,7 @@ class TestSummary(unittest.TestCase):
         p.write_text("# x\n")
 
     def base(self, **over):
-        fields = {"id": 1, "slug": "a", "title": "A", "kind": "task",
+        fields = {"id": 1, "slug": "a", "title": "A",
                   "status": "backlog", "priority": "high", "depends_on": []}
         fields.update(over)
         return self.t.Issue(**fields)
@@ -41,7 +41,7 @@ class TestSummary(unittest.TestCase):
     def test_epic_rollup_counts_terminal(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
-            epic = self.base(id=1, slug="e", kind="epic", status="ongoing")
+            epic = self.base(id=1, slug="e", status="ongoing")
             k1 = self.base(id=2, slug="k1", parent=1, status="done")
             k2 = self.base(id=3, slug="k2", parent=1, status="ongoing")
             for r in (epic, k1, k2):
@@ -53,7 +53,7 @@ class TestSummary(unittest.TestCase):
     def test_nonepic_parent_gets_rollup(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
-            parent = self.base(id=1, slug="p", kind="task", status="ongoing")
+            parent = self.base(id=1, slug="p", status="ongoing")
             k1 = self.base(id=2, slug="k1", parent=1, status="done")
             k2 = self.base(id=3, slug="k2", parent=1, status="ongoing")
             for r in (parent, k1, k2):
@@ -97,7 +97,7 @@ class TestSummary(unittest.TestCase):
     def test_rollup_weighted_by_points(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
-            epic = self.base(id=1, slug="e", kind="epic", status="ongoing")
+            epic = self.base(id=1, slug="e", status="ongoing")
             k1 = self.base(id=2, slug="k1", parent=1, status="done", points=1)
             k2 = self.base(id=3, slug="k2", parent=1, status="ongoing", points=3)
             for r in (epic, k1, k2):
@@ -110,8 +110,8 @@ class TestSummary(unittest.TestCase):
     def test_rollup_recurses_to_leaf_descendants(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
-            epic = self.base(id=1, slug="e", kind="epic", status="ongoing")
-            sub = self.base(id=2, slug="s", kind="epic", parent=1, status="ongoing")
+            epic = self.base(id=1, slug="e", status="ongoing")
+            sub = self.base(id=2, slug="s", parent=1, status="ongoing")
             g1 = self.base(id=3, slug="g1", parent=2, status="done", points=2)
             g2 = self.base(id=4, slug="g2", parent=2, status="ongoing", points=2)
             leaf = self.base(id=5, slug="l", parent=1, status="done", points=1)
@@ -126,7 +126,7 @@ class TestSummary(unittest.TestCase):
     def test_rollup_all_default_points_matches_count(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
-            epic = self.base(id=1, slug="e", kind="epic", status="ongoing")
+            epic = self.base(id=1, slug="e", status="ongoing")
             k1 = self.base(id=2, slug="k1", parent=1, status="done")
             k2 = self.base(id=3, slug="k2", parent=1, status="done")
             k3 = self.base(id=4, slug="k3", parent=1, status="ongoing")
@@ -140,7 +140,7 @@ class TestSummary(unittest.TestCase):
     def test_rollup_zero_total_points_guard(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
-            epic = self.base(id=1, slug="e", kind="epic", status="ongoing")
+            epic = self.base(id=1, slug="e", status="ongoing")
             k1 = self.base(id=2, slug="k1", parent=1, status="done", points=0)
             for r in (epic, k1):
                 self.write(ctx, r)

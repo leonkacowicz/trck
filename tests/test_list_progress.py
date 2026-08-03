@@ -14,7 +14,7 @@ class TestListProgress(unittest.TestCase):
         self.t = load_trck()
 
     def seed(self, d, title, **over):
-        a = ns(dir=str(d), title=title, priority="high", kind=None, parent=None,
+        a = ns(dir=str(d), title=title, priority="high", parent=None,
                depends=None, spec=None, slug=None, points=None)
         for k, v in over.items():
             setattr(a, k, v)
@@ -30,7 +30,7 @@ class TestListProgress(unittest.TestCase):
     def list_out(self, d, flat=True):
         buf = io.StringIO()
         with redirect_stdout(buf):
-            self.t.cmd_list(ns(dir=str(d), status=None, kind=None, priority=None,
+            self.t.cmd_list(ns(dir=str(d), status=None, priority=None,
                                parent=None, flat=flat, id=None))
         return buf.getvalue()
 
@@ -89,7 +89,7 @@ class TestListProgress(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             ctx = self.t.build_ctx_or_die(ns(dir=str(d)))
-            row = self.t.Issue(id="x", slug="x", title="X", kind="task",
+            row = self.t.Issue(id="x", slug="x", title="X",
                                status="backlog", priority="high", parent="x")
             g = self.t.Graph(ctx.cfg, [row])
             self.assertEqual(self.t.progress_pct(g, row), " 0%")

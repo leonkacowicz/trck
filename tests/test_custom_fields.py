@@ -15,7 +15,7 @@ class TestCustomFields(unittest.TestCase):
     # -- helpers -------------------------------------------------------------
     def seed(self, d, **over):
         args = ns(dir=str(d), title=over.pop("title", "Item"),
-                  priority=over.pop("priority", "high"), kind=over.pop("kind", None),
+                  priority=over.pop("priority", "high"),
                   parent=None, depends=None, spec=None, slug=None, points=None)
         buf = io.StringIO()
         with redirect_stdout(buf):
@@ -24,7 +24,7 @@ class TestCustomFields(unittest.TestCase):
 
     def set_(self, d, iid, **over):
         args = ns(dir=str(d), id=iid, priority=None, points=None, parent=None,
-                  spec=None, kind=None, title=None, slug=None,
+                  spec=None, title=None, slug=None,
                   field=over.pop("field", None), unset=over.pop("unset", None))
         self.t.cmd_set(args)
 
@@ -139,7 +139,7 @@ class TestCustomFields(unittest.TestCase):
 
     # -- list --field filter -------------------------------------------------
     def list_(self, d, **over):
-        args = ns(dir=str(d), id=None, flat=True, status=None, kind=None,
+        args = ns(dir=str(d), id=None, flat=True, status=None,
                   priority=None, label=None, parent=None, match=None,
                   sort=None, blocked=False, orphan=False, paths=False,
                   field=over.pop("field", None),
@@ -231,3 +231,42 @@ class TestCustomFields(unittest.TestCase):
             out = self.list_(d, field=["assignee=leon"], status="ongoing")
             self.assertIn("Alpha", out)
             self.assertNotIn("Beta", out)
+
+
+class TestKindIsJustAField(unittest.TestCase):
+    """`kind` was a required field with a configured vocabulary and no behaviour behind
+    it — a glorified key-value pair. It is now an actual one.
+
+    The only semantics it ever carried was `epic`, and that was a declared fact
+    duplicating a derived one: on this repo's own tracker three issues were marked epic
+    with no children and one had children without the mark. Deriving it from the
+    hierarchy makes the marker true by construction."""
+
+    def setUp(self):
+        self.t = load_trck()
+
+    def test_kind_is_no_longer_a_canonical_field(self):
+        self.assertNotIn("kind", self.t.CANON_KEYS)
+
+    def test_an_existing_rows_kind_survives_as_a_custom_field(self):
+        """No migration writes this: dropping `kind` from CANON_KEYS is enough, because
+        `from_dict` routes every non-canonical key into `extra` and `to_canonical` writes
+        it back out. Trackers written before this keep the value they had."""
+        row = self.t.Issue.from_dict({"id": "a1b2c3d", "slug": "s", "title": "T",
+                                      "status": "backlog", "priority": "medium",
+                                      "kind": "bug"})
+        self.assertEqual(row.extra["kind"], "bug")
+        self.assertEqual(row.to_canonical()["kind"], "bug")
+
+    def test_kind_is_not_required(self):
+        row = self.t.Issue.from_dict({"id": "a1b2c3d", "slug": "s", "title": "T",
+                                      "status": "backlog", "priority": "medium"})
+        self.assertEqual(row.extra, {})
+
+    def test_kind_may_be_set_as_a_plain_field(self):
+        self.assertIsNone(self.t.check_field_key("kind"))
+
+    def test_the_vocabulary_key_is_vestigial(self):
+        warns = self.t.check_vestigial_vocabulary({"kinds": ["task"]})
+        self.assertEqual(len(warns), 1)
+        self.assertIn("no longer configurable", warns[0])

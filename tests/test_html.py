@@ -74,7 +74,7 @@ class HtmlTestBase(unittest.TestCase):
         self.h = load_tool()
 
     def seed(self, d, title="Item", **over):
-        a = dict(dir=str(d), title=title, priority="medium", kind=None, parent=None,
+        a = dict(dir=str(d), title=title, priority="medium", parent=None,
                  points=None, depends=None, spec=None, slug=None)
         a.update(over)
         buf = io.StringIO()

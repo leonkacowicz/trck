@@ -13,7 +13,7 @@ class TestPresentation(unittest.TestCase):
         self.t = load_trck()
 
     def seed(self, d, title, **over):
-        a = ns(dir=str(d), title=title, priority="high", kind=None, parent=None,
+        a = ns(dir=str(d), title=title, priority="high", parent=None,
                depends=None, spec=None, slug=None)
         for k, v in over.items():
             setattr(a, k, v)
@@ -25,7 +25,7 @@ class TestPresentation(unittest.TestCase):
     def list_out(self, d):
         buf = io.StringIO()
         with redirect_stdout(buf):
-            self.t.cmd_list(ns(dir=str(d), status=None, kind=None, priority=None,
+            self.t.cmd_list(ns(dir=str(d), status=None, priority=None,
                                parent=None, flat=True, id=None))
         return buf.getvalue()
 
@@ -50,7 +50,7 @@ class TestPresentation(unittest.TestCase):
             self.assertIn("Alpha", out)
 
     def row(self, iid=1, title="Alpha", **over):
-        base = dict(id=iid, slug=f"i{iid}", title=title, kind="task",
+        base = dict(id=iid, slug=f"i{iid}", title=title,
                     status="backlog", priority="high")
         base.update(over)
         return self.t.Issue(**base)
@@ -59,7 +59,7 @@ class TestPresentation(unittest.TestCase):
         ctx = self.t.build_ctx_or_die(ns(dir=str(d)))
         buf = io.StringIO()
         with redirect_stdout(buf):
-            self.t.print_rows(ctx, rows, **kw)
+            self.t.print_rows(ctx, self.t.Graph(ctx.cfg, rows), rows, **kw)
         return buf.getvalue()
 
     def test_print_rows_prefix_sits_before_title(self):
@@ -111,9 +111,9 @@ class TestPresentation(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             ctx = t.build_ctx_or_die(ns(dir=str(d)))
-            row = t.Issue(id="7", slug="s", title="T", kind="task",
+            row = t.Issue(id="7", slug="s", title="T",
                           status="backlog", priority="high")
-            line = t.node_label(ctx, row, focal=False)
+            line = t.node_label(ctx, t.Graph(ctx.cfg, [row]), row, focal=False)
             self.assertIn("#7", line)
             self.assertNotIn("#007", line)
 

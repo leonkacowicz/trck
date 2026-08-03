@@ -18,7 +18,7 @@ class TestTimestampDisplay(unittest.TestCase):
     def new(self, d, title="First"):
         buf = StringIO()
         with redirect_stdout(buf):
-            self.t.cmd_new(ns(dir=str(d), title=title, priority="high", kind=None,
+            self.t.cmd_new(ns(dir=str(d), title=title, priority="high",
                               parent=None, depends=None, spec=None, slug=None))
         return Path(buf.getvalue().strip()).name.split("-")[0]
 
@@ -119,7 +119,7 @@ class TestTimestampBackCompat(unittest.TestCase):
             # legacy date-only row (#001 Older) must appear before #002 Newer.
             buf = StringIO()
             with redirect_stdout(buf):
-                self.t.cmd_list(ns(dir=str(d), status=None, kind=None,
+                self.t.cmd_list(ns(dir=str(d), status=None,
                                    priority=None, parent=None, label=None,
                                    sort="created", flat=True))
             out = buf.getvalue()

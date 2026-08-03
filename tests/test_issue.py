@@ -13,7 +13,7 @@ class TestIssueModel(unittest.TestCase):
         self.Issue = self.t.Issue
 
     def minimal(self, **over):
-        base = dict(id=1, slug="a", title="A", kind="task",
+        base = dict(id=1, slug="a", title="A",
                     status="backlog", priority="high")
         base.update(over)
         return self.Issue(**base)
@@ -49,7 +49,7 @@ class TestIssueModel(unittest.TestCase):
 
     def test_from_dict_rejects_non_bool_manual_status(self):
         with self.assertRaises(ValueError):
-            self.Issue.from_dict(dict(id=1, slug="a", title="A", kind="task",
+            self.Issue.from_dict(dict(id=1, slug="a", title="A",
                                       status="backlog", priority="high",
                                       manual_status="yes"))
 
@@ -64,7 +64,7 @@ class TestIssueModel(unittest.TestCase):
 
     # -- from_dict ----------------------------------------------------------
     def test_from_dict_maps_known_keys_to_attributes(self):
-        i = self.Issue.from_dict({"id": 7, "slug": "s", "title": "T", "kind": "task",
+        i = self.Issue.from_dict({"id": 7, "slug": "s", "title": "T",
                                   "status": "done", "priority": "low", "parent": 3,
                                   "labels": ["x"], "depends_on": [1, 2]})
         self.assertEqual(i.id, "7")
@@ -73,7 +73,7 @@ class TestIssueModel(unittest.TestCase):
         self.assertEqual(i.depends_on, ["1", "2"])
 
     def test_from_dict_routes_unknown_keys_to_extra(self):
-        i = self.Issue.from_dict({"id": 1, "slug": "a", "title": "A", "kind": "task",
+        i = self.Issue.from_dict({"id": 1, "slug": "a", "title": "A",
                                   "status": "backlog", "priority": "high",
                                   "zeta": 9, "vendor": None})
         self.assertEqual(i.extra, {"zeta": 9, "vendor": None})
@@ -83,8 +83,8 @@ class TestIssueModel(unittest.TestCase):
             self.Issue()  # id/slug/title/kind/status/priority are required
 
     def test_from_dict_rejects_missing_required_field(self):
-        for missing in ("id", "slug", "title", "kind", "status", "priority"):
-            d = dict(id=1, slug="a", title="A", kind="task",
+        for missing in ("id", "slug", "title", "status", "priority"):
+            d = dict(id=1, slug="a", title="A",
                      status="backlog", priority="high")
             del d[missing]
             with self.assertRaises(ValueError, msg=f"missing {missing}"):
@@ -92,7 +92,7 @@ class TestIssueModel(unittest.TestCase):
 
     def test_from_dict_rejects_null_required_field(self):
         with self.assertRaises(ValueError):
-            self.Issue.from_dict(dict(id=1, slug="a", title="A", kind="task",
+            self.Issue.from_dict(dict(id=1, slug="a", title="A",
                                       status=None, priority="high"))
 
     def test_from_dict_rejects_non_object(self):
@@ -101,7 +101,7 @@ class TestIssueModel(unittest.TestCase):
                 self.Issue.from_dict(bad)
 
     def test_from_dict_rejects_wrong_typed_fields(self):
-        good = dict(id=1, slug="a", title="A", kind="task",
+        good = dict(id=1, slug="a", title="A",
                     status="backlog", priority="high")
         cases = [
             {"id": True},              # bool is not a valid id
@@ -121,20 +121,20 @@ class TestIssueModel(unittest.TestCase):
                 self.Issue.from_dict({**good, **over})
 
     def test_from_dict_accepts_valid_nullable_fields(self):
-        i = self.Issue.from_dict(dict(id=1, slug="a", title="A", kind="task",
+        i = self.Issue.from_dict(dict(id=1, slug="a", title="A",
                                       status="backlog", priority="high",
                                       parent=None, spec=None, resolution=None))
         self.assertIsNone(i.parent)
 
     def test_from_dict_migrates_milestone_to_label(self):
-        i = self.Issue.from_dict({"id": 1, "slug": "a", "title": "A", "kind": "task",
+        i = self.Issue.from_dict({"id": 1, "slug": "a", "title": "A",
                                   "status": "backlog", "priority": "high",
                                   "milestone": "v1.0"})
         self.assertEqual(i.labels, ["v1.0"])
         self.assertNotIn("milestone", i.extra)
 
     def test_from_dict_drops_null_milestone(self):
-        i = self.Issue.from_dict({"id": 1, "slug": "a", "title": "A", "kind": "task",
+        i = self.Issue.from_dict({"id": 1, "slug": "a", "title": "A",
                                   "status": "backlog", "priority": "high",
                                   "milestone": None})
         self.assertEqual(i.labels, [])
@@ -148,14 +148,14 @@ class TestIssueModel(unittest.TestCase):
                          "started", "closed", "resolution"):
             self.assertNotIn(stripped, obj)
         self.assertEqual(list(obj.keys()),
-                         ["id", "slug", "title", "kind", "status", "priority", "created"])
+                         ["id", "slug", "title", "status", "priority", "created"])
 
     def test_to_canonical_keeps_non_default_in_canon_order(self):
         i = self.minimal(status="done", priority="low", parent=1, labels=["m1"],
                          depends_on=[1], created="2026-06-05", resolution="superseded")
         obj = i.to_canonical()
         self.assertEqual(list(obj.keys()),
-                         ["id", "slug", "title", "kind", "status", "priority",
+                         ["id", "slug", "title", "status", "priority",
                           "parent", "labels", "depends_on", "created", "resolution"])
 
     def test_to_canonical_omits_none_required_field(self):
@@ -187,7 +187,7 @@ class TestIssueModel(unittest.TestCase):
         self.assertEqual(i.depends_on, ["4", "5"])
 
     def test_from_dict_coerces_legacy_int_ids_to_str(self):
-        i = self.Issue.from_dict({"id": 7, "slug": "s", "title": "T", "kind": "task",
+        i = self.Issue.from_dict({"id": 7, "slug": "s", "title": "T",
                                   "status": "done", "priority": "low", "parent": 3,
                                   "depends_on": [1, 2]})
         self.assertEqual(i.id, "7")
@@ -196,12 +196,12 @@ class TestIssueModel(unittest.TestCase):
 
     def test_from_dict_accepts_string_ids(self):
         i = self.Issue.from_dict({"id": "k3m9x2a", "slug": "s", "title": "T",
-                                  "kind": "task", "status": "done", "priority": "low"})
+                                  "status": "done", "priority": "low"})
         self.assertEqual(i.id, "k3m9x2a")
 
     def test_from_dict_rejects_empty_id(self):
         with self.assertRaises(ValueError):
-            self.Issue.from_dict({"id": "", "slug": "s", "title": "T", "kind": "task",
+            self.Issue.from_dict({"id": "", "slug": "s", "title": "T",
                                   "status": "done", "priority": "low"})
 
     # -- legacy_id ----------------------------------------------------------
@@ -218,7 +218,7 @@ class TestIssueModel(unittest.TestCase):
 
     def test_from_dict_rejects_non_int_legacy_id(self):
         with self.assertRaises(ValueError):
-            self.Issue.from_dict(dict(id="a", slug="s", title="T", kind="task",
+            self.Issue.from_dict(dict(id="a", slug="s", title="T",
                                       status="backlog", priority="high",
                                       legacy_id="65"))
 

@@ -18,7 +18,7 @@ class TestValidate(unittest.TestCase):
         p.write_text(body)
 
     def base(self, **over):
-        fields = {"id": 1, "slug": "a", "title": "A", "kind": "task",
+        fields = {"id": 1, "slug": "a", "title": "A",
                   "status": "backlog", "priority": "high", "depends_on": []}
         fields.update(over)
         return self.t.Issue(**fields)
@@ -35,7 +35,7 @@ class TestValidate(unittest.TestCase):
     def test_parent_can_be_any_kind(self):
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
-            p = self.base(id=1, slug="p", kind="task")  # a task, not an epic
+            p = self.base(id=1, slug="p")  # a task, not an epic
             c = self.base(id=2, slug="c", parent=1)
             self.write(ctx, p); self.write(ctx, c)
             self.t.save_index(ctx, [p, c])
@@ -121,7 +121,7 @@ class TestValidate(unittest.TestCase):
         # violates the rollup invariant (#67) — it should be `done`.
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
-            epic = self.base(id=1, slug="e", kind="epic", status="ongoing")
+            epic = self.base(id=1, slug="e", status="ongoing")
             child = self.base(id=2, slug="c", parent=1, status="done")
             self.write(ctx, epic); self.write(ctx, child)
             self.t.save_index(ctx, [epic, child])
@@ -290,7 +290,7 @@ class TestLifecycleTupleInvariant(unittest.TestCase):
 
     def errors_for(self, tmp, **over):
         ctx = self.ctx(tmp)
-        fields = {"id": 1, "slug": "a", "title": "A", "kind": "task",
+        fields = {"id": 1, "slug": "a", "title": "A",
                   "status": "backlog", "priority": "high", "depends_on": []}
         fields.update(over)
         row = self.t.Issue(**fields)

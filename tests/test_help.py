@@ -34,7 +34,6 @@ class TestHelp(unittest.TestCase):
     def test_new_help_documents_flags_and_example(self):
         h = self.sub_help("new")
         self.assertIn("comma-separated", h)        # --depends
-        self.assertIn("configured kind", h)        # --kind
         self.assertIn("Add CSV export", h)         # epilog example
 
     def test_list_help_explains_parent_filter(self):

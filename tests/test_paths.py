@@ -13,7 +13,7 @@ class TestPath(unittest.TestCase):
         self.t = load_trck()
 
     def seed(self, d, title="Item", **over):
-        a = dict(dir=str(d), title=title, priority="high", kind=None, parent=None,
+        a = dict(dir=str(d), title=title, priority="high", parent=None,
                  points=None, depends=None, spec=None, slug=None)
         a.update(over)
         buf = io.StringIO()
@@ -49,7 +49,7 @@ class TestWhich(unittest.TestCase):
         self.t = load_trck()
 
     def seed(self, d, title="Item", **over):
-        a = dict(dir=str(d), title=title, priority="high", kind=None, parent=None,
+        a = dict(dir=str(d), title=title, priority="high", parent=None,
                  points=None, depends=None, spec=None, slug=None)
         a.update(over)
         buf = io.StringIO()
@@ -165,7 +165,7 @@ class TestWhich(unittest.TestCase):
             id1 = self.seed(d, "Alpha")
             id2 = self.seed(d, "Beta")
             # capture `list --paths` output, then feed it straight into `which`
-            list_args = ns(dir=str(d), status=None, kind=None, priority=None, label=None,
+            list_args = ns(dir=str(d), status=None, priority=None, label=None,
                            parent=None, match=None, sort=None, blocked=False, orphan=False,
                            flat=False, id=None, paths=True)
             paths_out = self.cap(self.t.cmd_list, list_args)
@@ -183,9 +183,9 @@ class TestFilename(unittest.TestCase):
 
     def test_filename_pads_numeric_ids_but_not_random(self):
         t = self.t
-        numeric = t.Issue(id="7", slug="s", title="T", kind="task",
+        numeric = t.Issue(id="7", slug="s", title="T",
                           status="backlog", priority="high")
-        rand = t.Issue(id="k3m9x2a", slug="s", title="T", kind="task",
+        rand = t.Issue(id="k3m9x2a", slug="s", title="T",
                        status="backlog", priority="high")
         self.assertEqual(t.filename(numeric), "007-s.md")
         self.assertEqual(t.filename(rand), "k3m9x2a-s.md")

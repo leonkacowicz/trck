@@ -15,7 +15,7 @@ class TestLifecycle(unittest.TestCase):
         return make_tracker(tmp, config or {})
 
     def new(self, d, title="First", **over):
-        args = ns(dir=str(d), title=title, priority="high", kind=None,
+        args = ns(dir=str(d), title=title, priority="high",
                   parent=None, depends=None, spec=None, slug=None)
         for k, v in over.items():
             setattr(args, k, v)

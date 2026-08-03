@@ -13,9 +13,9 @@ class TestRead(unittest.TestCase):
     def setUp(self):
         self.t = load_trck()
 
-    def seed(self, d, title="Item", kind=None, parent=None, priority="high",
+    def seed(self, d, title="Item", parent=None, priority="high",
              points=None, depends=None):
-        a = ns(dir=str(d), title=title, priority=priority, kind=kind, parent=parent,
+        a = ns(dir=str(d), title=title, priority=priority, parent=parent,
                points=points, depends=depends, spec=None, slug=None)
         buf = io.StringIO()
         with redirect_stdout(buf):
@@ -25,7 +25,7 @@ class TestRead(unittest.TestCase):
     def listing(self, d, **over):
         """cmd_list defaulted to the flat view (the stable regression baseline);
         override `flat=False` for nested-forest tests."""
-        a = dict(dir=str(d), status=None, kind=None, priority=None, label=None,
+        a = dict(dir=str(d), status=None, priority=None, label=None,
                  parent=None, match=None, sort=None, blocked=False, orphan=False,
                  flat=True, id=None)
         a.update(over)
@@ -69,7 +69,7 @@ class TestRead(unittest.TestCase):
             id2 = self.seed(d, "B")
             self.t.cmd_mv(ns(dir=str(d), id=id2, status="ongoing", resolution=None))
             out = self.cap(self.t.cmd_list, ns(dir=str(d), status="ongoing",
-                                               kind=None, priority=None, parent=None,
+                                               priority=None, parent=None,
                                                flat=True, id=None))
             self.assertIn(f"#{id2}", out)
             self.assertNotIn(f"#{id1}", out)
@@ -77,11 +77,11 @@ class TestRead(unittest.TestCase):
     def test_list_filters_by_parent(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic", kind="epic")
+            id1 = self.seed(d, "Epic")
             id2 = self.seed(d, "Child", parent=id1)
             id3 = self.seed(d, "Loose")
             out = self.cap(self.t.cmd_list, ns(dir=str(d), status=None,
-                                               kind=None, priority=None, parent=id1,
+                                               priority=None, parent=id1,
                                                flat=True, id=None))
             self.assertIn(f"#{id2}", out)
             self.assertNotIn(f"#{id1}", out)
@@ -235,7 +235,7 @@ class TestRead(unittest.TestCase):
     def inherit_fixture(self, d):
         """`kid` under `par`, where `par` (not `kid`) authored the dep on `dep`."""
         dep = self.seed(d, "Dep")
-        par = self.seed(d, "Parent epic", kind="epic", depends=dep)
+        par = self.seed(d, "Parent epic", depends=dep)
         kid = self.seed(d, "Child leaf", parent=par)
         return dep, par, kid
 
@@ -294,8 +294,8 @@ class TestRead(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             dep = self.seed(d, "Dep")
-            top = self.seed(d, "Top epic", kind="epic", depends=dep)
-            mid = self.seed(d, "Child mid", kind="epic", parent=top)
+            top = self.seed(d, "Top epic", depends=dep)
+            mid = self.seed(d, "Child mid", parent=top)
             kid = self.seed(d, "Child leaf", parent=mid)
             out = self.listing(d, match="Child")      # prints mid + kid, not top
             self.assertIn(f"needs #{dep} (via #{top})", self.row_for(out, mid))
@@ -312,7 +312,7 @@ class TestRead(unittest.TestCase):
     def test_list_orphan_only(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic", kind="epic")
+            id1 = self.seed(d, "Epic")
             id2 = self.seed(d, "Child", parent=id1)
             out = self.listing(d, orphan=True)
             self.assertIn(f"#{id1}", out)
@@ -333,7 +333,7 @@ class TestRead(unittest.TestCase):
 
     def paths(self, d, **over):
         """cmd_list in --paths output mode; filters default as in `listing`."""
-        a = dict(dir=str(d), status=None, kind=None, priority=None, label=None,
+        a = dict(dir=str(d), status=None, priority=None, label=None,
                  parent=None, match=None, sort=None, blocked=False, orphan=False,
                  flat=False, id=None, paths=True)
         a.update(over)
@@ -379,7 +379,7 @@ class TestRead(unittest.TestCase):
     def test_list_paths_excludes_nonmatching_ancestors(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.seed(d, "Epic", kind="epic")
+            self.seed(d, "Epic")
             self.seed(d, "Child")
             out = self.paths(d, match="child")
             lines = out.splitlines()
@@ -388,7 +388,7 @@ class TestRead(unittest.TestCase):
 
     def nested(self, d, **over):
         """cmd_list in its default nested-forest view; override per test."""
-        a = dict(dir=str(d), status=None, kind=None, priority=None, label=None,
+        a = dict(dir=str(d), status=None, priority=None, label=None,
                  parent=None, match=None, sort=None, blocked=False, orphan=False,
                  flat=False, id=None)
         a.update(over)
@@ -403,7 +403,7 @@ class TestRead(unittest.TestCase):
     def test_list_nested_by_default_indents_children(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic", kind="epic")
+            id1 = self.seed(d, "Epic")
             id2 = self.seed(d, "Child", parent=id1)
             out = self.nested(d)
             self.assertIn("Epic", self.row_for(out, id1))
@@ -414,7 +414,7 @@ class TestRead(unittest.TestCase):
     def test_list_flat_has_no_connectors(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic", kind="epic")
+            id1 = self.seed(d, "Epic")
             id2 = self.seed(d, "Child", parent=id1)
             out = self.listing(d)                          # flat=True
             self.assertIn(f"#{id1}", out)
@@ -425,7 +425,7 @@ class TestRead(unittest.TestCase):
     def test_list_nested_child_omits_parent_pointer_tag(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic", kind="epic")
+            id1 = self.seed(d, "Epic")
             id2 = self.seed(d, "Child", parent=id1)
             out = self.nested(d)
             self.assertNotIn("↳", self.row_for(out, id2))   # the connector already shows the parent
@@ -433,7 +433,7 @@ class TestRead(unittest.TestCase):
     def test_list_flat_child_keeps_parent_pointer_tag(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic", kind="epic")
+            id1 = self.seed(d, "Epic")
             id2 = self.seed(d, "Child", parent=id1)
             out = self.listing(d)                          # flat: no indentation, so keep ↳
             self.assertIn(f"↳{id1}", self.row_for(out, id2))
@@ -441,7 +441,7 @@ class TestRead(unittest.TestCase):
     def test_list_positional_id_roots_subtree(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic", kind="epic")
+            id1 = self.seed(d, "Epic")
             id2 = self.seed(d, "Child", parent=id1)
             id3 = self.seed(d, "Other")
             out = self.nested(d, id=id1)
@@ -452,7 +452,7 @@ class TestRead(unittest.TestCase):
     def test_list_filter_keeps_ancestor_spine(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic", kind="epic")
+            id1 = self.seed(d, "Epic")
             id2 = self.seed(d, "Child", parent=id1)
             out = self.nested(d, match="child")
             self.assertIn(f"#{id1}", self.row_for(out, id1))    # spine kept as context
@@ -462,7 +462,7 @@ class TestRead(unittest.TestCase):
         self.t._use_color = lambda: True
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic", kind="epic")
+            id1 = self.seed(d, "Epic")
             id2 = self.seed(d, "Child", parent=id1)
             self.t.cmd_mv(ns(dir=str(d), id=id2, status="ongoing", resolution=None))
             out = self.nested(d, match="child")
@@ -472,7 +472,7 @@ class TestRead(unittest.TestCase):
     def test_list_sort_orders_siblings_within_parent(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic", kind="epic")
+            id1 = self.seed(d, "Epic")
             id2 = self.seed(d, "Low child", parent=id1, priority="low")
             id3 = self.seed(d, "High child", parent=id1, priority="high")
             out = self.nested(d)                              # default id sort: both appear
@@ -485,7 +485,7 @@ class TestRead(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.write_index(d, {"id": 2, "slug": "child", "title": "Orphanish",
-                                 "kind": "task", "status": "backlog",
+                                 "status": "backlog",
                                  "priority": "high", "parent": 99})
             out = self.nested(d)                              # parent 99 missing
             self.assertIn("#2", out)                          # promoted to a root, no crash
@@ -495,9 +495,9 @@ class TestRead(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.write_index(d,
-                {"id": 1, "slug": "a", "title": "A", "kind": "task",
+                {"id": 1, "slug": "a", "title": "A",
                  "status": "backlog", "priority": "high", "parent": 2},
-                {"id": 2, "slug": "b", "title": "B", "kind": "task",
+                {"id": 2, "slug": "b", "title": "B",
                  "status": "backlog", "priority": "high", "parent": 1})
             out = self.nested(d)                              # must return, not hang/raise
             self.assertIsInstance(out, str)
@@ -512,7 +512,7 @@ class TestRead(unittest.TestCase):
     def test_tree_shows_children(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic", kind="epic")
+            id1 = self.seed(d, "Epic")
             id2 = self.seed(d, "Child", parent=id1)
             out = self.nested(d)                              # tree is now the nested list
             self.assertIn("Epic", out)
@@ -537,7 +537,7 @@ class TestRead(unittest.TestCase):
     def test_list_sort_orders_siblings_recursively(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic", kind="epic")
+            id1 = self.seed(d, "Epic")
             id2 = self.seed(d, "Mid", parent=id1)
             id3 = self.seed(d, "Low grand", parent=id2, priority="low")
             id4 = self.seed(d, "High grand", parent=id2, priority="high")
@@ -549,9 +549,9 @@ class TestRead(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.write_index(d,
-                {"id": 1, "slug": "a", "title": "A", "kind": "task",
+                {"id": 1, "slug": "a", "title": "A",
                  "status": "backlog", "priority": "high", "depends_on": [2]},
-                {"id": 2, "slug": "b", "title": "B", "kind": "task",
+                {"id": 2, "slug": "b", "title": "B",
                  "status": "backlog", "priority": "high", "depends_on": [1]})
             out = self.nested(d)                              # dep cycle: must render, not hang
             self.assertIn("#1", out)
@@ -586,7 +586,7 @@ class TestRead(unittest.TestCase):
     def test_ready_excludes_parents(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic", kind="epic")
+            id1 = self.seed(d, "Epic")
             id2 = self.seed(d, "Child", parent=id1)
             out = self.ready(d)
             self.assertNotIn(f"#{id1}", out)
@@ -635,7 +635,7 @@ class TestRead(unittest.TestCase):
     def test_ready_lifts_a_child_of_an_urgent_epic(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            epic = self.seed(d, "Urgent epic", priority="urgent", kind="epic")
+            epic = self.seed(d, "Urgent epic", priority="urgent")
             kid = self.seed(d, "Kid", priority="low", parent=epic)
             lone = self.seed(d, "Lone high", priority="high")
             out = self.ready(d)
@@ -689,7 +689,7 @@ class TestRead(unittest.TestCase):
     def test_ready_marks_a_child_of_a_hotter_parent(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            epic = self.seed(d, "Urgent epic", priority="urgent", kind="epic")
+            epic = self.seed(d, "Urgent epic", priority="urgent")
             kid = self.seed(d, "Kid", priority="low", parent=epic)
             self.assertIn(f"↑urgent(#{epic})", self.row_for(self.ready(d), kid))
 
@@ -801,7 +801,7 @@ class TestScopedReady(unittest.TestCase):
 
     def seed(self, d, title="Item", parent=None, priority="high", depends=None,
              points=None):
-        a = ns(dir=str(d), title=title, priority=priority, kind=None, parent=parent,
+        a = ns(dir=str(d), title=title, priority=priority, parent=parent,
                points=points, depends=depends, spec=None, slug=None)
         buf = io.StringIO()
         with redirect_stdout(buf):

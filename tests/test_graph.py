@@ -11,9 +11,9 @@ class TestGraph(unittest.TestCase):
         self.cfg = self.t.DEFAULT_CONFIG
 
     def issue(self, iid, status="backlog", parent=None, depends=None,
-              priority="medium", kind="task"):
+              priority="medium"):
         return self.t.Issue(id=iid, slug=f"i{iid}", title=f"Item {iid}",
-                            kind=kind, status=status, priority=priority,
+                            status=status, priority=priority,
                             parent=parent, depends_on=list(depends or []))
 
     def graph(self, *issues):
@@ -465,7 +465,7 @@ class TestGraph(unittest.TestCase):
             d = make_tracker(tmp, {})
             buf = io.StringIO()
             with redirect_stdout(buf):
-                self.t.cmd_new(ns(dir=str(d), title="A", priority="high", kind=None,
+                self.t.cmd_new(ns(dir=str(d), title="A", priority="high",
                                   parent=None, points=None, depends=None, spec=None,
                                   slug=None))
             iid = Path(buf.getvalue().strip()).name.split("-")[0]

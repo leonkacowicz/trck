@@ -103,7 +103,6 @@ def cmd_list(args) -> None:
     def keep(r):
         return ((not keep_st or r.status in keep_st)
                 and r.status not in drop_st
-                and (not args.kind or r.kind == args.kind)
                 and (not args.priority or r.priority == args.priority)
                 and (not getattr(args, "label", None) or args.label in (r.labels or []))
                 and (parent_filter is None or r.parent == parent_filter)
@@ -148,7 +147,7 @@ def cmd_list(args) -> None:
 
     if getattr(args, "flat", False):
         rows = sorted([r for r in g.rows if keep(r)], key=key)
-        print_rows(ctx, rows, annotate=annotate_over(rows), show_fields=show_fields,
+        print_rows(ctx, g, rows, annotate=annotate_over(rows), show_fields=show_fields,
                    progress=progress, abbrev=abbrev)
         return
 
@@ -163,12 +162,12 @@ def cmd_list(args) -> None:
         roots = [r for r in g.rows
                  if (r.parent is None or r.parent not in g.by_id) and r.id in shown]
     ordered, prefix_of = forest_layout(g, roots, shown, key)
-    print_rows(ctx, ordered, annotate=annotate_over(ordered),
+    print_rows(ctx, g, ordered, annotate=annotate_over(ordered),
                prefix=lambda r: prefix_of[r.id], dim=lambda r: r.id in dim,
                show_fields=show_fields, progress=progress, abbrev=abbrev)
 
 
-def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None,
+def print_rows(ctx: Ctx, g: Graph, rows: list[Issue], annotate=None, prefix=None, dim=None,
                show_fields=None, progress=None, abbrev=None) -> None:
     """Render issues as aligned one-line summaries (shared by `list` and `ready`).
     `annotate`, if given, maps a row to a trailing suffix (e.g. the blocking graph);
@@ -189,7 +188,10 @@ def print_rows(ctx: Ctx, rows: list[Issue], annotate=None, prefix=None, dim=None
         pre = prefix(r) if prefix else ""
         prog = progress(r) if progress else ""
         tags = []
-        if r.kind == "epic":
+        # Derived, not declared: an issue with children *is* an epic. As a stored kind
+        # the two drifted — this repo carried three childless "epics" and one unmarked
+        # parent — and nothing ever stopped them.
+        if g.children_of(r):
             tags.append("EPIC")
         if r.parent and not pre:  # the connector already shows parentage when nested
             tags.append(f"↳{r.parent}")
@@ -302,7 +304,7 @@ def cmd_which(args) -> None:
         for r in picked:
             print(r.id)
     else:
-        print_rows(ctx, picked)
+        print_rows(ctx, load_graph(ctx), picked)
 
 
 def cmd_ready(args) -> None:
@@ -326,7 +328,7 @@ def cmd_ready(args) -> None:
     if getattr(args, "next", False):
         rows = rows[:1]
     abbrev = unique_prefix_lens([r.id for r in g.rows])
-    print_rows(ctx, rows, abbrev=abbrev,
+    print_rows(ctx, g, rows, abbrev=abbrev,
                annotate=lambda r: demand_annotation(g, r, abbrev))
 
 
@@ -353,7 +355,7 @@ def _print_deps_graph(ctx: Ctx, g: Graph, root_id, full: bool = False,
         if not g.drawn_deps_of(root) and not g.drawn_dependents_of(root):
             if omit_done and g.is_terminal(root):
                 return
-            print(node_label(ctx, root, focal=True, abbrev=abbrev) + "  (no dependencies)")
+            print(node_label(ctx, g, root, focal=True, abbrev=abbrev) + "  (no dependencies)")
             return
         # --full means the focal node's whole weakly-connected component, computed
         # over every issue — not over the overview set, which drops the components
@@ -383,7 +385,7 @@ def _print_deps_graph(ctx: Ctx, g: Graph, root_id, full: bool = False,
         marker = "" if root_id is None else (paint("▸", "bold") + " " if focal else "  ")
         painted = "".join(paint_lane(ch, ow) for ch, ow in zip(gutter, owners))
         print(f"{marker}{painted}{' ' * (width - len(gutter))}  "
-              f"{node_label(ctx, g.row(iid), focal=focal, abbrev=abbrev)}")
+              f"{node_label(ctx, g, g.row(iid), focal=focal, abbrev=abbrev)}")
 
 
 def cmd_deps(args) -> None:

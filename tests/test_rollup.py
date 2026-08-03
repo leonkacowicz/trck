@@ -43,7 +43,7 @@ class TestStatusCascade(unittest.TestCase):
     def new(self, d, title="I", parent=None):
         buf = io.StringIO()
         with redirect_stdout(buf):
-            self.t.cmd_new(ns(dir=str(d), title=title, priority="high", kind=None,
+            self.t.cmd_new(ns(dir=str(d), title=title, priority="high",
                               parent=parent, depends=None, spec=None, slug=None))
         return Path(buf.getvalue().strip()).name.split("-")[0]
 
@@ -136,7 +136,7 @@ class TestStatusCascade(unittest.TestCase):
             self.assertEqual(self.status(d, id_p2), "done")
             # move b from p1 to p2
             self.t.cmd_set(ns(dir=str(d), id=id_b, parent=id_p2, priority=None, points=None,
-                              spec=None, kind=None, field=None, unset=None, slug=None,
+                              spec=None, field=None, unset=None, slug=None,
                               title=None, auto=False))
             self.assertEqual(self.status(d, id_p1), "done")     # p1 now has only the done child
             self.assertEqual(self.status(d, id_p2), "ongoing")  # p2 now has a backlog child
@@ -150,7 +150,7 @@ class TestManualOverride(unittest.TestCase):
     def new(self, d, title="I", parent=None):
         buf = io.StringIO()
         with redirect_stdout(buf):
-            self.t.cmd_new(ns(dir=str(d), title=title, priority="high", kind=None,
+            self.t.cmd_new(ns(dir=str(d), title=title, priority="high",
                               parent=parent, depends=None, spec=None, slug=None))
         return Path(buf.getvalue().strip()).name.split("-")[0]
 
@@ -209,7 +209,7 @@ class TestManualOverride(unittest.TestCase):
 
     def set_(self, d, iid, **over):
         args = dict(dir=str(d), id=iid, priority=None, points=None, parent=None,
-                    spec=None, kind=None, field=None, unset=None, slug=None,
+                    spec=None, field=None, unset=None, slug=None,
                     title=None, auto=False)
         args.update(over)
         self.t.cmd_set(ns(**args))
@@ -234,7 +234,7 @@ class TestPresentation(unittest.TestCase):
     def new(self, d, title="I", parent=None):
         buf = io.StringIO()
         with redirect_stdout(buf):
-            self.t.cmd_new(ns(dir=str(d), title=title, priority="high", kind=None,
+            self.t.cmd_new(ns(dir=str(d), title=title, priority="high",
                               parent=parent, depends=None, spec=None, slug=None))
         return Path(buf.getvalue().strip()).name.split("-")[0]
 
@@ -280,7 +280,7 @@ class TestPureStatusTransition(unittest.TestCase):
         return self.t.Ctx(d, self.t.load_config(d))
 
     def issue(self, **over):
-        f = {"id": "abc1234", "slug": "a", "title": "A", "kind": "task",
+        f = {"id": "abc1234", "slug": "a", "title": "A",
              "status": "backlog", "priority": "medium"}
         f.update(over)
         return self.t.Issue(**f)

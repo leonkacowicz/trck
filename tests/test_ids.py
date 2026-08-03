@@ -72,7 +72,7 @@ class TestUniquePrefixLens(unittest.TestCase):
 class TestResolveRef(unittest.TestCase):
     def setUp(self):
         self.t = load_trck()
-        mk = lambda i: self.t.Issue(id=i, slug="s", title="T", kind="task",
+        mk = lambda i: self.t.Issue(id=i, slug="s", title="T",
                                     status="backlog", priority="high")
         self.rows = [mk("k3m9x2a"), mk("k7zzzzz"), mk("p4abcde")]
 
@@ -92,7 +92,7 @@ class TestResolveRef(unittest.TestCase):
 
     def test_legacy_id_alias_resolves(self):
         t = self.t
-        rows = [t.Issue(id="k3m9x2a", slug="s", title="T", kind="task",
+        rows = [t.Issue(id="k3m9x2a", slug="s", title="T",
                         status="backlog", priority="high", legacy_id=65)]
         self.assertEqual(t.resolve_ref(rows, "65").id, "k3m9x2a")
         self.assertEqual(t.resolve_ref(rows, 65).id, "k3m9x2a")
@@ -100,9 +100,9 @@ class TestResolveRef(unittest.TestCase):
     def test_legacy_id_alias_beats_prefix(self):
         # a numeric token is read as the historical reference, not a prefix hit
         t = self.t
-        rows = [t.Issue(id="65abcde", slug="s", title="T", kind="task",
+        rows = [t.Issue(id="65abcde", slug="s", title="T",
                         status="backlog", priority="high"),
-                t.Issue(id="k3m9x2a", slug="s2", title="T2", kind="task",
+                t.Issue(id="k3m9x2a", slug="s2", title="T2",
                         status="backlog", priority="high", legacy_id=65)]
         self.assertEqual(t.resolve_ref(rows, "65").id, "k3m9x2a")
 
@@ -115,7 +115,7 @@ class TestResolveRef(unittest.TestCase):
 
     def test_leading_hash_is_stripped_legacy(self):
         t = self.t
-        rows = [t.Issue(id="k3m9x2a", slug="s", title="T", kind="task",
+        rows = [t.Issue(id="k3m9x2a", slug="s", title="T",
                         status="backlog", priority="high", legacy_id=65)]
         self.assertEqual(t.resolve_ref(rows, "#65").id, "k3m9x2a")
 
@@ -133,9 +133,9 @@ class TestMergeAndOrder(unittest.TestCase):
         # Two independently-generated ids never collide structurally: a dict keyed
         # by id keeps both rows with intact cross-references.
         t = self.t
-        a = t.Issue(id="k3m9x2a", slug="a", title="A", kind="task",
+        a = t.Issue(id="k3m9x2a", slug="a", title="A",
                     status="backlog", priority="high")
-        b = t.Issue(id="p4abcde", slug="b", title="B", kind="task",
+        b = t.Issue(id="p4abcde", slug="b", title="B",
                     status="backlog", priority="high", depends_on=["k3m9x2a"])
         by_id = {r.id: r for r in [a, b]}
         self.assertEqual(set(by_id), {"k3m9x2a", "p4abcde"})
@@ -157,9 +157,9 @@ class TestRenumber(unittest.TestCase):
         t = self.t
         d = make_tracker(tempfile.mkdtemp())
         ctx = t.Ctx(d, t.load_config(d))
-        parent = t.Issue(id="1", slug="epic", title="Epic", kind="epic",
+        parent = t.Issue(id="1", slug="epic", title="Epic",
                          status="backlog", priority="high", created=t.now_utc())
-        child = t.Issue(id="2", slug="task", title="Task", kind="task",
+        child = t.Issue(id="2", slug="task", title="Task",
                         status="backlog", priority="high", parent="1",
                         depends_on=[], created=t.now_utc())
         for r in (parent, child):
@@ -188,7 +188,7 @@ class TestRenumber(unittest.TestCase):
 
     def test_renumber_leaves_existing_random_ids_untouched(self):
         t, ctx = self._tracker_with_int_ids()
-        r = t.Issue(id="k3m9x2a", slug="r", title="R", kind="task",
+        r = t.Issue(id="k3m9x2a", slug="r", title="R",
                     status="backlog", priority="high", created=t.now_utc())
         p = t.issue_path(ctx, r); p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(t.TEMPLATE.format(title="R"))
@@ -209,9 +209,9 @@ class TestDepsRootResolution(unittest.TestCase):
         t = self.t
         d = make_tracker(tempfile.mkdtemp())
         ctx = t.Ctx(d, t.load_config(d))
-        a = t.Issue(id="aabbcc2", slug="a", title="Prereq", kind="task",
+        a = t.Issue(id="aabbcc2", slug="a", title="Prereq",
                     status="backlog", priority="high", created=t.now_utc())
-        b = t.Issue(id="ddee3f4", slug="b", title="Dependent", kind="task",
+        b = t.Issue(id="ddee3f4", slug="b", title="Dependent",
                     status="backlog", priority="high", depends_on=["aabbcc2"],
                     created=t.now_utc(), legacy_id=21)
         for r in (a, b):
@@ -251,7 +251,7 @@ class TestDepsRootResolution(unittest.TestCase):
         out = self._deps(ctx, "aabbcc2")       # a has no deps and nothing depends-cone via prefix
         # a IS depended-on by b, so its down-cone is non-empty; use a 3rd isolated issue:
         t = self.t
-        iso = t.Issue(id="zzz9k8m", slug="iso", title="Lonely", kind="task",
+        iso = t.Issue(id="zzz9k8m", slug="iso", title="Lonely",
                       status="backlog", priority="high", created=t.now_utc())
         p = t.issue_path(ctx, iso); p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(t.TEMPLATE.format(title="Lonely"))
@@ -272,9 +272,9 @@ class TestPrefixHighlightVerbs(unittest.TestCase):
         d = make_tracker(tempfile.mkdtemp())
         ctx = t.Ctx(d, t.load_config(d))
         # two ids sharing the first char -> unique prefix length 2 each
-        a = t.Issue(id="k3aaaab", slug="a", title="Alpha", kind="task",
+        a = t.Issue(id="k3aaaab", slug="a", title="Alpha",
                     status="backlog", priority="high", created=t.now_utc())
-        b = t.Issue(id="k9bbbbb", slug="b", title="Beta", kind="task",
+        b = t.Issue(id="k9bbbbb", slug="b", title="Beta",
                     status="backlog", priority="high", created=t.now_utc())
         for r in (a, b):
             p = t.issue_path(ctx, r)

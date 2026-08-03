@@ -13,7 +13,7 @@ class TestFlatLayout(unittest.TestCase):
         self.t = load_trck()
 
     def seed(self, d, title="Item", **over):
-        a = dict(dir=str(d), title=title, priority="high", kind=None, parent=None,
+        a = dict(dir=str(d), title=title, priority="high", parent=None,
                  points=None, depends=None, spec=None, slug=None, pr=None)
         a.update(over)
         buf = io.StringIO()
@@ -64,7 +64,7 @@ class TestFlatLayout(unittest.TestCase):
             with redirect_stdout(buf):
                 self.t.cmd_set(ns(dir=str(d), id=iid, slug="renamed", title=None,
                                   priority=None, points=None, parent=None, spec=None,
-                                  pr=None, kind=None, field=None, unset=None, auto=False))
+                                  pr=None, field=None, unset=None, auto=False))
             files = sorted(p.name for p in (d / "items").glob("*.md"))
             self.assertEqual(files, [f"{iid}-renamed.md"])
 
@@ -109,7 +109,7 @@ class TestLegacyLayoutGuard(unittest.TestCase):
     def legacy(self, tmp):
         """A tracker laid out the old way: one issue file under backlog/."""
         d = make_tracker(tmp, {})
-        row = self.t.Issue(id="abc1234", slug="alpha", title="Alpha", kind="task",
+        row = self.t.Issue(id="abc1234", slug="alpha", title="Alpha",
                            status="backlog", priority="high")
         ctx = self.t.Ctx(d, self.t.load_config(d))
         old = d / "backlog"
@@ -175,7 +175,7 @@ class TestMigrateLayout(unittest.TestCase):
         ctx = self.t.Ctx(d, self.t.load_config(d))
         rows = []
         for iid, slug, status in specs:
-            row = self.t.Issue(id=iid, slug=slug, title=slug.title(), kind="task",
+            row = self.t.Issue(id=iid, slug=slug, title=slug.title(),
                                status=status, priority="high")
             folder = d / status
             folder.mkdir(parents=True, exist_ok=True)

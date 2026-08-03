@@ -24,8 +24,7 @@ class TestConfigDefaults(unittest.TestCase):
             self.assertFalse(self.t.is_terminal(cfg, "ongoing"))
             self.assertEqual(cfg["priorities"],
                              ["urgent", "high", "medium", "low", "lowest"])
-            self.assertEqual(cfg["kinds"],
-                             ["task", "epic", "bug", "story", "investigation"])
+            self.assertNotIn("kinds", cfg)
 
 class TestFixedVocabulary(unittest.TestCase):
     """The four statuses are fixed: not configured, not renameable, not extensible.
@@ -136,12 +135,6 @@ class TestVocabularyChecks(unittest.TestCase):
         msg = self.t.check_priority(self.cfg, "bogus")
         self.assertIn("bad priority 'bogus'", msg)
         self.assertIn("high, low", msg)  # lists the configured set
-
-    def test_check_kind(self):
-        self.assertIsNone(self.t.check_kind(self.cfg, "bug"))
-        msg = self.t.check_kind(self.cfg, "bogus")
-        self.assertIn("bad kind 'bogus'", msg)
-        self.assertIn("task, bug", msg)
 
     def test_check_resolution(self):
         self.assertIsNone(self.t.check_resolution(self.cfg, "fixed"))

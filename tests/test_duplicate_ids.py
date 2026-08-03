@@ -19,7 +19,7 @@ from tests.helpers import load_trck, make_tracker, ns
 
 
 def row(iid, status="backlog", slug="alpha"):
-    return {"id": iid, "slug": slug, "title": slug.title(), "kind": "task",
+    return {"id": iid, "slug": slug, "title": slug.title(),
             "status": status, "priority": "high"}
 
 

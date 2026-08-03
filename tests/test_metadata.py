@@ -23,7 +23,7 @@ class TestMetadata(unittest.TestCase):
 
     def seed(self, d, **over):
         args = ns(dir=str(d), title=over.pop("title", "Item"), priority="high",
-                  kind=over.pop("kind", None), parent=None,
+                  parent=None,
                   depends=None, spec=None, slug=None)
         for k, v in over.items():
             setattr(args, k, v)
@@ -39,34 +39,16 @@ class TestMetadata(unittest.TestCase):
 
     def set_args(self, d, iid, **over):
         a = ns(dir=str(d), id=iid, priority=None, parent=None,
-               spec=None, kind=None, title=None, slug=None)
+               spec=None, title=None, slug=None)
         for k, v in over.items():
             setattr(a, k, v)
         return a
-
-    def test_new_kind_defaults_to_first_configured(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d)
-            self.assertEqual(self.rows(d)[id1].kind, "task")
 
     def test_new_priority_defaults_to_medium(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             id1 = self.seed(d, priority=None)
             self.assertEqual(self.rows(d)[id1].priority, "medium")
-
-    def test_new_kind_sets_configured_kind(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, kind="epic")
-            self.assertEqual(self.rows(d)[id1].kind, "epic")
-
-    def test_new_rejects_unconfigured_kind(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            with self.assertRaises(SystemExit):
-                self.seed(d, kind="bogus")
 
     def test_set_priority(self):
         with TemporaryDirectory() as tmp:

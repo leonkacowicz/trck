@@ -70,7 +70,7 @@ class TestInit(unittest.TestCase):
             self.init(repo)
             d = repo / "issues"
             with redirect_stdout(io.StringIO()):
-                self.t.cmd_new(ns(dir=str(d), title="X", priority="high", kind=None,
+                self.t.cmd_new(ns(dir=str(d), title="X", priority="high",
                                   parent=None, depends=None,
                                   spec=None, slug=None))
             # verify at least one issue file exists in items/ with slug "x"

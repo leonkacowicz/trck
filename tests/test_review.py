@@ -17,7 +17,7 @@ class Base(unittest.TestCase):
     # -- helpers -------------------------------------------------------------
     def seed(self, d, title="Item", **over):
         args = ns(dir=str(d), title=title, priority=over.pop("priority", "high"),
-                  kind=over.pop("kind", None), parent=over.pop("parent", None),
+                  parent=over.pop("parent", None),
                   depends=over.pop("depends", None), spec=None, slug=None,
                   points=over.pop("points", None), pr=over.pop("pr", None))
         buf = io.StringIO()
@@ -34,7 +34,7 @@ class Base(unittest.TestCase):
 
     def set_(self, d, iid, **over):
         args = ns(dir=str(d), id=iid, priority=None, points=None, parent=None,
-                  spec=None, kind=None, title=None, slug=None, field=None,
+                  spec=None, title=None, slug=None, field=None,
                   unset=None, pr=over.pop("pr", None))
         buf = io.StringIO()
         with redirect_stdout(buf):
@@ -154,7 +154,7 @@ class TestActionableGatesReady(Base):
     def test_parent_of_an_in_review_child_rolls_up_to_active(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            epic = self.seed(d, "Epic", kind="epic")
+            epic = self.seed(d, "Epic")
             kid = self.seed(d, "Kid", parent=epic)
             self.mv(d, kid, "in-review")
             self.assertEqual(self.rows(d)[epic].status, "ongoing")
@@ -174,7 +174,7 @@ class TestPrField(Base):
     def test_pr_is_a_canonical_field_after_spec(self):
         keys = self.t.CANON_KEYS
         self.assertEqual(keys[keys.index("spec") + 1], "pr")
-        self.assertIsNone(self.t.Issue(id="a", slug="s", title="T", kind="task",
+        self.assertIsNone(self.t.Issue(id="a", slug="s", title="T",
                                        status="backlog", priority="low").pr)
 
     def test_absent_pr_is_not_serialized(self):
@@ -310,7 +310,7 @@ class TestPrRendering(Base):
         return self.t.generate_summary(self.ctx(d))
 
     def test_pr_tag_is_empty_without_a_pr(self):
-        r = self.t.Issue(id="a", slug="s", title="T", kind="task",
+        r = self.t.Issue(id="a", slug="s", title="T",
                          status="backlog", priority="low")
         self.assertEqual(self.t.pr_tag(r), "")
         r.pr = URL
@@ -325,7 +325,7 @@ class TestPrRendering(Base):
     def test_summary_links_a_parent_and_its_child(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            epic = self.seed(d, "Epic", kind="epic")
+            epic = self.seed(d, "Epic")
             kid = self.seed(d, "Kid", parent=epic, pr=URL)
             self.set_(d, epic, pr="https://example.test/pull/1")
             text = self.summary(d)
@@ -346,7 +346,7 @@ class TestPrRendering(Base):
             buf = io.StringIO()
             with redirect_stdout(buf):
                 self.t.cmd_list(ns(dir=str(d), id=None, flat=True, all=True,
-                                   status=None, kind=None, priority=None,
+                                   status=None, priority=None,
                                    label=None, parent=None, match=None, field=None,
                                    show_field=["pr"], sort=None, blocked=False,
                                    orphan=False, paths=False))

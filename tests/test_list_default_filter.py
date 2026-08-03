@@ -17,7 +17,7 @@ class TestListDefaultFilter(unittest.TestCase):
         self.t = load_trck()
 
     def seed(self, d, title, **over):
-        a = ns(dir=str(d), title=title, priority="high", kind=None, parent=None,
+        a = ns(dir=str(d), title=title, priority="high", parent=None,
                depends=None, spec=None, slug=None, points=None)
         for k, v in over.items():
             setattr(a, k, v)
@@ -33,7 +33,7 @@ class TestListDefaultFilter(unittest.TestCase):
     def list_out(self, d, status=None, all=False, flat=False):
         buf = io.StringIO()
         with redirect_stdout(buf):
-            self.t.cmd_list(ns(dir=str(d), status=status, kind=None, priority=None,
+            self.t.cmd_list(ns(dir=str(d), status=status, priority=None,
                                parent=None, flat=flat, id=None, all=all))
         return buf.getvalue()
 

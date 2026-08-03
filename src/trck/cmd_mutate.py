@@ -1,7 +1,7 @@
 from __future__ import annotations
 import re
 import shutil
-from .config import check_kind, check_points, check_pr, check_priority, check_resolution, default_priority, initial_status, is_terminal, reconcile
+from .config import check_points, check_pr, check_priority, check_resolution, default_priority, initial_status, is_terminal, reconcile
 from .constants import SLUG_RE, die, now_utc, slugify
 from .finalize import finalize
 from .graph import Graph, gen_id
@@ -22,16 +22,13 @@ def cmd_new(args) -> None:
     points = DEFAULT_POINTS if rawpoints is None else rawpoints
     if (m := check_points(points)):
         die(m)
-    kind = args.kind or ctx.cfg["kinds"][0]
-    if (m := check_kind(ctx.cfg, kind)):
-        die(m)
     pr = getattr(args, "pr", None)
     if pr is not None and (m := check_pr(pr)):
         die(m)
     parent = None if args.parent is None else resolve_ref(rows, args.parent).id
     deps = [resolve_ref(rows, tok).id for tok in parse_ids(args.depends)]
     row = Issue(
-        id=iid, slug=slug, title=args.title, kind=kind,
+        id=iid, slug=slug, title=args.title,
         status=initial_status(ctx.cfg), priority=priority, points=points,
         parent=parent, depends_on=deps, spec=args.spec, pr=pr, created=now_utc(),
     )
@@ -109,10 +106,6 @@ def cmd_set(args) -> None:
         if pr != "none" and (m := check_pr(pr)):
             die(m)
         row.pr = None if pr == "none" else pr
-    if args.kind:
-        if (m := check_kind(ctx.cfg, args.kind)):
-            die(m)
-        row.kind = args.kind
     for spec in (getattr(args, "field", None) or []):
         if "=" not in spec:
             die(f"--field expects key=value, got '{spec}'")

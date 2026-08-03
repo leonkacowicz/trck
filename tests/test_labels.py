@@ -15,7 +15,7 @@ class TestLabels(unittest.TestCase):
     # -- helpers -------------------------------------------------------------
     def seed(self, d, **over):
         args = ns(dir=str(d), title=over.pop("title", "Item"), priority="high",
-                  kind=over.pop("kind", None), parent=None, depends=None,
+                  parent=None, depends=None,
                   spec=None, slug=None, points=None)
         for k, v in over.items():
             setattr(args, k, v)
@@ -80,7 +80,7 @@ class TestLabels(unittest.TestCase):
             self.label(d, id1, add=["urgent"])
             buf = io.StringIO()
             with redirect_stdout(buf):
-                self.t.cmd_list(ns(dir=str(d), status=None, kind=None,
+                self.t.cmd_list(ns(dir=str(d), status=None,
                                    priority=None, parent=None, label="urgent"))
             out = buf.getvalue()
             self.assertIn("Has label", out)
@@ -93,7 +93,7 @@ class TestLabels(unittest.TestCase):
             self.label(d, id1, add=["backend"])
             buf = io.StringIO()
             with redirect_stdout(buf):
-                self.t.cmd_list(ns(dir=str(d), status=None, kind=None,
+                self.t.cmd_list(ns(dir=str(d), status=None,
                                    priority=None, parent=None, label=None))
             self.assertIn("backend", buf.getvalue())
 
@@ -115,9 +115,9 @@ class TestLabels(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             ctx = self.t.Ctx(d, self.t.load_config(d))
-            epic = self.t.Issue(id=1, slug="e", title="Epic", kind="epic",
+            epic = self.t.Issue(id=1, slug="e", title="Epic",
                                 status="ongoing", priority="high")
-            kid = self.t.Issue(id=2, slug="k", title="Kid", kind="task",
+            kid = self.t.Issue(id=2, slug="k", title="Kid",
                                status="ongoing", priority="high", parent=1,
                                labels=["frontend"])
             for r in (epic, kid):
@@ -132,7 +132,7 @@ class TestLabels(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             ctx = self.t.Ctx(d, self.t.load_config(d))
-            r = self.t.Issue(id=1, slug="a", title="A", kind="task",
+            r = self.t.Issue(id=1, slug="a", title="A",
                              status="backlog", priority="high", labels=["chore"])
             p = self.t.issue_path(ctx, r)
             p.parent.mkdir(parents=True, exist_ok=True)
@@ -170,7 +170,7 @@ class TestLabels(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             ctx = self.t.Ctx(d, self.t.load_config(d))
-            r = self.t.Issue(id=1, slug="a", title="A", kind="task",
+            r = self.t.Issue(id=1, slug="a", title="A",
                              status="backlog", priority="high")
             p = self.t.issue_path(ctx, r)
             p.parent.mkdir(parents=True, exist_ok=True)
@@ -193,7 +193,7 @@ class TestLabels(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             ctx = self.t.Ctx(d, self.t.load_config(d))
-            r = self.t.Issue(id=1, slug="a", title="A", kind="task",
+            r = self.t.Issue(id=1, slug="a", title="A",
                              status="backlog", priority="high", labels=[5])
             p = self.t.issue_path(ctx, r)
             p.parent.mkdir(parents=True, exist_ok=True)

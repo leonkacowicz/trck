@@ -7,9 +7,9 @@ from tempfile import TemporaryDirectory
 from tests.helpers import load_trck, make_tracker, ns
 
 
-def row(iid, *, status="done", closed=None, kind="task", parent=None,
+def row(iid, *, status="done", closed=None, parent=None,
         resolution=None, component=None, title=None):
-    d = {"id": iid, "slug": f"i{iid}", "title": title or f"I{iid}", "kind": kind,
+    d = {"id": iid, "slug": f"i{iid}", "title": title or f"I{iid}",
          "status": status, "priority": "medium"}
     if parent is not None:
         d["parent"] = parent
@@ -58,8 +58,8 @@ class TestSelectShipped(unittest.TestCase):
                 row(2, closed="2026-06-09T10:00:00Z"),                       # out: closed before since
                 row(3, status="ongoing"),                                    # out: not terminal (no closed)
                 row(4, closed="2026-06-11T10:00:00Z", resolution="wontfix"), # out: resolution
-                row(5, closed="2026-06-12T10:00:00Z", kind="epic"),          # in: epics included
-                row(6, closed="2026-06-12T10:00:00Z", kind="bug"),           # in: bugs included
+                row(5, closed="2026-06-12T10:00:00Z"),          # in: epics included
+                row(6, closed="2026-06-12T10:00:00Z"),           # in: bugs included
             ])
             self.assertEqual(self.ids(ctx, rows, "2026-06-10"), ["1", "5", "6"])
 
@@ -113,7 +113,7 @@ class TestRenderChangelog(unittest.TestCase):
     def test_child_nests_under_shipped_parent(self):
         with TemporaryDirectory() as tmp:
             ctx, rows = self.load(tmp, [
-                row(1, closed="2026-06-11T10:00:00Z", kind="epic", title="Parent"),
+                row(1, closed="2026-06-11T10:00:00Z", title="Parent"),
                 row(2, closed="2026-06-12T10:00:00Z", parent=1, title="Child"),
             ])
             shipped = self.t.select_shipped(ctx.cfg, rows, "2026-06-10")
@@ -124,7 +124,7 @@ class TestRenderChangelog(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             # parent #1 closed BEFORE since -> not in S; child #2 in S
             ctx, rows = self.load(tmp, [
-                row(1, closed="2026-06-01T10:00:00Z", kind="epic", title="OldParent"),
+                row(1, closed="2026-06-01T10:00:00Z", title="OldParent"),
                 row(2, closed="2026-06-12T10:00:00Z", parent=1, title="Child"),
             ])
             shipped = self.t.select_shipped(ctx.cfg, rows, "2026-06-10")
@@ -178,7 +178,7 @@ class TestCmdChangelog(unittest.TestCase):
     def test_end_to_end(self):
         with TemporaryDirectory() as tmp:
             d = self.load(tmp, [
-                row(1, closed="2026-06-11T10:00:00Z", kind="epic", title="Parent", component="cli"),
+                row(1, closed="2026-06-11T10:00:00Z", title="Parent", component="cli"),
                 row(2, closed="2026-06-12T10:00:00Z", parent=1, title="Child", component="cli"),
                 row(3, status="ongoing", title="Open"),                       # excluded
                 row(4, closed="2026-06-11T10:00:00Z", resolution="wontfix"),   # excluded

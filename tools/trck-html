@@ -115,7 +115,7 @@ def _issue_dict(g, ctx, r):
         "title": r.title,
         "status": r.status,
         "priority": r.priority,
-        "kind": r.kind,
+        "kind": r.extra.get("kind"),
         "points": r.points,
         "labels": list(r.labels),
         "resolution": r.resolution,

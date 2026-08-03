@@ -183,8 +183,10 @@ def demand_annotation(g: Graph, r: Issue, abbrev=None) -> str:
     return f"  {prio}({hl_id(src.id, abbrev)})"
 
 
-def node_label(ctx: Ctx, r: Issue, focal: bool = False, abbrev=None) -> str:
-    tag = " ·epic·" if r.kind == "epic" else ""
+def node_label(ctx: Ctx, g: Graph, r: Issue, focal: bool = False, abbrev=None) -> str:
+    # `·epic·` is derived from the hierarchy, not from a stored kind: an issue with
+    # children *is* an epic, and a declared marker only drifts from that.
+    tag = " ·epic·" if g.children_of(r) else ""
     icon = paint(status_icon(ctx, r.status), *status_codes(ctx.cfg, r.status))
     labels = paint(label_tag(r), "dim") if r.labels else ""  # dim, as in print_rows
     emph = ("bold",) if focal else ()                        # focal row of `deps NNN`
