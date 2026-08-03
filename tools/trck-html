@@ -175,7 +175,11 @@ def build_model(ctx, cmd=None):
         "repo": repo,
         "tracker": ctx.dir.name,
         "config": {
-            "statuses": [{"name": s["name"], "role": s.get("role")} for s in cfg["statuses"]],
+            # The vocabulary is fixed in the engine now, but the page still ships it:
+            # the board draws a column per status and the facet bar a box per status,
+            # and neither should hardcode names the engine owns.
+            "statuses": [{"name": n, "terminal": E.is_terminal(cfg, n)}
+                         for n in E.status_names(cfg)],
             "priorities": list(cfg.get("priorities", [])),
             "kinds": list(cfg.get("kinds", [])),
             "cmd": cmd or _default_cmd(),
@@ -508,7 +512,7 @@ function el(tag, props = {}, ...kids) {
 }
 
 const byId = Object.fromEntries(DATA.issues.map(i => [i.id, i]));
-const terminal = new Set(DATA.config.statuses.filter(s => s.role === 'terminal').map(s => s.name));
+const terminal = new Set(DATA.config.statuses.filter(s => s.terminal).map(s => s.name));
 const prio = DATA.config.priorities;
 // What each facet offers a box for. Also the seed for its selection: everything starts
 // checked, so the bar states what is on screen instead of sitting empty beside an

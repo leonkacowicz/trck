@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .config import check_kind, check_points, check_pr, check_priority, check_resolution, check_status_flags, check_status_states, reconcile, status_names
+from .config import check_kind, check_points, check_pr, check_priority, check_resolution, check_vestigial_vocabulary, reconcile, status_names
 from .constants import FIELD_KEY_RE, FILENAME_RE, ITEMS_DIR, SLUG_RE, die
 from .graph import Graph
 from .index import Ctx, DEFAULT_POINTS, Issue, file_id, filename, load_index
@@ -33,8 +33,7 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
     filesystem-vs-index consistency check is unaffected. Omit `rows` to validate the
     persisted index as loaded from disk."""
     errors, warnings = [], []
-    errors.extend(check_status_states(ctx.cfg))
-    errors.extend(check_status_flags(ctx.cfg))
+    warnings.extend(check_vestigial_vocabulary(ctx.cfg))
     if rows is None:
         rows = load_index(ctx)
     files = scan_files(ctx)

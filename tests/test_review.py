@@ -64,13 +64,10 @@ class TestInReviewVocabulary(Base):
         cfg = self.t.DEFAULT_CONFIG
         self.assertEqual(self.t.status_names(cfg),
                          ["backlog", "ongoing", "in-review", "done"])
-        # it stands for the `review` state: in flight, but its own output is pending
-        # someone else's judgement, so there is nothing here to pick up
-        self.assertEqual(self.t.state_of(cfg, "in-review"), "review")
+        # in flight, but its own output is pending someone else's judgement, so there
+        # is nothing here to pick up — and it is not finished either
         self.assertFalse(self.t.is_terminal(cfg, "in-review"))
         self.assertFalse(self.t.is_actionable(cfg, "in-review"))
-        # the one-each constraint holds for the three rollup anchors; review is exempt
-        self.assertEqual(self.t.check_status_states(cfg), [])
         self.assertEqual(self.t.initial_status(cfg), "backlog")
         self.assertEqual(self.t.active_status(cfg), "ongoing")
         self.assertEqual(self.t.terminal_statuses(cfg), ["done"])
@@ -92,23 +89,16 @@ class TestInReviewVocabulary(Base):
         self.assertTrue(self.t.is_actionable(
             {"statuses": [{"name": "qa", "actionable": True}]}, "qa"))
 
-    def test_check_status_flags_rejects_non_boolean_actionable(self):
-        self.assertEqual(self.t.check_status_flags(self.t.DEFAULT_CONFIG), [])
-        msgs = self.t.check_status_flags(
-            {"statuses": [{"name": "qa", "actionable": "no"}]})
-        self.assertEqual(len(msgs), 1)
-        self.assertIn("qa", msgs[0])
-        self.assertIn("actionable", msgs[0])
-
-    def test_check_reports_a_non_boolean_actionable(self):
+    def test_a_leftover_statuses_key_is_a_warning_not_an_error(self):
+        """Every tracker written before the vocabulary was fixed carries this key. It is
+        ignored, so the tracker is not broken — erroring would lock it out of every verb
+        over something that no longer does anything."""
         with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {"statuses": [
-                {"name": "backlog", "role": "initial"},
-                {"name": "ongoing", "role": "active"},
-                {"name": "qa", "actionable": "yes"},
-                {"name": "done", "role": "terminal"},
-            ]})
-            self.assertTrue(any("actionable" in e for e in self.errors(d)))
+            d = make_tracker(tmp, {"statuses": [{"name": "qa"}]})
+            ctx = self.ctx(d)
+            errors, warnings = self.t.validate(ctx)
+            self.assertEqual(errors, [])
+            self.assertTrue(any("no longer configurable" in w for w in warnings), warnings)
 
 
 # --------------------------------------------------------------------------- #
@@ -169,19 +159,6 @@ class TestActionableGatesReady(Base):
             self.mv(d, kid, "in-review")
             self.assertEqual(self.rows(d)[epic].status, "ongoing")
             self.assertEqual(self.errors(d), [])
-
-    def test_custom_vocabulary_can_opt_any_status_out(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {"statuses": [
-                {"name": "todo", "role": "initial"},
-                {"name": "wip", "role": "active"},
-                {"name": "qa", "actionable": False},
-                {"name": "shipped", "role": "terminal"},
-            ]})
-            a = self.seed(d, "A")
-            self.mv(d, a, "qa")
-            self.assertNotIn(a, self.ready_ids(d))
-
 
 # --------------------------------------------------------------------------- #
 # the pr field
@@ -324,17 +301,6 @@ class TestReviewVerb(Base):
             with redirect_stderr(err), self.assertRaises(SystemExit):
                 self.review(d, a, "pull/12")
             self.assertEqual(self.rows(d)[a].status, "backlog")
-
-    def test_review_without_the_alias_configured_points_at_mv(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {"aliases": {"start": "ongoing"}})
-            a = self.seed(d, "A")
-            err = io.StringIO()
-            with redirect_stderr(err), self.assertRaises(SystemExit):
-                self.review(d, a)
-            self.assertIn("no 'review' alias configured", err.getvalue())
-            self.assertIn("trck mv", err.getvalue())
-
 
 # --------------------------------------------------------------------------- #
 # rendering

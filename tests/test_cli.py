@@ -57,14 +57,6 @@ class TestAliases(unittest.TestCase):
             self.assertEqual(r.status, "done")
             self.assertEqual(r.resolution, "duplicate")
 
-    def test_undefined_alias_dies(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {"aliases": {}})  # no start alias
-            id1 = self.seed(d)
-            with self.assertRaises(SystemExit):
-                self.t.cmd_start(ns(dir=str(d), id=id1))
-
-
 class TestDie(unittest.TestCase):
     def setUp(self):
         self.t = load_trck()

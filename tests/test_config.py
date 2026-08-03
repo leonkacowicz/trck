@@ -27,124 +27,70 @@ class TestConfigDefaults(unittest.TestCase):
             self.assertEqual(cfg["kinds"],
                              ["task", "epic", "bug", "story", "investigation"])
 
-class TestSemanticStates(unittest.TestCase):
-    """A status is a label over one of four states, not a free-form lifecycle position.
+class TestFixedVocabulary(unittest.TestCase):
+    """The four statuses are fixed: not configured, not renameable, not extensible.
 
-    The states were always there — `role` plus `actionable` encode exactly these four —
-    but they were secondary, derived by each caller from two independent fields. Making
-    the state primary is what lets the engine ask "is this in review?" instead of "does it
-    lack a role and opt out of actionable?", and it is the vocabulary a Rust port and any
-    cross-tracker tool can rely on."""
+    They were briefly two vocabularies — canonical states with per-tracker display names
+    over them — which bought renaming and cost a second word for one concept. The names
+    themselves are good; a tracker does not get to change them."""
 
     def setUp(self):
         self.t = load_trck()
 
-    def test_the_shipped_vocabulary_covers_every_state(self):
+    def test_the_vocabulary_is_the_four_names(self):
+        self.assertEqual(self.t.STATUSES, ("backlog", "ongoing", "in-review", "done"))
+        self.assertEqual(self.t.status_names(self.t.DEFAULT_CONFIG),
+                         ["backlog", "ongoing", "in-review", "done"])
+
+    def test_the_config_carries_no_vocabulary_at_all(self):
+        """There is nothing to configure, so `trck.json` has no key for it. A tracker that
+        never opens the file gets the right answer, which is the whole point."""
+        self.assertNotIn("statuses", self.t.DEFAULT_CONFIG)
+        self.assertNotIn("aliases", self.t.DEFAULT_CONFIG)
+
+    def test_a_tracker_cannot_redefine_the_vocabulary(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {"statuses": [{"name": "wip"}, {"name": "shipped"}]})
+            cfg = self.t.load_config(d)
+            self.assertEqual(self.t.status_names(cfg),
+                             ["backlog", "ongoing", "in-review", "done"])
+
+    def test_a_leftover_vocabulary_key_warns_rather_than_breaks(self):
+        """Every tracker written before this carries `statuses` and `aliases`. Ignoring
+        them silently would hide a real surprise; erroring would lock the tracker out of
+        every verb over a key that no longer does anything. So: a warning, naming what
+        is fixed."""
+        warns = self.t.check_vestigial_vocabulary({"statuses": [], "aliases": {}})
+        self.assertEqual(len(warns), 2)
+        self.assertTrue(all("no longer configurable" in w for w in warns), warns)
+        self.assertEqual(self.t.check_vestigial_vocabulary(self.t.DEFAULT_CONFIG), [])
+
+    def test_the_semantic_predicates_read_the_status_directly(self):
         cfg = self.t.DEFAULT_CONFIG
-        self.assertEqual([self.t.state_of(cfg, n) for n in self.t.status_names(cfg)],
-                         ["todo", "doing", "review", "done"])
+        self.assertEqual(self.t.initial_status(cfg), "backlog")
+        self.assertEqual(self.t.active_status(cfg), "ongoing")
+        self.assertEqual(self.t.terminal_statuses(cfg), ["done"])
+        self.assertEqual([self.t.is_terminal(cfg, n) for n in self.t.STATUSES],
+                         [False, False, False, True])
 
-    def test_a_state_may_be_declared_outright(self):
-        cfg = {"statuses": [{"name": "icebox", "state": "todo"},
-                            {"name": "qa", "state": "review"}]}
-        self.assertEqual(self.t.state_of(cfg, "icebox"), "todo")
-        self.assertEqual(self.t.state_of(cfg, "qa"), "review")
-
-    def test_a_declared_state_wins_over_the_derived_one(self):
-        """Derivation exists to read configs written before states did. Where a tracker
-        says what it means, that is the answer — otherwise migrating a config would be
-        unable to correct a mapping the old fields got wrong."""
-        cfg = {"statuses": [{"name": "x", "role": "initial", "state": "doing"}]}
-        self.assertEqual(self.t.state_of(cfg, "x"), "doing")
-
-    def test_states_are_derived_from_the_old_role_and_flag(self):
-        cfg = {"statuses": [{"name": "a", "role": "initial"},
-                            {"name": "b", "role": "active"},
-                            {"name": "c", "actionable": False},
-                            {"name": "d", "role": "terminal"}]}
-        self.assertEqual([self.t.state_of(cfg, n) for n in "abcd"],
-                         ["todo", "doing", "review", "done"])
-
-    def test_a_status_that_only_opts_out_of_actionable_is_in_review(self):
-        # `actionable: false` says "in flight, nothing to pick up" whatever else it
-        # carries — that is the whole content of `review`.
-        cfg = {"statuses": [{"name": "blocked", "role": "active", "actionable": False}]}
-        self.assertEqual(self.t.state_of(cfg, "blocked"), "review")
-
-    def test_an_unknown_status_is_not_guessed_at(self):
-        self.assertIsNone(self.t.state_of(self.t.DEFAULT_CONFIG, "nonesuch"))
-
-    def test_predicates_read_the_state_not_the_old_fields(self):
-        cfg = {"statuses": [{"name": "a", "state": "todo"}, {"name": "b", "state": "doing"},
-                            {"name": "c", "state": "review"}, {"name": "d", "state": "done"}]}
-        self.assertEqual(self.t.initial_status(cfg), "a")
-        self.assertEqual(self.t.active_status(cfg), "b")
-        self.assertEqual(self.t.terminal_statuses(cfg), ["d"])
-        self.assertTrue(self.t.is_terminal(cfg, "d"))
-        self.assertEqual([self.t.is_actionable(cfg, n) for n in "abcd"],
+    def test_only_backlog_and_ongoing_offer_work_to_pick_up(self):
+        """`in-review` is in flight but its own output is pending someone else\'s
+        judgement, so there is nothing to start; `done` is finished. Actionability used to
+        fail open for anything that had not opted out, so `done` answered True."""
+        cfg = self.t.DEFAULT_CONFIG
+        self.assertEqual([self.t.is_actionable(cfg, n) for n in self.t.STATUSES],
                          [True, True, False, False])
 
-    def test_a_terminal_status_is_never_actionable(self):
-        """`is_actionable` used to fail open for anything not opting out, so a terminal
-        status answered True and readiness had to exclude it separately."""
-        self.assertFalse(self.t.is_actionable(self.t.DEFAULT_CONFIG, "done"))
+    def test_the_verb_aliases_are_constants(self):
+        cfg = self.t.DEFAULT_CONFIG
+        self.assertEqual([self.t.resolve_alias(cfg, v) for v in ("start", "review", "done")],
+                         ["ongoing", "in-review", "done"])
+        self.assertIsNone(self.t.resolve_alias(cfg, "nonesuch"))
 
-    def test_a_state_outside_the_four_is_rejected(self):
-        cfg = {"statuses": [{"name": "x", "state": "pondering"}]}
-        errs = self.t.check_status_states(cfg)
-        self.assertTrue(any("pondering" in e for e in errs), errs)
 
-    def test_every_state_must_be_named_exactly_once(self):
-        """Four states, four statuses, no exemptions.
-
-        An earlier draft let several statuses mean `review`, so a tracker could name
-        `qa` and `awaiting-deploy` separately. That is redundant with custom fields,
-        which already give one value per key and can declare their allowed values — and
-        whichever way issue history lands, a field change is as visible as a status
-        change. One vocabulary beats two overlapping ones."""
-        two = {"statuses": [{"name": "a", "state": "todo"}, {"name": "b", "state": "todo"},
-                            {"name": "c", "state": "doing"}, {"name": "d", "state": "done"}]}
-        self.assertTrue(any("todo" in e for e in self.t.check_status_states(two)))
-        many_reviews = {"statuses": [{"name": "a", "state": "todo"}, {"name": "b", "state": "doing"},
-                                     {"name": "c", "state": "review"}, {"name": "d", "state": "review"},
-                                     {"name": "e", "state": "done"}]}
-        self.assertTrue(any("review" in e for e in self.t.check_status_states(many_reviews)))
-        missing = {"statuses": [{"name": "a", "state": "todo"}, {"name": "b", "state": "doing"},
-                                {"name": "c", "state": "done"}]}
-        self.assertTrue(any("review" in e for e in self.t.check_status_states(missing)))
-
-    def test_the_vocabulary_can_be_written_as_a_naming_table(self):
-        """With one status per state the vocabulary is just names, so a tracker may say so
-        directly instead of repeating `state` alongside `name` four times. The list form
-        still reads, because every config written before this one uses it."""
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {"statuses": {"todo": "icebox", "doing": "wip",
-                                                "review": "review", "done": "shipped"}})
-            cfg = self.t.load_config(d)
-            self.assertEqual(self.t.status_names(cfg), ["icebox", "wip", "review", "shipped"])
-            self.assertEqual(self.t.state_of(cfg, "wip"), "doing")
-            self.assertEqual(self.t.status_for(cfg, "done"), "shipped")
-            self.assertEqual(self.t.check_status_states(cfg), [])
-
-    def test_the_naming_table_orders_statuses_by_state(self):
-        """Board columns and summary sections follow the configured order, so it cannot
-        depend on how the table happened to be written."""
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {"statuses": {"done": "shipped", "todo": "icebox",
-                                                "review": "checking", "doing": "wip"}})
-            self.assertEqual(self.t.status_names(self.t.load_config(d)),
-                             ["icebox", "wip", "checking", "shipped"])
-
-    def test_active_status_from_role(self):
-        # the shipped default marks `ongoing` as the active-role status
-        self.assertEqual(self.t.active_status(self.t.DEFAULT_CONFIG), "ongoing")
-        # honoured under a custom vocabulary
-        cfg = {"statuses": [{"name": "todo", "role": "initial"},
-                            {"name": "wip", "role": "active"},
-                            {"name": "shipped", "role": "terminal"}]}
-        self.assertEqual(self.t.active_status(cfg), "wip")
-        # absent role -> None (no active status configured)
-        self.assertIsNone(self.t.active_status({"statuses": [{"name": "a"}]}))
+class TestConfigRemainder(unittest.TestCase):
+    def setUp(self):
+        self.t = load_trck()
 
     def test_default_priority_explicit_invalid_and_fallback(self):
         dp = self.t.default_priority
@@ -166,25 +112,6 @@ class TestSemanticStates(unittest.TestCase):
             self.assertEqual(cfg["priorities"], ["p0", "p1"])
             self.assertEqual(self.t.status_names(cfg),
                              ["backlog", "ongoing", "in-review", "done"])
-
-    def test_custom_statuses_and_roles(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {"statuses": [
-                {"name": "todo", "role": "initial"},
-                {"name": "doing"},
-                {"name": "review"},
-                {"name": "shipped", "role": "terminal"},
-                {"name": "dropped", "role": "terminal"},
-            ]})
-            cfg = self.t.load_config(d)
-            self.assertEqual(self.t.initial_status(cfg), "todo")
-            self.assertEqual(set(self.t.terminal_statuses(cfg)), {"shipped", "dropped"})
-
-    def test_initial_defaults_to_first_when_no_role(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {"statuses": [{"name": "a"}, {"name": "b"}]})
-            cfg = self.t.load_config(d)
-            self.assertEqual(self.t.initial_status(cfg), "a")
 
     def test_resolve_alias(self):
         with TemporaryDirectory() as tmp:

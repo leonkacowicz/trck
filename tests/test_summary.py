@@ -158,14 +158,15 @@ class TestSummary(unittest.TestCase):
             text = self.t.generate_summary(ctx)  # must terminate, not hang
             self.assertIn("Hierarchies", text)
 
-    def test_custom_statuses_render(self):
+    def test_every_status_gets_a_count_row_and_a_section(self):
         with TemporaryDirectory() as tmp:
-            ctx = self.ctx(tmp, {"statuses": [
-                {"name": "todo", "role": "initial"},
-                {"name": "shipped", "role": "terminal"}]})
-            r = self.base(id=1, slug="a", status="todo")
+            ctx = self.ctx(tmp, {})
+            r = self.base(id=1, slug="a", status="in-review")
             self.write(ctx, r)
             self.t.save_index(ctx, [r])
             text = self.t.generate_summary(ctx)
-            self.assertIn("| todo | 1 |", text)
-            self.assertIn("Todo", text)
+            self.assertIn("| in-review | 1 |", text)
+            self.assertIn("In-review", text)
+            # the other three still appear, at zero — the table is the vocabulary
+            for name in ("backlog", "ongoing", "done"):
+                self.assertIn(f"| {name} | 0 |", text)

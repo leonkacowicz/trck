@@ -3,29 +3,6 @@
     "repo": "leonkacowicz/trck",
     "channel": "stable"
   },
-  "statuses": [
-    {
-      "name": "backlog",
-      "role": "initial"
-    },
-    {
-      "name": "ongoing",
-      "role": "active"
-    },
-    {
-      "name": "in-review",
-      "actionable": false
-    },
-    {
-      "name": "done",
-      "role": "terminal"
-    }
-  ],
-  "aliases": {
-    "start": "ongoing",
-    "review": "in-review",
-    "done": "done"
-  },
   "priorities": [
     "urgent",
     "high",

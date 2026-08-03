@@ -10,7 +10,7 @@ import shutil
 import subprocess
 import sys
 from .cmd_mutate import cmd_mv
-from .config import DEFAULT_CONFIG, check_pr, detect_legacy_layout, is_terminal, resolve_alias, resolve_tracker_dir
+from .config import DEFAULT_CONFIG, DONE, IN_REVIEW, ONGOING, check_pr, detect_legacy_layout, is_terminal, resolve_tracker_dir
 from .constants import DEFAULT_UPDATE_REPO, FILENAME_RE, ID_ALPHABET, ID_LEN, ITEMS_DIR, SELF_PATH, SINCE_RE, __version__, die
 from .finalize import finalize
 from .graph import Graph, _existing_ids
@@ -210,32 +210,23 @@ def cmd_version(args) -> None:
 
 
 def cmd_start(args) -> None:
-    ctx = build_ctx_or_die(args)
-    target = resolve_alias(ctx.cfg, "start")
-    if not target:
-        die("no 'start' alias configured; use `trck mv <id> <status>`")
-    cmd_mv(ns_like(args, status=target, resolution=None))
+    build_ctx_or_die(args)
+    cmd_mv(ns_like(args, status=ONGOING, resolution=None))
 
 
 def cmd_review(args) -> None:
     """Alias: move to the 'review' status and, given a URL, link the pull request —
     one move, one finalize, one line of output."""
-    ctx = build_ctx_or_die(args)
-    target = resolve_alias(ctx.cfg, "review")
-    if not target:
-        die("no 'review' alias configured; use `trck mv <id> <status>`")
+    build_ctx_or_die(args)
     url = getattr(args, "url", None)
     if url is not None and (m := check_pr(url)):
         die(m)
-    cmd_mv(ns_like(args, status=target, resolution=None, pr=url))
+    cmd_mv(ns_like(args, status=IN_REVIEW, resolution=None, pr=url))
 
 
 def cmd_done(args) -> None:
-    ctx = build_ctx_or_die(args)
-    target = resolve_alias(ctx.cfg, "done")
-    if not target:
-        die("no 'done' alias configured; use `trck mv <id> <status>`")
-    cmd_mv(ns_like(args, status=target, resolution=getattr(args, "resolution", None)))
+    build_ctx_or_die(args)
+    cmd_mv(ns_like(args, status=DONE, resolution=getattr(args, "resolution", None)))
 
 
 def ns_like(args, **over):
@@ -260,11 +251,6 @@ def cmd_init(args) -> None:
 
     config = json.loads(json.dumps(DEFAULT_CONFIG))
     config["update"]["repo"] = DEFAULT_UPDATE_REPO
-    # Scaffold the vocabulary as the `state -> name` table rather than the list form the
-    # engine works in. Both read (see `load_config`), but this is the one that says what
-    # the tracker actually offers: four states, and these are what you call them. Someone
-    # opening trck.json for the first time should see four names, not four objects.
-    config["statuses"] = {s["state"]: s["name"] for s in config["statuses"]}
     cfgfile.write_text(json.dumps(config, indent=2) + "\n")
 
     if not no_vendor:

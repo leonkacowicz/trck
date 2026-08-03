@@ -409,21 +409,16 @@ class TestGraphRender(unittest.TestCase):
             self.assertIn(f"#{done_base}", out)
             self.assertIn(f"#{done_top}", out)
 
-    def test_deps_done_filter_uses_configured_terminal_role(self):
-        cfg = dict(self.t.DEFAULT_CONFIG)
-        cfg["statuses"] = [
-            {"name": "todo", "role": "initial"},
-            {"name": "doing", "role": "active"},
-            {"name": "shipped", "role": "terminal"},
-        ]
-        cfg["aliases"] = {"start": "doing", "done": "shipped"}
+    def test_deps_done_filter_reads_terminality_not_a_hard_coded_name(self):
+        """The filter asks `is_terminal`, so it hides a fully-settled chain because those
+        issues are finished — not because their status happens to be spelled a given way."""
         with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, cfg)
+            d = make_tracker(tmp, {})
             done_base = self.seed(d, "Done base")
             done_top = self.seed(d, "Done top", depends=done_base)
             with redirect_stdout(io.StringIO()):
-                self.t.cmd_mv(ns(dir=str(d), id=done_base, status="shipped", resolution=None))
-                self.t.cmd_mv(ns(dir=str(d), id=done_top, status="shipped", resolution=None))
+                self.t.cmd_mv(ns(dir=str(d), id=done_base, status="done", resolution=None))
+                self.t.cmd_mv(ns(dir=str(d), id=done_top, status="done", resolution=None))
 
             out = self.deps_graph(d)
 

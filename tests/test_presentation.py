@@ -95,14 +95,12 @@ class TestPresentation(unittest.TestCase):
             self.assertIn(self.t.paint("#k3m9x2a", "bold"), out)
 
     def test_list_columns_align_with_custom_statuses(self):
-        cfg = {"statuses": [{"name": "todo", "role": "initial"},
-                            {"name": "in-progress"},
-                            {"name": "shipped", "role": "terminal"}]}
+        # `backlog` and `in-review` differ in width, which is what the padding is for
         with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, cfg)
+            d = make_tracker(tmp, {})
             self.seed(d, "A")
             id2 = self.seed(d, "B")
-            self.t.cmd_mv(ns(dir=str(d), id=id2, status="in-progress", resolution=None))
+            self.t.cmd_mv(ns(dir=str(d), id=id2, status="in-review", resolution=None))
             lines = [ln for ln in self.list_out(d).splitlines() if ln.strip()]
             # priority column starts at the same offset on every row (status padded to max width)
             offsets = [ln.index("high") for ln in lines]

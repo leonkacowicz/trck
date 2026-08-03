@@ -1,18 +1,18 @@
 from __future__ import annotations
 import os
 import sys
-from .config import state_of
+from .config import BACKLOG, DONE, IN_REVIEW, ONGOING
 from .graph import Graph, transitive_reduction
 from .index import Ctx, Issue
 
 # --------------------------------------------------------------------------- #
 # tree rendering helpers (used by SUMMARY, tree, deps)
 # --------------------------------------------------------------------------- #
-STATUS_ICON = {"done": "●", "todo": "○", "doing": "◐", "review": "◐", None: "◐"}  # single-width, aligned
+STATUS_ICON = {DONE: "●", BACKLOG: "○", ONGOING: "◐", IN_REVIEW: "◐"}  # single-width, aligned
 
 
 def status_icon(ctx: Ctx, name: str) -> str:
-    return STATUS_ICON.get(state_of(ctx.cfg, name), "⏳")
+    return STATUS_ICON.get(name, "⏳")
 
 
 # colour: TTY-gated, honors NO_COLOR. Never used for SUMMARY.md (a persisted file).
@@ -106,10 +106,9 @@ def priority_codes(cfg: dict, prio: str) -> tuple:
 
 
 def status_codes(cfg: dict, name: str) -> tuple:
-    state = state_of(cfg, name)
-    if state == "done":
+    if name == DONE:
         return ("green",)
-    if state == "todo":
+    if name == BACKLOG:
         return ("dim",)
     return ("yellow",)
 

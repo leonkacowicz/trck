@@ -47,12 +47,10 @@ class TestInit(unittest.TestCase):
             self.assertTrue((d / "CLAUDE.md").exists())
             cfg = json.loads((d / "trck.json").read_text())
             self.assertEqual(cfg["update"]["repo"], self.t.DEFAULT_UPDATE_REPO)
-            # Scaffolded as the `state -> name` table: what a new tracker offers is four
-            # states, and the config's job is to say what this repo calls them.
-            self.assertEqual(cfg["statuses"],
-                             {"todo": "backlog", "doing": "ongoing",
-                              "review": "in-review", "done": "done"})
-            # and it loads back to the list form the engine works in
+            # No vocabulary is scaffolded, because there is none to configure. A fresh
+            # trck.json carries only what a tracker may actually change.
+            self.assertNotIn("statuses", cfg)
+            self.assertNotIn("aliases", cfg)
             self.assertEqual(self.t.status_names(self.t.load_config(d)),
                              ["backlog", "ongoing", "in-review", "done"])
 

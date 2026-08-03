@@ -146,12 +146,12 @@ class TestStatusDirection(DiffTestCase):
         self.assertEqual(self.direction("archived", "done"), "lateral")
         self.assertEqual(self.direction("done", "archived"), "lateral")
 
-    def test_direction_follows_the_configured_order_not_hard_coded_names(self):
-        cfg = dict(self.cfg, statuses=[{"name": "done", "role": "initial"},
-                                       {"name": "backlog", "role": "terminal"}])
-        # this config declares done -> backlog as the forward direction
-        self.assertEqual(self.direction("done", "backlog", cfg), "forward")
-        self.assertEqual(self.direction("backlog", "done", cfg), "backward")
+    def test_direction_follows_the_vocabulary_order(self):
+        """Forward is down the vocabulary, backward is up it — read from the status list
+        rather than from any one status name, so the rule is the ordering itself."""
+        self.assertEqual(self.direction("backlog", "in-review", self.cfg), "forward")
+        self.assertEqual(self.direction("in-review", "backlog", self.cfg), "backward")
+        self.assertEqual(self.direction("ongoing", "done", self.cfg), "forward")
 
 
 class TestDiffResult(DiffTestCase):

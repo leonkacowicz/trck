@@ -7,34 +7,42 @@ from .constants import DEFAULT_UPDATE_REPO, FILENAME_RE, ITEMS_DIR, PR_URL_RE, S
 # --------------------------------------------------------------------------- #
 # config + discovery
 # --------------------------------------------------------------------------- #
-# The four states a status can stand for. Every decision the engine makes about a status is
-# one of these — does it satisfy a dependency, does it count as started, may `ready` propose
-# it — so a tracker names statuses freely but never invents a state to put them in.
+# The four statuses. Fixed — not configured, not renameable, not extensible.
 #
-# `review` is the one that needs a rule, because it looks like it overlaps `depends_on`:
+# They were briefly two vocabularies: canonical `states` with per-tracker display names
+# over them. That bought exactly one feature, renaming, and cost a second word for the
+# same concept in every message, doc and conversation. Worse, the shipped names were
+# gratuitous synonyms of the states they stood for. One vocabulary, four good names.
+#
+# What each means to the engine — the only three questions it ever asks:
+#
+#   backlog     not started.                     initial; what `new` assigns.
+#   ongoing     started, someone is on it.       what a mixed parent rolls up to.
+#   in-review   started, output pending judgement. nothing to pick up.
+#   done        finished.                        satisfies a dependency; counts in progress.
+#
+# `in-review` is the one that needs a rule, because it looks like it overlaps
+# `depends_on`:
 #
 #   depends_on  when the blocker is real work that someone will do and close.
-#   review      when making it a task would be inventing one.
+#   in-review   when making it a task would be inventing one.
 #
-# A review is the case that forces the distinction. The reviewer is not producing a
-# deliverable, they are judging yours, so a task for it would be a fiction — and one per
-# reviewable issue would double the tracker. The same holds for a vendor reply or a
-# sign-off: nobody here will ever close it.
-STATES = ("todo", "doing", "review", "done")
-_ROLE_STATE = {"initial": "todo", "active": "doing", "terminal": "done"}
+# A code review forces the distinction. The reviewer is not producing a deliverable, they
+# are judging yours, so a task for it would be a fiction — and one per reviewable issue
+# would double the tracker. The same holds for a vendor reply or a sign-off: nobody here
+# will ever close it.
+#
+# Anything finer than these four — QA versus awaiting-deploy, say — is a custom field.
+# Fields already hold one value per key and can declare their allowed values, so a second
+# status vocabulary would only overlap them.
+BACKLOG, ONGOING, IN_REVIEW, DONE = "backlog", "ongoing", "in-review", "done"
+STATUSES = (BACKLOG, ONGOING, IN_REVIEW, DONE)
+# verb -> status, for the `start` / `review` / `done` aliases. Constant now that the
+# vocabulary is.
+VERB_STATUS = {"start": ONGOING, "review": IN_REVIEW, "done": DONE}
 
-# The shipped vocabulary spells out its states, which is what a tracker written today
-# should look like. `role` and `actionable` still read (see `state_of`) so every config
-# written before states does too, but nothing new should use them.
 DEFAULT_CONFIG = {
     "update": {"repo": DEFAULT_UPDATE_REPO, "channel": "stable"},
-    "statuses": [
-        {"state": "todo", "name": "backlog"},
-        {"state": "doing", "name": "ongoing"},
-        {"state": "review", "name": "in-review"},
-        {"state": "done", "name": "done"},
-    ],
-    "aliases": {"start": "ongoing", "review": "in-review", "done": "done"},
     "priorities": ["urgent", "high", "medium", "low", "lowest"],
     "default_priority": "medium",
     "kinds": ["task", "epic", "bug", "story", "investigation"],
@@ -57,54 +65,17 @@ def load_config(tracker_dir: Path) -> dict:
                 cfg["update"].update(v)
             else:
                 cfg[k] = v
-    # One status per state means the vocabulary is only names, so a tracker may write it
-    # as a `state -> name` table. Normalise that to the list form here, once, and every
-    # consumer below stays unaware there are two spellings. Order follows STATES rather
-    # than the table's own, since board columns and summary sections read left to right
-    # and must not depend on how the JSON happened to be typed.
-    if isinstance(cfg.get("statuses"), dict):
-        table = cfg["statuses"]
-        cfg["statuses"] = [{"state": s, "name": table[s]} for s in STATES if s in table]
     return cfg
 
 
 def status_names(cfg: dict) -> list[str]:
-    return [s["name"] for s in cfg["statuses"]]
+    """The vocabulary. `cfg` is accepted and ignored: it was configurable once, and
+    every caller still threads a config it no longer needs."""
+    return list(STATUSES)
 
 
 
 
-def state_of(cfg: dict, name: str) -> str | None:
-    """The state a status stands for; None if the vocabulary has no such status, or has one
-    that says nothing about where it sits.
-
-    A status may declare `state` outright and that always wins — otherwise migrating a
-    config could never correct a mapping the older fields got wrong. Failing that the state
-    is derived from those fields, so a tracker written before states reads correctly:
-    opting out of `actionable` is the whole content of `review`, and the three lifecycle
-    roles are the other three states under their old names.
-
-    A `state` outside the four is ignored here and reported by `check_status_states` — a
-    typo should fail validation loudly, not make every read of the vocabulary throw."""
-    for s in cfg["statuses"]:
-        if s["name"] != name:
-            continue
-        if s.get("state") in STATES:
-            return s["state"]
-        if s.get("actionable") is False:
-            return "review"
-        return _ROLE_STATE.get(s.get("role"))
-    return None
-
-
-def statuses_in(cfg: dict, state: str) -> list[str]:
-    return [s["name"] for s in cfg["statuses"] if state_of(cfg, s["name"]) == state]
-
-
-def status_for(cfg: dict, state: str) -> str | None:
-    """The name this tracker calls `state`. One status per state, so there is at most one
-    answer; None when the vocabulary names no status for it."""
-    return next(iter(statuses_in(cfg, state)), None)
 
 
 def default_priority(cfg: dict) -> str:
@@ -154,35 +125,13 @@ def check_points(value: int) -> str | None:
     return f"bad points {value} (must be a non-negative integer)"
 
 
-def check_status_states(cfg: dict) -> list[str]:
-    """The vocabulary must name each of the four states exactly once — four states, four
-    statuses, no exemptions. Rollup has to resolve each state to a single status to pick.
-
-    An earlier draft let several statuses share `review`, so a tracker could name `qa` and
-    `awaiting-deploy` apart. That is redundant with custom fields, which already give one
-    value per key and can declare their allowed values — and however issue history is
-    eventually recorded, a field change is as visible as a status change. One vocabulary
-    beats two overlapping ones, and the distinction it was buying has a better home.
-
-    Also rejects a `state` outside the four. `state_of` ignores an unknown one and falls
-    back to derivation rather than throwing, so the typo has to surface here or nowhere."""
-    out = [f"config: status '{s.get('name')}' declares unknown state {s['state']!r} "
-           f"(expected one of {', '.join(STATES)})"
-           for s in cfg["statuses"] if "state" in s and s["state"] not in STATES]
-    for state in STATES:
-        n = len(statuses_in(cfg, state))
-        if n != 1:
-            out.append(f"config: exactly one status must mean '{state}' (found {n})")
-    return out
-
-
-def check_status_flags(cfg: dict) -> list[str]:
-    """`actionable`, when a status declares it, must be a boolean. Returns one
-    message per offending status (empty when the vocabulary is well-formed)."""
-    return [f"config: status '{s.get('name')}' has a non-boolean 'actionable' "
-            f"({s['actionable']!r})"
-            for s in cfg["statuses"]
-            if "actionable" in s and not isinstance(s["actionable"], bool)]
+def check_vestigial_vocabulary(cfg: dict) -> list[str]:
+    """`statuses` and `aliases` used to configure the vocabulary and no longer do. A
+    tracker that still carries them is not broken — the keys are simply ignored — so this
+    is a warning naming the migration, not an error that would lock the tracker out."""
+    return [f"config: '{k}' is no longer configurable and is being ignored "
+            f"(the vocabulary is fixed: {', '.join(STATUSES)})"
+            for k in ("statuses", "aliases") if k in cfg]
 
 
 def detect_legacy_layout(cfg: dict, tracker_dir: Path) -> list[Path]:
@@ -207,33 +156,26 @@ def detect_legacy_layout(cfg: dict, tracker_dir: Path) -> list[Path]:
 
 
 def is_actionable(cfg: dict, name: str) -> bool:
-    """Whether `ready`/`next` may propose an issue in this status as work to pick up.
-
-    False for `review` — the issue is in flight but its own output is pending someone
-    else's judgement, so there is nothing to start — and for `done`. A status the
-    vocabulary does not describe fails open, as it did before states existed."""
-    return state_of(cfg, name) not in ("review", "done")
+    """Whether `ready`/`next` may propose this as work to pick up. False for `in-review`
+    — in flight, but its own output is pending someone else\'s judgement, so there is
+    nothing here to start — and for `done`."""
+    return name not in (IN_REVIEW, DONE)
 
 
 def initial_status(cfg: dict) -> str:
-    """The status meaning `todo`: what `new` assigns, and what a parent rolls up to while
-    none of its children have started. Falls back to the first configured status so a
-    vocabulary that names no state is still usable."""
-    return status_for(cfg, "todo") or cfg["statuses"][0]["name"]
+    return BACKLOG
 
 
-def active_status(cfg: dict) -> str | None:
-    """The status a parent rolls up to while work is in progress (the one status
-    meaning `doing`), or None if the vocabulary names no such status."""
-    return status_for(cfg, "doing")
+def active_status(cfg: dict) -> str:
+    return ONGOING
 
 
 def terminal_statuses(cfg: dict) -> list[str]:
-    return statuses_in(cfg, "done")
+    return [DONE]
 
 
 def is_terminal(cfg: dict, name: str) -> bool:
-    return state_of(cfg, name) == "done"
+    return name == DONE
 
 
 def reconcile(cfg: dict, child_statuses: list[str]) -> str | None:
@@ -251,7 +193,7 @@ def reconcile(cfg: dict, child_statuses: list[str]) -> str | None:
 
 
 def resolve_alias(cfg: dict, verb: str) -> str | None:
-    return cfg.get("aliases", {}).get(verb)
+    return VERB_STATUS.get(verb)
 
 
 def find_tracker(start: Path, required: bool = True) -> Path | None:
