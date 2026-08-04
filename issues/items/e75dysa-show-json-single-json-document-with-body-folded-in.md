@@ -9,11 +9,11 @@ so the whole output is parseable as one document.
 - `show NNN --json` → `{...metadata, "body": "<raw markdown body>"}`.
 
 ## Acceptance criteria
-- [ ] Output is exactly one JSON document (no `--- body ---` text, no trailing prose).
-- [ ] Object includes the issue metadata (current `show` key selection) plus a `body` string holding the raw file body.
-- [ ] Non-leaf `points` handling matches today's human `show` (points omitted where it's derived, not an input).
-- [ ] Routed through the #v8tmkrt helper; default (non-`--json`) `show` output unchanged.
-- [ ] Field shape documented in `show` help; test asserts single parseable document with metadata + `body`.
+- [x] Output is exactly one JSON document (no `--- body ---` text, no trailing prose).
+- [x] Object includes the issue metadata (current `show` key selection) plus a `body` string holding the raw file body.
+- [x] Non-leaf `points` handling matches today's human `show` (points omitted where it's derived, not an input).
+- [x] Routed through the #v8tmkrt helper; default (non-`--json`) `show` output unchanged.
+- [x] Field shape documented in `show` help; test asserts single parseable document with metadata + `body`.
 
 ## Notes
 Depends on #v8tmkrt. Handler `cmd_show` — `src/trck/cmd_query.py:12`; the current
