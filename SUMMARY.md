@@ -6,9 +6,9 @@
 | State | Count |
 |---|---:|
 | backlog | 66 |
-| ongoing | 4 |
+| ongoing | 3 |
 | in-review | 0 |
-| done | 124 |
+| done | 125 |
 | **total** | **194** |
 
 ## Hierarchies
@@ -140,7 +140,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#kaqhtfc list/tree: drop the tree alias (nested forest is list's default)](items/kaqhtfc-list-tree-drop-the-tree-alias-nested-forest-is-list-s-default.md) _(backlog)_
 - [ ] [#v8tmkrt json: shared emit_json stdout seam + --json flag plumbing](items/v8tmkrt-json-shared-emit-json-stdout-seam-json-flag-plumbing.md) _(backlog)_
 
-### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 10% (10/97 pts · 3/24 done) · _medium_ · ongoing
+### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 13% (13/97 pts · 4/24 done) · _medium_ · ongoing
 
 - [ ] [#2w5panf rust: diff and changelog](items/2w5panf-rust-diff-and-changelog.md) _(backlog)_
 - [ ] [#4susb3g rust: query verbs — list, tree, show](items/4susb3g-rust-query-verbs-list-tree-show.md) _(backlog)_
@@ -153,7 +153,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#b2r89au rust: fold in the html view](items/b2r89au-rust-fold-in-the-html-view.md) _(backlog)_
 - [ ] [#bdmgj7r rust: the deps gutter renderer](items/bdmgj7r-rust-the-deps-gutter-renderer.md) _(backlog)_
 - [ ] [#d7y2emr rust: config, vocabulary and tracker discovery](items/d7y2emr-rust-config-vocabulary-and-tracker-discovery.md) _(backlog)_
-- [ ] [#dfe48ds ids: drop renumber and every trace of integer ids](items/dfe48ds-ids-drop-renumber-and-every-trace-of-integer-ids.md) _(ongoing)_
+- [x] [#dfe48ds ids: drop renumber and every trace of integer ids](items/dfe48ds-ids-drop-renumber-and-every-trace-of-integer-ids.md)
 - [ ] [#djx63gk cutover: un-vendor, retire the Python engine, rewrite the docs](items/djx63gk-cutover-un-vendor-retire-the-python-engine-rewrite-the-docs.md) _(backlog)_
 - [ ] [#eek4hat rust: check, validate and the repo maintenance verbs](items/eek4hat-rust-check-validate-and-the-repo-maintenance-verbs.md) _(backlog)_
 - [ ] [#ehqv6sk rust: graph semantics — parents, effective deps, demand, readiness](items/ehqv6sk-rust-graph-semantics-parents-effective-deps-demand-readiness.md) _(backlog)_

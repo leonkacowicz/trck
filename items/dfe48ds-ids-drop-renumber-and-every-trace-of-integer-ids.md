@@ -22,22 +22,38 @@ convert can do it themselves — the repo ships a converter and a map file, and 
 theirs to keep, not ours to carry.
 
 ## Acceptance criteria
-- [ ] This repo's data migrated **first**, while `legacy_id` still exists: 152 `#NN` occurrences
+- [x] This repo's data migrated **first**, while `legacy_id` still exists: 152 `#NN` occurrences
       across 44 distinct numbers in issue bodies rewritten to real ids, and `legacy_id` stripped
       from the 70 rows carrying it. Same for the bundled example (all 35 rows).
-- [ ] A committed map of this repo's old number → id, so a bare `#NN` in a commit message from
+- [x] A committed map of this repo's old number → id, so a bare `#NN` in a commit message from
       before the change is still resolvable by a human reading history.
-- [ ] `repo renumber` and its parser entry gone.
-- [ ] `legacy_id` gone: field, default, validation, and the numeric tier of `resolve_ref`.
-- [ ] The zero-padded filename convention gone from `issue_path` and `file_id`.
-- [ ] `want_id` accepts strings only — an integer id in `index.jsonl` is a validation error.
-- [ ] The all-digit reservation gone from prefix generation. An all-digit random id (`2345678`
+- [x] `repo renumber` and its parser entry gone.
+- [x] `legacy_id` gone: field, default, validation, and the numeric tier of `resolve_ref`.
+- [x] The zero-padded filename convention gone from `issue_path` and `file_id`.
+- [x] `want_id` accepts strings only — an integer id in `index.jsonl` is a validation error.
+- [x] The all-digit reservation gone from prefix generation. An all-digit random id (`2345678`
       is a legal one) stops being a special case.
-- [ ] A tracker that still has integer ids gets a **clean refusal naming the converter**, not a
+- [x] A tracker that still has integer ids gets a **clean refusal naming the converter**, not a
       file-not-found. Refusing to touch it is fine; leaving it to fail obscurely is not.
-- [ ] A standalone converter under `scripts/`, outside the engine, plus docs.
-- [ ] No format bump. `legacy_id` becomes an unknown key, which `Issue.extra` round-trips
+- [x] A standalone converter under `scripts/`, outside the engine, plus docs.
+- [x] No format bump. `legacy_id` becomes an unknown key, which `Issue.extra` round-trips
       verbatim, so an old tracker loses nothing by meeting a new engine.
+
+## Landed
+
+`fffd091`, plus the data migration in the commit before it. Two things worth recording
+because they were not obvious going in:
+
+**`legacy_id` was the one part that was not dead.** The plan was to drop everything, and
+that would have broken this repo: 70 of 193 rows carried one and 152 `#NN` occurrences
+across 44 issue bodies resolved through it. So the data moved first, in its own commit,
+while there was still a mapping to move it with — bodies rewritten to real ids, the map
+kept in `docs/legacy-ids.json` because commit messages are not rewritable.
+
+**The test suite was full of integer ids as a convenience**, not as legacy coverage: ~40
+sites building index rows as `{"id": 1, ...}`. Tightening `want_id` to strings surfaced
+all of them at once. They are fixtures, so they were converted rather than the rule
+loosened — but it is the reason this touched 29 files rather than 6.
 
 ## Notes
 Kept deliberately: `__post_init__`'s `str()` coercion of `id`/`parent`/`depends_on`. It reads as
