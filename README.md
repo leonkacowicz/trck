@@ -186,6 +186,16 @@ Wherever a command takes an id, **any unambiguous prefix works** (git-short-hash
 `trck show k3m` resolves to `k3m9x2a` as long as no other id starts with `k3m`. An
 ambiguous prefix is an error that lists all matching candidates.
 
+### Supplying an id
+
+`trck new --id k3m9x2a` uses the id you give instead of minting one. It's for moving issues
+in from another tracker with their ids intact, restoring one deleted by hand, and scripted
+seeding — the id must be unused (in the index *and* on disk) and well formed, so it can't
+reintroduce the collisions random ids exist to prevent.
+
+There's no equivalent on `set`: changing an existing issue's id would have to rewrite every
+`parent`/`depends_on` pointing at it and rename its body file.
+
 ### If you still have integer ids
 
 Integer ids were trck's first iteration, replaced because two branches running `trck new`

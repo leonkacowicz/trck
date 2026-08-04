@@ -4,14 +4,15 @@ import shutil
 from .config import check_points, check_priority, check_resolution, check_review_url, default_priority, initial_status, is_terminal, reconcile
 from .constants import SLUG_RE, die, now_utc, slugify
 from .finalize import finalize
-from .graph import Graph, gen_id
+from .graph import Graph, claim_id, gen_id
 from .index import DEFAULT_POINTS, Issue, build_ctx_or_die, check_field_key, get_row, issue_path, load_index, resolve_ref
 from .templates import TEMPLATE, guard_dep_edge, guard_effective_acyclic, move_issue, parse_ids
 
 def cmd_new(args) -> None:
     ctx = build_ctx_or_die(args)
     rows = load_index(ctx)
-    iid = gen_id(ctx)
+    supplied = getattr(args, "id", None)
+    iid = claim_id(ctx, supplied) if supplied is not None else gen_id(ctx)
     slug = args.slug or slugify(args.title)
     if not SLUG_RE.match(slug):
         die(f"computed slug '{slug}' is invalid; pass --slug")

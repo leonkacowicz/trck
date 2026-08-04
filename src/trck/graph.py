@@ -1,7 +1,7 @@
 from __future__ import annotations
 import secrets
 from .config import PRIORITIES, is_actionable, is_terminal, reconcile
-from .constants import FILENAME_RE, ID_ALPHABET, ID_LEN, ITEMS_DIR
+from .constants import FILENAME_RE, ID_ALPHABET, ID_LEN, ID_RE, ITEMS_DIR, die
 from .index import Ctx, DEFAULT_POINTS, Issue, file_id, get_id, get_row, load_index
 from .render import priority_rank
 from .templates import apply_status
@@ -553,6 +553,33 @@ def _existing_ids(ctx: Ctx) -> set[str]:
             if m:
                 ids.add(file_id(m))
     return ids
+
+
+def check_id(value) -> str | None:
+    """Whether a hand-supplied id is well formed. Returns None when it is, else a
+    die-ready message.
+
+    Both halves matter. The alphabet excludes `0/1/o/l/i` because they are misread, so
+    an id containing one is a typo waiting to be pasted wrong; and the length is fixed
+    because the whole CLI resolves ids by unique prefix, which a short id would make
+    ambiguous against every longer one sharing its start."""
+    if not isinstance(value, str) or not ID_RE.match(value or ""):
+        return (f"bad id {value!r} (must use the alphabet {ID_ALPHABET})")
+    if len(value) != ID_LEN:
+        return f"bad id {value!r} (must be exactly {ID_LEN} characters)"
+    return None
+
+
+def claim_id(ctx: Ctx, value: str) -> str:
+    """Validate a hand-supplied id and check it is free. Clears the same bar as
+    `gen_id`: unused in the index *and* on disk, since a branch may carry a body file
+    whose index line has not merged yet. Without that, `--id` would be the one way left
+    to reintroduce the collision random ids were adopted to prevent."""
+    if (m := check_id(value)):
+        die(m)
+    if value in _existing_ids(ctx):
+        die(f"id '{value}' is already taken")
+    return value
 
 
 def gen_id(ctx: Ctx) -> str:

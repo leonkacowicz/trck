@@ -29,7 +29,7 @@ tracker that still has them is refused, with `scripts/renumber.py` in the trck r
 Run from anywhere in the repo — `trck` finds the tracker by walking up to the folder
 holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
 
-- `trck new "<title>" [--priority …] [--parent ID] [--depends a,b]`
+- `trck new "<title>" [--priority …] [--parent ID] [--depends a,b] [--id ID]`
 - `trck mv ID <status>`; `trck start ID` / `trck review ID [URL]` / `trck done ID [--resolution …]` (aliases)
 - `trck set ID [--priority …] [--parent …|none] [--title …] [--review-url URL|none] [--field k=v] [--unset k]`
 - `trck dep ID --add ID2 | --remove ID2`

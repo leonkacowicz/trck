@@ -18,7 +18,8 @@ MODEL
               place of a full id: `trck show k3m` matches k3m9x2a. An ambiguous
               prefix is an error that lists the candidates. Integer ids
               were an earlier iteration; a tracker that still has them is
-              refused, and scripts/renumber.py converts it.
+              refused, and scripts/renumber.py converts it. `new --id` supplies
+              an id rather than minting one, for imports and recovery.
   status      every issue has exactly one of the four; move it with mv /
               start / review / done. Work sitting in in-review stays out of
               ready/next -- nothing there to pick up -- but still blocks.
@@ -113,7 +114,9 @@ def build_parser() -> argparse.ArgumentParser:
     n.add_argument("--review-url", dest="review_url",
                    help="where the output will be reviewed (absolute http(s) URL)")
     n.add_argument("--slug", help="override the auto-derived filename slug")
-    n.set_defaults(func=cmd_new, priority=None)
+    n.add_argument("--id", help="use this id instead of generating one (for importing "
+                                "issues from another tracker, or restoring one)")
+    n.set_defaults(func=cmd_new, priority=None, id=None)
 
     mv = sub.add_parser("mv", help="move an issue to a status",
                         description="Move an issue to any of the four statuses.")

@@ -1808,6 +1808,33 @@ def _existing_ids(ctx: Ctx) -> set[str]:
     return ids
 
 
+def check_id(value) -> str | None:
+    """Whether a hand-supplied id is well formed. Returns None when it is, else a
+    die-ready message.
+
+    Both halves matter. The alphabet excludes `0/1/o/l/i` because they are misread, so
+    an id containing one is a typo waiting to be pasted wrong; and the length is fixed
+    because the whole CLI resolves ids by unique prefix, which a short id would make
+    ambiguous against every longer one sharing its start."""
+    if not isinstance(value, str) or not ID_RE.match(value or ""):
+        return (f"bad id {value!r} (must use the alphabet {ID_ALPHABET})")
+    if len(value) != ID_LEN:
+        return f"bad id {value!r} (must be exactly {ID_LEN} characters)"
+    return None
+
+
+def claim_id(ctx: Ctx, value: str) -> str:
+    """Validate a hand-supplied id and check it is free. Clears the same bar as
+    `gen_id`: unused in the index *and* on disk, since a branch may carry a body file
+    whose index line has not merged yet. Without that, `--id` would be the one way left
+    to reintroduce the collision random ids were adopted to prevent."""
+    if (m := check_id(value)):
+        die(m)
+    if value in _existing_ids(ctx):
+        die(f"id '{value}' is already taken")
+    return value
+
+
 def gen_id(ctx: Ctx) -> str:
     """A fresh random id. Within-branch guard: redraw if it collides with any id
     already visible in the index or on disk; the unseen cross-branch tail stays
@@ -2691,7 +2718,7 @@ tracker that still has them is refused, with `scripts/renumber.py` in the trck r
 Run from anywhere in the repo — `trck` finds the tracker by walking up to the folder
 holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
 
-- `trck new "<title>" [--priority …] [--parent ID] [--depends a,b]`
+- `trck new "<title>" [--priority …] [--parent ID] [--depends a,b] [--id ID]`
 - `trck mv ID <status>`; `trck start ID` / `trck review ID [URL]` / `trck done ID [--resolution …]` (aliases)
 - `trck set ID [--priority …] [--parent …|none] [--title …] [--review-url URL|none] [--field k=v] [--unset k]`
 - `trck dep ID --add ID2 | --remove ID2`
@@ -2865,7 +2892,8 @@ def move_issue(ctx: Ctx, row: Issue, new_status: str) -> None:
 def cmd_new(args) -> None:
     ctx = build_ctx_or_die(args)
     rows = load_index(ctx)
-    iid = gen_id(ctx)
+    supplied = getattr(args, "id", None)
+    iid = claim_id(ctx, supplied) if supplied is not None else gen_id(ctx)
     slug = args.slug or slugify(args.title)
     if not SLUG_RE.match(slug):
         die(f"computed slug '{slug}' is invalid; pass --slug")
@@ -4006,7 +4034,8 @@ MODEL
               place of a full id: `trck show k3m` matches k3m9x2a. An ambiguous
               prefix is an error that lists the candidates. Integer ids
               were an earlier iteration; a tracker that still has them is
-              refused, and scripts/renumber.py converts it.
+              refused, and scripts/renumber.py converts it. `new --id` supplies
+              an id rather than minting one, for imports and recovery.
   status      every issue has exactly one of the four; move it with mv /
               start / review / done. Work sitting in in-review stays out of
               ready/next -- nothing there to pick up -- but still blocks.
@@ -4101,7 +4130,9 @@ def build_parser() -> argparse.ArgumentParser:
     n.add_argument("--review-url", dest="review_url",
                    help="where the output will be reviewed (absolute http(s) URL)")
     n.add_argument("--slug", help="override the auto-derived filename slug")
-    n.set_defaults(func=cmd_new, priority=None)
+    n.add_argument("--id", help="use this id instead of generating one (for importing "
+                                "issues from another tracker, or restoring one)")
+    n.set_defaults(func=cmd_new, priority=None, id=None)
 
     mv = sub.add_parser("mv", help="move an issue to a status",
                         description="Move an issue to any of the four statuses.")
