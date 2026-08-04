@@ -30,12 +30,12 @@ jobs:
       - name: Test suite
         run: python3 -m unittest discover -s tests -v
 
-      # scripts/backfill_timestamps.py is a standalone one-shot that does not
-      # import the engine. Its tests shell out to git on every case and have
-      # nothing to say about an engine change, so they run as their own suite
-      # rather than inside the one that guards every commit. (scripts/renumber.py
-      # is tested from tests/, because what matters there is that the engine
-      # accepts what the script produces.)
+      # scripts/ holds standalone one-shots that are no longer part of the
+      # executable: an integer-id converter and a timestamp backfill. Neither
+      # imports the engine, and neither has anything to say about an engine
+      # change, so they run as their own suite rather than gating every commit.
+      # The one claim that spans both sides — that the engine accepts what the
+      # converter produces — is made there by running ./trck as a subprocess.
       - name: Helper-script suite
         run: python3 -m unittest discover -s scripts/tests -v
 
