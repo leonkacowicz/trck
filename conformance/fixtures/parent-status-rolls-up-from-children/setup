@@ -1,0 +1,5 @@
+# A parent's status is derived, not set: finalize re-derives it on every write, which
+# is what makes the cascade uniform across mv/start/done with no per-verb hooks.
+new "Epic" --id aaaaaaa
+new "First" --id bbbbbbb --parent aaaaaaa
+new "Second" --id ccccccc --parent aaaaaaa

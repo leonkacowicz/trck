@@ -1,0 +1,1 @@
+error: #bbbbbbb is a descendant of #aaaaaaa; a node can't depend on its own ancestor (their subtrees overlap)
