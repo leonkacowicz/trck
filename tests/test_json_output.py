@@ -236,3 +236,123 @@ class TestDepsJson(JsonBase):
                                fanout=False, json=False)
             self.assertIn("#aaaaaaa", out)
             self.assertIn("●", out)
+
+
+class TestListJson(JsonBase):
+    """Nested by default, mirroring the on-screen forest; `--flat --json` is the flat
+    array. Both honour every filter and sort exactly as the human render does — the
+    JSON is the same query, differently written out."""
+
+    def tree(self, d):
+        self.seed(d, "Epic", id="aaaaaaa")
+        self.seed(d, "Kid one", id="bbbbbbb", parent="aaaaaaa")
+        self.seed(d, "Kid two", id="ccccccc", parent="aaaaaaa")
+        self.seed(d, "Grandkid", id="ddddddd", parent="bbbbbbb")
+        self.seed(d, "Loose", id="eeeeeee")
+
+    def listing(self, d, **over):
+        kw = dict(dir=str(d), status=None, priority=None, label=None, parent=None,
+                  match=None, sort=None, blocked=False, orphan=False, all=False,
+                  flat=False, paths=False, id=None, field=None, show_field=None,
+                  json=True)
+        kw.update(over)
+        return json.loads(self.capture(self.t.cmd_list, **kw))
+
+    def test_the_default_is_a_nested_forest(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.tree(d)
+            doc = self.listing(d)
+            self.assertEqual([r["id"] for r in doc], ["aaaaaaa", "eeeeeee"])
+            epic = doc[0]
+            self.assertEqual([c["id"] for c in epic["children"]],
+                             ["bbbbbbb", "ccccccc"])
+            self.assertEqual([g["id"] for g in epic["children"][0]["children"]],
+                             ["ddddddd"])
+
+    def test_a_leaf_still_carries_an_empty_children_list(self):
+        """Always present, so a consumer can recurse without checking for the key."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.tree(d)
+            self.assertEqual(self.listing(d)[1]["children"], [])
+
+    def test_flat_is_a_flat_array_in_the_sorted_order(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Low", id="aaaaaaa", priority="low")
+            self.seed(d, "Urgent", id="bbbbbbb", priority="urgent")
+            self.seed(d, "Mid", id="ccccccc", priority="medium")
+            doc = self.listing(d, flat=True, sort="priority")
+            self.assertEqual([r["id"] for r in doc],
+                             ["bbbbbbb", "ccccccc", "aaaaaaa"])
+            self.assertNotIn("children", doc[0])
+
+    def test_filters_are_honoured(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.tree(d)
+            doc = self.listing(d, flat=True, match="kid")
+            self.assertEqual([r["id"] for r in doc],
+                             ["bbbbbbb", "ccccccc", "ddddddd"])
+
+    def test_an_empty_result_is_an_empty_array(self):
+        """Not silence. A consumer doing `json.loads(stdout)` should not have to
+        special-case "no matches" as a parse error."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.tree(d)
+            self.assertEqual(self.listing(d, flat=True, match="nothing matches"), [])
+            self.assertEqual(self.listing(d, match="nothing matches"), [])
+
+    def test_ancestor_context_is_included_and_marked(self):
+        """The forest pulls non-matching ancestors back in so a matched child never
+        floats free; the human view dims them. Marking them keeps that information
+        without leaking ANSI — otherwise a consumer cannot tell a match from scaffolding."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.tree(d)
+            doc = self.listing(d, match="grandkid")
+            self.assertEqual([r["id"] for r in doc], ["aaaaaaa"])
+            self.assertTrue(doc[0]["context"])                       # Epic: scaffolding
+            kid = doc[0]["children"][0]
+            self.assertTrue(kid["context"])                          # Kid one: scaffolding
+            self.assertFalse(kid["children"][0]["context"])           # Grandkid: the match
+
+    def test_a_root_id_scopes_to_that_subtree(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.tree(d)
+            doc = self.listing(d, id="bbbbbbb")
+            self.assertEqual([r["id"] for r in doc], ["bbbbbbb"])
+            self.assertEqual([c["id"] for c in doc[0]["children"]], ["ddddddd"])
+
+    def test_ids_are_never_abbreviated(self):
+        """`unique_prefix_lens` is a display concern. A shortened id in data would be
+        a different value, not a shorter rendering of the same one."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.tree(d)
+            for r in self.listing(d, flat=True):
+                self.assertEqual(len(r["id"]), self.t.ID_LEN)
+
+    def test_paths_and_json_together_are_refused(self):
+        """Two different output modes. Silently letting one win would make a script
+        that asks for both get the other."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.tree(d)
+            with self.assertRaises(SystemExit):
+                self.listing(d, paths=True)
+
+    def test_the_human_output_is_untouched(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.tree(d)
+            out = self.capture(self.t.cmd_list, dir=str(d), status=None, priority=None,
+                               label=None, parent=None, match=None, sort=None,
+                               blocked=False, orphan=False, all=False, flat=False,
+                               paths=False, id=None, field=None, show_field=None,
+                               json=False)
+            self.assertIn("├─ ", out)
+            self.assertIn("#aaaaaaa", out)

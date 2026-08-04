@@ -257,6 +257,9 @@ def build_parser() -> argparse.ArgumentParser:
     ls.add_argument("--status",
                     help="filter by status; comma-lists alternatives and a leading "
                          "'!' negates (e.g. 'ongoing,backlog' or '!done')")
+    ls.add_argument("--json", action="store_true",
+                    help="one JSON document: the nested forest, or a flat array "
+                         "with --flat")
     ls.add_argument("--priority", help="filter by priority")
     ls.add_argument("--label", help="filter to issues carrying this label")
     ls.add_argument("--parent", help="filter to children of this epic/parent id")

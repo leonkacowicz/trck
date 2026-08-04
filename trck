@@ -3236,13 +3236,19 @@ def cmd_list(args) -> None:
     # tracker (what you'd type for `show`/`set`/…); the rest of the id is dimmed.
     abbrev = unique_prefix_lens([r.id for r in g.rows])
 
+    as_json = getattr(args, "json", False)
     if getattr(args, "paths", False):
+        if as_json:
+            die("--paths and --json are different output modes; pick one")
         for r in sorted((r for r in g.rows if keep(r)), key=key):
             print(issue_path(ctx, r).resolve())
         return
 
     if getattr(args, "flat", False):
         rows = sorted([r for r in g.rows if keep(r)], key=key)
+        if as_json:
+            emit_json([r.to_dict() for r in rows])
+            return
         print_rows(ctx, g, rows, annotate=annotate_over(rows), show_fields=show_fields,
                    progress=progress, abbrev=abbrev)
         return
@@ -3257,6 +3263,18 @@ def cmd_list(args) -> None:
     else:
         roots = [r for r in g.rows
                  if (r.parent is None or r.parent not in g.by_id) and r.id in shown]
+    if as_json:
+        # The same walk `forest_layout` does, kept as structure instead of flattened
+        # with connector prefixes: same `shown` gate, same sibling `key`, same cycle
+        # guard. `context` carries what the human view shows by dimming — a row pulled
+        # in as a non-matching ancestor so its matched descendant does not float free.
+        def node(n, seen):
+            kids = [] if n.id in seen else [
+                node(c, seen | {n.id}) for c in g.children_of(n, key=key)
+                if c.id in shown]
+            return {**n.to_dict(), "context": n.id in dim, "children": kids}
+        emit_json([node(r, set()) for r in sorted(roots, key=key)])
+        return
     ordered, prefix_of = forest_layout(g, roots, shown, key)
     print_rows(ctx, g, ordered, annotate=annotate_over(ordered),
                prefix=lambda r: prefix_of[r.id], dim=lambda r: r.id in dim,
@@ -4337,6 +4355,9 @@ def build_parser() -> argparse.ArgumentParser:
     ls.add_argument("--status",
                     help="filter by status; comma-lists alternatives and a leading "
                          "'!' negates (e.g. 'ongoing,backlog' or '!done')")
+    ls.add_argument("--json", action="store_true",
+                    help="one JSON document: the nested forest, or a flat array "
+                         "with --flat")
     ls.add_argument("--priority", help="filter by priority")
     ls.add_argument("--label", help="filter to issues carrying this label")
     ls.add_argument("--parent", help="filter to children of this epic/parent id")
