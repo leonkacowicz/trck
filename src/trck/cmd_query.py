@@ -405,6 +405,23 @@ def cmd_deps(args) -> None:
     # default (neither flag) shows both cones; one flag scopes to that direction.
     up = requires or not blocks
     down = blocks or not requires
+    if getattr(args, "json", False):
+        if root_id is None:
+            die("deps --json needs an issue id (the whole-graph view is an edge "
+                "list, a different shape from one issue's cones)")
+        root = g.row(root_id)
+        # Two cones, each computed the way the gutter computes it, minus the focal
+        # issue — `dependency_line` includes it, and "what X requires" containing X
+        # would be a surprise to anything iterating the list.
+        cone = lambda u, dn: ([] if not (u or dn) else
+                              [r for r in g.rows
+                               if r.id != root_id
+                               and r.id in g.dependency_line(root, up=u, down=dn)])
+        # Emitted in index order, not set order: `dependency_line` returns a set, and
+        # set order varies with hash seeding, which no golden file survives.
+        emit_json({"requires": [r.to_dict() for r in cone(up, False)],
+                   "blocks": [r.to_dict() for r in cone(False, down)]})
+        return
     _print_deps_graph(ctx, g, root_id, full=getattr(args, "full", False),
                       up=up, down=down,
                       omit_done=getattr(args, "omit_done", False),

@@ -333,6 +333,8 @@ def build_parser() -> argparse.ArgumentParser:
                     help="with an id, show only its prerequisite cone (what it needs)")
     dz.add_argument("--blocks", action="store_true",
                     help="with an id, show only its dependent cone (what waits on it)")
+    dz.add_argument("--json", action="store_true",
+                    help="one JSON document {requires, blocks}; needs an issue id")
     dz.add_argument("--full", action="store_true",
                     help="with an id, show the whole connected cluster (cousins "
                          "included), not just the directed dependency line")

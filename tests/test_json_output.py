@@ -118,3 +118,121 @@ class TestShowJson(JsonBase):
             out = self.capture(self.t.cmd_show, dir=str(d), id="aaaaaaa", json=False)
             self.assertIn("--- body ---", out)
             self.assertIn("aaaaaaa", out)
+
+
+class TestDepsJson(JsonBase):
+    """`{requires, blocks}` — the two cones `deps` already computes for the gutter,
+    as data. Both keys are always present, empty when scoped away: a stable shape
+    beats a minimal one when something is going to index into it."""
+
+    def chain(self, d):
+        # a -> b -> c, plus an unrelated island
+        self.seed(d, "A", id="aaaaaaa")
+        self.seed(d, "B", id="bbbbbbb", depends="aaaaaaa")
+        self.seed(d, "C", id="ccccccc", depends="bbbbbbb")
+        self.seed(d, "Island", id="ddddddd")
+
+    def deps(self, d, **over):
+        kw = dict(dir=str(d), id=None, requires=False, blocks=False, full=False,
+                  omit_done=False, include_done_chains=False, fanout=False, json=True)
+        kw.update(over)
+        return json.loads(self.capture(self.t.cmd_deps, **kw))
+
+    def ids(self, entries):
+        return [e["id"] for e in entries]
+
+    def test_both_cones_from_the_middle_of_a_chain(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.chain(d)
+            doc = self.deps(d, id="bbbbbbb")
+            self.assertEqual(self.ids(doc["requires"]), ["aaaaaaa"])
+            self.assertEqual(self.ids(doc["blocks"]), ["ccccccc"])
+
+    def test_the_cones_are_transitive(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.chain(d)
+            self.assertEqual(self.ids(self.deps(d, id="ccccccc")["requires"]),
+                             ["aaaaaaa", "bbbbbbb"])
+            self.assertEqual(self.ids(self.deps(d, id="aaaaaaa")["blocks"]),
+                             ["bbbbbbb", "ccccccc"])
+
+    def test_the_focal_issue_is_not_in_its_own_cones(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.chain(d)
+            doc = self.deps(d, id="bbbbbbb")
+            self.assertNotIn("bbbbbbb", self.ids(doc["requires"]) + self.ids(doc["blocks"]))
+
+    def test_scoping_empties_the_other_key_rather_than_dropping_it(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.chain(d)
+            up = self.deps(d, id="bbbbbbb", requires=True)
+            self.assertEqual(self.ids(up["requires"]), ["aaaaaaa"])
+            self.assertEqual(up["blocks"], [])
+            down = self.deps(d, id="bbbbbbb", blocks=True)
+            self.assertEqual(up.keys(), down.keys())
+            self.assertEqual(down["requires"], [])
+
+    def test_an_issue_with_no_edges_gives_two_empty_lists(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.chain(d)
+            self.assertEqual(self.deps(d, id="ddddddd"), {"requires": [], "blocks": []})
+
+    def test_containment_is_followed_like_the_gutter_does(self):
+        """A parent is waiting on its children and a child is contained by its parent,
+        so the cones cross hierarchy edges — same rule the human graph draws."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Epic", id="aaaaaaa")
+            self.seed(d, "Kid", id="bbbbbbb", parent="aaaaaaa")
+            self.assertEqual(self.ids(self.deps(d, id="aaaaaaa")["requires"]), ["bbbbbbb"])
+            self.assertEqual(self.ids(self.deps(d, id="bbbbbbb")["blocks"]), ["aaaaaaa"])
+
+    def test_entries_are_whole_issue_objects(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.chain(d)
+            entry = self.deps(d, id="bbbbbbb")["requires"][0]
+            for k in ("id", "slug", "title", "status", "priority"):
+                self.assertIn(k, entry)
+            self.assertEqual(entry["title"], "A")
+
+    def test_the_order_is_deterministic(self):
+        """Cones are computed as sets. Emitting them in set order would make the output
+        depend on hash seeding, which a golden file cannot survive."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.chain(d)
+            self.seed(d, "D", id="eeeeeee", depends="aaaaaaa")
+            self.seed(d, "E", id="fffffff", depends="aaaaaaa")
+            first = self.ids(self.deps(d, id="aaaaaaa")["blocks"])
+            self.assertEqual(first, sorted(first, key=lambda i: first.index(i)))
+            for _ in range(3):
+                self.assertEqual(self.ids(self.deps(d, id="aaaaaaa")["blocks"]), first)
+
+    def test_it_needs_an_id(self):
+        """Without one the human graph draws every component, which is a different
+        shape — an edge list, not a pair of cones. Emitting two schemas from one flag
+        would make every consumer branch on whether an id was passed."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.chain(d)
+            with self.assertRaises(SystemExit):
+                self.capture(self.t.cmd_deps, dir=str(d), id=None, requires=False,
+                             blocks=False, full=False, omit_done=False,
+                             include_done_chains=False, fanout=False, json=True)
+
+    def test_the_human_graph_is_untouched(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.chain(d)
+            out = self.capture(self.t.cmd_deps, dir=str(d), id="bbbbbbb",
+                               requires=False, blocks=False, full=False,
+                               omit_done=False, include_done_chains=False,
+                               fanout=False, json=False)
+            self.assertIn("#aaaaaaa", out)
+            self.assertIn("●", out)
