@@ -23,5 +23,5 @@ All combine with each other (AND) and with existing filters.
 - [ ] Tests cover each new flag plus one combined query.
 
 ## Notes
-`--blocked` is the inverse of the readiness check in #023 — share the dep-status
+`--blocked` is the inverse of the readiness check in #qc48tds — share the dep-status
 helper between them.

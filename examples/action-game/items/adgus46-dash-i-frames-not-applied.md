@@ -10,5 +10,5 @@ players take damage mid-dash. Reproduces 100% when dashing through a projectile.
 - [ ] Add a regression test for dash-through-projectile
 
 ## Notes
-Urgent. Root cause looks like the i-frame flag being cleared a frame too early in #008's
-state machine. Depends on dash #008.
+Urgent. Root cause looks like the i-frame flag being cleared a frame too early in #e6mpzcj's
+state machine. Depends on dash #e6mpzcj.

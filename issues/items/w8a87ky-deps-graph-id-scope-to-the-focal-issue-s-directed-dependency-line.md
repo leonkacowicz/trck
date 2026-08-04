@@ -36,7 +36,7 @@ weakly-connected-component view available behind a flag.
       `trck check` green.
 
 ## Notes
-Builds directly on #046 (the lazygit-style DAG renderer), which introduced
+Builds directly on #tazdgkg (the lazygit-style DAG renderer), which introduced
 `graph_components`, `_graph_topo`, `_graph_component_rows`, `render_graph`, and
 the `cmd_deps` graph branch. This issue changes *which* ids are passed into that
 renderer when an `<id>` is given; the rendering path itself is untouched.

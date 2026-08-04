@@ -26,10 +26,10 @@ filtering and ordering. Reordering only ever moves a child *within* its parent, 
   `list` column order is unchanged):
 
   ```
-  ● #040 ongoing  high    Auth epic
-  ◐ #042 backlog  medium  ├─ Login form
-  ○ #051 ongoing  high    │  └─ Validate token
-  ● #043 done     low     └─ Logout
+  ● #mur7gwd ongoing  high    Auth epic
+  ◐ #bpwuedw backlog  medium  ├─ Login form
+  ○ #z65knha ongoing  high    │  └─ Validate token
+  ● #wwpsa3f done     low     └─ Logout
   ```
 
   Order: status icon · bold `#id` · status word (colored) · priority word (full, colored) ·

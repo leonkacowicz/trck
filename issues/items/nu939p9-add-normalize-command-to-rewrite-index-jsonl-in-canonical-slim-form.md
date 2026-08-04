@@ -1,7 +1,7 @@
 # Add normalize command to rewrite index.jsonl in canonical slim form
 
 ## Summary
-After #020, `index.jsonl` is written in a slimmer canonical form (default-valued fields
+After #nhanp8c, `index.jsonl` is written in a slimmer canonical form (default-valued fields
 stripped), but slimming only happens as a side effect of a *write* — `save_index` is
 reached only through `finalize`, i.e. via a mutating verb (`new`/`mv`/`set`/`dep`/`rename`).
 `check` and `summary` are read-only. So an index produced by an older engine (e.g. a

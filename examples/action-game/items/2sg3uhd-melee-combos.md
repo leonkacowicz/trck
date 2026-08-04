@@ -10,5 +10,5 @@ startup/active/recovery timing and a forgiving input buffer.
 - [ ] Combo can be dash-cancelled after the active frames
 
 ## Notes
-In progress — the first surfaced by `next`. Blocks ranged #011, enemy AI #013, and combat
-SFX #025. Depends on the base controller #007.
+In progress — the first surfaced by `next`. Blocks ranged #m9n7pn6, enemy AI #gbnvvsc, and combat
+SFX #nv76h2p. Depends on the base controller #5qmdpg6.

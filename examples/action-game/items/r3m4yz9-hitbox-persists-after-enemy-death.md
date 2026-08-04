@@ -5,10 +5,10 @@ Bug: an enemy's hitbox lingers for a few frames after death, so a corpse can sti
 contact damage.
 
 ## Acceptance criteria
-- [ ] Hitbox is disabled on the death event from #012
+- [ ] Hitbox is disabled on the death event from #7qax2vu
 - [ ] No contact damage after an enemy's death animation starts
 - [ ] Covered by a test
 
 ## Notes
-Tagged tech-debt — the death path in the AI #013 never disabled the collider. Depends on
-enemy AI #013.
+Tagged tech-debt — the death path in the AI #gbnvvsc never disabled the collider. Depends on
+enemy AI #gbnvvsc.

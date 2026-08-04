@@ -9,4 +9,4 @@ Sound effects for the combat loop: each melee hit, the whiff, projectile fire, a
 - [ ] Triggered from combat events, not animation guesswork
 
 ## Notes
-Depends on melee #010 (needs the events to hook). Lower priority.
+Depends on melee #2sg3uhd (needs the events to hook). Lower priority.

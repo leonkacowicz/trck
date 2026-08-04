@@ -3,7 +3,7 @@
 ## Summary
 Replace the sequential `next_id` = `max(ids)+1` scheme (trck:616) with short random
 alphanumeric ids. The deterministic `max+1` is *why* two branches collide on concurrent
-`new` (see #64): both compute the same number. A random id breaks that determinism — two
+`new` (see #6ddksge): both compute the same number. A random id breaks that determinism — two
 branches generate different ids, their `index.jsonl` rows union cleanly on merge, and because
 the id is stable it never has to be rewritten, so cross-references (`parent`, `depends_on`,
 `successors`) never break.
@@ -12,7 +12,7 @@ This is the lightweight form of "collision-resistant identity": no timestamp, no
 — just N random chars. It is "optimistic": collision is improbable, not impossible, but at a
 tracker's real scale (thousands of issues) the birthday risk is negligible.
 
-If this ships and proves sufficient, #64 (the renumber-on-merge driver) is likely **YAGNI** —
+If this ships and proves sufficient, #6ddksge (the renumber-on-merge driver) is likely **YAGNI** —
 revisit it only if a real collision is ever observed.
 
 ## Acceptance criteria
@@ -39,7 +39,7 @@ Alternatives considered and why short-random wins here:
 Tradeoff accepted: ids become less human-friendly than `64`. Prefix-matching + dropping
 ambiguous characters recovers most of that.
 
-Relationship to #64: these are **alternatives**. Ship this first; treat #64 as on-hold pending
+Relationship to #6ddksge: these are **alternatives**. Ship this first; treat #6ddksge as on-hold pending
 whether a collision is ever actually seen in practice.
 
 Relevant code: `next_id` (trck:616); index I/O and `NNN-slug.md` naming; id-taking args across

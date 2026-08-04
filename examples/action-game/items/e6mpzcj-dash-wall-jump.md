@@ -7,8 +7,8 @@ jump kicks off vertical surfaces and briefly locks horizontal input so it reads 
 ## Acceptance criteria
 - [ ] Dash travels a fixed distance and respects cooldown
 - [ ] Wall-slide slows descent; wall-jump launches away from the wall
-- [ ] Dash grants i-frames (tracked separately in #014)
+- [ ] Dash grants i-frames (tracked separately in #adgus46)
 
 ## Notes
-Depends on the base controller #007. The i-frame behaviour is buggy — see #014. Wall
-collision handling here absorbed the old slope-jitter report #034.
+Depends on the base controller #5qmdpg6. The i-frame behaviour is buggy — see #adgus46. Wall
+collision handling here absorbed the old slope-jitter report #2xen4un.

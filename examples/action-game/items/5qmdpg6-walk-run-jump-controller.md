@@ -11,5 +11,5 @@ builds on.
 - [x] Coyote time (~80ms) and jump buffering (~100ms) are tuned
 
 ## Notes
-Shipped. Replaces the throwaway prototype #033. Everything in #001/#002 depends on this
+Shipped. Replaces the throwaway prototype #nnxgpen. Everything in #j7n7grh/#6ekkhbe depends on this
 controller.

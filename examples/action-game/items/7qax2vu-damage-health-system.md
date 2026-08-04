@@ -10,4 +10,4 @@ and death. Both the player and enemies route through it.
 - [ ] Supports per-entity max-HP and resistances
 
 ## Notes
-In progress. Shared dependency for checkpoints #024 and the HUD #029.
+In progress. Shared dependency for checkpoints #xzyw9wm and the HUD #z8be3ac.

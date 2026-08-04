@@ -5,8 +5,8 @@ Cave biome tileset: darker palette, stalactite/stalagmite props, and hazard tile
 
 ## Acceptance criteria
 - [ ] Auto-tiling for cave walls and floors
-- [ ] Spike hazard tiles wired to the damage system #012
-- [ ] Imported through #016
+- [ ] Spike hazard tiles wired to the damage system #7qax2vu
+- [ ] Imported through #adejzqs
 
 ## Notes
-Depends on #016. Consumed by Level 2 #022.
+Depends on #adejzqs. Consumed by Level 2 #dm9t6h7.

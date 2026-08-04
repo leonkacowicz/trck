@@ -10,5 +10,5 @@ manifest of frame rects, so the runtime does one texture bind.
 - [x] Re-runs incrementally when only some inputs change
 
 ## Notes
-Shipped. Upstream of every other art task (#017–#020) — the fan-out you see in `deps
+Shipped. Upstream of every other art task (#fb8zz9c–#sr4c37v) — the fan-out you see in `deps
 --graph`.

@@ -24,7 +24,7 @@ Annotations should be dim/secondary so the existing `{icon} #id status priority 
 line stays readable, and should respect the no-color path.
 
 ## Acceptance criteria
-- [x] `list` marks blocked rows and names their open blockers (e.g. `needs #007`).
+- [x] `list` marks blocked rows and names their open blockers (e.g. `needs #m3z2ywb`).
 - [x] Annotation lists only *non-terminal* blockers; a done blocker is omitted.
 - [x] A row whose every dependency is terminal shows no blocked marker (block cleared).
 - [x] "blocked" uses the same `is_blocked` definition as `ready`/`next` (no drift) —
@@ -44,7 +44,7 @@ Relevant code: `print_rows` (`trck`), `is_blocked` (the readiness inverse shared
 to reuse. The reverse edge (who depends on a row) is built in `cmd_deps` by scanning
 `depends_on` across all rows — the same reverse map can feed the `blocks #…` annotation.
 
-Consider interaction with `#024` (`--json` output): the structured output may want a
+Consider interaction with `#r9zefup` (`--json` output): the structured output may want a
 `blocked_by` / `blocks` field, but this issue is about the human list rendering.
 
 **Decisions made while implementing:**

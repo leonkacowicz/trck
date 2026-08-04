@@ -10,5 +10,5 @@ vs. a compact binary format (smaller, tamper-resistant), considering versioning/
 - [ ] Spike proves round-tripping a sample save
 
 ## Notes
-In progress, needs-design. Blocks the actual save/load implementation #032. Leaning JSON for
+In progress, needs-design. Blocks the actual save/load implementation #nmde6ad. Leaning JSON for
 v1 simplicity.

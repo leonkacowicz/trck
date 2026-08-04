@@ -2,7 +2,7 @@
 
 ## Summary
 
-Phase 0 of the Graph epic (#032). Pure addition — no command changes, no behavior
+Phase 0 of the Graph epic (#ee2crq3). Pure addition — no command changes, no behavior
 change. Add the `Graph` class and a `load_graph(ctx)` loader in a new "issue graph" band
 right after the index-I/O band (after `get_row`), depending only on `Issue` and the
 `cfg` helpers above it.

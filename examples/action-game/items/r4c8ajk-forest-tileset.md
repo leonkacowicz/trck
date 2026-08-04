@@ -7,7 +7,7 @@ props, authored to tile seamlessly.
 ## Acceptance criteria
 - [ ] Auto-tiling works for ground and platform edges
 - [ ] At least two parallax background layers
-- [ ] Imported through #016
+- [ ] Imported through #adejzqs
 
 ## Notes
-Depends on #016. Consumed by Level 1 #021.
+Depends on #adejzqs. Consumed by Level 1 #exg4e3b.

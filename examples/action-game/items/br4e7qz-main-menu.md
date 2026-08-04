@@ -9,4 +9,4 @@ Main menu: New Game, Continue, Settings, Quit, with controller and keyboard navi
 - [ ] Fully navigable by controller and keyboard
 
 ## Notes
-In progress. The pause menu #030 reuses this menu's widget layer.
+In progress. The pause menu #2v3w3zj reuses this menu's widget layer.

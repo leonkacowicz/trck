@@ -13,11 +13,11 @@ and `blocks` is its dependent cone (what waits on it) — the same two direction
 - [ ] `--requires` / `--blocks` scope the output to that single direction (the other key omitted or empty — pick and document).
 - [ ] Honours the same cone computation as the human render (directed dependency line; `--full` semantics settled — see notes).
 - [ ] Whole-graph `deps --json` with no id: decide and document (e.g. emit all edges, or require an id like `--requires/--blocks` do).
-- [ ] One valid JSON document via the #060 helper; default human graph unchanged.
+- [ ] One valid JSON document via the #v8tmkrt helper; default human graph unchanged.
 - [ ] Field shape documented in `deps` help; tests assert parseable JSON + both cones.
 
 ## Notes
-Depends on #060. Handler `cmd_deps` — `src/trck/cmd_query.py:339`; it derives
+Depends on #v8tmkrt. Handler `cmd_deps` — `src/trck/cmd_query.py:339`; it derives
 `up`/`down` and calls `_print_deps_graph` (`src/trck/cmd_query.py:287`).
 
 The cone walk is `Graph.dependency_line(row, up=…, down=…)` —

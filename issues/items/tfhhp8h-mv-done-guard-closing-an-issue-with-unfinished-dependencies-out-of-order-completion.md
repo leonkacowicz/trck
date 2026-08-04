@@ -7,7 +7,7 @@ though something it was declared to depend on isn't. Surface this at the moment 
 happens (the `mv`/`done` transition) rather than silently.
 
 Caught at mutation time this is more valuable than any view-side treatment, because it
-flags the anomaly as it is created. Sibling of #018 (which guards closing a *parent* with
+flags the anomaly as it is created. Sibling of #wh3mv52 (which guards closing a *parent* with
 open *descendants*); this one guards closing an issue with open *dependencies*.
 
 The user-facing strictness — warn-only vs. hard-block-with-`--force` — is **deliberately
@@ -43,7 +43,7 @@ Design context (from discussion):
 - **Open question — warn vs. block + `--force`.** Leaning toward a non-blocking warning
   (dependency data is often aspirational/stale; A may genuinely be unnecessary, and "if
   they really need A before C they'd state it directly"). A hard block with `--force`
-  escape is the stricter alternative. Decide before implementing — mirror whatever #018
+  escape is the stricter alternative. Decide before implementing — mirror whatever #wh3mv52
   lands on for consistency between the two guards.
 - **Possible `check` lint (safety net).** "A terminal node with a non-terminal
   dependency" is also a *standing* graph property, not just a transition event, so

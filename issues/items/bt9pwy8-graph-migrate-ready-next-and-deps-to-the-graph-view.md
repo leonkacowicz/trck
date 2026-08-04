@@ -2,8 +2,8 @@
 
 ## Summary
 
-Phase 1 of the Graph epic (#032). Rewire the simple read commands that #031 never
-touches onto the `Graph` from #033, proving the API on real callers with zero overlap.
+Phase 1 of the Graph epic (#ee2crq3). Rewire the simple read commands that #qapvxpz never
+touches onto the `Graph` from #chzay3q, proving the API on real callers with zero overlap.
 Output must stay byte-identical.
 
 - `cmd_ready` / `cmd_next`: the `by_id` / `parents` setup and the `is_ready` closure
@@ -19,5 +19,5 @@ Output must stay byte-identical.
 
 ## Notes
 
-`list` and `tree` are intentionally left alone here — #031 migrates them on top of the
+`list` and `tree` are intentionally left alone here — #qapvxpz migrates them on top of the
 Graph so they are written once.

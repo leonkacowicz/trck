@@ -10,4 +10,4 @@ aggro/chase, and return to patrol when the player escapes.
 - [ ] Enemies disengage and reset after losing the player
 
 ## Notes
-Depends on melee #010 (needs something to react to). Blocks the death-hitbox bug #015.
+Depends on melee #2sg3uhd (needs something to react to). Blocks the death-hitbox bug #r3m4yz9.

@@ -70,10 +70,10 @@ Design decided in discussion (2026-06-05):
   ever needed, is `git log`/`git show` on the issue files.
 - **Consequence:** a parent's own status no longer affects its rollup percentage (only
   leaves do). Marking an epic `done` while leaves are open shows < 100% — more honest.
-  The separate concern of *blocking/cascading* such a close is tracked in **#018**, which
+  The separate concern of *blocking/cascading* such a close is tracked in **#wh3mv52**, which
   is independent of this issue (rollup math vs. mv/done semantics — keep commits separate).
 - One shared recursive helper feeds the rollup tallies (and could feed a derived `show`
   display later, deliberately out of scope here — the summary owns the derived number).
 - Backfill: the 17/18 existing issues predate the field. On the first write, leaves gain
-  `points: 1` and current parents (e.g. the #002 epic) have it left absent — no separate
+  `points: 1` and current parents (e.g. the #4vqukyy epic) have it left absent — no separate
   migration step needed.

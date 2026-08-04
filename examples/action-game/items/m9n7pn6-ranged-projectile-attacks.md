@@ -10,5 +10,5 @@ ammo/energy cost.
 - [ ] Ammo/energy is consumed and regenerates
 
 ## Notes
-Depends on melee #010 so both share the same attack-state machine. Labelled needs-design —
+Depends on melee #2sg3uhd so both share the same attack-state machine. Labelled needs-design —
 charge curve and ammo economy are unresolved.

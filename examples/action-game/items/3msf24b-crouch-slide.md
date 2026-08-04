@@ -10,4 +10,4 @@ speed under low gaps.
 - [ ] Cannot slide from standstill
 
 ## Notes
-Depends on #007. Lower priority than dash/combat for the vertical slice.
+Depends on #5qmdpg6. Lower priority than dash/combat for the vertical slice.

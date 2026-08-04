@@ -9,4 +9,4 @@ World map screen with fast-travel between discovered level entrances.
 - [ ] Undiscovered areas are hidden/fogged
 
 ## Notes
-Depends on Level 1 #021 existing to have somewhere to travel to. UX-flavoured.
+Depends on Level 1 #exg4e3b existing to have somewhere to travel to. UX-flavoured.

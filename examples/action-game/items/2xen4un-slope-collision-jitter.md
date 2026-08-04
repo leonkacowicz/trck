@@ -8,4 +8,4 @@ Bug report: camera/player jitter when walking up gentle slopes.
 
 ## Notes
 Closed as **duplicate** — same underlying collision-resolution issue fixed as part of the
-wall/slope handling in #008.
+wall/slope handling in #e6mpzcj.

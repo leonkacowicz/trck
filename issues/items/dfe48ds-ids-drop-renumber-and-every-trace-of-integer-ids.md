@@ -25,8 +25,8 @@ theirs to keep, not ours to carry.
 - [ ] This repo's data migrated **first**, while `legacy_id` still exists: 152 `#NN` occurrences
       across 44 distinct numbers in issue bodies rewritten to real ids, and `legacy_id` stripped
       from the 70 rows carrying it. Same for the bundled example (all 35 rows).
-- [ ] A committed map of this repo's old number → id, so `#24` in a commit message from before
-      the change is still resolvable by a human reading history.
+- [ ] A committed map of this repo's old number → id, so a bare `#NN` in a commit message from
+      before the change is still resolvable by a human reading history.
 - [ ] `repo renumber` and its parser entry gone.
 - [ ] `legacy_id` gone: field, default, validation, and the numeric tier of `resolve_ref`.
 - [ ] The zero-padded filename convention gone from `issue_path` and `file_id`.

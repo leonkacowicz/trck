@@ -6,8 +6,8 @@ on everything Level 1 taught.
 
 ## Acceptance criteria
 - [ ] Completable start to finish
-- [ ] Uses cave hazards (spikes from #020)
+- [ ] Uses cave hazards (spikes from #sr4c37v)
 - [ ] Contains at least two enemy encounters
 
 ## Notes
-Depends on the cave tileset #020 and on Level 1 #021 shipping first.
+Depends on the cave tileset #sr4c37v and on Level 1 #exg4e3b shipping first.
