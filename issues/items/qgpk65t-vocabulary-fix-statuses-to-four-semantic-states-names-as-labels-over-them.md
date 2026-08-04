@@ -29,7 +29,7 @@ two are one model.
 - [ ] Four states in code. A tracker may name them and may map several names onto one state,
       but may not invent a state.
 - [ ] `waiting` carries a reason — the PR link generalised.
-- [ ] Resolutions fixed to a canonical set, valid only on `done`.
+- [x] Resolutions fixed to a canonical set, valid only on `done`.
 - [ ] The 58 sites reading the config vocabulary collapse onto state predicates.
 - [ ] Transition validity is expressible; the guards themselves stay with their own issues.
 - [ ] `index.jsonl` stores the canonical state and, where a tracker uses one, its label.
@@ -86,7 +86,10 @@ backward compatible — `role` and `actionable` still derive, so this repo's tra
 Still open here:
 - [ ] `pr` renamed to `review_url`. A persisted-field rename, so it needs a migration path;
       `Issue.from_dict` already has precedent, migrating `milestone` to a label.
-- [ ] Resolutions fixed to a canonical set, valid only on `done`.
+- [x] Resolutions fixed to a canonical set, valid only on `done`. Three of them —
+      `superseded`/`wontfix`/`duplicate` — and the *absence* of one is the load-bearing
+      case: `select_shipped` keys off it, so a resolution means closed-without-shipping
+      and there is deliberately no `fixed`. `trck.json` is now empty of vocabulary.
 - [ ] Transition validity, including the `doing`-and-blocked warning above.
 - [ ] `index.jsonl` stores the state, with the status name as a display alias. Deferred to
       `rbast9r`, which is where the rows get rewritten — until then a rename would be caught by
