@@ -1,0 +1,8 @@
+# 1 blocks only 4; 2 -> 3 -> 4 is a chain. Prerequisites-first alone would put the
+# lone blocker first (lowest id among the roots), hanging its lane open beside the
+# whole chain. Nothing forces that: it need only precede 4, and sliding it down to
+# just above 4 costs the chain one row and saves it two.
+new "Lone blocker" --id aaaaaaa
+new "Chain head" --id bbbbbbb
+new "Chain middle" --id ccccccc --depends bbbbbbb
+new "Chain tail" --id ddddddd --depends aaaaaaa,ccccccc

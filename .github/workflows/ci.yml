@@ -39,5 +39,10 @@ jobs:
       - name: Helper-script suite
         run: python3 -m unittest discover -s scripts/tests -v
 
+      # The executable specification. It execs ./trck rather than importing it, so
+      # this same step will one day run against the Rust binary via TRCK_BIN.
+      - name: Conformance suite
+        run: python3 conformance/run.py
+
       - name: Tracker consistency
         run: python3 ./trck check

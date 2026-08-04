@@ -2899,7 +2899,8 @@ def apply_status(cfg: dict, row: Issue, new_status: str) -> None:
     a user's instruction about a specific issue should use `move_issue`, which adds
     the missing-body guard."""
     if new_status not in status_names(cfg):
-        die(f"unknown status '{new_status}' (configured: {', '.join(status_names(cfg))})")
+        die(f"unknown status '{new_status}' "
+            f"(expected one of: {', '.join(status_names(cfg))})")
     old_status = row.status
     row.status = new_status
 
@@ -2925,7 +2926,8 @@ def move_issue(ctx: Ctx, row: Issue, new_status: str) -> None:
     # which is more useful to report than a missing body it would never have
     # reached. `apply_status` re-checks, harmlessly, as the single source of truth.
     if new_status not in status_names(ctx.cfg):
-        die(f"unknown status '{new_status}' (configured: {', '.join(status_names(ctx.cfg))})")
+        die(f"unknown status '{new_status}' "
+            f"(expected one of: {', '.join(status_names(ctx.cfg))})")
     path = issue_path(ctx, row)
     if not path.exists():
         die(f"file missing for #{row.id}: {path}")

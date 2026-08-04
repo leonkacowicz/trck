@@ -29,23 +29,30 @@ flattened into `./trck` by **`build.py`**. This repo **self-hosts** its own issu
   when you reference a new sibling symbol — it keeps the editor clean and is harmless to the build.
 - **Enable the pre-commit guard once per clone:** `git config core.hooksPath scripts/hooks`. It runs
   `build.py --check` (engine in sync with src) and `trck check` (tracker consistent) before commits.
-- Run the full suite: `python3 -m unittest discover -s tests -v`. `tests/__init__.py` **rebuilds
-  `./trck` from `src/` first**, so the suite always reflects your source edits — commit the
-  regenerated `./trck` alongside the change. Add a test for every change (TDD). Run one module:
-  `python3 -m unittest tests.test_paths -v`; one case: `…tests.test_paths.TestClass.test_method`.
-- **Two suites.** Standalone one-shots under `scripts/` that don't import the engine have their
-  own: `python3 -m unittest discover -s scripts/tests -v`. Kept separate because tests that shell
-  out to `git` for a migration nobody will run again shouldn't gate every engine change. Both run
-  in CI.
+- **Three suites**, all run in CI:
+  - `python3 -m unittest discover -s tests -v` — the engine. `tests/__init__.py` **rebuilds
+    `./trck` from `src/` first**, so it always reflects your source edits; commit the regenerated
+    `./trck` alongside the change. One module: `python3 -m unittest tests.test_paths -v`; one
+    case: `…tests.test_paths.TestClass.test_method`.
+  - `python3 -m unittest discover -s scripts/tests -v` — standalone one-shots under `scripts/`
+    that don't import the engine. Separate because tests shelling out to `git` for a migration
+    nobody will run again shouldn't gate every engine change.
+  - `python3 conformance/run.py` — the executable spec (`conformance/README.md`). It **execs**
+    the binary (`TRCK_BIN`, default `./trck`) and never imports it, so it will run unchanged
+    against the Rust engine. Anything a user or downstream tool would notice belongs there;
+    internals stay in `tests/`.
+
+  Add a test for every change (TDD), in whichever of the three it belongs to.
 - `tests/helpers.py::load_trck()` imports the generated `./trck` via `importlib`
   (`SourceFileLoader`, required on Python 3.12+/3.14).
 - **Tests that write to the engine file** — `update`/`init` — go through the module global
   `SELF_PATH`; those tests reassign `mod.SELF_PATH` to a throwaway temp copy first. Follow that
   pattern. (This is separate from the intentional build-before-test rebuild of `./trck`.)
-- The vocabulary is **data-driven, not hard-coded**: statuses (with `initial`/`terminal` roles),
-  verb aliases (`start`, `done`), priorities, kinds, and resolutions all come from each tracker's
-  `trck.json` (see `issues/trck.json`). Code reads them via the `load_config`/`status_*`/`check_*`
-  helpers — don't bake status or priority names into the engine.
+- The vocabulary is **fixed in code**, not configured — `backlog → ongoing → in-review → done`,
+  five priorities, three resolutions, all constants in `src/trck/config.py`. It used to come from
+  each tracker's `trck.json`; that is gone, and `check` warns about leftover keys. Read it through
+  the `status_*`/`is_*`/`check_*` helpers, which still take a `cfg` they ignore (every call site
+  threads one). `trck.json` now holds only the format version and the update channel.
 
 ## Tracking work (dogfooding)
 
