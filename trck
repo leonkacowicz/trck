@@ -2600,7 +2600,7 @@ holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
 - `trck set ID [--priority …] [--parent …|none] [--title …] [--pr URL|none] [--field k=v] [--unset k]`
 - `trck dep ID --add ID2 | --remove ID2`
 - `trck label ID --add X --remove Y`
-- Custom fields: `trck set ID --field assignee=leon`; filter `trck list --field assignee=leon`; sort `--sort field:assignee`; show `--show-field assignee`.
+- Custom fields: `trck set ID --field assignee=alice`; filter `trck list --field assignee=alice`; sort `--sort field:assignee`; show `--show-field assignee`.
 - Pull requests: `trck review ID https://…/pull/12` moves to the review status **and** links
   the PR in one step. An issue there is out of `ready`/`next` (nothing to pick up) but still
   **blocks** whatever depends on it until the PR lands. `trck set ID --pr none` unlinks.
@@ -3947,9 +3947,9 @@ MODEL
               place of a full id: `trck show k3m` matches k3m9x2a. An ambiguous
               prefix is an error that lists the candidates. Legacy integer-id
               trackers keep working; `trck repo renumber` migrates them.
-  status      every issue has exactly one; move it with mv / start / review /
-              done. A status may set "actionable": false (as in-review does) --
-              work waiting there stays out of ready/next, but still blocks.
+  status      every issue has exactly one of the four; move it with mv /
+              start / review / done. Work sitting in in-review stays out of
+              ready/next -- nothing there to pick up -- but still blocks.
   metadata    priority, points, parent, spec, pr, title, slug -- change
               with `trck set` (NOT by editing index.jsonl). labels -- a flat
               set of free-text tags; change with `trck label`.
@@ -3988,7 +3988,7 @@ TYPICAL FLOW
   trck new "Add CSV export" --priority high     # create; prints the new id
   trck show 7                                    # then hand-edit its body prose
   trck set 7 --points 3 --parent 4              # adjust metadata anytime
-  trck set 7 --field assignee=leon --field component=ui  # arbitrary metadata
+  trck set 7 --field assignee=alice --field component=ui  # arbitrary metadata
   trck start 7                                   # -> ongoing
   trck review 7 https://github.com/o/r/pull/12  # -> in-review, links the PR
   trck done 7 --resolution superseded            # -> done (resolution optional)
@@ -3998,7 +3998,7 @@ TYPICAL FLOW
   trck list --status ongoing                     # what's in flight
   trck list --status '!done' --sort priority     # open work, hottest first
   trck list --match parser --orphan              # title search, top-level only
-  trck list --field assignee=leon --sort field:component # filter + sort custom fields
+  trck list --field assignee=alice --sort field:component # filter + sort custom fields
   trck list --status '!done' --show-field assignee       # add a custom-field column
   trck tree 4                                    # hierarchy view
   trck deps          /  trck deps 7              # dependency DAG (whole / one issue's line)
@@ -4036,36 +4036,35 @@ def build_parser() -> argparse.ArgumentParser:
     n.add_argument("--slug", help="override the auto-derived filename slug")
     n.set_defaults(func=cmd_new, priority=None)
 
-    mv = sub.add_parser("mv", help="move an issue to a status (vocabulary-agnostic)",
-                        description="Move an issue to any configured status (vocabulary-agnostic).")
+    mv = sub.add_parser("mv", help="move an issue to a status",
+                        description="Move an issue to any of the four statuses.")
     mv.add_argument("id", help="issue id")
-    mv.add_argument("status", help="target status (must be configured)")
+    mv.add_argument("status", help="backlog, ongoing, in-review or done")
     mv.add_argument("--resolution",
                     help="why it closed without shipping (superseded, wontfix, "
                          "duplicate); only valid when moving to a terminal status")
     mv.add_argument("--pr", help="record a pull-request URL as part of the move")
     mv.set_defaults(func=cmd_mv)
 
-    st = sub.add_parser("start", help="alias: move to the configured 'start' status",
-                        description="Alias: move an issue to the status configured as the 'start' alias.")
+    st = sub.add_parser("start", help="alias: move to ongoing",
+                        description="Alias: move an issue to ongoing.")
     st.add_argument("id", help="issue id")
     st.set_defaults(func=cmd_start)
 
     rv = sub.add_parser(
-        "review", help="alias: move to the configured 'review' status (and link a PR)",
+        "review", help="alias: move to in-review (and link a PR)",
         formatter_class=raw,
-        description="Alias: move an issue to the status configured as the 'review' "
-                    "alias, and — given a URL — record it as the issue's pull request "
-                    "in one step. An issue in a non-actionable status like in-review "
-                    "stays out of ready/next, but still blocks whatever depends on it "
-                    "until the PR lands.",
+        description="Alias: move an issue to in-review and — given a URL — record "
+                    "it as the issue's pull request, in one step. An issue there stays "
+                    "out of ready/next (nothing to pick up), but still blocks whatever "
+                    "depends on it until the PR lands.",
         epilog="examples:\n  trck review 7 https://github.com/o/r/pull/12")
     rv.add_argument("id", help="issue id")
     rv.add_argument("url", nargs="?", help="pull-request URL to link (optional)")
     rv.set_defaults(func=cmd_review)
 
-    dn = sub.add_parser("done", help="alias: move to the configured 'done' status",
-                        description="Alias: move an issue to the status configured as the 'done' alias.")
+    dn = sub.add_parser("done", help="alias: move to done",
+                        description="Alias: move an issue to done.")
     dn.add_argument("id", help="issue id")
     dn.add_argument("--resolution",
                     help="why it closed without shipping (superseded, wontfix, "
@@ -4078,7 +4077,8 @@ def build_parser() -> argparse.ArgumentParser:
                     "parent/spec. Changing --slug renames the file; changing "
                     "--title also rewrites the body's H1.")
     se.add_argument("id", help="issue id")
-    se.add_argument("--priority", help="configured priority")
+    se.add_argument("--priority",
+                    help="urgent, high, medium, low or lowest")
     se.add_argument("--points", type=int, help="leaf weight (error if the issue has children)")
     se.add_argument("--parent", help="epic id, or 'none' to clear")
     se.add_argument("--spec", help="path, or 'none' to clear")

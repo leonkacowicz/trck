@@ -40,14 +40,14 @@ class TestCustomFields(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             id1 = self.seed(d)
-            self.set_(d, id1, field=["assignee=leon"])
-            self.assertEqual(self.rows(d)[id1].extra, {"assignee": "leon"})
+            self.set_(d, id1, field=["assignee=alice"])
+            self.assertEqual(self.rows(d)[id1].extra, {"assignee": "alice"})
 
     def test_field_overwrites(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             id1 = self.seed(d)
-            self.set_(d, id1, field=["assignee=leon"])
+            self.set_(d, id1, field=["assignee=alice"])
             self.set_(d, id1, field=["assignee=mara"])
             self.assertEqual(self.rows(d)[id1].extra, {"assignee": "mara"})
 
@@ -55,15 +55,15 @@ class TestCustomFields(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             id1 = self.seed(d)
-            self.set_(d, id1, field=["assignee=leon", "component=ui"])
+            self.set_(d, id1, field=["assignee=alice", "component=ui"])
             self.assertEqual(self.rows(d)[id1].extra,
-                             {"assignee": "leon", "component": "ui"})
+                             {"assignee": "alice", "component": "ui"})
 
     def test_unset_removes(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             id1 = self.seed(d)
-            self.set_(d, id1, field=["assignee=leon"])
+            self.set_(d, id1, field=["assignee=alice"])
             self.set_(d, id1, unset=["assignee"])
             self.assertEqual(self.rows(d)[id1].extra, {})
 
@@ -71,7 +71,7 @@ class TestCustomFields(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             id1 = self.seed(d)
-            self.set_(d, id1, field=["assignee=leon"])
+            self.set_(d, id1, field=["assignee=alice"])
             self.set_(d, id1, field=["assignee="])
             self.assertEqual(self.rows(d)[id1].extra, {})
 
@@ -94,9 +94,9 @@ class TestCustomFields(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             id1 = self.seed(d)
-            self.set_(d, id1, field=["component=ui", "assignee=leon"])
+            self.set_(d, id1, field=["component=ui", "assignee=alice"])
             line = json.loads(self.raw(d).splitlines()[0])
-            self.assertEqual(line["assignee"], "leon")
+            self.assertEqual(line["assignee"], "alice")
             self.assertEqual(line["component"], "ui")
             keys = list(line)
             self.assertLess(keys.index("assignee"), keys.index("component"))
@@ -119,7 +119,7 @@ class TestCustomFields(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             id1 = self.seed(d)
-            self.set_(d, id1, field=["assignee=leon"])
+            self.set_(d, id1, field=["assignee=alice"])
             ctx = self.t.Ctx(d, self.t.load_config(d))
             errors, _ = self.t.validate(ctx)
             self.assertEqual(errors, [])
@@ -156,9 +156,9 @@ class TestCustomFields(unittest.TestCase):
             d = make_tracker(tmp, {})
             id1 = self.seed(d, title="Alpha")
             id2 = self.seed(d, title="Beta")
-            self.set_(d, id1, field=["assignee=leon"])
+            self.set_(d, id1, field=["assignee=alice"])
             self.set_(d, id2, field=["assignee=mara"])
-            out = self.list_(d, field=["assignee=leon"])
+            out = self.list_(d, field=["assignee=alice"])
             self.assertIn("Alpha", out)
             self.assertNotIn("Beta", out)
 
@@ -167,9 +167,9 @@ class TestCustomFields(unittest.TestCase):
             d = make_tracker(tmp, {})
             id1 = self.seed(d, title="Alpha")
             id2 = self.seed(d, title="Beta")
-            self.set_(d, id1, field=["assignee=leon", "component=ui"])
-            self.set_(d, id2, field=["assignee=leon", "component=api"])
-            out = self.list_(d, field=["assignee=leon", "component=ui"])
+            self.set_(d, id1, field=["assignee=alice", "component=ui"])
+            self.set_(d, id2, field=["assignee=alice", "component=api"])
+            out = self.list_(d, field=["assignee=alice", "component=ui"])
             self.assertIn("Alpha", out)
             self.assertNotIn("Beta", out)
 
@@ -212,23 +212,23 @@ class TestCustomFields(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             id1 = self.seed(d)
-            self.set_(d, id1, field=["assignee=leon"])
+            self.set_(d, id1, field=["assignee=alice"])
             buf = io.StringIO()
             with redirect_stdout(buf):
                 self.t.cmd_show(ns(dir=str(d), id=id1, json=False))
             out = buf.getvalue()
             self.assertIn("assignee", out)
-            self.assertIn("leon", out)
+            self.assertIn("alice", out)
 
     def test_field_filter_composes_with_status(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             id1 = self.seed(d, title="Alpha")
             id2 = self.seed(d, title="Beta")
-            self.set_(d, id1, field=["assignee=leon"])
-            self.set_(d, id2, field=["assignee=leon"])
+            self.set_(d, id1, field=["assignee=alice"])
+            self.set_(d, id2, field=["assignee=alice"])
             self.t.cmd_mv(ns(dir=str(d), id=id1, status="ongoing", resolution=None))
-            out = self.list_(d, field=["assignee=leon"], status="ongoing")
+            out = self.list_(d, field=["assignee=alice"], status="ongoing")
             self.assertIn("Alpha", out)
             self.assertNotIn("Beta", out)
 

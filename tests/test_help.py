@@ -67,4 +67,4 @@ class TestHelp(unittest.TestCase):
 
     def test_top_level_epilog_shows_custom_field_example(self):
         h = norm(self.parser.format_help())
-        self.assertIn("--field assignee=leon", h)
+        self.assertIn("--field assignee=alice", h)

@@ -248,7 +248,7 @@ up in `show`, `list`, `tree`, and `SUMMARY.md`.
 model until you reach for them. Set them on `set`, then **filter**, **sort**, and **show**
 them on `list`:
 
-    trck set 42 --field assignee=leon --field component=engine   # set (repeatable)
+    trck set 42 --field assignee=alice --field component=engine   # set (repeatable)
     trck set 42 --field assignee=                                 # clear (same as --unset assignee)
     trck list --field component=engine                           # filter: exact, AND-ed, composes with --status etc.
     trck list --field component=engine --sort field:assignee     # sort by a field (rows missing it sort last)

@@ -79,8 +79,8 @@ class TestCustomFields(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d)
-            self.set_(d, 1, field=["assignee=leon"])
-            self.assertEqual(self.rows(d)[1].extra, {"assignee": "leon"})
+            self.set_(d, 1, field=["assignee=alice"])
+            self.assertEqual(self.rows(d)[1].extra, {"assignee": "alice"})
 ```
 
 - [ ] **Step 2: Run it to verify it fails**
@@ -156,7 +156,7 @@ Append to `TestCustomFields`:
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d)
-            self.set_(d, 1, field=["assignee=leon"])
+            self.set_(d, 1, field=["assignee=alice"])
             self.set_(d, 1, field=["assignee=mara"])
             self.assertEqual(self.rows(d)[1].extra, {"assignee": "mara"})
 
@@ -164,15 +164,15 @@ Append to `TestCustomFields`:
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d)
-            self.set_(d, 1, field=["assignee=leon", "component=ui"])
+            self.set_(d, 1, field=["assignee=alice", "component=ui"])
             self.assertEqual(self.rows(d)[1].extra,
-                             {"assignee": "leon", "component": "ui"})
+                             {"assignee": "alice", "component": "ui"})
 
     def test_unset_removes(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d)
-            self.set_(d, 1, field=["assignee=leon"])
+            self.set_(d, 1, field=["assignee=alice"])
             self.set_(d, 1, unset=["assignee"])
             self.assertEqual(self.rows(d)[1].extra, {})
 
@@ -180,7 +180,7 @@ Append to `TestCustomFields`:
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d)
-            self.set_(d, 1, field=["assignee=leon"])
+            self.set_(d, 1, field=["assignee=alice"])
             self.set_(d, 1, field=["assignee="])
             self.assertEqual(self.rows(d)[1].extra, {})
 
@@ -203,10 +203,10 @@ Append to `TestCustomFields`:
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d)
-            self.set_(d, 1, field=["component=ui", "assignee=leon"])
+            self.set_(d, 1, field=["component=ui", "assignee=alice"])
             line = json.loads(self.raw(d).splitlines()[0])
             # extras written after known fields, in sorted key order
-            self.assertEqual(line["assignee"], "leon")
+            self.assertEqual(line["assignee"], "alice")
             self.assertEqual(line["component"], "ui")
             keys = list(line)
             self.assertLess(keys.index("assignee"), keys.index("component"))
@@ -241,7 +241,7 @@ Append to `TestCustomFields`:
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d)
-            self.set_(d, 1, field=["assignee=leon"])
+            self.set_(d, 1, field=["assignee=alice"])
             ctx = self.t.Ctx(d, self.t.load_config(d))
             errors, _ = self.t.validate(ctx)
             self.assertEqual(errors, [])
@@ -320,9 +320,9 @@ Append a `list` helper and tests to `TestCustomFields`:
             d = make_tracker(tmp, {})
             self.seed(d, title="Alpha")
             self.seed(d, title="Beta")
-            self.set_(d, 1, field=["assignee=leon"])
+            self.set_(d, 1, field=["assignee=alice"])
             self.set_(d, 2, field=["assignee=mara"])
-            out = self.list_(d, field=["assignee=leon"])
+            out = self.list_(d, field=["assignee=alice"])
             self.assertIn("Alpha", out)
             self.assertNotIn("Beta", out)
 
@@ -331,9 +331,9 @@ Append a `list` helper and tests to `TestCustomFields`:
             d = make_tracker(tmp, {})
             self.seed(d, title="Alpha")
             self.seed(d, title="Beta")
-            self.set_(d, 1, field=["assignee=leon", "component=ui"])
-            self.set_(d, 2, field=["assignee=leon", "component=api"])
-            out = self.list_(d, field=["assignee=leon", "component=ui"])
+            self.set_(d, 1, field=["assignee=alice", "component=ui"])
+            self.set_(d, 2, field=["assignee=alice", "component=api"])
+            out = self.list_(d, field=["assignee=alice", "component=ui"])
             self.assertIn("Alpha", out)
             self.assertNotIn("Beta", out)
 ```
@@ -599,7 +599,7 @@ git commit -m "list: --show-field opt-in trailing column"
 
     def test_top_level_epilog_shows_custom_field_example(self):
         h = norm(self.parser.format_help())
-        self.assertIn("--field assignee=leon", h)
+        self.assertIn("--field assignee=alice", h)
 ```
 
 - [ ] **Step 2: Run to verify failure**
@@ -612,13 +612,13 @@ Expected: `test_set_help_documents_custom_fields` already PASSES (Task 1 added t
 In the `main` epilog (~line 1838), after the `trck set 7 --points 3 --parent 4` line, add:
 
 ```
-  trck set 7 --field assignee=leon --field component=ui  # arbitrary metadata
+  trck set 7 --field assignee=alice --field component=ui  # arbitrary metadata
 ```
 
 and after the `trck list --match parser --orphan` line, add:
 
 ```
-  trck list --field assignee=leon --sort field:component # filter + sort custom fields
+  trck list --field assignee=alice --sort field:component # filter + sort custom fields
 ```
 
 - [ ] **Step 4: Update the CLAUDE template verb list**
@@ -632,7 +632,7 @@ In `CLAUDE_TEMPLATE` (~line 1163), change the `trck set` line to include the new
 and add, after the `trck label` line (~line 1165):
 
 ```
-- Custom fields: `trck set NNN --field assignee=leon`; filter `trck list --field assignee=leon`; sort `--sort field:assignee`; show `--show-field assignee`.
+- Custom fields: `trck set NNN --field assignee=alice`; filter `trck list --field assignee=alice`; sort `--sort field:assignee`; show `--show-field assignee`.
 ```
 
 - [ ] **Step 5: Update the root README**
@@ -641,8 +641,8 @@ In the repo-root `README.md`, find the feature/usage list and add one bullet des
 
 ```markdown
 - **Custom fields** — attach arbitrary `key=value` metadata to any issue
-  (`trck set N --field assignee=leon`) and filter/sort on it
-  (`trck list --field assignee=leon --sort field:assignee`). Free-form by design;
+  (`trck set N --field assignee=alice`) and filter/sort on it
+  (`trck list --field assignee=alice --sort field:assignee`). Free-form by design;
   see `docs/specs/2026-06-11-custom-fields-design.md`.
 ```
 
@@ -680,14 +680,14 @@ Expected: `OK — N issues, 0 errors, 0 warning(s)`.
 - [ ] **Smoke test the real surface on this repo's tracker** (read-only; do not leave stray fields)
 
 ```bash
-./trck set 49 --field assignee=leon
-./trck list --field assignee=leon --show-field assignee
+./trck set 49 --field assignee=alice
+./trck list --field assignee=alice --show-field assignee
 ./trck list --sort field:assignee
 ./trck set 49 --unset assignee     # clean up
 ./trck check
 ```
 
-Expected: #049 appears with `assignee=leon`, then the field is gone and `check` is clean.
+Expected: #049 appears with `assignee=alice`, then the field is gone and `check` is clean.
 
 - [ ] **Close the tracker tasks** as each is completed:
 

@@ -56,7 +56,7 @@ holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
 - `trck set ID [--priority …] [--parent …|none] [--title …] [--pr URL|none] [--field k=v] [--unset k]`
 - `trck dep ID --add ID2 | --remove ID2`
 - `trck label ID --add X --remove Y`
-- Custom fields: `trck set ID --field assignee=leon`; filter `trck list --field assignee=leon`; sort `--sort field:assignee`; show `--show-field assignee`.
+- Custom fields: `trck set ID --field assignee=alice`; filter `trck list --field assignee=alice`; sort `--sort field:assignee`; show `--show-field assignee`.
 - Pull requests: `trck review ID https://…/pull/12` moves to the review status **and** links
   the PR in one step. An issue there is out of `ready`/`next` (nothing to pick up) but still
   **blocks** whatever depends on it until the PR lands. `trck set ID --pr none` unlinks.
