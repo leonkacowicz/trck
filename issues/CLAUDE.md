@@ -12,7 +12,7 @@ regenerates `SUMMARY.md`, and self-validates.
 ## Where things live
 | Data | Source of truth | Changed by |
 |---|---|---|
-| status | `index.jsonl` (a value from `trck.json`) | `trck mv` / `start` / `review` / `done` |
+| status | `index.jsonl` (one of the four fixed statuses) | `trck mv` / `start` / `review` / `done` |
 | other metadata | `index.jsonl` (one JSON object per issue) | `trck set` / `dep` / `label` |
 | narrative | the issue markdown body | **you** (hand-edited) |
 | rollup | `SUMMARY.md` (generated) | `trck` (auto, every mutating verb) |
@@ -29,9 +29,9 @@ renumbered issue records its old number in `legacy_id`, so stale `#NN` reference
 Run from anywhere in the repo — `trck` finds the tracker by walking up to the folder
 holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
 
-- `trck new "<title>" [--priority …] [--kind …] [--parent ID] [--depends a,b]`
-- `trck mv ID <status>` (vocabulary-agnostic); `trck start ID` / `trck review ID [URL]` / `trck done ID [--resolution …]` (aliases)
-- `trck set ID [--priority …] [--parent …|none] [--kind …] [--title …] [--pr URL|none] [--field k=v] [--unset k]`
+- `trck new "<title>" [--priority …] [--parent ID] [--depends a,b]`
+- `trck mv ID <status>`; `trck start ID` / `trck review ID [URL]` / `trck done ID [--resolution …]` (aliases)
+- `trck set ID [--priority …] [--parent …|none] [--title …] [--pr URL|none] [--field k=v] [--unset k]`
 - `trck dep ID --add ID2 | --remove ID2`
 - `trck label ID --add X --remove Y`
 - Custom fields: `trck set ID --field assignee=leon`; filter `trck list --field assignee=leon`; sort `--sort field:assignee`; show `--show-field assignee`.
@@ -52,7 +52,10 @@ holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
   verb** (`legacy status-folder layout: …`) until this runs; `--dry-run` previews the moves.
 - `trck update` — pull the latest engine from the canonical repo.
 
-Statuses, priorities, kinds, resolutions, and aliases are configured in `trck.json`.
+The vocabulary is fixed, not configured: statuses run `backlog → ongoing → in-review → done`,
+priorities are `urgent`/`high`/`medium`/`low`/`lowest`, and a closed issue may carry one of
+`superseded`/`wontfix`/`duplicate` — no resolution means it shipped. Anything finer is a
+label or a custom field. `trck.json` holds only the update channel.
 
 ## Recommended usage
 

@@ -2,10 +2,5 @@
   "update": {
     "repo": "leonkacowicz/trck",
     "channel": "stable"
-  },
-  "resolutions": [
-    "superseded",
-    "wontfix",
-    "duplicate"
-  ]
+  }
 }

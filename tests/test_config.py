@@ -122,11 +122,13 @@ class TestVocabularyChecks(unittest.TestCase):
         self.assertIn("bad priority 'bogus'", msg)
         self.assertIn("urgent, high, medium, low, lowest", msg)  # names the fixed set
 
-    def test_check_resolution(self):
-        self.assertIsNone(self.t.check_resolution(self.cfg, "fixed"))
-        msg = self.t.check_resolution(self.cfg, "bogus")
-        self.assertIn("bad resolution 'bogus'", msg)
-        self.assertIn("fixed, wontfix", msg)
+    def test_check_resolution_names_the_fixed_three(self):
+        self.assertIsNone(self.t.check_resolution(self.cfg, "wontfix"))
+        # 'fixed' is in the stale config above and still rejected: the config no longer
+        # has a say.
+        msg = self.t.check_resolution(self.cfg, "fixed")
+        self.assertIn("bad resolution 'fixed'", msg)
+        self.assertIn("superseded, wontfix, duplicate", msg)
 
     def test_check_points(self):
         self.assertIsNone(self.t.check_points(0))
@@ -265,3 +267,42 @@ class TestFixedPriorities(unittest.TestCase):
         self.assertEqual([rank(p) for p in self.t.PRIORITIES], [0, 1, 2, 3, 4])
         # A hand-edited row can still carry junk; it sorts last rather than throwing.
         self.assertEqual(rank("nonesuch"), len(self.t.PRIORITIES))
+
+
+class TestFixedResolutions(unittest.TestCase):
+    """Three resolutions, fixed — the last vocabulary key, and the only one that was ever
+    load-bearing rather than decorative.
+
+    A resolution means *closed without shipping*. `select_shipped` skips any issue
+    carrying one, so the field is what separates a changelog entry from a closed issue
+    that produced nothing to announce."""
+
+    def setUp(self):
+        self.t = load_trck()
+
+    def test_the_three_are_constants(self):
+        self.assertEqual(self.t.RESOLUTIONS, ("superseded", "wontfix", "duplicate"))
+
+    def test_the_config_is_now_empty_of_vocabulary_entirely(self):
+        """`update` is deployment, not a decision about how to track work. Every key that
+        was a decision has been made once, for everyone."""
+        self.assertEqual(set(self.t.DEFAULT_CONFIG), {"update"})
+
+    def test_a_tracker_cannot_redefine_them(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {"resolutions": ["fixed", "invalid", "obsolete"]})
+            cfg = self.t.load_config(d)
+            self.assertIsNone(self.t.check_resolution(cfg, "duplicate"))
+            self.assertIsNotNone(self.t.check_resolution(cfg, "obsolete"))
+
+    def test_the_leftover_key_warns(self):
+        warns = self.t.check_vestigial_vocabulary({"resolutions": ["fixed"]})
+        self.assertEqual(len(warns), 1)
+        self.assertIn("no longer configurable", warns[0])
+
+    def test_there_is_deliberately_no_success_resolution(self):
+        """`fixed`/`done`/`completed` would be the empty case spelled out — and setting
+        one would silently drop the issue from the changelog it belongs in, since
+        `select_shipped` keys off the field being *absent*."""
+        for name in ("fixed", "done", "completed", "shipped", "resolved"):
+            self.assertNotIn(name, self.t.RESOLUTIONS)

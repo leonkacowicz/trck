@@ -32,10 +32,10 @@ MODEL
               subtree; a parent's deps are inherited by its children. A node
               and its own ancestor/descendant can't depend on each other.
   points      a leaf's weight; rolls up to its epic for progress totals.
-  config      the status and priority vocabularies are fixed: backlog ->
-              ongoing -> in-review -> done, and urgent/high/medium/low/lowest.
-              trck.json holds only what a tracker may actually change --
-              resolutions and the update channel.
+  config      the vocabularies are fixed: backlog -> ongoing -> in-review ->
+              done, urgent/high/medium/low/lowest, and the resolutions
+              superseded/wontfix/duplicate. Anything finer is a label or a
+              custom field. trck.json holds only the update channel.
 
 RECOMMENDED USAGE
   parent      decomposition, not categorization: make B a child of A only when
@@ -97,7 +97,8 @@ def build_parser() -> argparse.ArgumentParser:
         epilog='examples:\n  trck new "Add CSV export" --priority high '
                '--parent 4 --depends 5,6')
     n.add_argument("title", help="short title (also derives the slug)")
-    n.add_argument("--priority", help="configured priority (default: first in trck.json)")
+    n.add_argument("--priority",
+                   help="urgent, high, medium, low or lowest (default: medium)")
     n.add_argument("--points", type=int, help="leaf weight for rollups (default 1)")
     n.add_argument("--parent", help="id of the epic to nest this under")
     n.add_argument("--depends", help="comma-separated ids this issue depends on (must be done first)")
@@ -111,7 +112,8 @@ def build_parser() -> argparse.ArgumentParser:
     mv.add_argument("id", help="issue id")
     mv.add_argument("status", help="target status (must be configured)")
     mv.add_argument("--resolution",
-                    help="resolution label; only valid when moving to a terminal status")
+                    help="why it closed without shipping (superseded, wontfix, "
+                         "duplicate); only valid when moving to a terminal status")
     mv.add_argument("--pr", help="record a pull-request URL as part of the move")
     mv.set_defaults(func=cmd_mv)
 
@@ -136,7 +138,9 @@ def build_parser() -> argparse.ArgumentParser:
     dn = sub.add_parser("done", help="alias: move to the configured 'done' status",
                         description="Alias: move an issue to the status configured as the 'done' alias.")
     dn.add_argument("id", help="issue id")
-    dn.add_argument("--resolution", help="resolution label (from the configured set)")
+    dn.add_argument("--resolution",
+                    help="why it closed without shipping (superseded, wontfix, "
+                         "duplicate); omit it when the work actually shipped")
     dn.set_defaults(func=cmd_done)
 
     se = sub.add_parser(

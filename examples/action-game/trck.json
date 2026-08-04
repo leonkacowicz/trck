@@ -2,42 +2,5 @@
   "update": {
     "repo": "leonkacowicz/trck",
     "channel": "stable"
-  },
-  "statuses": [
-    {
-      "name": "backlog",
-      "role": "initial"
-    },
-    {
-      "name": "ongoing",
-      "role": "active"
-    },
-    {
-      "name": "done",
-      "role": "terminal"
-    }
-  ],
-  "aliases": {
-    "start": "ongoing",
-    "done": "done"
-  },
-  "priorities": [
-    "urgent",
-    "high",
-    "medium",
-    "low",
-    "lowest"
-  ],
-  "kinds": [
-    "task",
-    "epic",
-    "bug",
-    "story",
-    "investigation"
-  ],
-  "resolutions": [
-    "superseded",
-    "wontfix",
-    "duplicate"
-  ]
+  }
 }

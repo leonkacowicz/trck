@@ -9,8 +9,9 @@ tracker can't drift. `trck` is the generalized successor to the original `track`
   install it once on your `PATH`.
 - **Git-friendly & agent-friendly.** Plain text, line-oriented `index.jsonl`, generated
   `SUMMARY.md`, and a hand-edited markdown body per issue.
-- **Vocabulary-agnostic.** Statuses, priorities, kinds, resolutions, and verb aliases are
-  configurable per repo; sensible defaults work with zero config.
+- **Zero configuration.** The vocabulary is fixed — four statuses, five priorities, three
+  resolutions — so every tracker means the same thing. Anything finer is a label or a
+  custom field.
 
 <p align="center">
   <img src="docs/img/ready.svg" alt="trck ready — the unblocked work, colourised" width="660"><br>
@@ -63,58 +64,80 @@ The download is validated (`compile()` + a sanity check) before the file is atom
 replaced; a failed update leaves your current `trck` untouched. Commit the resulting change to
 the vendored copy like any other diff.
 
+## Vocabulary
+
+The vocabulary is **fixed** — not configured, not renameable, not extensible. These are
+decisions worth making once rather than per repo, and fixing them is what lets any tool
+reading a tracker know what it is looking at without first reading a config file.
+
+### Statuses
+
+    backlog  →  ongoing  →  in-review  →  done
+
+| status | means | to the engine |
+|---|---|---|
+| `backlog` | not started | where `trck new` lands an issue; the first move off it stamps `started` |
+| `ongoing` | someone is on it | what a partly-finished parent rolls up to |
+| `in-review` | in flight, output pending someone else's judgement | nothing to pick up, so `ready`/`next` skip it — but it still **blocks** its dependents |
+| `done` | finished | satisfies a dependency; counts toward progress. Entering it stamps `closed`; leaving it (reopen) clears that and any resolution |
+
+Status is stored in `index.jsonl` and nowhere else — moving an issue rewrites one index line
+and leaves its body file where it is.
+
+`in-review` is the one that needs a rule, because it looks like it overlaps `depends_on`:
+
+- **`depends_on`** when the blocker is real work someone will do and close.
+- **`in-review`** when making it a task would be inventing one.
+
+A code review forces the distinction: the reviewer isn't producing a deliverable, they're
+judging yours, so a task for it would be a fiction — and one per reviewable issue would
+double the tracker. Same for a vendor reply or a sign-off nobody here will ever close.
+
+A **parent's status is derived from its children**: all `backlog` → `backlog`, all `done` →
+`done`, otherwise `ongoing`. The rollup is maintained on every move, recursively up to the
+root. To override it, `mv` the parent by hand — that pins its status; `set NNN --auto`
+returns it to derivation.
+
+`trck mv NNN <status>` moves between any two; `start` / `review` / `done` are aliases for the
+three you reach for.
+
+### Priorities
+
+    urgent  >  high  >  medium  >  low  >  lowest
+
+Ordered by precedence, and that order drives `list --sort priority` as well as the demand
+ranking behind `ready` and `next` (which weighs what an issue *unblocks*, not only what it
+declares — see **Ranked by demand** under [Common verbs](#common-verbs)). `trck new` assigns
+`medium` when you don't pass `--priority`.
+
+### Resolutions
+
+    superseded  ·  wontfix  ·  duplicate
+
+Valid only on `done`, and they all mean **closed without shipping**: a later issue took over,
+nobody will do it, or it's already tracked elsewhere. The normal case is to carry *none* —
+"finished, it went out" — and that absence is load-bearing: `trck changelog` lists issues
+closed in a window **without** a resolution, so there is deliberately no `fixed`.
+
+### Anything finer
+
+A distinction the four statuses don't draw — `qa` versus `awaiting-deploy`, a bug/story
+split, a team — is a **label** (multi-valued, free text) or a **custom field** (one value per
+key). Both filter and sort, so a second status vocabulary would only overlap them.
+
 ## Configuration (`issues/trck.json`)
 
-Zero config works out of the box. To customize, edit `trck.json`:
+With the vocabulary fixed, `trck.json` holds nothing but the update channel — it exists to
+mark the tracker's root:
 
 ```json
 {
-  "update":      { "repo": "leonkacowicz/trck", "channel": "stable" },
-  "statuses":    [ {"name": "backlog",   "role": "initial"},
-                   {"name": "ongoing",   "role": "active"},
-                   {"name": "in-review", "actionable": false},
-                   {"name": "done",      "role": "terminal"} ],
-  "aliases":     { "start": "ongoing", "review": "in-review", "done": "done" },
-  "priorities":  ["urgent", "high", "medium", "low", "lowest"],
-  "default_priority": "medium",
-  "kinds":       ["task", "epic", "bug", "story", "investigation"],
-  "resolutions": ["superseded", "wontfix", "duplicate"]
+  "update": { "repo": "leonkacowicz/trck", "channel": "stable" }
 }
 ```
 
-Statuses are an **ordered, free-form list** stored in `index.jsonl`; `SUMMARY.md` groups by
-that order. Nothing about a status is encoded in the filesystem — moving an issue rewrites one
-index line and leaves its body file where it is. Semantics attach to **roles**, not names. Exactly one status must carry
-each of the three roles (extra unroled statuses — like the shipped `in-review` lane — are fine):
-
-- `initial` — where `trck new` lands an issue (and the first move off it stamps `started`).
-- `active` — the "in progress" status a parent rolls up to (see below).
-- `terminal` — entering it stamps `closed` and permits a `--resolution`; leaving it (reopen)
-  clears both. "Didn't really finish" outcomes (wontfix/duplicate/…) are a `--resolution`,
-  not a separate status.
-
-Any status may also set **`"actionable": false`** — a *waiting* state. The issue is in flight,
-but there is nothing for anyone to pick up, so `ready`/`next` skip it; it is still non-terminal,
-so it keeps **blocking** whatever depends on it. The shipped `in-review` lane uses this, and so
-can your own `qa` or `awaiting-deploy`. Roles and `actionable` are independent: a waiting state
-carries no role, and the rollup is unaffected (a parent whose children are in-review is
-`active`).
-
-A **parent's status is derived from its children**: all `initial` → `initial`, all `terminal`
-→ `terminal`, otherwise `active`. This rollup is maintained automatically on every move,
-recursively up to the root. To override it, `mv` the parent by hand — that pins its status;
-`set NNN --auto` returns it to derivation.
-
-The generic `trck mv NNN <status>` moves between any statuses; `start`/`review`/`done` are
-convenience aliases resolved through `aliases`. So a repo can use, say,
-`todo → doing → review → shipped` and either define its own aliases or just use `mv`.
-
-`priorities` is **ordered by precedence** — first is highest — and that order drives
-`list --sort priority` as well as the demand ranking behind `ready` and `next` (which
-weighs what an issue *unblocks*, not only what it declares — see **Ranked by demand**
-under [Common verbs](#common-verbs)). The priority `trck new` assigns when you don't
-pass `--priority` is set separately by `default_priority` (default `medium`); if omitted it
-falls back to the middle of the list.
+A tracker still carrying the old vocabulary keys is not broken: they're ignored, and `check`
+names each one.
 
 ## Issue ids
 
@@ -158,8 +181,8 @@ still open or sits directly under a non-terminal parent — so an open epic keep
 children as progress context, but a fully-done subtree and standalone done tasks drop off.
 `--all` shows everything; an explicit `--status` bypasses the prune (e.g. `--status done`
 lists every done issue). `--flat` gives a flat, globally-sorted list instead; a positional id
-(`trck list 4`) roots the forest at that issue's subtree. Filters (`--status`, `--kind`,
-`--priority`, `--label`, `--match`, `--parent`, `--blocked`, `--orphan`) select the matches and
+(`trck list 4`) roots the forest at that issue's subtree. Filters (`--status`, `--priority`,
+`--label`, `--field`, `--match`, `--parent`, `--blocked`, `--orphan`) select the matches and
 the forest fills in their **ancestor spine** as dimmed context, so a matched child never floats
 away from its parent. `tree` is an alias for `list` (`trck tree 4` == `trck list 4`).
 
@@ -194,11 +217,11 @@ A row that ranks above its own priority says why, naming the issue that drives i
 Nothing about this is stored — it's derived from the graph on every run, like readiness
 itself. `list --sort priority` still sorts the declared field, and so does `SUMMARY.md`.
 
-Epics: create an epic with `--kind epic`, attach children with `--parent NNN`; the epic's
-points-weighted rollup `%` is computed from its children and shown after the title on every
-parent row in `trck list`/`tree` (leaf rows carry none) as well as in `SUMMARY.md`. (Any
-issue can be a parent — `kind: epic` is just a display label.) Filter a list to one epic's
-children with `trck list --parent NNN`.
+Epics: attach children with `--parent NNN` and the parent *becomes* an epic — there is
+nothing to declare, since having children is the whole of what an epic is. Its
+points-weighted rollup `%` is computed from those children and shown after the title on
+every parent row in `trck list`/`tree` (leaf rows carry none) as well as in `SUMMARY.md`.
+Filter a list to one epic's children with `trck list --parent NNN`.
 
 **Pull requests** — when a PR opens, `trck review NNN <url>` moves the issue to the review
 status *and* records the URL in its built-in `pr` field, in one move:
@@ -211,8 +234,8 @@ status *and* records the URL in its built-in `pr` field, in one move:
 
 The value must be an absolute `http(s)` URL (`check` enforces it) but is otherwise
 forge-agnostic — trck never talks to GitHub. It shows in `trck show`, links from `SUMMARY.md`,
-and renders as a clickable anchor in `tools/trck-html`. Because the review status is
-`actionable: false`, the issue drops out of `ready`/`next` while it waits, yet still blocks its
+and renders as a clickable anchor in `tools/trck-html`. An issue in `in-review` drops out of
+`ready`/`next` while it waits — there is nothing there to pick up — yet still blocks its
 dependents until it's `done`.
 
 Labels: tag issues with a flat, multi-valued set of free-text labels via

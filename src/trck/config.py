@@ -51,9 +51,26 @@ VERB_STATUS = {"start": ONGOING, "review": IN_REVIEW, "done": DONE}
 PRIORITIES = ("urgent", "high", "medium", "low", "lowest")
 DEFAULT_PRIORITY = PRIORITIES[len(PRIORITIES) // 2]
 
+# The three resolutions, fixed with the rest of the vocabulary. A resolution is valid
+# only on `done`, and it means *closed without shipping* — the absence of one is the
+# normal case, "finished, it went out". That absence is load-bearing: `select_shipped`
+# skips any issue carrying a resolution, so this field is the only thing separating a
+# changelog entry from a closed issue that produced nothing to announce.
+#
+# The engine reads the *bit* (set or not); the three names are for the reader:
+#
+#   superseded  a later issue took over the work.
+#   wontfix     decided against; nobody will do it.
+#   duplicate   already tracked elsewhere.
+#
+# Deliberately no `fixed`: it would be the empty-string case spelled out, and setting it
+# would silently drop the issue from the changelog it belongs in.
+RESOLUTIONS = ("superseded", "wontfix", "duplicate")
+
+# Everything a tracker may still change. The vocabulary keys all left: they were the
+# decisions worth making once, for everyone, rather than per repo.
 DEFAULT_CONFIG = {
     "update": {"repo": DEFAULT_UPDATE_REPO, "channel": "stable"},
-    "resolutions": ["superseded", "wontfix", "duplicate"],
 }
 
 
@@ -103,9 +120,9 @@ def check_priority(cfg: dict, value: str) -> str | None:
 
 
 def check_resolution(cfg: dict, value: str) -> str | None:
-    if value in cfg["resolutions"]:
+    if value in RESOLUTIONS:
         return None
-    return f"bad resolution '{value}' (configured: {', '.join(cfg['resolutions'])})"
+    return f"bad resolution '{value}' (expected one of: {', '.join(RESOLUTIONS)})"
 
 
 def check_pr(value: str) -> str | None:
@@ -130,6 +147,7 @@ def check_vestigial_vocabulary(cfg: dict) -> list[str]:
         "kinds": "`kind` is an ordinary custom field now (`set --field kind=bug`)",
         "priorities": f"the priorities are fixed: {', '.join(PRIORITIES)}",
         "default_priority": f"the default is fixed: {DEFAULT_PRIORITY}",
+        "resolutions": f"the resolutions are fixed: {', '.join(RESOLUTIONS)}",
     }
     return [f"config: '{k}' is no longer configurable and is being ignored ({why})"
             for k, why in gone.items() if k in cfg]

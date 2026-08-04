@@ -125,9 +125,26 @@ VERB_STATUS = {"start": ONGOING, "review": IN_REVIEW, "done": DONE}
 PRIORITIES = ("urgent", "high", "medium", "low", "lowest")
 DEFAULT_PRIORITY = PRIORITIES[len(PRIORITIES) // 2]
 
+# The three resolutions, fixed with the rest of the vocabulary. A resolution is valid
+# only on `done`, and it means *closed without shipping* — the absence of one is the
+# normal case, "finished, it went out". That absence is load-bearing: `select_shipped`
+# skips any issue carrying a resolution, so this field is the only thing separating a
+# changelog entry from a closed issue that produced nothing to announce.
+#
+# The engine reads the *bit* (set or not); the three names are for the reader:
+#
+#   superseded  a later issue took over the work.
+#   wontfix     decided against; nobody will do it.
+#   duplicate   already tracked elsewhere.
+#
+# Deliberately no `fixed`: it would be the empty-string case spelled out, and setting it
+# would silently drop the issue from the changelog it belongs in.
+RESOLUTIONS = ("superseded", "wontfix", "duplicate")
+
+# Everything a tracker may still change. The vocabulary keys all left: they were the
+# decisions worth making once, for everyone, rather than per repo.
 DEFAULT_CONFIG = {
     "update": {"repo": DEFAULT_UPDATE_REPO, "channel": "stable"},
-    "resolutions": ["superseded", "wontfix", "duplicate"],
 }
 
 
@@ -177,9 +194,9 @@ def check_priority(cfg: dict, value: str) -> str | None:
 
 
 def check_resolution(cfg: dict, value: str) -> str | None:
-    if value in cfg["resolutions"]:
+    if value in RESOLUTIONS:
         return None
-    return f"bad resolution '{value}' (configured: {', '.join(cfg['resolutions'])})"
+    return f"bad resolution '{value}' (expected one of: {', '.join(RESOLUTIONS)})"
 
 
 def check_pr(value: str) -> str | None:
@@ -204,6 +221,7 @@ def check_vestigial_vocabulary(cfg: dict) -> list[str]:
         "kinds": "`kind` is an ordinary custom field now (`set --field kind=bug`)",
         "priorities": f"the priorities are fixed: {', '.join(PRIORITIES)}",
         "default_priority": f"the default is fixed: {DEFAULT_PRIORITY}",
+        "resolutions": f"the resolutions are fixed: {', '.join(RESOLUTIONS)}",
     }
     return [f"config: '{k}' is no longer configurable and is being ignored ({why})"
             for k, why in gone.items() if k in cfg]
@@ -2560,7 +2578,7 @@ regenerates `SUMMARY.md`, and self-validates.
 ## Where things live
 | Data | Source of truth | Changed by |
 |---|---|---|
-| status | `index.jsonl` (a value from `trck.json`) | `trck mv` / `start` / `review` / `done` |
+| status | `index.jsonl` (one of the four fixed statuses) | `trck mv` / `start` / `review` / `done` |
 | other metadata | `index.jsonl` (one JSON object per issue) | `trck set` / `dep` / `label` |
 | narrative | the issue markdown body | **you** (hand-edited) |
 | rollup | `SUMMARY.md` (generated) | `trck` (auto, every mutating verb) |
@@ -2577,9 +2595,9 @@ renumbered issue records its old number in `legacy_id`, so stale `#NN` reference
 Run from anywhere in the repo — `trck` finds the tracker by walking up to the folder
 holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
 
-- `trck new "<title>" [--priority …] [--kind …] [--parent ID] [--depends a,b]`
-- `trck mv ID <status>` (vocabulary-agnostic); `trck start ID` / `trck review ID [URL]` / `trck done ID [--resolution …]` (aliases)
-- `trck set ID [--priority …] [--parent …|none] [--kind …] [--title …] [--pr URL|none] [--field k=v] [--unset k]`
+- `trck new "<title>" [--priority …] [--parent ID] [--depends a,b]`
+- `trck mv ID <status>`; `trck start ID` / `trck review ID [URL]` / `trck done ID [--resolution …]` (aliases)
+- `trck set ID [--priority …] [--parent …|none] [--title …] [--pr URL|none] [--field k=v] [--unset k]`
 - `trck dep ID --add ID2 | --remove ID2`
 - `trck label ID --add X --remove Y`
 - Custom fields: `trck set ID --field assignee=leon`; filter `trck list --field assignee=leon`; sort `--sort field:assignee`; show `--show-field assignee`.
@@ -2600,7 +2618,10 @@ holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
   verb** (`legacy status-folder layout: …`) until this runs; `--dry-run` previews the moves.
 - `trck update` — pull the latest engine from the canonical repo.
 
-Statuses, priorities, kinds, resolutions, and aliases are configured in `trck.json`.
+The vocabulary is fixed, not configured: statuses run `backlog → ongoing → in-review → done`,
+priorities are `urgent`/`high`/`medium`/`low`/`lowest`, and a closed issue may carry one of
+`superseded`/`wontfix`/`duplicate` — no resolution means it shipped. Anything finer is a
+label or a custom field. `trck.json` holds only the update channel.
 
 ## Recommended usage
 
@@ -3940,10 +3961,10 @@ MODEL
               subtree; a parent's deps are inherited by its children. A node
               and its own ancestor/descendant can't depend on each other.
   points      a leaf's weight; rolls up to its epic for progress totals.
-  config      the status and priority vocabularies are fixed: backlog ->
-              ongoing -> in-review -> done, and urgent/high/medium/low/lowest.
-              trck.json holds only what a tracker may actually change --
-              resolutions and the update channel.
+  config      the vocabularies are fixed: backlog -> ongoing -> in-review ->
+              done, urgent/high/medium/low/lowest, and the resolutions
+              superseded/wontfix/duplicate. Anything finer is a label or a
+              custom field. trck.json holds only the update channel.
 
 RECOMMENDED USAGE
   parent      decomposition, not categorization: make B a child of A only when
@@ -4005,7 +4026,8 @@ def build_parser() -> argparse.ArgumentParser:
         epilog='examples:\n  trck new "Add CSV export" --priority high '
                '--parent 4 --depends 5,6')
     n.add_argument("title", help="short title (also derives the slug)")
-    n.add_argument("--priority", help="configured priority (default: first in trck.json)")
+    n.add_argument("--priority",
+                   help="urgent, high, medium, low or lowest (default: medium)")
     n.add_argument("--points", type=int, help="leaf weight for rollups (default 1)")
     n.add_argument("--parent", help="id of the epic to nest this under")
     n.add_argument("--depends", help="comma-separated ids this issue depends on (must be done first)")
@@ -4019,7 +4041,8 @@ def build_parser() -> argparse.ArgumentParser:
     mv.add_argument("id", help="issue id")
     mv.add_argument("status", help="target status (must be configured)")
     mv.add_argument("--resolution",
-                    help="resolution label; only valid when moving to a terminal status")
+                    help="why it closed without shipping (superseded, wontfix, "
+                         "duplicate); only valid when moving to a terminal status")
     mv.add_argument("--pr", help="record a pull-request URL as part of the move")
     mv.set_defaults(func=cmd_mv)
 
@@ -4044,7 +4067,9 @@ def build_parser() -> argparse.ArgumentParser:
     dn = sub.add_parser("done", help="alias: move to the configured 'done' status",
                         description="Alias: move an issue to the status configured as the 'done' alias.")
     dn.add_argument("id", help="issue id")
-    dn.add_argument("--resolution", help="resolution label (from the configured set)")
+    dn.add_argument("--resolution",
+                    help="why it closed without shipping (superseded, wontfix, "
+                         "duplicate); omit it when the work actually shipped")
     dn.set_defaults(func=cmd_done)
 
     se = sub.add_parser(
