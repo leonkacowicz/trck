@@ -6,9 +6,9 @@
 | State | Count |
 |---|---:|
 | backlog | 66 |
-| ongoing | 4 |
+| ongoing | 3 |
 | in-review | 0 |
-| done | 125 |
+| done | 126 |
 | **total** | **195** |
 
 ## Hierarchies
@@ -140,7 +140,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#kaqhtfc list/tree: drop the tree alias (nested forest is list's default)](items/kaqhtfc-list-tree-drop-the-tree-alias-nested-forest-is-list-s-default.md) _(backlog)_
 - [ ] [#v8tmkrt json: shared emit_json stdout seam + --json flag plumbing](items/v8tmkrt-json-shared-emit-json-stdout-seam-json-flag-plumbing.md) _(backlog)_
 
-### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 13% (13/99 pts · 4/25 done) · _medium_ · ongoing
+### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 15% (15/99 pts · 5/25 done) · _medium_ · ongoing
 
 - [ ] [#2w5panf rust: diff and changelog](items/2w5panf-rust-diff-and-changelog.md) _(backlog)_
 - [ ] [#4susb3g rust: query verbs — list, tree, show](items/4susb3g-rust-query-verbs-list-tree-show.md) _(backlog)_
@@ -160,7 +160,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#gh363h3 rust: --json output for list, show, deps and ready](items/gh363h3-rust-json-output-for-list-show-deps-and-ready.md) _(backlog)_
 - [ ] [#gtkastb rust: mutating verbs and SUMMARY generation](items/gtkastb-rust-mutating-verbs-and-summary-generation.md) _(backlog)_
 - [x] [#h8nxqx7 vocabulary: fix priorities at five canonical levels](items/h8nxqx7-vocabulary-fix-priorities-at-five-canonical-levels-names-as-display-aliases.md)
-- [ ] [#jpash72 new: --id to supply an issue id instead of generating one](items/jpash72-new-id-to-supply-an-issue-id-instead-of-generating-one.md) _(ongoing)_
+- [x] [#jpash72 new: --id to supply an issue id instead of generating one](items/jpash72-new-id-to-supply-an-issue-id-instead-of-generating-one.md)
 - [ ] [#n8v8qba rust: workspace, CI, and the conformance runner](items/n8v8qba-rust-workspace-ci-and-the-conformance-runner.md) _(backlog)_
 - [x] [#qgpk65t vocabulary: fix the four statuses in code, not in config](items/qgpk65t-vocabulary-fix-the-four-statuses-in-code-not-in-config.md)
 - [ ] [#rbast9r repo: migrate an existing tracker to the fixed vocabulary and the new format](items/rbast9r-repo-migrate-an-existing-tracker-to-the-fixed-vocabulary-and-the-new-format.md) _(backlog)_
