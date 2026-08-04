@@ -1,4 +1,5 @@
 from __future__ import annotations
+import json
 import os
 import sys
 from .config import BACKLOG, DONE, IN_REVIEW, ONGOING, PRIORITIES
@@ -9,6 +10,18 @@ from .index import Ctx, Issue
 # tree rendering helpers (used by SUMMARY, tree, deps)
 # --------------------------------------------------------------------------- #
 STATUS_ICON = {DONE: "●", BACKLOG: "○", ONGOING: "◐", IN_REVIEW: "◐"}  # single-width, aligned
+
+
+def emit_json(obj) -> None:
+    """The single machine-readable output seam. Every `--json` path goes through here,
+    so a consumer parsing one command's output never has to notice which command wrote
+    it: same encoder options, same trailing newline, same one-document-per-invocation
+    rule. Without a seam that drifts a command at a time and nothing catches it.
+
+    Issue payloads are `Issue.to_dict()` — every canonical key present, `null` where
+    unset — so the shape is stable across commands and across a tracker that happens
+    not to use a field."""
+    print(json.dumps(obj, ensure_ascii=False, indent=2))
 
 
 def status_icon(ctx: Ctx, name: str) -> str:

@@ -208,7 +208,8 @@ def build_parser() -> argparse.ArgumentParser:
     sh = sub.add_parser("show", help="print an issue's metadata + body",
                         description="Print an issue's metadata, then its markdown body.")
     sh.add_argument("id", help="issue id")
-    sh.add_argument("--json", action="store_true", help="raw JSON metadata (machine-readable)")
+    sh.add_argument("--json", action="store_true",
+                    help="one JSON document: the metadata plus a 'body' field")
     sh.set_defaults(func=cmd_show)
 
     pa = sub.add_parser("path", help="print the absolute file path of one issue",

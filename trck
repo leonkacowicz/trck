@@ -2012,6 +2012,18 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
 STATUS_ICON = {DONE: "●", BACKLOG: "○", ONGOING: "◐", IN_REVIEW: "◐"}  # single-width, aligned
 
 
+def emit_json(obj) -> None:
+    """The single machine-readable output seam. Every `--json` path goes through here,
+    so a consumer parsing one command's output never has to notice which command wrote
+    it: same encoder options, same trailing newline, same one-document-per-invocation
+    rule. Without a seam that drifts a command at a time and nothing catches it.
+
+    Issue payloads are `Issue.to_dict()` — every canonical key present, `null` where
+    unset — so the shape is stable across commands and across a tracker that happens
+    not to use a field."""
+    print(json.dumps(obj, ensure_ascii=False, indent=2))
+
+
 def status_icon(ctx: Ctx, name: str) -> str:
     return STATUS_ICON.get(name, "⏳")
 
@@ -3099,19 +3111,24 @@ def cmd_show(args) -> None:
     if not Graph(ctx.cfg, rows).is_leaf(row):
         keys = [k for k in keys if k != "points"]  # derived from leaves, not an input here
     if getattr(args, "json", False):
-        print(json.dumps({k: full.get(k) for k in keys}, ensure_ascii=False, indent=2))
-    else:
-        abbrev = unique_prefix_lens([r.id for r in rows])
-        w = max(len(k) for k in keys)
-        for k in keys:
-            v = full.get(k)
-            if v is None or v == [] or v is False:
-                continue  # skip empty fields (and an unset manual_status) in the human view
-            if k in ("created", "started", "closed"):
-                v = date_slice(v)
-            elif k == "id":
-                v = hl_id(v, abbrev, hash_prefix=False)  # bold the shortest unique prefix, as in `list`
-            print(f"{paint(f'{k:>{w}}', 'dim')}  {v}")
+        # One document, body folded in. It used to print metadata and then dump the
+        # body after a `--- body ---` separator, which meant the obvious way to consume
+        # it — json.loads(stdout) — failed on the trailer.
+        emit_json({**{k: full.get(k) for k in keys},
+                   "body": issue_path(ctx, row).read_text()})
+        return
+
+    abbrev = unique_prefix_lens([r.id for r in rows])
+    w = max(len(k) for k in keys)
+    for k in keys:
+        v = full.get(k)
+        if v is None or v == [] or v is False:
+            continue  # skip empty fields (and an unset manual_status) in the human view
+        if k in ("created", "started", "closed"):
+            v = date_slice(v)
+        elif k == "id":
+            v = hl_id(v, abbrev, hash_prefix=False)  # bold the shortest unique prefix, as in `list`
+        print(f"{paint(f'{k:>{w}}', 'dim')}  {v}")
     print("\n--- body ---\n")
     print(issue_path(ctx, row).read_text())
 
@@ -4254,7 +4271,8 @@ def build_parser() -> argparse.ArgumentParser:
     sh = sub.add_parser("show", help="print an issue's metadata + body",
                         description="Print an issue's metadata, then its markdown body.")
     sh.add_argument("id", help="issue id")
-    sh.add_argument("--json", action="store_true", help="raw JSON metadata (machine-readable)")
+    sh.add_argument("--json", action="store_true",
+                    help="one JSON document: the metadata plus a 'body' field")
     sh.set_defaults(func=cmd_show)
 
     pa = sub.add_parser("path", help="print the absolute file path of one issue",

@@ -1,4 +1,5 @@
 import io
+import json
 import re
 import unittest
 from contextlib import redirect_stdout
@@ -55,12 +56,15 @@ class TestRead(unittest.TestCase):
             self.assertIn("# Hello", out)
 
     def test_show_json_flag(self):
+        """One document, body folded in. This used to assert the opposite — metadata
+        followed by a `--- body ---` trailer — which made `json.loads(stdout)` fail.
+        Shape is covered in test_json_output; this keeps the regression pinned here."""
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             id1 = self.seed(d, "Hello")
             out = self.cap(self.t.cmd_show, ns(dir=str(d), id=id1, json=True))
-            self.assertIn(f'"id": "{id1}"', out)
-            self.assertIn("--- body ---", out)
+            self.assertNotIn("--- body ---", out)
+            self.assertEqual(json.loads(out)["id"], id1)
 
     def test_list_filters_by_status(self):
         with TemporaryDirectory() as tmp:

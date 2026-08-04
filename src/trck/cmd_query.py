@@ -8,7 +8,7 @@ from .diff import Change, diff_snapshots, resolve_source
 from .gitsrc import git_snapshot, parse_rev_spec
 from .graph import Graph, load_graph
 from .index import CANON_KEYS, Ctx, Issue, build_ctx_or_die, check_field_key, file_id, get_id, get_row, issue_path, load_index, resolve_ref, unique_prefix_lens
-from .render import block_annotations, demand_annotation, deps_overview_ids, filter_deps_graph_ids, graph_components, hl_id, node_label, paint, paint_lane, parse_status_filter, priority_codes, priority_rank, render_graph, status_codes, status_icon
+from .render import block_annotations, demand_annotation, emit_json, deps_overview_ids, filter_deps_graph_ids, graph_components, hl_id, node_label, paint, paint_lane, parse_status_filter, priority_codes, priority_rank, render_graph, status_codes, status_icon
 from .summary import progress_pct
 
 def cmd_show(args) -> None:
@@ -20,19 +20,24 @@ def cmd_show(args) -> None:
     if not Graph(ctx.cfg, rows).is_leaf(row):
         keys = [k for k in keys if k != "points"]  # derived from leaves, not an input here
     if getattr(args, "json", False):
-        print(json.dumps({k: full.get(k) for k in keys}, ensure_ascii=False, indent=2))
-    else:
-        abbrev = unique_prefix_lens([r.id for r in rows])
-        w = max(len(k) for k in keys)
-        for k in keys:
-            v = full.get(k)
-            if v is None or v == [] or v is False:
-                continue  # skip empty fields (and an unset manual_status) in the human view
-            if k in ("created", "started", "closed"):
-                v = date_slice(v)
-            elif k == "id":
-                v = hl_id(v, abbrev, hash_prefix=False)  # bold the shortest unique prefix, as in `list`
-            print(f"{paint(f'{k:>{w}}', 'dim')}  {v}")
+        # One document, body folded in. It used to print metadata and then dump the
+        # body after a `--- body ---` separator, which meant the obvious way to consume
+        # it — json.loads(stdout) — failed on the trailer.
+        emit_json({**{k: full.get(k) for k in keys},
+                   "body": issue_path(ctx, row).read_text()})
+        return
+
+    abbrev = unique_prefix_lens([r.id for r in rows])
+    w = max(len(k) for k in keys)
+    for k in keys:
+        v = full.get(k)
+        if v is None or v == [] or v is False:
+            continue  # skip empty fields (and an unset manual_status) in the human view
+        if k in ("created", "started", "closed"):
+            v = date_slice(v)
+        elif k == "id":
+            v = hl_id(v, abbrev, hash_prefix=False)  # bold the shortest unique prefix, as in `list`
+        print(f"{paint(f'{k:>{w}}', 'dim')}  {v}")
     print("\n--- body ---\n")
     print(issue_path(ctx, row).read_text())
 
