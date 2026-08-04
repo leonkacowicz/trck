@@ -181,6 +181,21 @@ class TestDataIsland(HtmlTestBase):
                 self.assertIn(key, issue)
             self.assertEqual(issue["priority"], "high")
 
+    def test_the_island_ships_no_kind_vocabulary(self):
+        """The page ships the statuses and priorities because it draws a board column
+        and a facet box per value, and shouldn't hardcode names the engine owns. `kinds`
+        was the third of those and outlived its use: `kind` is an ordinary custom field
+        now, it drives no column and no facet, and the list came from a config key that
+        no longer exists."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {"kinds": ["task", "epic"]})
+            cfg = island(self.render(d))["config"]
+            self.assertNotIn("kinds", cfg)
+            self.assertEqual(cfg["priorities"],
+                             ["urgent", "high", "medium", "low", "lowest"])
+            self.assertEqual([s["name"] for s in cfg["statuses"]],
+                             ["backlog", "ongoing", "in-review", "done"])
+
     def test_pr_is_exported_and_linked(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})

@@ -181,7 +181,6 @@ def build_model(ctx, cmd=None):
             "statuses": [{"name": n, "terminal": E.is_terminal(cfg, n)}
                          for n in E.status_names(cfg)],
             "priorities": list(E.PRIORITIES),
-            "kinds": list(cfg.get("kinds", [])),
             "cmd": cmd or _default_cmd(),
         },
         "issues": issues,
@@ -788,7 +787,7 @@ function renderDetail() {
   const m = el('div', { class: 'meta' });
   m.append(meta('status', el('span', { class: 'badge', text: i.status })));
   m.append(meta('priority', el('span', { class: 'badge', text: i.priority })));
-  m.append(meta('kind', i.kind));
+  if (i.kind) m.append(meta('kind', i.kind));
   if (i.resolution) m.append(meta('resolution', i.resolution));
   if (i.review_url) m.append(meta('review', reviewLink(i)));
   if (i.labels.length) m.append(meta('labels', i.labels.join(', ')));
