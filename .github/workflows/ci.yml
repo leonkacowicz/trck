@@ -30,5 +30,14 @@ jobs:
       - name: Test suite
         run: python3 -m unittest discover -s tests -v
 
+      # scripts/backfill_timestamps.py is a standalone one-shot that does not
+      # import the engine. Its tests shell out to git on every case and have
+      # nothing to say about an engine change, so they run as their own suite
+      # rather than inside the one that guards every commit. (scripts/renumber.py
+      # is tested from tests/, because what matters there is that the engine
+      # accepts what the script produces.)
+      - name: Helper-script suite
+        run: python3 -m unittest discover -s scripts/tests -v
+
       - name: Tracker consistency
         run: python3 ./trck check

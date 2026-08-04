@@ -1,3 +1,12 @@
+"""Tests for scripts/backfill_timestamps.py.
+
+Kept out of `tests/` because the script is not part of the engine. It ships as a
+standalone one-shot, imports nothing from trck, and is run by hand — so its tests do
+not belong in the suite that guards every engine change, especially since each case
+here shells out to `git`.
+
+    python3 -m unittest discover -s scripts/tests
+"""
 import json
 import os
 import shutil
@@ -7,7 +16,23 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from tests.helpers import load_backfill
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+SCRIPT_PATH = REPO_ROOT / "scripts" / "backfill_timestamps.py"
+
+
+def load_backfill():
+    """Import the script as a fresh module object. Self-contained on purpose: a suite
+    testing something that does not import the engine should not reach into the
+    engine's test helpers either."""
+    import importlib.machinery
+    import importlib.util
+    loader = importlib.machinery.SourceFileLoader("backfill_timestamps", str(SCRIPT_PATH))
+    spec = importlib.util.spec_from_file_location("backfill_timestamps", SCRIPT_PATH,
+                                                  loader=loader)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["backfill_timestamps"] = mod
+    spec.loader.exec_module(mod)
+    return mod
 
 
 class TestToUtc(unittest.TestCase):
@@ -75,10 +100,10 @@ class TestRewriteLines(unittest.TestCase):
         self.assertEqual(changes, [])
         self.assertEqual(warnings, [])
 
-    def test_rows_without_integer_id_are_passed_through_untouched(self):
-        # A row with no integer id and a day-only date must NOT produce a warning
-        # with a None id (which would later crash the #{id} report). It is left
-        # byte-identical and ignored.
+    def test_rows_without_a_usable_id_are_passed_through_untouched(self):
+        # A row with no id (or a non-string one) and a day-only date must NOT produce
+        # a warning keyed on None, which the report would then print as "#None". It is
+        # left byte-identical and ignored.
         noid = self.canonical(slug="noid", title="No id",
                               status="done", priority="medium", created="2026-06-05")
         boolid = self.canonical(id=True, slug="b", title="B",
@@ -244,7 +269,6 @@ class TestMainEndToEnd(unittest.TestCase):
     def test_main_runs_as_subprocess(self):
         with TemporaryDirectory() as tmp:
             tracker = self._build_repo(tmp)
-            from tests.helpers import SCRIPT_PATH
             r = subprocess.run([sys.executable, str(SCRIPT_PATH), tracker],
                                capture_output=True, text=True)
             self.assertEqual(r.returncode, 0, r.stderr)

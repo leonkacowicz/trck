@@ -33,6 +33,10 @@ flattened into `./trck` by **`build.py`**. This repo **self-hosts** its own issu
   `./trck` from `src/` first**, so the suite always reflects your source edits — commit the
   regenerated `./trck` alongside the change. Add a test for every change (TDD). Run one module:
   `python3 -m unittest tests.test_paths -v`; one case: `…tests.test_paths.TestClass.test_method`.
+- **Two suites.** Standalone one-shots under `scripts/` that don't import the engine have their
+  own: `python3 -m unittest discover -s scripts/tests -v`. Kept separate because tests that shell
+  out to `git` for a migration nobody will run again shouldn't gate every engine change. Both run
+  in CI.
 - `tests/helpers.py::load_trck()` imports the generated `./trck` via `importlib`
   (`SourceFileLoader`, required on Python 3.12+/3.14).
 - **Tests that write to the engine file** — `update`/`init` — go through the module global
