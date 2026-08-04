@@ -5,10 +5,10 @@
 
 | State | Count |
 |---|---:|
-| backlog | 56 |
+| backlog | 55 |
 | ongoing | 4 |
 | in-review | 0 |
-| done | 135 |
+| done | 136 |
 | **total** | **195** |
 
 ## Hierarchies
@@ -140,7 +140,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#kaqhtfc list/tree: drop the tree alias (nested forest is list's default)](items/kaqhtfc-list-tree-drop-the-tree-alias-nested-forest-is-list-s-default.md) _(backlog)_
 - [x] [#v8tmkrt json: shared emit_json stdout seam + --json flag plumbing](items/v8tmkrt-json-shared-emit-json-stdout-seam-json-flag-plumbing.md)
 
-### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 31% (31/99 pts · 9/25 done) · _medium_ · ongoing
+### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 36% (36/99 pts · 10/25 done) · _medium_ · ongoing
 
 - [ ] [#2w5panf rust: diff and changelog](items/2w5panf-rust-diff-and-changelog.md) _(backlog)_
 - [ ] [#4susb3g rust: query verbs — list, tree, show](items/4susb3g-rust-query-verbs-list-tree-show.md) _(backlog)_
@@ -156,7 +156,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#dfe48ds ids: drop renumber and every trace of integer ids](items/dfe48ds-ids-drop-renumber-and-every-trace-of-integer-ids.md)
 - [ ] [#djx63gk cutover: un-vendor, retire the Python engine, rewrite the docs](items/djx63gk-cutover-un-vendor-retire-the-python-engine-rewrite-the-docs.md) _(backlog)_
 - [ ] [#eek4hat rust: check, validate and the repo maintenance verbs](items/eek4hat-rust-check-validate-and-the-repo-maintenance-verbs.md) _(backlog)_
-- [ ] [#ehqv6sk rust: graph semantics — parents, effective deps, demand, readiness](items/ehqv6sk-rust-graph-semantics-parents-effective-deps-demand-readiness.md) _(backlog)_
+- [x] [#ehqv6sk rust: graph semantics — parents, effective deps, demand, readiness](items/ehqv6sk-rust-graph-semantics-parents-effective-deps-demand-readiness.md)
 - [ ] [#gh363h3 rust: --json output for list, show, deps and ready](items/gh363h3-rust-json-output-for-list-show-deps-and-ready.md) _(backlog)_
 - [ ] [#gtkastb rust: mutating verbs and SUMMARY generation](items/gtkastb-rust-mutating-verbs-and-summary-generation.md) _(backlog)_
 - [x] [#h8nxqx7 vocabulary: fix priorities at five canonical levels](items/h8nxqx7-vocabulary-fix-priorities-at-five-canonical-levels-names-as-display-aliases.md)
