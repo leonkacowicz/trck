@@ -356,3 +356,103 @@ class TestListJson(JsonBase):
                                json=False)
             self.assertIn("├─ ", out)
             self.assertIn("#aaaaaaa", out)
+
+
+class TestReadyJson(JsonBase):
+    """The rank order *is* the payload. A consumer must not have to re-derive it, so
+    the array order is the contract and the demand annotation travels as fields rather
+    than baked into the `↑urgent(#a1b2c3)` string the human view prints."""
+
+    def ready(self, d, **over):
+        kw = dict(dir=str(d), id=None, next=False, json=True)
+        kw.update(over)
+        return json.loads(self.capture(self.t.cmd_ready, **kw))
+
+    def test_it_is_an_array_in_rank_order(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Low", id="aaaaaaa", priority="low")
+            self.seed(d, "Urgent", id="bbbbbbb", priority="urgent")
+            self.seed(d, "Mid", id="ccccccc", priority="medium")
+            self.assertEqual([r["id"] for r in self.ready(d)],
+                             ["bbbbbbb", "ccccccc", "aaaaaaa"])
+
+    def test_blocked_issues_are_absent(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Dep", id="aaaaaaa")
+            self.seed(d, "Blocked", id="bbbbbbb", depends="aaaaaaa")
+            self.assertEqual([r["id"] for r in self.ready(d)], ["aaaaaaa"])
+
+    def test_demand_travels_as_fields_not_prose(self):
+        """A medium task standing between you and an urgent one outranks a high one
+        that blocks nothing — and the row says why. As a string that explanation is
+        unusable; as `demand_priority`/`demand_source` it is queryable."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Blocker", id="aaaaaaa", priority="medium")
+            self.seed(d, "Urgent thing", id="bbbbbbb", priority="urgent",
+                      depends="aaaaaaa")
+            self.seed(d, "High, blocks nothing", id="ccccccc", priority="high")
+            doc = self.ready(d)
+            self.assertEqual([r["id"] for r in doc], ["aaaaaaa", "ccccccc"])
+            self.assertEqual(doc[0]["demand_priority"], "urgent")
+            self.assertEqual(doc[0]["demand_source"], "bbbbbbb")
+
+    def test_an_unlifted_row_omits_the_demand_fields(self):
+        """Most rows are their own maximum. Emitting nulls everywhere would suggest the
+        fields mean something on every row; the human view prints nothing there."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Alone", id="aaaaaaa", priority="high")
+            row = self.ready(d)[0]
+            self.assertNotIn("demand_priority", row)
+            self.assertNotIn("demand_source", row)
+
+    def test_next_is_the_same_shape_capped_at_one(self):
+        """An array either way, so a consumer switching between them changes nothing
+        but the length."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Low", id="aaaaaaa", priority="low")
+            self.seed(d, "Urgent", id="bbbbbbb", priority="urgent")
+            doc = json.loads(self.capture(self.t.cmd_next, dir=str(d), id=None,
+                                          json=True))
+            self.assertEqual([r["id"] for r in doc], ["bbbbbbb"])
+
+    def test_an_empty_result_is_an_empty_array_and_exits_zero(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.assertEqual(self.ready(d), [])
+            self.assertEqual(json.loads(self.capture(self.t.cmd_next, dir=str(d),
+                                                     id=None, json=True)), [])
+
+    def test_a_root_id_filters_the_result_not_the_ranking(self):
+        """Readiness and rank stay computed over the whole graph — narrowing the graph
+        would make work blocked from outside the subtree look actionable."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Outside", id="aaaaaaa")
+            self.seed(d, "Epic", id="bbbbbbb")
+            self.seed(d, "In subtree, blocked from outside", id="ccccccc",
+                      parent="bbbbbbb", depends="aaaaaaa")
+            self.seed(d, "In subtree, free", id="ddddddd", parent="bbbbbbb")
+            self.assertEqual([r["id"] for r in self.ready(d, id="bbbbbbb")],
+                             ["ddddddd"])
+
+    def test_ids_are_never_abbreviated(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Alpha", id="aaaaaaa")
+            self.assertEqual(len(self.ready(d)[0]["id"]), self.t.ID_LEN)
+
+    def test_the_human_output_is_untouched(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            self.seed(d, "Blocker", id="aaaaaaa", priority="medium")
+            self.seed(d, "Urgent thing", id="bbbbbbb", priority="urgent",
+                      depends="aaaaaaa")
+            out = self.capture(self.t.cmd_ready, dir=str(d), id=None, next=False,
+                               json=False)
+            self.assertIn("#aaaaaaa", out)
+            self.assertIn("↑urgent", out)

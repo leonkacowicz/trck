@@ -62,6 +62,7 @@ holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
   `ready`/`next` (nothing to pick up) but still **blocks** whatever depends on it until it
   is `done`. `trck set ID --review-url none` unlinks.
 - `trck list` · `trck tree` · `trck deps ID` · `trck show ID` · `trck check` · `trck summary`
+- Machine-readable: `--json` on `list`/`show`/`deps`/`ready`/`next` — one JSON document each.
 - `trck repo normalize` — rewrite `index.jsonl` in canonical slim form (no data change)
 - `trck repo install-hook` — install the pre-commit consistency hook
 - `trck repo setup-git` — **run once per clone.** Writes this folder's `.gitattributes` and

@@ -189,6 +189,32 @@ rather than a silent fall back to the real clock. This exists so the conformance
 can compare `index.jsonl` byte for byte — it's part of the contract both engines
 implement, not a Python-side test hook.
 
+### Machine-readable output (`--json`)
+
+`list`, `show`, `deps`, `ready` and `next` take `--json`. Every one emits **exactly one
+JSON document** — `json.loads(stdout)` is always the way to consume it — and issue objects
+are the same shape everywhere: every stored field, `null` where unset, ids never abbreviated.
+
+```bash
+trck list --json                  # nested forest: each node + a "children" array
+trck list --flat --json           # flat array, in the sorted order
+trck show NNN --json              # the metadata plus a "body" field
+trck deps NNN --json              # {"requires": [...], "blocks": [...]}
+trck next --json                  # array of one, ranked
+```
+
+Two shape notes worth knowing:
+
+- **`list --json` marks context rows.** The forest pulls non-matching ancestors in so a
+  matched child never floats free; the human view dims them, and the JSON sets
+  `"context": true`. Without it you can't tell a result from the scaffolding.
+- **`ready`/`next --json` carry the demand note as data.** A row lifted above its own
+  priority gets `demand_priority` and `demand_source` — what the human view renders as
+  `↑urgent(#a1b2c3)` — omitted on rows that aren't lifted. **The array order is the
+  contract**: this verb's whole answer is "in what order", so you never re-derive it.
+
+An empty result is `[]`, not silence.
+
 ## Issue ids
 
 Each issue gets a **short random alphanumeric id** — 7 characters drawn from a base32

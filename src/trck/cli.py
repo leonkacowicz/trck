@@ -296,6 +296,9 @@ def build_parser() -> argparse.ArgumentParser:
                     "authored on an ancestor, stays out; nor does it change the "
                     "ranking, which is computed over the whole graph.")
     rd.add_argument("id", nargs="?", help="scope to this issue's subtree")
+    rd.add_argument("--json", action="store_true",
+                    help="one JSON document: an array in rank order, with the demand "
+                         "note as fields")
     rd.add_argument("--next", action="store_true",
                     help="print only the single highest-ranked ready issue")
     rd.set_defaults(func=cmd_ready)
@@ -307,6 +310,9 @@ def build_parser() -> argparse.ArgumentParser:
                                     "hottest issue itself. With an id, the best pick "
                                     "within that issue's subtree.")
     nx.add_argument("id", nargs="?", help="scope to this issue's subtree")
+    nx.add_argument("--json", action="store_true",
+                    help="one JSON document: the same array as `ready --json`, "
+                         "capped at one entry")
     nx.set_defaults(func=cmd_next)
 
     dz = sub.add_parser(

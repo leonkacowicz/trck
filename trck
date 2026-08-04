@@ -2771,6 +2771,7 @@ holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
   `ready`/`next` (nothing to pick up) but still **blocks** whatever depends on it until it
   is `done`. `trck set ID --review-url none` unlinks.
 - `trck list` · `trck tree` · `trck deps ID` · `trck show ID` · `trck check` · `trck summary`
+- Machine-readable: `--json` on `list`/`show`/`deps`/`ready`/`next` — one JSON document each.
 - `trck repo normalize` — rewrite `index.jsonl` in canonical slim form (no data change)
 - `trck repo install-hook` — install the pre-commit consistency hook
 - `trck repo setup-git` — **run once per clone.** Writes this folder's `.gitattributes` and
@@ -3441,6 +3442,20 @@ def cmd_ready(args) -> None:
         rows = [r for r in rows if r.id in kept]
     if getattr(args, "next", False):
         rows = rows[:1]
+    if getattr(args, "json", False):
+        # The array order is the contract: this verb's whole answer is "in what order",
+        # so a consumer must never have to re-derive the ranking. The demand note the
+        # human view renders as `↑urgent(#a1b2c3)` travels as two fields instead of a
+        # coloured string — and only on the rows that carry one, since most issues are
+        # their own maximum and nulls everywhere would imply otherwise.
+        def entry(r):
+            d = r.to_dict()
+            src = g.demand_source(r)
+            if src is not None:
+                d["demand_priority"], d["demand_source"] = src.priority, src.id
+            return d
+        emit_json([entry(r) for r in rows])
+        return
     abbrev = unique_prefix_lens([r.id for r in g.rows])
     print_rows(ctx, g, rows, abbrev=abbrev,
                annotate=lambda r: demand_annotation(g, r, abbrev))
@@ -4394,6 +4409,9 @@ def build_parser() -> argparse.ArgumentParser:
                     "authored on an ancestor, stays out; nor does it change the "
                     "ranking, which is computed over the whole graph.")
     rd.add_argument("id", nargs="?", help="scope to this issue's subtree")
+    rd.add_argument("--json", action="store_true",
+                    help="one JSON document: an array in rank order, with the demand "
+                         "note as fields")
     rd.add_argument("--next", action="store_true",
                     help="print only the single highest-ranked ready issue")
     rd.set_defaults(func=cmd_ready)
@@ -4405,6 +4423,9 @@ def build_parser() -> argparse.ArgumentParser:
                                     "hottest issue itself. With an id, the best pick "
                                     "within that issue's subtree.")
     nx.add_argument("id", nargs="?", help="scope to this issue's subtree")
+    nx.add_argument("--json", action="store_true",
+                    help="one JSON document: the same array as `ready --json`, "
+                         "capped at one entry")
     nx.set_defaults(func=cmd_next)
 
     dz = sub.add_parser(

@@ -350,6 +350,20 @@ def cmd_ready(args) -> None:
         rows = [r for r in rows if r.id in kept]
     if getattr(args, "next", False):
         rows = rows[:1]
+    if getattr(args, "json", False):
+        # The array order is the contract: this verb's whole answer is "in what order",
+        # so a consumer must never have to re-derive the ranking. The demand note the
+        # human view renders as `↑urgent(#a1b2c3)` travels as two fields instead of a
+        # coloured string — and only on the rows that carry one, since most issues are
+        # their own maximum and nulls everywhere would imply otherwise.
+        def entry(r):
+            d = r.to_dict()
+            src = g.demand_source(r)
+            if src is not None:
+                d["demand_priority"], d["demand_source"] = src.priority, src.id
+            return d
+        emit_json([entry(r) for r in rows])
+        return
     abbrev = unique_prefix_lens([r.id for r in g.rows])
     print_rows(ctx, g, rows, abbrev=abbrev,
                annotate=lambda r: demand_annotation(g, r, abbrev))
