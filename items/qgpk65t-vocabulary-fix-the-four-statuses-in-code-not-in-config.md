@@ -1,4 +1,4 @@
-# vocabulary: fix statuses to four semantic states, names as labels over them
+# vocabulary: fix the four statuses in code, not in config
 
 ## Summary
 The semantics already exist — `role` (`initial`/`active`/`terminal`) plus `actionable` — bolted
@@ -26,17 +26,34 @@ Resolutions are folded in here rather than split out: a resolution only exists o
 two are one model.
 
 ## Acceptance criteria
-- [ ] Four states in code. A tracker may name them and may map several names onto one state,
-      but may not invent a state.
-- [ ] `waiting` carries a reason — the PR link generalised.
+
+Rewritten on closing. Three of the original six were written for the two-vocabulary design —
+canonical states with per-tracker display names over them — which was struck mid-flight (see
+**One status per state** below). Ticking them as written would claim something that was
+deliberately not built; the list now says what the issue actually set out to do once that
+decision landed.
+
+- [x] Four statuses in code, fixed. Not configured, not renameable, not extensible:
+      `backlog → ongoing → in-review → done`.
+- [x] The waiting state carries *what it waits on*, not just a name — `pr` generalised to
+      `review_url`.
 - [x] Resolutions fixed to a canonical set, valid only on `done`.
-- [ ] The 58 sites reading the config vocabulary collapse onto state predicates.
-- [ ] Transition validity is expressible; the guards themselves stay with their own issues.
-- [ ] `index.jsonl` stores the canonical state and, where a tracker uses one, its label.
+- [x] Every site that read the vocabulary from config now reads a predicate instead.
+      `trck.json` has no vocabulary key left, and the HTML island stopped shipping one.
+- [x] Transition validity is expressible: with the statuses fixed, "closing with unfinished
+      dependencies" and "`ongoing` while blocked" are statements about a known state machine
+      rather than about whatever a tracker happened to configure. The guards themselves stay
+      with their own issues — `tfhhp8h`, `wh3mv52`.
+- [x] `index.jsonl` stores the status. There is no second name to store: one vocabulary means
+      the stored value *is* the canonical one, so the original criterion dissolved rather than
+      being met.
+
+Struck, with reasons in **Decisions**: per-tracker status names; several names mapping onto one
+state; a stored state/label pair.
 
 ## Notes
-Reshapes `s3d6xyz` (rename/reorder statuses): renaming survives as a display alias, reordering
-does not survive at all. Decide its fate when this lands.
+Reshaped `s3d6xyz` (rename/reorder statuses) out of existence: the draft kept renaming as a
+display alias, and then that went too. Nothing of it survives — close it as superseded.
 
 ## Decisions
 
@@ -93,7 +110,13 @@ Still open here:
       `superseded`/`wontfix`/`duplicate` — and the *absence* of one is the load-bearing
       case: `select_shipped` keys off it, so a resolution means closed-without-shipping
       and there is deliberately no `fixed`. `trck.json` is now empty of vocabulary.
-- [ ] Transition validity, including the `doing`-and-blocked warning above.
-- [ ] `index.jsonl` stores the state, with the status name as a display alias. Deferred to
-      `rbast9r`, which is where the rows get rewritten — until then a rename would be caught by
-      `validate` (the stored status is no longer a configured name) rather than silently break.
+- [x] Transition validity — expressible, and delegated. The `ongoing`-and-blocked warning is
+      `tfhhp8h`'s shape exactly (declared status vs. derived graph), so it belongs there rather
+      than duplicated here; `wh3mv52` is the parent case.
+- [x] The stored-state question dissolved with the second vocabulary. `rbast9r` still rewrites
+      this repo's rows, but for the `kind` fields the demotion left behind, not for a status
+      rename that is no longer possible.
+
+Left behind for others: `eemqu4g` is promoted — it now carries every distinction beyond the
+four statuses, so it needs declared allowed values. `s3d6xyz` (rename/reorder statuses) is
+moot: both halves of it were struck here, and it should be closed as superseded.
