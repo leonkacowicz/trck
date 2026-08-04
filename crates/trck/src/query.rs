@@ -13,7 +13,9 @@ use crate::config::is_terminal;
 use crate::discovery::Ctx;
 use crate::graph::{Graph, priority_rank};
 use crate::issue::{CANON_KEYS, Issue};
-use crate::render::{RowOpts, field_value, hl_id, paint, render_rows, unique_prefix_lens};
+use crate::render::{
+    Annotation, RowOpts, field_value, hl_id, paint, render_rows, unique_prefix_lens,
+};
 use crate::verbs::{issue_path, load_rows, resolve_ref};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -181,7 +183,7 @@ pub(crate) fn cmd_list(ctx: &Ctx, opts: &ListOpts) -> Result<String, String> {
             prefix: None,
             dim: &[],
             on_screen: ids.clone(),
-            annotate: true,
+            annotate: Annotation::Blocking,
             progress: true,
             show_fields,
             abbrev: Some(abbrev),
@@ -259,7 +261,7 @@ fn forest(
         prefix: Some(&f.prefixes),
         dim: &dim,
         on_screen: f.ordered.clone(),
-        annotate: true,
+        annotate: Annotation::Blocking,
         progress: true,
         show_fields,
         abbrev: Some(abbrev),
@@ -310,6 +312,39 @@ fn walk(g: &Graph, f: &mut Forest, id: &str, pfx: &str, sorted: &mut impl FnMut(
             walk(g, f, kid, &ext, sorted);
         }
     }
+}
+
+/// `ready` lists the unblocked leaves in rank order; `next` is the same, capped at one.
+///
+/// A root id scopes by filtering the *result*, never by restricting the graph readiness
+/// and ranking are computed over: blocking is effective, so a leaf here may be waiting on
+/// an issue outside the subtree. Narrow the graph and those blockers vanish, making
+/// blocked work look actionable.
+pub(crate) fn cmd_ready(ctx: &Ctx, root: Option<&str>, only_next: bool) -> Result<String, String> {
+    let rows = load_rows(ctx)?;
+    let root = root.map(|t| resolve_ref(&rows, t)).transpose()?;
+    let abbrev = unique_prefix_lens(rows.iter().map(|r| r.id.as_str()));
+    let g = Graph::new(rows);
+
+    let mut ids = g.ranked_ready();
+    if let Some(id) = &root {
+        let kept: BTreeSet<String> = g.subtree(id).into_iter().collect();
+        ids.retain(|i| kept.contains(i));
+    }
+    if only_next {
+        ids.truncate(1);
+    }
+    let rows: Vec<&Issue> = ids.iter().filter_map(|id| g.get(id)).collect();
+    let row_opts = RowOpts {
+        prefix: None,
+        dim: &[],
+        on_screen: ids.clone(),
+        annotate: Annotation::Demand,
+        progress: false,
+        show_fields: Vec::new(),
+        abbrev: Some(abbrev),
+    };
+    Ok(render_rows(&g, &rows, &row_opts).join("\n"))
 }
 
 pub(crate) fn cmd_show(ctx: &Ctx, token: &str) -> Result<String, String> {

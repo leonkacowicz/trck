@@ -222,6 +222,8 @@ const KNOWN_FLAGS: &[(&str, usize, &[&str])] = &[
         ],
     ),
     ("show", 0, &["--dir", "--json"]),
+    ("ready", 0, &["--dir", "--next", "--json"]),
+    ("next", 0, &["--dir", "--json"]),
 ];
 
 /// How many positionals each verb requires.
@@ -349,6 +351,14 @@ fn dispatch(raw: &[String]) -> Result<String, String> {
         "list" | "tree" => {
             let ctx = context(&args)?;
             query::cmd_list(&ctx, &list_opts(&args))
+        }
+        verb @ ("ready" | "next") => {
+            let ctx = context(&args)?;
+            query::cmd_ready(
+                &ctx,
+                args.positional_at(0),
+                verb == "next" || args.has("--next"),
+            )
         }
         "show" => {
             let ctx = context(&args)?;

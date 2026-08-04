@@ -198,12 +198,51 @@ pub(crate) fn block_annotations(g: &Graph, id: &str, on_screen: &[String]) -> St
     }
 }
 
+/// The ` ↑<priority>(#id)` suffix naming why a row outranks its own priority: the
+/// highest-priority issue waiting on it, coloured as that priority. Empty when the row is
+/// its own maximum, which most rows are.
+///
+/// `ready` sorts by the demand cone, so without this a `medium` row sits above a `high`
+/// one with nothing on screen to explain it. It rides the same trailing slot `list` uses
+/// for its `needs`/`blocks` notes rather than widening the priority column.
+pub(crate) fn demand_annotation(
+    g: &Graph,
+    id: &str,
+    abbrev: Option<&BTreeMap<String, usize>>,
+) -> String {
+    let Some(src) = g.demand_source(id) else {
+        return String::new();
+    };
+    let Some(row) = g.get(&src) else {
+        return String::new();
+    };
+    format!(
+        "  {}({})",
+        paint(
+            &format!("↑{}", row.priority),
+            &priority_codes(&row.priority)
+        ),
+        hl_id(&src, abbrev, true)
+    )
+}
+
+/// The trailing note a view attaches to each row. `list` explains what a row is waiting
+/// on; `ready` explains why it ranks where it does. They occupy the same slot, and no
+/// view wants both.
+#[derive(PartialEq, Eq)]
+pub(crate) enum Annotation {
+    None,
+    Blocking,
+    Demand,
+}
+
 /// Everything a row needs beyond the issue itself.
 pub(crate) struct RowOpts<'a> {
     pub(crate) prefix: Option<&'a BTreeMap<String, String>>,
     pub(crate) dim: &'a [String],
     pub(crate) on_screen: Vec<String>,
-    pub(crate) annotate: bool,
+    /// Which trailing note to attach, if any.
+    pub(crate) annotate: Annotation,
     pub(crate) progress: bool,
     pub(crate) show_fields: Vec<String>,
     pub(crate) abbrev: Option<BTreeMap<String, usize>>,
@@ -251,10 +290,10 @@ pub(crate) fn render_rows(g: &Graph, rows: &[&Issue], opts: &RowOpts) -> Vec<Str
         } else {
             format!(" [{}]", tags.join(" "))
         };
-        let ann = if opts.annotate {
-            block_annotations(g, &r.id, &opts.on_screen)
-        } else {
-            String::new()
+        let ann = match opts.annotate {
+            Annotation::None => String::new(),
+            Annotation::Blocking => block_annotations(g, &r.id, &opts.on_screen),
+            Annotation::Demand => demand_annotation(g, &r.id, opts.abbrev.as_ref()),
         };
         let fsuf = field_suffix(r, &opts.show_fields);
 
