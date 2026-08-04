@@ -21,7 +21,7 @@ MODEL
   status      every issue has exactly one of the four; move it with mv /
               start / review / done. Work sitting in in-review stays out of
               ready/next -- nothing there to pick up -- but still blocks.
-  metadata    priority, points, parent, spec, pr, title, slug -- change
+  metadata    priority, points, parent, spec, review_url, title, slug -- change
               with `trck set` (NOT by editing index.jsonl). labels -- a flat
               set of free-text tags; change with `trck label`.
   hierarchy   --parent builds an epic tree (containment); an issue with
@@ -103,7 +103,8 @@ def build_parser() -> argparse.ArgumentParser:
     n.add_argument("--parent", help="id of the epic to nest this under")
     n.add_argument("--depends", help="comma-separated ids this issue depends on (must be done first)")
     n.add_argument("--spec", help="path to a spec/design doc")
-    n.add_argument("--pr", help="pull-request URL (absolute http(s) link)")
+    n.add_argument("--review-url", dest="review_url",
+                   help="where the output will be reviewed (absolute http(s) URL)")
     n.add_argument("--slug", help="override the auto-derived filename slug")
     n.set_defaults(func=cmd_new, priority=None)
 
@@ -114,7 +115,8 @@ def build_parser() -> argparse.ArgumentParser:
     mv.add_argument("--resolution",
                     help="why it closed without shipping (superseded, wontfix, "
                          "duplicate); only valid when moving to a terminal status")
-    mv.add_argument("--pr", help="record a pull-request URL as part of the move")
+    mv.add_argument("--review-url", dest="review_url",
+                    help="record a review URL as part of the move")
     mv.set_defaults(func=cmd_mv)
 
     st = sub.add_parser("start", help="alias: move to ongoing",
@@ -153,7 +155,8 @@ def build_parser() -> argparse.ArgumentParser:
     se.add_argument("--points", type=int, help="leaf weight (error if the issue has children)")
     se.add_argument("--parent", help="epic id, or 'none' to clear")
     se.add_argument("--spec", help="path, or 'none' to clear")
-    se.add_argument("--pr", help="pull-request URL, or 'none' to clear")
+    se.add_argument("--review-url", dest="review_url",
+                    help="review URL, or 'none' to clear")
     se.add_argument("--title", help="new title (also rewrites the body's H1)")
     se.add_argument("--slug", help="override the filename slug (renames the file)")
     se.add_argument("--field", action="append", metavar="KEY=VALUE",

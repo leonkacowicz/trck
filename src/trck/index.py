@@ -11,7 +11,7 @@ from .constants import FIELD_KEY_RE, ITEMS_DIR, die
 # --------------------------------------------------------------------------- #
 CANON_KEYS = [
     "id", "slug", "title", "status", "priority", "points", "parent",
-    "labels", "depends_on", "spec", "pr", "created", "started", "closed",
+    "labels", "depends_on", "spec", "review_url", "created", "started", "closed",
     "resolution", "manual_status", "legacy_id",
 ]
 
@@ -28,7 +28,7 @@ FIELD_DEFAULTS = {
     "labels": [],
     "depends_on": [],
     "spec": None,
-    "pr": None,
+    "review_url": None,
     "started": None,
     "closed": None,
     "resolution": None,
@@ -37,12 +37,23 @@ FIELD_DEFAULTS = {
 }
 
 
+# Index keys that `from_dict` rewrites on read. A custom field may not take one of
+# these names: it would be silently absorbed by the migration on the next load.
+LEGACY_KEYS = {
+    "milestone": "it migrates to a label; use `trck label`",
+    "pr": "it migrates to `review_url`; use --review-url",
+}
+
+
 def check_field_key(key: str) -> str | None:
     """Validate a custom-field key. Returns an error message, or None if OK.
     Custom fields are free-form, but their keys must be slug-like and must not
-    collide with a built-in field name (use the matching flag/verb for those)."""
+    collide with a built-in field name (use the matching flag/verb for those) or
+    with a legacy name that `from_dict` migrates away on read."""
     if key in CANON_KEYS:
         return f"'{key}' is a built-in field; use its flag/verb, not --field/--unset"
+    if key in LEGACY_KEYS:
+        return f"'{key}' is a legacy field name ({LEGACY_KEYS[key]}), not a custom field"
     if not FIELD_KEY_RE.match(key):
         return f"invalid field key '{key}' (must match [a-z][a-z0-9_-]*)"
     return None
@@ -74,7 +85,7 @@ class Issue:
     labels: list[str] = field(default_factory=list)
     depends_on: list[str] = field(default_factory=list)
     spec: str | None = None
-    pr: str | None = None
+    review_url: str | None = None
     created: str | None = None
     started: str | None = None
     closed: str | None = None
@@ -108,6 +119,12 @@ class Issue:
             if ms not in labels:
                 labels.append(ms)
             d["labels"] = labels
+        # `pr` -> `review_url`: the field was named for the common case, but what it
+        # records is wherever the in-review output is being judged. Read-time only, so
+        # an unmigrated tracker keeps working and is rewritten on its next mutation.
+        legacy_pr = d.pop("pr", None)
+        if legacy_pr is not None and d.get("review_url") is None:
+            d["review_url"] = legacy_pr
 
         def bad(name, msg):
             raise ValueError(f"field {name!r} {msg}")
@@ -141,7 +158,7 @@ class Issue:
                 bad("labels", f"must contain only strings, got {lab!r}")
         for dep in (d.get("depends_on") or []):
             want_id("depends_on", dep)
-        for k in ("spec", "pr", "created", "started", "closed", "resolution"):
+        for k in ("spec", "review_url", "created", "started", "closed", "resolution"):
             if d.get(k) is not None and not isinstance(d[k], str):
                 bad(k, f"must be a string, got {d[k]!r}")
         if "manual_status" in d and not isinstance(d["manual_status"], bool):

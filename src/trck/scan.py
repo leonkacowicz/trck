@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .config import check_points, check_pr, check_priority, check_resolution, check_vestigial_vocabulary, reconcile, status_names
+from .config import check_points, check_priority, check_resolution, check_review_url, check_vestigial_vocabulary, reconcile, status_names
 from .constants import FIELD_KEY_RE, FILENAME_RE, ITEMS_DIR, SLUG_RE, die
 from .graph import Graph
 from .index import Ctx, DEFAULT_POINTS, Issue, file_id, filename, load_index
@@ -70,7 +70,7 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
         # the target is terminal. So a non-terminal row carrying either is a row no verb
         # can have written — a hand-edit, or a field-wise merge of index.jsonl that
         # resolved the tuple's members independently (#ey2aruc). Two separate errors: a
-        # merge can produce either one alone. `pr` is deliberately not in this set — a
+        # merge can produce either one alone. `review_url` is deliberately not in this set — a
         # closed issue keeping its pull-request link is the review record for the change
         # that resolved it, and an issue in flight linking one is what `review` does.
         if not g.is_terminal(r):
@@ -80,7 +80,7 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
             if r.closed is not None:
                 errors.append(f"#{iid} is '{r.status}' (not terminal) but carries "
                               f"closed '{r.closed}'")
-        if r.pr is not None and (m := check_pr(r.pr)):
+        if r.review_url is not None and (m := check_review_url(r.review_url)):
             errors.append(f"#{iid} {m}")
         for k, v in r.extra.items():
             if not FIELD_KEY_RE.match(k):

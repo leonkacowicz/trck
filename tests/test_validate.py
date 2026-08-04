@@ -330,14 +330,14 @@ class TestLifecycleTupleInvariant(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             errors = self.errors_for(tmp, status="done",
                                      closed="2026-07-30T00:00:00Z",
-                                     pr="https://github.com/o/r/pull/12")
+                                     review_url="https://github.com/o/r/pull/12")
             self.assertEqual(errors, [])
 
     def test_non_terminal_with_a_pr_stays_valid(self):
         """Linking a PR while work is in flight is exactly what `trck review` does."""
         with TemporaryDirectory() as tmp:
             errors = self.errors_for(tmp, status="ongoing",
-                                     pr="https://github.com/o/r/pull/12")
+                                     review_url="https://github.com/o/r/pull/12")
             self.assertEqual(errors, [])
 
     def test_plain_non_terminal_row_is_clean(self):

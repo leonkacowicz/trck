@@ -10,7 +10,7 @@ import shutil
 import subprocess
 import sys
 from .cmd_mutate import cmd_mv
-from .config import DEFAULT_CONFIG, DONE, IN_REVIEW, ONGOING, check_pr, detect_legacy_layout, is_terminal, resolve_tracker_dir
+from .config import DEFAULT_CONFIG, DONE, IN_REVIEW, ONGOING, check_review_url, detect_legacy_layout, is_terminal, resolve_tracker_dir
 from .constants import DEFAULT_UPDATE_REPO, FILENAME_RE, ID_ALPHABET, ID_LEN, ITEMS_DIR, SELF_PATH, SINCE_RE, __version__, die
 from .finalize import finalize
 from .graph import Graph, _existing_ids
@@ -219,9 +219,9 @@ def cmd_review(args) -> None:
     one move, one finalize, one line of output."""
     build_ctx_or_die(args)
     url = getattr(args, "url", None)
-    if url is not None and (m := check_pr(url)):
+    if url is not None and (m := check_review_url(url)):
         die(m)
-    cmd_mv(ns_like(args, status=IN_REVIEW, resolution=None, pr=url))
+    cmd_mv(ns_like(args, status=IN_REVIEW, resolution=None, review_url=url))
 
 
 def cmd_done(args) -> None:

@@ -1,5 +1,4 @@
-"""The `in-review` waiting state, the `actionable` status flag, the built-in `pr`
-field, and the `review` alias verb."""
+"""The `in-review` state, the built-in `review_url` field, and the `review` alias verb."""
 import io
 import json
 import unittest
@@ -19,7 +18,7 @@ class Base(unittest.TestCase):
         args = ns(dir=str(d), title=title, priority=over.pop("priority", "high"),
                   parent=over.pop("parent", None),
                   depends=over.pop("depends", None), spec=None, slug=None,
-                  points=over.pop("points", None), pr=over.pop("pr", None))
+                  points=over.pop("points", None), review_url=over.pop("review_url", None))
         buf = io.StringIO()
         with redirect_stdout(buf):
             self.t.cmd_new(args)
@@ -27,7 +26,7 @@ class Base(unittest.TestCase):
 
     def mv(self, d, iid, status, **over):
         args = ns(dir=str(d), id=iid, status=status,
-                  resolution=over.pop("resolution", None), pr=over.pop("pr", None))
+                  resolution=over.pop("resolution", None), review_url=over.pop("review_url", None))
         buf = io.StringIO()
         with redirect_stdout(buf):
             self.t.cmd_mv(args)
@@ -35,7 +34,7 @@ class Base(unittest.TestCase):
     def set_(self, d, iid, **over):
         args = ns(dir=str(d), id=iid, priority=None, points=None, parent=None,
                   spec=None, title=None, slug=None, field=None,
-                  unset=None, pr=over.pop("pr", None))
+                  unset=None, review_url=over.pop("review_url", None))
         buf = io.StringIO()
         with redirect_stdout(buf):
             self.t.cmd_set(args)
@@ -161,99 +160,99 @@ class TestActionableGatesReady(Base):
             self.assertEqual(self.errors(d), [])
 
 # --------------------------------------------------------------------------- #
-# the pr field
+# the review_url field
 # --------------------------------------------------------------------------- #
 URL = "https://github.com/leonkacowicz/trck/pull/12"
 
 
-class TestPrField(Base):
+class TestReviewUrlField(Base):
     def raw(self, d):
         return [json.loads(l) for l in
                 (Path(d) / "index.jsonl").read_text().splitlines() if l.strip()]
 
-    def test_pr_is_a_canonical_field_after_spec(self):
+    def test_review_url_is_a_canonical_field_after_spec(self):
         keys = self.t.CANON_KEYS
-        self.assertEqual(keys[keys.index("spec") + 1], "pr")
+        self.assertEqual(keys[keys.index("spec") + 1], "review_url")
         self.assertIsNone(self.t.Issue(id="a", slug="s", title="T",
-                                       status="backlog", priority="low").pr)
+                                       status="backlog", priority="low").review_url)
 
-    def test_absent_pr_is_not_serialized(self):
+    def test_absent_review_url_is_not_serialized(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d, "A")
-            self.assertNotIn("pr", self.raw(d)[0])
+            self.assertNotIn("review_url", self.raw(d)[0])
 
-    def test_pr_round_trips_through_the_index(self):
+    def test_review_url_round_trips_through_the_index(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            a = self.seed(d, "A", pr=URL)
-            self.assertEqual(self.raw(d)[0]["pr"], URL)
-            self.assertEqual(self.rows(d)[a].pr, URL)
+            a = self.seed(d, "A", review_url=URL)
+            self.assertEqual(self.raw(d)[0]["review_url"], URL)
+            self.assertEqual(self.rows(d)[a].review_url, URL)
 
-    def test_check_pr_accepts_http_urls_only(self):
-        self.assertIsNone(self.t.check_pr(URL))
-        self.assertIsNone(self.t.check_pr("http://example.test/pr/1"))
+    def test_check_review_url_accepts_http_urls_only(self):
+        self.assertIsNone(self.t.check_review_url(URL))
+        self.assertIsNone(self.t.check_review_url("http://example.test/pr/1"))
         for bad in ("", "not a url", "example.com/pr/1", "ftp://x/y",
                     "https://has space/x"):
-            self.assertIsNotNone(self.t.check_pr(bad), bad)
-        self.assertIn("http", self.t.check_pr("nope"))
+            self.assertIsNotNone(self.t.check_review_url(bad), bad)
+        self.assertIn("http", self.t.check_review_url("nope"))
 
-    def test_from_dict_rejects_a_non_string_pr(self):
+    def test_from_dict_rejects_a_non_string_review_url(self):
         with self.assertRaises(ValueError):
             self.t.Issue.from_dict({"id": "a", "slug": "s", "title": "T",
                                     "kind": "task", "status": "backlog",
-                                    "priority": "low", "pr": 12})
+                                    "priority": "low", "review_url": 12})
 
-    def test_check_reports_a_malformed_pr(self):
+    def test_check_reports_a_malformed_review_url(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             a = self.seed(d, "A")
             path = Path(d) / "index.jsonl"
             row = json.loads(path.read_text().strip())
-            row["pr"] = "pull/12"
+            row["review_url"] = "pull/12"
             path.write_text(json.dumps(row) + "\n")
-            self.assertTrue(any("pr" in e for e in self.errors(d)))
+            self.assertTrue(any("review_url" in e for e in self.errors(d)))
 
-    def test_pr_is_reserved_against_custom_fields(self):
-        msg = self.t.check_field_key("pr")
+    def test_review_url_is_reserved_against_custom_fields(self):
+        msg = self.t.check_field_key("review_url")
         self.assertIsNotNone(msg)
         self.assertIn("built-in", msg)
 
-    def test_show_prints_the_pr(self):
+    def test_show_review_urlints_the_pr(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            a = self.seed(d, "A", pr=URL)
+            a = self.seed(d, "A", review_url=URL)
             buf = io.StringIO()
             with redirect_stdout(buf):
                 self.t.cmd_show(ns(dir=str(d), id=a, json=False))
             self.assertIn(URL, buf.getvalue())
 
 
-class TestPrCli(Base):
-    def test_new_pr_stores_it(self):
+class TestReviewUrlCli(Base):
+    def test_new_review_url_stores_it(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            a = self.seed(d, "A", pr=URL)
-            self.assertEqual(self.rows(d)[a].pr, URL)
+            a = self.seed(d, "A", review_url=URL)
+            self.assertEqual(self.rows(d)[a].review_url, URL)
             self.assertEqual(self.errors(d), [])
 
-    def test_set_pr_sets_and_clears(self):
+    def test_set_review_url_sets_and_clears(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             a = self.seed(d, "A")
-            self.set_(d, a, pr=URL)
-            self.assertEqual(self.rows(d)[a].pr, URL)
-            self.set_(d, a, pr="none")
-            self.assertIsNone(self.rows(d)[a].pr)
+            self.set_(d, a, review_url=URL)
+            self.assertEqual(self.rows(d)[a].review_url, URL)
+            self.set_(d, a, review_url="none")
+            self.assertIsNone(self.rows(d)[a].review_url)
 
-    def test_mv_records_the_pr_as_part_of_the_move(self):
+    def test_mv_records_the_review_url_as_part_of_the_move(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             a = self.seed(d, "A")
-            self.mv(d, a, "in-review", pr=URL)
+            self.mv(d, a, "in-review", review_url=URL)
             row = self.rows(d)[a]
             self.assertEqual(row.status, "in-review")
-            self.assertEqual(row.pr, URL)
+            self.assertEqual(row.review_url, URL)
             self.assertEqual(self.errors(d), [])
 
     def test_every_entry_point_rejects_a_bad_url(self):
@@ -261,13 +260,13 @@ class TestPrCli(Base):
             d = make_tracker(tmp, {})
             err = io.StringIO()
             with redirect_stderr(err), self.assertRaises(SystemExit):
-                self.seed(d, "A", pr="nope")
+                self.seed(d, "A", review_url="nope")
             a = self.seed(d, "A")
             with redirect_stderr(err), self.assertRaises(SystemExit):
-                self.set_(d, a, pr="nope")
+                self.set_(d, a, review_url="nope")
             with redirect_stderr(err), self.assertRaises(SystemExit):
-                self.mv(d, a, "ongoing", pr="nope")
-            self.assertEqual(self.rows(d)[a].pr, None)
+                self.mv(d, a, "ongoing", review_url="nope")
+            self.assertEqual(self.rows(d)[a].review_url, None)
 
 
 # --------------------------------------------------------------------------- #
@@ -280,7 +279,7 @@ class TestReviewVerb(Base):
             a = self.seed(d, "A")
             self.review(d, a)
             self.assertEqual(self.rows(d)[a].status, "in-review")
-            self.assertIsNone(self.rows(d)[a].pr)
+            self.assertIsNone(self.rows(d)[a].review_url)
 
     def test_review_with_a_url_moves_and_links_in_one_step(self):
         with TemporaryDirectory() as tmp:
@@ -289,7 +288,7 @@ class TestReviewVerb(Base):
             out = self.review(d, a, URL)
             row = self.rows(d)[a]
             self.assertEqual(row.status, "in-review")
-            self.assertEqual(row.pr, URL)
+            self.assertEqual(row.review_url, URL)
             self.assertEqual(len(out.strip().splitlines()), 1)  # one move, one line
             self.assertEqual(self.errors(d), [])
 
@@ -305,34 +304,34 @@ class TestReviewVerb(Base):
 # --------------------------------------------------------------------------- #
 # rendering
 # --------------------------------------------------------------------------- #
-class TestPrRendering(Base):
+class TestReviewUrlRendering(Base):
     def summary(self, d):
         return self.t.generate_summary(self.ctx(d))
 
-    def test_pr_tag_is_empty_without_a_pr(self):
+    def test_review_url_tag_is_empty_without_a_pr(self):
         r = self.t.Issue(id="a", slug="s", title="T",
                          status="backlog", priority="low")
-        self.assertEqual(self.t.pr_tag(r), "")
-        r.pr = URL
-        self.assertIn(URL, self.t.pr_tag(r))
+        self.assertEqual(self.t.review_tag(r), "")
+        r.review_url = URL
+        self.assertIn(URL, self.t.review_tag(r))
 
-    def test_summary_links_a_standalone_issues_pr(self):
+    def test_summary_links_a_standalone_issues_review_url(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            a = self.seed(d, "A", pr=URL)
-            self.assertIn(f"[PR]({URL})", self.summary(d))
+            a = self.seed(d, "A", review_url=URL)
+            self.assertIn(f"[review]({URL})", self.summary(d))
 
     def test_summary_links_a_parent_and_its_child(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             epic = self.seed(d, "Epic")
-            kid = self.seed(d, "Kid", parent=epic, pr=URL)
-            self.set_(d, epic, pr="https://example.test/pull/1")
+            kid = self.seed(d, "Kid", parent=epic, review_url=URL)
+            self.set_(d, epic, review_url="https://example.test/pull/1")
             text = self.summary(d)
-            self.assertIn("PR: [https://example.test/pull/1]", text)
-            self.assertIn(f"[PR]({URL})", text)
+            self.assertIn("Review: [https://example.test/pull/1]", text)
+            self.assertIn(f"[review]({URL})", text)
 
-    def test_summary_without_prs_is_unchanged(self):
+    def test_summary_without_review_urls_is_unchanged(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.seed(d, "A")
@@ -341,20 +340,67 @@ class TestPrRendering(Base):
     def test_show_field_reads_canonical_fields_too(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            a = self.seed(d, "A", pr=URL)
+            a = self.seed(d, "A", review_url=URL)
             b = self.seed(d, "B")
             buf = io.StringIO()
             with redirect_stdout(buf):
                 self.t.cmd_list(ns(dir=str(d), id=None, flat=True, all=True,
                                    status=None, priority=None,
                                    label=None, parent=None, match=None, field=None,
-                                   show_field=["pr"], sort=None, blocked=False,
+                                   show_field=["review_url"], sort=None, blocked=False,
                                    orphan=False, paths=False))
             out = buf.getvalue()
-            self.assertIn(f"pr={URL}", out)
+            self.assertIn(f"review_url={URL}", out)
             # the row without one carries no empty column
-            self.assertNotIn("pr=\n", out)
+            self.assertNotIn("review_url=\n", out)
 
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestPrMigratesToReviewUrl(Base):
+    """`pr` was named for the common case; what the field records is wherever the
+    in-review output is being judged — a PR, a design doc, a vendor ticket. The rename
+    is read-time, so an existing tracker keeps working and is rewritten on its next
+    mutation."""
+
+    def raw(self, d):
+        return [json.loads(l) for l in
+                (Path(d) / "index.jsonl").read_text().splitlines() if l.strip()]
+
+    BASE = {"id": "a1b2c3d", "slug": "s", "title": "T",
+            "status": "backlog", "priority": "low"}
+
+    def test_a_legacy_pr_row_loads_as_review_url(self):
+        r = self.t.Issue.from_dict({**self.BASE, "pr": URL})
+        self.assertEqual(r.review_url, URL)
+        self.assertNotIn("pr", r.extra)      # not left behind as a custom field
+        self.assertNotIn("pr", r.to_canonical())
+
+    def test_an_explicit_review_url_wins_over_a_stale_pr(self):
+        r = self.t.Issue.from_dict(
+            {**self.BASE, "pr": "https://example.test/old", "review_url": URL})
+        self.assertEqual(r.review_url, URL)
+
+    def test_a_legacy_row_is_rewritten_on_the_next_mutation(self):
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {})
+            a = self.seed(d, "A")
+            path = Path(d) / "index.jsonl"
+            row = json.loads(path.read_text().strip())
+            row["pr"] = URL
+            path.write_text(json.dumps(row) + "\n")
+            self.assertEqual(self.rows(d)[a].review_url, URL)
+            self.set_(d, a, points=2)
+            self.assertEqual(self.raw(d)[0]["review_url"], URL)
+            self.assertNotIn("pr", self.raw(d)[0])
+
+    def test_the_legacy_names_are_not_available_as_custom_fields(self):
+        """Both would be swallowed by a migration on the next load, so `--field pr=…`
+        has to be refused rather than silently rewritten."""
+        for key, hint in (("pr", "review_url"), ("milestone", "label")):
+            msg = self.t.check_field_key(key)
+            self.assertIsNotNone(msg, key)
+            self.assertIn("legacy", msg)
+            self.assertIn(hint, msg)

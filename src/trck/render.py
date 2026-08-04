@@ -117,9 +117,9 @@ def label_tag(r: Issue) -> str:
     return " [" + " ".join(labels) + "]" if labels else ""
 
 
-def pr_tag(r: Issue) -> str:
-    """A markdown ` · [PR](url)` suffix for SUMMARY.md rows; empty without a PR."""
-    return f" · [PR]({r.pr})" if r.pr else ""
+def review_tag(r: Issue) -> str:
+    """A markdown ` · [review](url)` suffix for SUMMARY.md rows; empty without one."""
+    return f" · [review]({r.review_url})" if r.review_url else ""
 
 
 def block_annotations(g: Graph, r: Issue, on_screen=frozenset()) -> str:

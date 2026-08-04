@@ -125,10 +125,10 @@ def check_resolution(cfg: dict, value: str) -> str | None:
     return f"bad resolution '{value}' (expected one of: {', '.join(RESOLUTIONS)})"
 
 
-def check_pr(value: str) -> str | None:
+def check_review_url(value: str) -> str | None:
     if isinstance(value, str) and PR_URL_RE.match(value):
         return None
-    return f"bad pr {value!r} (must be an absolute http(s) URL)"
+    return f"bad review_url {value!r} (must be an absolute http(s) URL)"
 
 
 def check_points(value: int) -> str | None:

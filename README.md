@@ -223,20 +223,25 @@ points-weighted rollup `%` is computed from those children and shown after the t
 every parent row in `trck list`/`tree` (leaf rows carry none) as well as in `SUMMARY.md`.
 Filter a list to one epic's children with `trck list --parent NNN`.
 
-**Pull requests** — when a PR opens, `trck review NNN <url>` moves the issue to the review
-status *and* records the URL in its built-in `pr` field, in one move:
+**Review links** — `in-review` means the output is waiting on someone else's judgement,
+and `review_url` records *where*. `trck review NNN <url>` moves the issue and links it in
+one move:
 
-    trck review 42 https://github.com/you/repo/pull/12   # -> in-review, PR linked
-    trck new "Fix login" --pr https://…/pull/9           # or set it at creation
-    trck set 42 --pr https://…/pull/13                   # relink; `--pr none` clears it
-    trck mv 42 ongoing --pr https://…/pull/13            # or record it on any move
-    trck list --show-field pr                            # show it as a column
+    trck review 42 https://github.com/you/repo/pull/12    # -> in-review, linked
+    trck new "Fix login" --review-url https://…/pull/9    # or set it at creation
+    trck set 42 --review-url https://…/pull/13            # relink; `none` clears it
+    trck mv 42 ongoing --review-url https://…/pull/13     # or record it on any move
+    trck list --show-field review_url                     # show it as a column
 
 The value must be an absolute `http(s)` URL (`check` enforces it) but is otherwise
-forge-agnostic — trck never talks to GitHub. It shows in `trck show`, links from `SUMMARY.md`,
-and renders as a clickable anchor in `tools/trck-html`. An issue in `in-review` drops out of
-`ready`/`next` while it waits — there is nothing there to pick up — yet still blocks its
-dependents until it's `done`.
+forge-agnostic — trck never talks to GitHub, and the URL need not be a pull request at all
+(a design doc out for comment, a vendor ticket, a sign-off thread). It shows in `trck show`,
+links from `SUMMARY.md`, and renders as a clickable anchor in `tools/trck-html`. An issue in
+`in-review` drops out of `ready`/`next` while it waits — there is nothing there to pick up —
+yet still blocks its dependents until it's `done`.
+
+A tracker written before the rename carries `pr` instead; it is migrated on read and
+rewritten on the issue's next mutation, so nothing breaks and no migration verb is needed.
 
 Labels: tag issues with a flat, multi-valued set of free-text labels via
 `trck label NNN --add X --remove Y`, then filter with `trck list --label X`. Labels show

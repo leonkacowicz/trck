@@ -185,15 +185,15 @@ class TestDataIsland(HtmlTestBase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             url = "https://github.com/leonkacowicz/trck/pull/12"
-            self.seed(d, "Alpha", pr=url)
+            self.seed(d, "Alpha", review_url=url)
             self.seed(d, "Beta")
             html = self.render(d)
             data = island(html)
-            prs = {i["title"]: i["pr"] for i in data["issues"]}
+            prs = {i["title"]: i["review_url"] for i in data["issues"]}
             self.assertEqual(prs["Alpha"], url)
             self.assertIsNone(prs["Beta"])
             # the app builds the anchor from the exported value
-            self.assertIn("prLink", html)
+            self.assertIn("reviewLink", html)
 
     def test_config_vocabulary_is_embedded(self):
         with TemporaryDirectory() as tmp:

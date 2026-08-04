@@ -199,10 +199,10 @@ def check_resolution(cfg: dict, value: str) -> str | None:
     return f"bad resolution '{value}' (expected one of: {', '.join(RESOLUTIONS)})"
 
 
-def check_pr(value: str) -> str | None:
+def check_review_url(value: str) -> str | None:
     if isinstance(value, str) and PR_URL_RE.match(value):
         return None
-    return f"bad pr {value!r} (must be an absolute http(s) URL)"
+    return f"bad review_url {value!r} (must be an absolute http(s) URL)"
 
 
 def check_points(value: int) -> str | None:
@@ -343,7 +343,7 @@ def resolve_tracker_dir_or_die(dir_opt, env=None) -> Path:
 # --------------------------------------------------------------------------- #
 CANON_KEYS = [
     "id", "slug", "title", "status", "priority", "points", "parent",
-    "labels", "depends_on", "spec", "pr", "created", "started", "closed",
+    "labels", "depends_on", "spec", "review_url", "created", "started", "closed",
     "resolution", "manual_status", "legacy_id",
 ]
 
@@ -360,7 +360,7 @@ FIELD_DEFAULTS = {
     "labels": [],
     "depends_on": [],
     "spec": None,
-    "pr": None,
+    "review_url": None,
     "started": None,
     "closed": None,
     "resolution": None,
@@ -369,12 +369,23 @@ FIELD_DEFAULTS = {
 }
 
 
+# Index keys that `from_dict` rewrites on read. A custom field may not take one of
+# these names: it would be silently absorbed by the migration on the next load.
+LEGACY_KEYS = {
+    "milestone": "it migrates to a label; use `trck label`",
+    "pr": "it migrates to `review_url`; use --review-url",
+}
+
+
 def check_field_key(key: str) -> str | None:
     """Validate a custom-field key. Returns an error message, or None if OK.
     Custom fields are free-form, but their keys must be slug-like and must not
-    collide with a built-in field name (use the matching flag/verb for those)."""
+    collide with a built-in field name (use the matching flag/verb for those) or
+    with a legacy name that `from_dict` migrates away on read."""
     if key in CANON_KEYS:
         return f"'{key}' is a built-in field; use its flag/verb, not --field/--unset"
+    if key in LEGACY_KEYS:
+        return f"'{key}' is a legacy field name ({LEGACY_KEYS[key]}), not a custom field"
     if not FIELD_KEY_RE.match(key):
         return f"invalid field key '{key}' (must match [a-z][a-z0-9_-]*)"
     return None
@@ -406,7 +417,7 @@ class Issue:
     labels: list[str] = field(default_factory=list)
     depends_on: list[str] = field(default_factory=list)
     spec: str | None = None
-    pr: str | None = None
+    review_url: str | None = None
     created: str | None = None
     started: str | None = None
     closed: str | None = None
@@ -440,6 +451,12 @@ class Issue:
             if ms not in labels:
                 labels.append(ms)
             d["labels"] = labels
+        # `pr` -> `review_url`: the field was named for the common case, but what it
+        # records is wherever the in-review output is being judged. Read-time only, so
+        # an unmigrated tracker keeps working and is rewritten on its next mutation.
+        legacy_pr = d.pop("pr", None)
+        if legacy_pr is not None and d.get("review_url") is None:
+            d["review_url"] = legacy_pr
 
         def bad(name, msg):
             raise ValueError(f"field {name!r} {msg}")
@@ -473,7 +490,7 @@ class Issue:
                 bad("labels", f"must contain only strings, got {lab!r}")
         for dep in (d.get("depends_on") or []):
             want_id("depends_on", dep)
-        for k in ("spec", "pr", "created", "started", "closed", "resolution"):
+        for k in ("spec", "review_url", "created", "started", "closed", "resolution"):
             if d.get(k) is not None and not isinstance(d[k], str):
                 bad(k, f"must be a string, got {d[k]!r}")
         if "manual_status" in d and not isinstance(d["manual_status"], bool):
@@ -1793,7 +1810,7 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
         # the target is terminal. So a non-terminal row carrying either is a row no verb
         # can have written — a hand-edit, or a field-wise merge of index.jsonl that
         # resolved the tuple's members independently (#ey2aruc). Two separate errors: a
-        # merge can produce either one alone. `pr` is deliberately not in this set — a
+        # merge can produce either one alone. `review_url` is deliberately not in this set — a
         # closed issue keeping its pull-request link is the review record for the change
         # that resolved it, and an issue in flight linking one is what `review` does.
         if not g.is_terminal(r):
@@ -1803,7 +1820,7 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
             if r.closed is not None:
                 errors.append(f"#{iid} is '{r.status}' (not terminal) but carries "
                               f"closed '{r.closed}'")
-        if r.pr is not None and (m := check_pr(r.pr)):
+        if r.review_url is not None and (m := check_review_url(r.review_url)):
             errors.append(f"#{iid} {m}")
         for k, v in r.extra.items():
             if not FIELD_KEY_RE.match(k):
@@ -1965,9 +1982,9 @@ def label_tag(r: Issue) -> str:
     return " [" + " ".join(labels) + "]" if labels else ""
 
 
-def pr_tag(r: Issue) -> str:
-    """A markdown ` · [PR](url)` suffix for SUMMARY.md rows; empty without a PR."""
-    return f" · [PR]({r.pr})" if r.pr else ""
+def review_tag(r: Issue) -> str:
+    """A markdown ` · [review](url)` suffix for SUMMARY.md rows; empty without one."""
+    return f" · [review]({r.review_url})" if r.review_url else ""
 
 
 def block_annotations(g: Graph, r: Issue, on_screen=frozenset()) -> str:
@@ -2464,15 +2481,15 @@ def generate_summary(ctx: Ctx, rows: list | None = None) -> str:
             )
             if parent.spec:
                 out.append(f"Spec: [`{parent.spec}`](../{parent.spec})")
-            if parent.pr:
-                out.append(f"PR: [{parent.pr}]({parent.pr})")
+            if parent.review_url:
+                out.append(f"Review: [{parent.review_url}]({parent.review_url})")
             if kids:
                 out.append("")
                 for k in kids:
                     box = "x" if g.is_terminal(k) else " "
                     tail = "" if g.is_terminal(k) else f" _({k.status})_"
                     out.append(f"- [{box}] [#{k.id} {k.title}]"
-                               f"({rel_link(k)}){label_tag(k)}{tail}{pr_tag(k)}")
+                               f"({rel_link(k)}){label_tag(k)}{tail}{review_tag(k)}")
             out.append("")
 
     def standalone(s: str):
@@ -2492,7 +2509,7 @@ def generate_summary(ctx: Ctx, rows: list | None = None) -> str:
             if is_terminal(ctx.cfg, status) and r.closed:
                 extra += f" (closed {date_slice(r.closed)})"
             out.append(f"- [#{r.id} {r.title}]({rel_link(r)}) — "
-                       f"_{r.priority}_{label_tag(r)}{extra}{pr_tag(r)}")
+                       f"_{r.priority}_{label_tag(r)}{extra}{review_tag(r)}")
         out.append("")
 
     return "\n".join(out).rstrip() + "\n"
@@ -2597,13 +2614,14 @@ holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
 
 - `trck new "<title>" [--priority …] [--parent ID] [--depends a,b]`
 - `trck mv ID <status>`; `trck start ID` / `trck review ID [URL]` / `trck done ID [--resolution …]` (aliases)
-- `trck set ID [--priority …] [--parent …|none] [--title …] [--pr URL|none] [--field k=v] [--unset k]`
+- `trck set ID [--priority …] [--parent …|none] [--title …] [--review-url URL|none] [--field k=v] [--unset k]`
 - `trck dep ID --add ID2 | --remove ID2`
 - `trck label ID --add X --remove Y`
 - Custom fields: `trck set ID --field assignee=alice`; filter `trck list --field assignee=alice`; sort `--sort field:assignee`; show `--show-field assignee`.
-- Pull requests: `trck review ID https://…/pull/12` moves to the review status **and** links
-  the PR in one step. An issue there is out of `ready`/`next` (nothing to pick up) but still
-  **blocks** whatever depends on it until the PR lands. `trck set ID --pr none` unlinks.
+- Review links: `trck review ID https://…/pull/12` moves the issue to `in-review` **and**
+  records the URL in its `review_url` field, in one step. An issue there is out of
+  `ready`/`next` (nothing to pick up) but still **blocks** whatever depends on it until it
+  is `done`. `trck set ID --review-url none` unlinks.
 - `trck list` · `trck tree` · `trck deps ID` · `trck show ID` · `trck check` · `trck summary`
 - `trck repo normalize` — rewrite `index.jsonl` in canonical slim form (no data change)
 - `trck repo renumber` — convert legacy integer ids to random alphanumeric ids
@@ -2779,15 +2797,16 @@ def cmd_new(args) -> None:
     points = DEFAULT_POINTS if rawpoints is None else rawpoints
     if (m := check_points(points)):
         die(m)
-    pr = getattr(args, "pr", None)
-    if pr is not None and (m := check_pr(pr)):
+    review_url = getattr(args, "review_url", None)
+    if review_url is not None and (m := check_review_url(review_url)):
         die(m)
     parent = None if args.parent is None else resolve_ref(rows, args.parent).id
     deps = [resolve_ref(rows, tok).id for tok in parse_ids(args.depends)]
     row = Issue(
         id=iid, slug=slug, title=args.title,
         status=initial_status(ctx.cfg), priority=priority, points=points,
-        parent=parent, depends_on=deps, spec=args.spec, pr=pr, created=now_utc(),
+        parent=parent, depends_on=deps, spec=args.spec, review_url=review_url,
+        created=now_utc(),
     )
     path = issue_path(ctx, row)
     if path.exists():
@@ -2816,12 +2835,12 @@ def cmd_mv(args) -> None:
             die(m)
     # A move-time annotation, like --resolution: the moment a PR exists is the moment
     # both facts are known. Unrestricted by status — linking one while ongoing is fine.
-    pr = getattr(args, "pr", None)
-    if pr is not None and (m := check_pr(pr)):
+    review_url = getattr(args, "review_url", None)
+    if review_url is not None and (m := check_review_url(review_url)):
         die(m)
     move_issue(ctx, row, args.status)
-    if pr is not None:
-        row.pr = pr
+    if review_url is not None:
+        row.review_url = review_url
     if resolution is not None:
         row.resolution = resolution
     # Moving a node that has children is an override of the rollup (#67) — but only
@@ -2859,10 +2878,10 @@ def cmd_set(args) -> None:
             row.parent = resolve_ref(rows, args.parent).id
     if args.spec is not None:
         row.spec = None if args.spec == "none" else args.spec
-    if (pr := getattr(args, "pr", None)) is not None:
-        if pr != "none" and (m := check_pr(pr)):
+    if (review_url := getattr(args, "review_url", None)) is not None:
+        if review_url != "none" and (m := check_review_url(review_url)):
             die(m)
-        row.pr = None if pr == "none" else pr
+        row.review_url = None if review_url == "none" else review_url
     for spec in (getattr(args, "field", None) or []):
         if "=" not in spec:
             die(f"--field expects key=value, got '{spec}'")
@@ -3123,7 +3142,7 @@ def print_rows(ctx: Ctx, g: Graph, rows: list[Issue], annotate=None, prefix=None
         ann = annotate(r) if annotate else ""
         fsuf = ""
         if show_fields:
-            # to_dict() so a built-in field (pr, spec, …) is showable too, not just
+            # to_dict() so a built-in field (review_url, spec, …) is showable too, not just
             # a custom one; an unset/empty value contributes no column.
             full = r.to_dict()
             segs = [f"{n}={full[n]}" for n in show_fields
@@ -3529,9 +3548,9 @@ def cmd_review(args) -> None:
     one move, one finalize, one line of output."""
     build_ctx_or_die(args)
     url = getattr(args, "url", None)
-    if url is not None and (m := check_pr(url)):
+    if url is not None and (m := check_review_url(url)):
         die(m)
-    cmd_mv(ns_like(args, status=IN_REVIEW, resolution=None, pr=url))
+    cmd_mv(ns_like(args, status=IN_REVIEW, resolution=None, review_url=url))
 
 
 def cmd_done(args) -> None:
@@ -3950,7 +3969,7 @@ MODEL
   status      every issue has exactly one of the four; move it with mv /
               start / review / done. Work sitting in in-review stays out of
               ready/next -- nothing there to pick up -- but still blocks.
-  metadata    priority, points, parent, spec, pr, title, slug -- change
+  metadata    priority, points, parent, spec, review_url, title, slug -- change
               with `trck set` (NOT by editing index.jsonl). labels -- a flat
               set of free-text tags; change with `trck label`.
   hierarchy   --parent builds an epic tree (containment); an issue with
@@ -4032,7 +4051,8 @@ def build_parser() -> argparse.ArgumentParser:
     n.add_argument("--parent", help="id of the epic to nest this under")
     n.add_argument("--depends", help="comma-separated ids this issue depends on (must be done first)")
     n.add_argument("--spec", help="path to a spec/design doc")
-    n.add_argument("--pr", help="pull-request URL (absolute http(s) link)")
+    n.add_argument("--review-url", dest="review_url",
+                   help="where the output will be reviewed (absolute http(s) URL)")
     n.add_argument("--slug", help="override the auto-derived filename slug")
     n.set_defaults(func=cmd_new, priority=None)
 
@@ -4043,7 +4063,8 @@ def build_parser() -> argparse.ArgumentParser:
     mv.add_argument("--resolution",
                     help="why it closed without shipping (superseded, wontfix, "
                          "duplicate); only valid when moving to a terminal status")
-    mv.add_argument("--pr", help="record a pull-request URL as part of the move")
+    mv.add_argument("--review-url", dest="review_url",
+                    help="record a review URL as part of the move")
     mv.set_defaults(func=cmd_mv)
 
     st = sub.add_parser("start", help="alias: move to ongoing",
@@ -4082,7 +4103,8 @@ def build_parser() -> argparse.ArgumentParser:
     se.add_argument("--points", type=int, help="leaf weight (error if the issue has children)")
     se.add_argument("--parent", help="epic id, or 'none' to clear")
     se.add_argument("--spec", help="path, or 'none' to clear")
-    se.add_argument("--pr", help="pull-request URL, or 'none' to clear")
+    se.add_argument("--review-url", dest="review_url",
+                    help="review URL, or 'none' to clear")
     se.add_argument("--title", help="new title (also rewrites the body's H1)")
     se.add_argument("--slug", help="override the filename slug (renames the file)")
     se.add_argument("--field", action="append", metavar="KEY=VALUE",

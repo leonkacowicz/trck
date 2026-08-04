@@ -200,7 +200,7 @@ def print_rows(ctx: Ctx, g: Graph, rows: list[Issue], annotate=None, prefix=None
         ann = annotate(r) if annotate else ""
         fsuf = ""
         if show_fields:
-            # to_dict() so a built-in field (pr, spec, …) is showable too, not just
+            # to_dict() so a built-in field (review_url, spec, …) is showable too, not just
             # a custom one; an unset/empty value contributes no column.
             full = r.to_dict()
             segs = [f"{n}={full[n]}" for n in show_fields
