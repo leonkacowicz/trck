@@ -35,7 +35,13 @@ MODEL
   config      the vocabularies are fixed: backlog -> ongoing -> in-review ->
               done, urgent/high/medium/low/lowest, and the resolutions
               superseded/wontfix/duplicate. Anything finer is a label or a
-              custom field. trck.json holds only the update channel.
+              custom field. trck.json holds the format version and the update
+              channel, nothing else.
+  format      trck.json's `format` says which shape the tracker is written in.
+              An engine refuses a tracker NEWER than it understands (run
+              `trck update`); an older one is what migration is for. Absent
+              means the current shape. Opt-in features are `extensions` keys,
+              so they lock out only the repos that use them.
 
 RECOMMENDED USAGE
   parent      decomposition, not categorization: make B a child of A only when

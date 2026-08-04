@@ -127,17 +127,53 @@ key). Both filter and sort, so a second status vocabulary would only overlap the
 
 ## Configuration (`issues/trck.json`)
 
-With the vocabulary fixed, `trck.json` holds nothing but the update channel — it exists to
-mark the tracker's root:
+With the vocabulary fixed, `trck.json` holds the format version and the update channel. It
+exists mainly to mark the tracker's root:
 
 ```json
 {
+  "format": 1,
   "update": { "repo": "leonkacowicz/trck", "channel": "stable" }
 }
 ```
 
 A tracker still carrying the old vocabulary keys is not broken: they're ignored, and `check`
 names each one.
+
+### Format version
+
+`format` says which shape the tracker is written in. An engine **refuses a tracker newer than
+it understands** — every verb goes through one guard, so there is no path that reads or writes
+a layout it can only half-parse. It never refuses an *older* one; that is what the migration
+verbs are for. Omitting the key means "the current shape", so every tracker written before this
+existed keeps working.
+
+`trck update` is deliberately exempt, since it is the remedy the refusal tells you to run.
+
+Bumps are rare, because the test is whether an older engine would be **wrong**, not merely
+ignorant:
+
+| change | bump? |
+|---|---|
+| a new field in `index.jsonl` | **no** — unknown keys round-trip verbatim, so an old engine preserves it |
+| a new verb, flag, or column | **no** |
+| an existing field changing meaning, or data moving | **yes** — an old engine gives wrong answers or destroys data |
+| an opt-in feature only some trackers use | **neither** — that is an extension |
+
+Extensions are git's model, taken for its granularity. A flat version pins the whole tracker,
+so bumping it for an opt-in feature would lock out old engines for every repo, including the
+ones not using it:
+
+```json
+{ "format": 1, "extensions": { "some-feature": {} } }
+```
+
+The version means "you may meet extension keys — refuse any you do not know", so only the
+repos that opted in are affected. No extensions are defined yet.
+
+One honest limit: this protects engines from the release that introduced it onward. An engine
+older than that ignores both keys and can still be fooled — which is exactly why the vendored
+copy stays until an installed engine is guaranteed to be newer.
 
 ## Issue ids
 

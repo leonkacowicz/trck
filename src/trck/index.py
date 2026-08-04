@@ -211,11 +211,11 @@ class Ctx:
         return self.dir / "index.jsonl"
 
 
-def build_ctx(args, required: bool = True) -> Ctx | None:
+def build_ctx(args, required: bool = True, guard_format: bool = True) -> Ctx | None:
     d = resolve_tracker_dir(getattr(args, "dir", None), required=required)
     if d is None:
         return None
-    return Ctx(d, load_config(d))
+    return Ctx(d, load_config(d, guard=guard_format))
 
 
 def build_ctx_or_die(args, guard_layout: bool = True) -> Ctx:

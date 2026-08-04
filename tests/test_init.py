@@ -53,6 +53,10 @@ class TestInit(unittest.TestCase):
             self.assertNotIn("aliases", cfg)
             self.assertEqual(self.t.status_names(self.t.load_config(d)),
                              ["backlog", "ongoing", "in-review", "done"])
+            # It does scaffold the format version. A tracker is free to omit it — absence
+            # means the current shape — but a fresh one says which shape it was written
+            # in, so the guard has something to compare against without guessing.
+            self.assertEqual(cfg["format"], self.t.SUPPORTED_FORMAT)
 
     def test_init_refuses_existing_without_force(self):
         with TemporaryDirectory() as tmp:

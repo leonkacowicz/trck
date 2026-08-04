@@ -2,7 +2,7 @@ from __future__ import annotations
 from pathlib import Path
 import json
 import os
-from .constants import DEFAULT_UPDATE_REPO, FILENAME_RE, ITEMS_DIR, PR_URL_RE, SELF_PATH, die
+from .constants import DEFAULT_UPDATE_REPO, FILENAME_RE, ITEMS_DIR, KNOWN_EXTENSIONS, PR_URL_RE, SELF_PATH, SUPPORTED_FORMAT, die
 
 # --------------------------------------------------------------------------- #
 # config + discovery
@@ -68,15 +68,42 @@ DEFAULT_PRIORITY = PRIORITIES[len(PRIORITIES) // 2]
 RESOLUTIONS = ("superseded", "wontfix", "duplicate")
 
 # Everything a tracker may still change. The vocabulary keys all left: they were the
-# decisions worth making once, for everyone, rather than per repo.
+# decisions worth making once, for everyone, rather than per repo. What remains is the
+# format version (see constants.py) and where `trck update` pulls from.
 DEFAULT_CONFIG = {
+    "format": SUPPORTED_FORMAT,
     "update": {"repo": DEFAULT_UPDATE_REPO, "channel": "stable"},
 }
 
 
-def load_config(tracker_dir: Path) -> dict:
+def check_format(cfg: dict) -> str | None:
+    """Whether this engine understands the tracker. Returns None when it does, else a
+    die-ready message. Refuses a *newer* format and any extension it does not know;
+    an older format is accepted, since that is what the migration verbs are for."""
+    fmt = cfg.get("format", SUPPORTED_FORMAT)
+    if isinstance(fmt, bool) or not isinstance(fmt, int):
+        return f"bad 'format' {fmt!r} in trck.json (must be an integer)"
+    if fmt > SUPPORTED_FORMAT:
+        return (f"tracker format {fmt} is newer than this engine understands "
+                f"(format {SUPPORTED_FORMAT}) — run `trck update`")
+    exts = cfg.get("extensions", {})
+    if not isinstance(exts, dict):
+        return f"bad 'extensions' {exts!r} in trck.json (must be an object)"
+    unknown = sorted(k for k in exts if k not in KNOWN_EXTENSIONS)
+    if unknown:
+        return (f"tracker uses unknown extension(s): {', '.join(unknown)} — run "
+                f"`trck update`")
+    return None
+
+
+def load_config(tracker_dir: Path, guard: bool = True) -> dict:
     """Merge trck.json (if any) over DEFAULT_CONFIG. Top-level keys override;
-    the nested 'update' dict is merged key-by-key."""
+    the nested 'update' dict is merged key-by-key.
+
+    The single choke point for the format guard: every verb builds a Ctx, and every
+    Ctx loads a config here. `guard=False` is for `trck update`, which reads the
+    config only to find out where to pull from — refusing there would block the one
+    verb that fixes a too-new tracker."""
     cfg = json.loads(json.dumps(DEFAULT_CONFIG))  # deep copy
     path = Path(tracker_dir) / "trck.json"
     if path.exists():
@@ -89,6 +116,8 @@ def load_config(tracker_dir: Path) -> dict:
                 cfg["update"].update(v)
             else:
                 cfg[k] = v
+    if guard and (m := check_format(cfg)):
+        die(m)
     return cfg
 
 

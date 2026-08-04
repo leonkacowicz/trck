@@ -50,6 +50,44 @@ __version__ = "0.25.0"
 DEFAULT_UPDATE_REPO = "leonkacowicz/trck"
 SELF_PATH = Path(__file__).resolve()  # the running engine file; tests may override
 
+# --------------------------------------------------------------------------- #
+# tracker format version
+# --------------------------------------------------------------------------- #
+# `trck.json` may carry `format: N`. Absent means the current shape, so every
+# tracker written before this existed reads as SUPPORTED_FORMAT and nothing breaks.
+# An engine refuses a tracker whose format it does not understand; it never refuses
+# an older one, which is what migration verbs are for.
+#
+# Until this shipped, the vendored copy of the engine *was* the pin: the writer
+# lived in the repo, so writer and reader could not disagree. That is the whole of
+# what vendoring bought, and the reason un-vendoring waits on this.
+#
+# When to bump — the test is whether an older engine would be *wrong*, not merely
+# ignorant:
+#
+#   no bump     Adding a field to index.jsonl. `Issue.extra` round-trips unknown
+#               keys verbatim, so an old engine that reads and rewrites such a row
+#               preserves it. Likewise a new verb, flag, or output column.
+#   bump        Changing what an existing field means, or where data lives, so that
+#               an old engine silently gives wrong answers or destroys data. Both
+#               historical breaks would have qualified: status-folders -> items/
+#               (an old engine looks for bodies in the wrong place) and integer ->
+#               random ids (an old engine's generator collides).
+#   extension   An opt-in feature only some trackers use. Bumping `format` for it
+#               would lock out old engines for every repo, including the ones not
+#               using it; an extension key locks out only those that opted in.
+#
+# The extension mechanism is git's `extensions.*`, for its granularity: the version
+# says "you may meet extension keys — refuse any you do not know". The live example
+# that motivated it was a status carrying `actionable: false`, which an engine
+# predating that feature read, ignored, and then offered as work in `ready`.
+#
+# Honest limitation: this protects engines from this release forward. One older
+# than it ignores both keys and can still be fooled — which is exactly why the
+# vendored copy stays until an installed engine is guaranteed to be newer.
+SUPPORTED_FORMAT = 1
+KNOWN_EXTENSIONS = frozenset()  # none yet; tests reassign this module global
+
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 FILENAME_RE = re.compile(r"^([0-9a-z]+)-([a-z0-9][a-z0-9-]*)\.md$")
 ITEMS_DIR = "items"  # the one directory holding every issue body; status lives in index.jsonl
@@ -142,15 +180,42 @@ DEFAULT_PRIORITY = PRIORITIES[len(PRIORITIES) // 2]
 RESOLUTIONS = ("superseded", "wontfix", "duplicate")
 
 # Everything a tracker may still change. The vocabulary keys all left: they were the
-# decisions worth making once, for everyone, rather than per repo.
+# decisions worth making once, for everyone, rather than per repo. What remains is the
+# format version (see constants.py) and where `trck update` pulls from.
 DEFAULT_CONFIG = {
+    "format": SUPPORTED_FORMAT,
     "update": {"repo": DEFAULT_UPDATE_REPO, "channel": "stable"},
 }
 
 
-def load_config(tracker_dir: Path) -> dict:
+def check_format(cfg: dict) -> str | None:
+    """Whether this engine understands the tracker. Returns None when it does, else a
+    die-ready message. Refuses a *newer* format and any extension it does not know;
+    an older format is accepted, since that is what the migration verbs are for."""
+    fmt = cfg.get("format", SUPPORTED_FORMAT)
+    if isinstance(fmt, bool) or not isinstance(fmt, int):
+        return f"bad 'format' {fmt!r} in trck.json (must be an integer)"
+    if fmt > SUPPORTED_FORMAT:
+        return (f"tracker format {fmt} is newer than this engine understands "
+                f"(format {SUPPORTED_FORMAT}) — run `trck update`")
+    exts = cfg.get("extensions", {})
+    if not isinstance(exts, dict):
+        return f"bad 'extensions' {exts!r} in trck.json (must be an object)"
+    unknown = sorted(k for k in exts if k not in KNOWN_EXTENSIONS)
+    if unknown:
+        return (f"tracker uses unknown extension(s): {', '.join(unknown)} — run "
+                f"`trck update`")
+    return None
+
+
+def load_config(tracker_dir: Path, guard: bool = True) -> dict:
     """Merge trck.json (if any) over DEFAULT_CONFIG. Top-level keys override;
-    the nested 'update' dict is merged key-by-key."""
+    the nested 'update' dict is merged key-by-key.
+
+    The single choke point for the format guard: every verb builds a Ctx, and every
+    Ctx loads a config here. `guard=False` is for `trck update`, which reads the
+    config only to find out where to pull from — refusing there would block the one
+    verb that fixes a too-new tracker."""
     cfg = json.loads(json.dumps(DEFAULT_CONFIG))  # deep copy
     path = Path(tracker_dir) / "trck.json"
     if path.exists():
@@ -163,6 +228,8 @@ def load_config(tracker_dir: Path) -> dict:
                 cfg["update"].update(v)
             else:
                 cfg[k] = v
+    if guard and (m := check_format(cfg)):
+        die(m)
     return cfg
 
 
@@ -543,11 +610,11 @@ class Ctx:
         return self.dir / "index.jsonl"
 
 
-def build_ctx(args, required: bool = True) -> Ctx | None:
+def build_ctx(args, required: bool = True, guard_format: bool = True) -> Ctx | None:
     d = resolve_tracker_dir(getattr(args, "dir", None), required=required)
     if d is None:
         return None
-    return Ctx(d, load_config(d))
+    return Ctx(d, load_config(d, guard=guard_format))
 
 
 def build_ctx_or_die(args, guard_layout: bool = True) -> Ctx:
@@ -2639,7 +2706,8 @@ holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
 The vocabulary is fixed, not configured: statuses run `backlog → ongoing → in-review → done`,
 priorities are `urgent`/`high`/`medium`/`low`/`lowest`, and a closed issue may carry one of
 `superseded`/`wontfix`/`duplicate` — no resolution means it shipped. Anything finer is a
-label or a custom field. `trck.json` holds only the update channel.
+label or a custom field. `trck.json` holds only the format version and the update channel;
+an engine refuses a tracker whose `format` is newer than it understands.
 
 ## Recommended usage
 
@@ -3601,8 +3669,12 @@ def cmd_init(args) -> None:
 
 
 def _update_repo(args) -> str:
-    """Resolve which GitHub repo to update from: tracker config if available, else default."""
-    ctx = build_ctx(args, required=False)  # update works outside a tracker (silently)
+    """Resolve which GitHub repo to update from: tracker config if available, else default.
+
+    Skips the format guard: `update` is the remedy a too-new tracker tells you to run,
+    so refusing here would leave you with no way to get an engine that understands it.
+    Only `update.repo` is read, which is a string in every format."""
+    ctx = build_ctx(args, required=False, guard_format=False)  # works outside a tracker too
     if ctx is None:
         return DEFAULT_UPDATE_REPO
     return ctx.cfg.get("update", {}).get("repo") or DEFAULT_UPDATE_REPO
@@ -3983,7 +4055,13 @@ MODEL
   config      the vocabularies are fixed: backlog -> ongoing -> in-review ->
               done, urgent/high/medium/low/lowest, and the resolutions
               superseded/wontfix/duplicate. Anything finer is a label or a
-              custom field. trck.json holds only the update channel.
+              custom field. trck.json holds the format version and the update
+              channel, nothing else.
+  format      trck.json's `format` says which shape the tracker is written in.
+              An engine refuses a tracker NEWER than it understands (run
+              `trck update`); an older one is what migration is for. Absent
+              means the current shape. Opt-in features are `extensions` keys,
+              so they lock out only the repos that use them.
 
 RECOMMENDED USAGE
   parent      decomposition, not categorization: make B a child of A only when

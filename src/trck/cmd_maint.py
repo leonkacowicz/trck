@@ -272,8 +272,12 @@ def cmd_init(args) -> None:
 
 
 def _update_repo(args) -> str:
-    """Resolve which GitHub repo to update from: tracker config if available, else default."""
-    ctx = build_ctx(args, required=False)  # update works outside a tracker (silently)
+    """Resolve which GitHub repo to update from: tracker config if available, else default.
+
+    Skips the format guard: `update` is the remedy a too-new tracker tells you to run,
+    so refusing here would leave you with no way to get an engine that understands it.
+    Only `update.repo` is read, which is a string in every format."""
+    ctx = build_ctx(args, required=False, guard_format=False)  # works outside a tracker too
     if ctx is None:
         return DEFAULT_UPDATE_REPO
     return ctx.cfg.get("update", {}).get("repo") or DEFAULT_UPDATE_REPO

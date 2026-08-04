@@ -20,6 +20,10 @@ class TestIndexIO(unittest.TestCase):
         return self.t.Issue(**fields)
 
     def test_roundtrip_preserves_unknown_keys(self):
+        """Half of why the format version needs so few bumps. An engine that reads a row
+        carrying a field it has never heard of and writes it back preserves it verbatim,
+        so *adding* an index field never makes an older engine wrong — only ignorant.
+        A bump is for changes that would make it wrong. See SUPPORTED_FORMAT."""
         with TemporaryDirectory() as tmp:
             ctx = self.ctx(tmp)
             row = self.issue(labels=["x"], extra={"zeta": 9})

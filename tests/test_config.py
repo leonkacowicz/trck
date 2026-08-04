@@ -284,9 +284,10 @@ class TestFixedResolutions(unittest.TestCase):
         self.assertEqual(self.t.RESOLUTIONS, ("superseded", "wontfix", "duplicate"))
 
     def test_the_config_is_now_empty_of_vocabulary_entirely(self):
-        """`update` is deployment, not a decision about how to track work. Every key that
-        was a decision has been made once, for everyone."""
-        self.assertEqual(set(self.t.DEFAULT_CONFIG), {"update"})
+        """Neither remaining key is a decision about how to track work: `format` is which
+        shape the tracker is written in, `update` is where the engine comes from. Every
+        key that *was* such a decision has been made once, for everyone."""
+        self.assertEqual(set(self.t.DEFAULT_CONFIG), {"format", "update"})
 
     def test_a_tracker_cannot_redefine_them(self):
         with TemporaryDirectory() as tmp:
@@ -306,3 +307,118 @@ class TestFixedResolutions(unittest.TestCase):
         `select_shipped` keys off the field being *absent*."""
         for name in ("fixed", "done", "completed", "shipped", "resolved"):
             self.assertNotIn(name, self.t.RESOLUTIONS)
+
+
+class TestFormatVersion(unittest.TestCase):
+    """`trck.json` carries a format version, and an engine refuses a tracker written in
+    a shape it does not understand.
+
+    Until this existed, the vendored copy of the engine *was* the pin — the writer lived
+    in the repo, so writer and reader could not disagree. Half the surface was already
+    safe (`Issue.extra` round-trips unknown index keys), but config was not: a key an old
+    engine has never heard of is silently ignored, and it then gives wrong answers with
+    no way to notice."""
+
+    def setUp(self):
+        self.t = load_trck()
+
+    def load(self, cfg, **kw):
+        with TemporaryDirectory() as tmp:
+            return self.t.load_config(make_tracker(tmp, cfg), **kw)
+
+    def test_the_current_format_is_declared_in_constants(self):
+        self.assertIsInstance(self.t.SUPPORTED_FORMAT, int)
+        self.assertEqual(self.t.DEFAULT_CONFIG["format"], self.t.SUPPORTED_FORMAT)
+
+    def test_an_absent_format_means_the_current_shape(self):
+        """Every tracker written before this key existed. Treating absence as "ancient,
+        refuse" would lock out every one of them."""
+        self.assertIsNone(self.t.check_format({}))
+        self.assertEqual(self.load({})["format"], self.t.SUPPORTED_FORMAT)
+
+    def test_an_equal_format_is_accepted(self):
+        self.assertIsNone(self.t.check_format({"format": self.t.SUPPORTED_FORMAT}))
+
+    def test_an_older_format_is_accepted(self):
+        """Refuse newer only. An old tracker is what the migration verbs are for, and
+        refusing it would mean an engine could not run the migration that fixes it."""
+        self.assertIsNone(self.t.check_format({"format": self.t.SUPPORTED_FORMAT - 1}))
+
+    def test_a_newer_format_is_refused_and_names_the_fix(self):
+        msg = self.t.check_format({"format": self.t.SUPPORTED_FORMAT + 1})
+        self.assertIsNotNone(msg)
+        self.assertIn(str(self.t.SUPPORTED_FORMAT + 1), msg)
+        self.assertIn("trck update", msg)
+
+    def test_a_malformed_format_is_a_clean_error(self):
+        for bad in ("1", 1.5, None, True, []):
+            msg = self.t.check_format({"format": bad})
+            self.assertIsNotNone(msg, bad)
+            self.assertIn("must be an integer", msg)
+
+    def test_every_verb_passes_through_the_guard(self):
+        """One choke point: every verb builds a Ctx and every Ctx loads a config here,
+        so the guard does not have to be remembered at each call site."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {"format": self.t.SUPPORTED_FORMAT + 1})
+            err = io.StringIO()
+            with redirect_stderr(err), self.assertRaises(SystemExit):
+                self.t.load_config(d)
+            self.assertIn("newer than this engine", err.getvalue())
+
+    def test_update_is_exempt_from_the_guard(self):
+        """`update` is the remedy the refusal tells you to run, so it must survive the
+        thing it fixes. It reads only `update.repo`, a string in every format."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {"format": self.t.SUPPORTED_FORMAT + 99,
+                                   "update": {"repo": "someone/trck"}})
+            cfg = self.t.load_config(d, guard=False)
+            self.assertEqual(cfg["update"]["repo"], "someone/trck")
+
+
+class TestFormatExtensions(unittest.TestCase):
+    """Extensions, not just an integer — git's model, for its granularity.
+
+    A flat version pins the whole tracker, so bumping it for an opt-in feature would
+    lock out old engines even for repos not using it. An extension key says "you may
+    meet this; refuse it if you do not know it", so only the repos that opted in are
+    affected."""
+
+    def setUp(self):
+        self.t = load_trck()
+        self.known = self.t.KNOWN_EXTENSIONS
+
+    def tearDown(self):
+        self.t.KNOWN_EXTENSIONS = self.known
+
+    def test_an_unknown_extension_is_refused_and_named(self):
+        msg = self.t.check_format({"extensions": {"partial-clone": {}}})
+        self.assertIsNotNone(msg)
+        self.assertIn("partial-clone", msg)
+        self.assertIn("trck update", msg)
+
+    def test_every_unknown_extension_is_named_not_just_the_first(self):
+        msg = self.t.check_format({"extensions": {"zeta": {}, "alpha": {}}})
+        self.assertIn("alpha", msg)
+        self.assertIn("zeta", msg)
+
+    def test_a_known_extension_is_accepted(self):
+        self.t.KNOWN_EXTENSIONS = frozenset({"field-schema"})
+        self.assertIsNone(self.t.check_format({"extensions": {"field-schema": {}}}))
+
+    def test_no_extensions_is_the_common_case(self):
+        self.assertIsNone(self.t.check_format({}))
+        self.assertIsNone(self.t.check_format({"extensions": {}}))
+
+    def test_a_malformed_extensions_block_is_a_clean_error(self):
+        msg = self.t.check_format({"extensions": ["field-schema"]})
+        self.assertIsNotNone(msg)
+        self.assertIn("must be an object", msg)
+
+    def test_an_extension_does_not_need_a_format_bump(self):
+        """The whole point of the granularity: a tracker opting into an extension stays
+        at the current format, so an engine that knows the extension runs it and one that
+        does not refuses only that repo."""
+        self.t.KNOWN_EXTENSIONS = frozenset({"field-schema"})
+        self.assertIsNone(self.t.check_format(
+            {"format": self.t.SUPPORTED_FORMAT, "extensions": {"field-schema": {}}}))

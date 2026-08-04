@@ -78,7 +78,8 @@ holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
 The vocabulary is fixed, not configured: statuses run `backlog → ongoing → in-review → done`,
 priorities are `urgent`/`high`/`medium`/`low`/`lowest`, and a closed issue may carry one of
 `superseded`/`wontfix`/`duplicate` — no resolution means it shipped. Anything finer is a
-label or a custom field. `trck.json` holds only the update channel.
+label or a custom field. `trck.json` holds only the format version and the update channel;
+an engine refuses a tracker whose `format` is newer than it understands.
 
 ## Recommended usage
 

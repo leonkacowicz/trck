@@ -1,6 +1,6 @@
 import io
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -45,6 +45,29 @@ class TestMaint(unittest.TestCase):
                 self.t.load_index = orig
             self.assertEqual(len(calls), 1)            # single read, not two
             self.assertIn("OK — 2 issues", buf.getvalue())
+
+    def test_check_refuses_a_tracker_newer_than_the_engine(self):
+        """`check` is the verb CI runs, so it has to be the one that notices. It gets the
+        refusal for free by building a Ctx like every other verb — there is no separate
+        format validation to keep in sync."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {"format": self.t.SUPPORTED_FORMAT + 1})
+            err = io.StringIO()
+            with redirect_stderr(err), self.assertRaises(SystemExit) as cm, \
+                    redirect_stdout(io.StringIO()):
+                self.t.cmd_check(ns(dir=str(d)))
+            self.assertNotEqual(cm.exception.code, 0)
+            self.assertIn("newer than this engine", err.getvalue())
+
+    def test_a_mutating_verb_refuses_a_tracker_newer_than_the_engine(self):
+        """Not just the read-only verbs: writing to a tracker whose shape you do not
+        understand is how data gets destroyed."""
+        with TemporaryDirectory() as tmp:
+            d = make_tracker(tmp, {"format": self.t.SUPPORTED_FORMAT + 1})
+            with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit), \
+                    redirect_stdout(io.StringIO()):
+                self.t.cmd_new(ns(dir=str(d), title="X", priority="high", parent=None,
+                                  depends=None, spec=None, slug=None))
 
     def test_check_exits_nonzero_on_error(self):
         with TemporaryDirectory() as tmp:
