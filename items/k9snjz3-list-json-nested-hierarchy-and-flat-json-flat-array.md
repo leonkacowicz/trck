@@ -10,12 +10,12 @@ filter/sort exactly as the human render does.
 - `list --flat --json` → flat array of `to_dict()` objects in the sorted order.
 
 ## Acceptance criteria
-- [ ] `list --json` produces the nested forest as JSON; each node is `to_dict()` plus a `children` array (empty when none).
-- [ ] `list --flat --json` produces a flat array in the same order as `--flat` human output.
-- [ ] All existing filters (`--status/--kind/--priority/--label/--parent/--match/--field/--blocked/--orphan`), `--sort`, and the optional root `id` are honoured; empty result → `[]`.
-- [ ] Nested shape reuses the existing forest layout (`match_closure`/`forest_layout`); dimmed ancestor-context rows are included (they appear in the forest).
-- [ ] Output is one valid JSON document via the #v8tmkrt helper; default human output unchanged.
-- [ ] Field shape documented in `list` help; tests assert parseable JSON + nesting + filter honouring.
+- [x] `list --json` produces the nested forest as JSON; each node is `to_dict()` plus a `children` array (empty when none).
+- [x] `list --flat --json` produces a flat array in the same order as `--flat` human output.
+- [x] All existing filters (`--status/--kind/--priority/--label/--parent/--match/--field/--blocked/--orphan`), `--sort`, and the optional root `id` are honoured; empty result → `[]`.
+- [x] Nested shape reuses the existing forest layout (`match_closure`/`forest_layout`); dimmed ancestor-context rows are included (they appear in the forest).
+- [x] Output is one valid JSON document via the #v8tmkrt helper; default human output unchanged.
+- [x] Field shape documented in `list` help; tests assert parseable JSON + nesting + filter honouring.
 
 ## Notes
 Depends on #v8tmkrt (emit_json + `--json` flag). Handler `cmd_list` —
@@ -26,3 +26,13 @@ builds `shown`/`dim`. For the nested form, build the child lists from the same
 agree. Decide and document whether
 dimmed context rows carry a marker (lean: include them as normal nodes; consumers
 filter by status if they want only matches).
+
+## Decided while building
+**`context` is a new field, not in the plan.** The forest pulls non-matching ancestors in
+so a matched child never floats free, and the human view distinguishes them by dimming.
+The criterion said only "include them" — but included and unmarked, a consumer filtering
+by `--match` cannot tell a result from the scaffolding holding it. The information is on
+screen; leaving it out of the data would have been a silent loss.
+
+**`--paths --json` is refused** rather than letting `--paths` quietly win, which is what
+the existing early return would have done.

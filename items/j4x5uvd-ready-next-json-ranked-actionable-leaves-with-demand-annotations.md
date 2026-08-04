@@ -15,20 +15,20 @@ order of the array is the contract, and the demand annotation each row displays
 should be carried as data rather than baked into a string.
 
 ## Acceptance criteria
-- [ ] `ready --json` emits one valid JSON document: an array of issue objects in
+- [x] `ready --json` emits one valid JSON document: an array of issue objects in
       the exact order the human render uses.
-- [ ] `next --json` emits the same shape truncated to one entry (array, not a bare
+- [x] `next --json` emits the same shape truncated to one entry (array, not a bare
       object — the same shape either way keeps consumers simple).
-- [ ] Each entry carries the demand annotation as fields, not prose: the inferred
+- [x] Each entry carries the demand annotation as fields, not prose: the inferred
       priority and the driving issue id (what `demand_annotation` renders as
       `↑urgent(#a1b2c3)`), omitted when a row isn't lifted above its own priority.
-- [ ] `ready ID --json` honours subtree scoping, filtering the *result* exactly as
+- [x] `ready ID --json` honours subtree scoping, filtering the *result* exactly as
       the human path does — readiness and ranking stay computed over the whole graph.
-- [ ] Ids are emitted in full, never abbreviated — `unique_prefix_lens` is a display
+- [x] Ids are emitted in full, never abbreviated — `unique_prefix_lens` is a display
       concern and must not leak into the data.
-- [ ] Empty result emits `[]`, not nothing, and exits 0.
-- [ ] Goes through the shared emit seam from #v8tmkrt; default human output unchanged.
-- [ ] Documented in `ready`/`next` help; tests assert parseable JSON, the rank order,
+- [x] Empty result emits `[]`, not nothing, and exits 0.
+- [x] Goes through the shared emit seam from #v8tmkrt; default human output unchanged.
+- [x] Documented in `ready`/`next` help; tests assert parseable JSON, the rank order,
       and the lifted-priority fields.
 
 ## Notes

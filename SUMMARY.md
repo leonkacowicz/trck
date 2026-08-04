@@ -6,9 +6,9 @@
 | State | Count |
 |---|---:|
 | backlog | 60 |
-| ongoing | 5 |
+| ongoing | 4 |
 | in-review | 0 |
-| done | 130 |
+| done | 131 |
 | **total** | **195** |
 
 ## Hierarchies
@@ -131,11 +131,11 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#ub2ssg4 list: nested forest default (--flat, positional id, dimmed ancestors, tree alias)](items/ub2ssg4-list-nested-forest-default-flat-positional-id-dimmed-ancestors-tree-alias.md)
 - [x] [#uqtjp9p Graph: add ancestor-closure, match-set and sibling-sort traversal](items/uqtjp9p-graph-add-ancestor-closure-match-set-and-sibling-sort-traversal.md)
 
-### [#r9zefup Add --json output to list/show/deps/tree for scripting](items/r9zefup-add-json-output-to-list-show-deps-tree-for-scripting.md) — 67% (4/6 pts · 4/6 done) · _low_ · ongoing
+### [#r9zefup Add --json output to list/show/deps/tree for scripting](items/r9zefup-add-json-output-to-list-show-deps-tree-for-scripting.md) — 83% (5/6 pts · 5/6 done) · _low_ · ongoing
 
 - [x] [#57kz6xp deps --json: {requires, blocks} cones as JSON](items/57kz6xp-deps-json-requires-blocks-cones-as-json.md)
 - [x] [#e75dysa show --json: single JSON document with body folded in](items/e75dysa-show-json-single-json-document-with-body-folded-in.md)
-- [ ] [#j4x5uvd ready/next --json: ranked actionable leaves with demand annotations](items/j4x5uvd-ready-next-json-ranked-actionable-leaves-with-demand-annotations.md) _(ongoing)_
+- [x] [#j4x5uvd ready/next --json: ranked actionable leaves with demand annotations](items/j4x5uvd-ready-next-json-ranked-actionable-leaves-with-demand-annotations.md)
 - [x] [#k9snjz3 list --json: nested hierarchy (and --flat --json flat array)](items/k9snjz3-list-json-nested-hierarchy-and-flat-json-flat-array.md)
 - [ ] [#kaqhtfc list/tree: drop the tree alias (nested forest is list's default)](items/kaqhtfc-list-tree-drop-the-tree-alias-nested-forest-is-list-s-default.md) _(backlog)_
 - [x] [#v8tmkrt json: shared emit_json stdout seam + --json flag plumbing](items/v8tmkrt-json-shared-emit-json-stdout-seam-json-flag-plumbing.md)
