@@ -27,14 +27,23 @@ override — you are supplying the value instead of generating it. `--force-id` 
 adjacent to `--force`, which does something unrelated.
 
 ## Acceptance criteria
-- [ ] `trck new --id ID`. A flag, not an env var: an env var applies to every `new` in a
+- [x] `trck new --id ID`. A flag, not an env var: an env var applies to every `new` in a
       sequence, so a fixture creating two issues would have to set and unset it between calls.
-- [ ] Refuses a duplicate — of an id in the index **and** of one only present on disk, since
+- [x] Refuses a duplicate — of an id in the index **and** of one only present on disk, since
       `gen_id` already guards against both.
-- [ ] Refuses anything outside the alphabet or the wrong length. Without these two checks the
+- [x] Refuses anything outside the alphabet or the wrong length. Without these two checks the
       flag is a way to corrupt a tracker by hand.
-- [ ] The generated path is unchanged when the flag is absent: same `gen_id`, same guard.
-- [ ] Documented as an import/recovery affordance, not as a test hook.
+- [x] The generated path is unchanged when the flag is absent: same `gen_id`, same guard.
+- [x] Documented as an import/recovery affordance, not as a test hook.
+
+## Landed
+`5f8b3bf`. `check_id` and `claim_id` in `graph.py`, next to `gen_id` — the validation and
+the uniqueness bar belong with the generator they mirror, not with the command.
+
+One thing the tests pin that is easy to lose later: `claim_id` checks index **∪ on-disk
+filenames**, not just the index. `gen_id` already did, because a branch can carry a body
+file whose index line has not merged; a supplied id that only checked the index would be
+the one remaining way to recreate the collision random ids exist to prevent.
 
 ## Notes
 Only `new` mints an id, so one flag covers everything. `repo renumber` used to mint many at once
