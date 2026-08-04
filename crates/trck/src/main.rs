@@ -10,6 +10,17 @@
 //! Python engine does. See `conformance/README.md` for the fixture format and
 //! `issues/` (`#sp2rwzx`) for the port's plan.
 
+// The model is built before the verbs that use it, so most of it is unreferenced from
+// `main` today. `expect` rather than `allow`: once the port has wired everything up,
+// the expectation goes unfulfilled and the compiler says so, which is a better reminder
+// to delete this than a comment would be.
+#![expect(dead_code, reason = "the model lands before the verbs that read it")]
+
+mod id;
+mod index;
+mod issue;
+mod json;
+
 use std::process::ExitCode;
 
 /// Verbs the Python engine has. Listed so `--help` can be honest about what this
