@@ -47,49 +47,6 @@ def cmd_normalize(args) -> None:
     print(f"normalized {ctx.index_path} ({len(rows)} issues)")
 
 
-def cmd_renumber(args) -> None:
-    """One-shot migration: convert every legacy integer id to a fresh random id.
-    Rewrites parent/depends_on through the old->new map, records each issue's prior
-    integer id in legacy_id, and renames files. Random ids are left untouched, so a
-    second run is a no-op. #NN prose mentions in bodies are unchanged but still
-    resolve via the legacy_id alias."""
-    ctx = build_ctx_or_die(args)
-    rows = load_index(ctx)
-    legacy = [r for r in rows if r.id.isdigit()]
-    if not legacy:
-        print("renumber: no legacy integer ids to convert")
-        return
-    assigned = _existing_ids(ctx)
-    mapping = {}
-    for r in legacy:
-        while True:
-            cand = "".join(secrets.choice(ID_ALPHABET) for _ in range(ID_LEN))
-            if cand not in assigned:
-                assigned.add(cand)
-                break
-        mapping[r.id] = cand
-
-    # For each legacy row: snapshot its current path, switch it to the new id,
-    # then move the file to the new path.
-    for r in legacy:
-        old = issue_path(ctx, r)
-        r.legacy_id = int(r.id)
-        r.id = mapping[r.id]
-        new = issue_path(ctx, r)
-        new.parent.mkdir(parents=True, exist_ok=True)
-        if old.resolve() != new.resolve():
-            shutil.move(str(old), str(new))
-    # Rewrite cross-references across ALL rows (a random-id row may point at a
-    # renumbered one).
-    for r in rows:
-        if r.parent in mapping:
-            r.parent = mapping[r.parent]
-        r.depends_on = [mapping.get(d, d) for d in r.depends_on]
-
-    finalize(ctx, rows)
-    print(f"renumber: converted {len(legacy)} issue(s) to random ids")
-
-
 def cmd_install_hook(args) -> None:
     ctx = build_ctx_or_die(args)
     common = subprocess.run(["git", "rev-parse", "--git-common-dir"],

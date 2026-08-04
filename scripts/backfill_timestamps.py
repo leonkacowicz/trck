@@ -54,7 +54,9 @@ def rewrite_lines(lines, recovered):
             continue
         row = json.loads(line)
         iid = row.get("id")
-        if isinstance(iid, int) and not isinstance(iid, bool):
+        # Ids are strings. This used to gate on `isinstance(iid, int)`, from when they
+        # were integers — which would make this script a silent no-op on every tracker.
+        if isinstance(iid, str) and iid:
             for f in DATE_FIELDS:
                 v = row.get(f)
                 if not is_day_only(v):
@@ -85,7 +87,7 @@ def reduce_transitions(snapshots):
     for author_iso, rows in snapshots:
         for row in rows:
             iid = row.get("id")
-            if not isinstance(iid, int) or isinstance(iid, bool):
+            if not isinstance(iid, str) or not iid:
                 continue
             pv = prev.setdefault(iid, {})
             for f in DATE_FIELDS:
@@ -198,9 +200,9 @@ def main(argv=None):
         sys.exit(f"error: malformed JSON in {index_path}: {e}")
 
     for iid, field, old, new in changes:
-        print(f"#{iid:03d} {field}: {old} -> {new}")
+        print(f"#{iid} {field}: {old} -> {new}")
     for iid, field, old in warnings:
-        print(f"WARNING: #{iid:03d} {field} day-only but no history found ({old})")
+        print(f"WARNING: #{iid} {field} day-only but no history found ({old})")
     verb = "would be updated" if args.dry_run else "updated"
     note = "dry-run, no changes written; " if args.dry_run else ""
     print(f"{note}{len(changes)} field(s) {verb}, {len(warnings)} warning(s)")

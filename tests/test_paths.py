@@ -187,18 +187,17 @@ class TestFilename(unittest.TestCase):
                           status="backlog", priority="high")
         rand = t.Issue(id="k3m9x2a", slug="s", title="T",
                        status="backlog", priority="high")
-        self.assertEqual(t.filename(numeric), "007-s.md")
+        # No zero-padding any more: the id goes into the name verbatim. It used to be
+        # written `007-s.md`, which only existed to keep integer-id trackers byte-stable.
+        self.assertEqual(t.filename(numeric), "7-s.md")
         self.assertEqual(t.filename(rand), "k3m9x2a-s.md")
 
-    def test_filename_re_matches_legacy_and_random(self):
+    def test_file_id_is_the_id_verbatim(self):
         t = self.t
-        self.assertTrue(t.FILENAME_RE.match("007-foo.md"))
         self.assertTrue(t.FILENAME_RE.match("k3m9x2a-foo.md"))
-
-    def test_file_id_normalizes_legacy_padding(self):
-        t = self.t
-        self.assertEqual(t.file_id(t.FILENAME_RE.match("007-foo.md")), "7")
         self.assertEqual(t.file_id(t.FILENAME_RE.match("k3m9x2a-foo.md")), "k3m9x2a")
+        # It used to un-pad `007` back to `7` to match the index's coerced id.
+        self.assertEqual(t.file_id(t.FILENAME_RE.match("007-foo.md")), "007")
 
 
 class TestWiring(unittest.TestCase):

@@ -64,16 +64,16 @@ class TestIssueModel(unittest.TestCase):
 
     # -- from_dict ----------------------------------------------------------
     def test_from_dict_maps_known_keys_to_attributes(self):
-        i = self.Issue.from_dict({"id": 7, "slug": "s", "title": "T",
-                                  "status": "done", "priority": "low", "parent": 3,
-                                  "labels": ["x"], "depends_on": [1, 2]})
+        i = self.Issue.from_dict({"id": "7", "slug": "s", "title": "T",
+                                  "status": "done", "priority": "low", "parent": "3",
+                                  "labels": ["x"], "depends_on": ["1", "2"]})
         self.assertEqual(i.id, "7")
         self.assertEqual(i.parent, "3")
         self.assertEqual(i.labels, ["x"])
         self.assertEqual(i.depends_on, ["1", "2"])
 
     def test_from_dict_routes_unknown_keys_to_extra(self):
-        i = self.Issue.from_dict({"id": 1, "slug": "a", "title": "A",
+        i = self.Issue.from_dict({"id": "1", "slug": "a", "title": "A",
                                   "status": "backlog", "priority": "high",
                                   "zeta": 9, "vendor": None})
         self.assertEqual(i.extra, {"zeta": 9, "vendor": None})
@@ -121,20 +121,20 @@ class TestIssueModel(unittest.TestCase):
                 self.Issue.from_dict({**good, **over})
 
     def test_from_dict_accepts_valid_nullable_fields(self):
-        i = self.Issue.from_dict(dict(id=1, slug="a", title="A",
+        i = self.Issue.from_dict(dict(id="1", slug="a", title="A",
                                       status="backlog", priority="high",
                                       parent=None, spec=None, resolution=None))
         self.assertIsNone(i.parent)
 
     def test_from_dict_migrates_milestone_to_label(self):
-        i = self.Issue.from_dict({"id": 1, "slug": "a", "title": "A",
+        i = self.Issue.from_dict({"id": "1", "slug": "a", "title": "A",
                                   "status": "backlog", "priority": "high",
                                   "milestone": "v1.0"})
         self.assertEqual(i.labels, ["v1.0"])
         self.assertNotIn("milestone", i.extra)
 
     def test_from_dict_drops_null_milestone(self):
-        i = self.Issue.from_dict({"id": 1, "slug": "a", "title": "A",
+        i = self.Issue.from_dict({"id": "1", "slug": "a", "title": "A",
                                   "status": "backlog", "priority": "high",
                                   "milestone": None})
         self.assertEqual(i.labels, [])
@@ -186,13 +186,17 @@ class TestIssueModel(unittest.TestCase):
         self.assertEqual(i.parent, "3")
         self.assertEqual(i.depends_on, ["4", "5"])
 
-    def test_from_dict_coerces_legacy_int_ids_to_str(self):
-        i = self.Issue.from_dict({"id": 7, "slug": "s", "title": "T",
-                                  "status": "done", "priority": "low", "parent": 3,
-                                  "depends_on": [1, 2]})
-        self.assertEqual(i.id, "7")
-        self.assertEqual(i.parent, "3")
-        self.assertEqual(i.depends_on, ["1", "2"])
+    def test_from_dict_rejects_an_integer_id(self):
+        """Integer ids were the first iteration and are gone. `index.jsonl` carries
+        strings; the constructor still coerces, because in-process callers pass short
+        ints as a convenience, but the *format* does not accept one."""
+        for field in ("id", "parent"):
+            base = {"id": "k3m9x2a", "slug": "s", "title": "T",
+                    "status": "done", "priority": "low"}
+            base[field] = 7
+            with self.assertRaises(ValueError, msg=field) as cm:
+                self.Issue.from_dict(base)
+            self.assertIn("must be a string id", str(cm.exception))
 
     def test_from_dict_accepts_string_ids(self):
         i = self.Issue.from_dict({"id": "k3m9x2a", "slug": "s", "title": "T",
@@ -205,22 +209,15 @@ class TestIssueModel(unittest.TestCase):
                                   "status": "done", "priority": "low"})
 
     # -- legacy_id ----------------------------------------------------------
-    def test_legacy_id_defaults_none_and_omitted(self):
-        i = self.minimal()
-        self.assertIsNone(i.legacy_id)
-        self.assertNotIn("legacy_id", i.to_canonical())
-
-    def test_legacy_id_round_trips_as_int(self):
-        i = self.minimal(legacy_id=65)
+    def test_legacy_id_is_no_longer_a_field_but_still_round_trips(self):
+        """It was a built-in field; now it is nothing. A tracker still carrying one
+        does not lose it — `extra` preserves unknown keys verbatim — which is why
+        dropping the field needed no format bump."""
+        self.assertNotIn("legacy_id", self.t.CANON_KEYS)
+        i = self.Issue.from_dict(dict(id="k3m9x2a", slug="s", title="T",
+                                      status="backlog", priority="high", legacy_id=65))
+        self.assertEqual(i.extra["legacy_id"], 65)
         self.assertEqual(i.to_canonical()["legacy_id"], 65)
-        again = self.Issue.from_dict(i.to_canonical())
-        self.assertEqual(again.legacy_id, 65)
-
-    def test_from_dict_rejects_non_int_legacy_id(self):
-        with self.assertRaises(ValueError):
-            self.Issue.from_dict(dict(id="a", slug="s", title="T",
-                                      status="backlog", priority="high",
-                                      legacy_id="65"))
 
     # -- round-trip ---------------------------------------------------------
     def test_round_trip_through_canonical_is_stable(self):

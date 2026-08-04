@@ -18,7 +18,7 @@ class TestValidate(unittest.TestCase):
         p.write_text(body)
 
     def base(self, **over):
-        fields = {"id": 1, "slug": "a", "title": "A",
+        fields = {"id": "1", "slug": "a", "title": "A",
                   "status": "backlog", "priority": "high", "depends_on": []}
         fields.update(over)
         return self.t.Issue(**fields)
@@ -290,7 +290,7 @@ class TestLifecycleTupleInvariant(unittest.TestCase):
 
     def errors_for(self, tmp, **over):
         ctx = self.ctx(tmp)
-        fields = {"id": 1, "slug": "a", "title": "A",
+        fields = {"id": "1", "slug": "a", "title": "A",
                   "status": "backlog", "priority": "high", "depends_on": []}
         fields.update(over)
         row = self.t.Issue(**fields)

@@ -186,28 +186,32 @@ Wherever a command takes an id, **any unambiguous prefix works** (git-short-hash
 `trck show k3m` resolves to `k3m9x2a` as long as no other id starts with `k3m`. An
 ambiguous prefix is an error that lists all matching candidates.
 
-### Migrating an existing integer-id tracker
+### If you still have integer ids
 
-If you started with integer ids (the old default), run `trck repo renumber` once from the
-repo. It replaces every integer id with a random alphanumeric id, rewrites
-`parent`/`depends_on` links, renames issue files, and records each issue's prior integer
-in a new `legacy_id` field. After migration, old numeric references still resolve —
-`trck show 65` finds the issue whose `legacy_id` is 65, so historical `#NN` mentions in
-commit messages or issue bodies stay reachable. `renumber` is idempotent: issues that
-already have random ids are left untouched.
+Integer ids were trck's first iteration, replaced because two branches running `trck new`
+minted the same number. They are **no longer supported** — not read, not written, not
+resolved — and a tracker that still has them is refused with a message pointing here.
+
+Converting is a one-shot job, so it lives outside the engine:
 
 ```bash
-trck repo renumber   # one-shot; review the diff and commit the result
+python3 scripts/renumber.py issues --dry-run   # show the mapping, write nothing
+python3 scripts/renumber.py issues             # convert; review the diff and commit
 ```
 
-Integer-id trackers that are not migrated continue to work — integer ids are valid
-opaque string ids and are tolerated on read.
+It mints a random id per issue, rewrites `parent`/`depends_on`, renames the body files,
+rewrites `#NN` mentions **in issue bodies**, and writes `issues/legacy-ids.json` with the
+old→new map.
+
+**Keep that map.** Commit messages are not rewritable, so a `#24` in your history resolves
+nowhere else — the engine used to store each issue's old number and resolve `trck show 24`
+through it, and no longer does.
 
 ## Common verbs
 
 `new` · `mv` · `start` · `review` · `done` · `set` · `dep` · `label` · `show` · `list` · `ready` ·
 `next` · `tree` · `deps` · `path` · `which` · `check` · `summary` · `init` · `update` ·
-`version`, plus `repo normalize` · `repo renumber` · `repo install-hook` for tracker
+`version`, plus `repo normalize` · `repo install-hook` for tracker
 maintenance. Run `trck --help` (or `trck <verb> --help`) for details.
 
 `list` is the structure-aware browse verb. By default it prints a **nested forest** — each

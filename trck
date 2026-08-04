@@ -315,6 +315,27 @@ def detect_legacy_layout(cfg: dict, tracker_dir: Path) -> list[Path]:
     return out
 
 
+def detect_legacy_ids(tracker_dir: Path) -> list[str]:
+    """Issue bodies still named by an integer id — the pre-0.20 scheme, dropped
+    outright rather than migrated. Returns the offending filenames, sorted.
+
+    An all-digit id is not itself the discriminator: the id alphabet contains
+    digits, so `2345678` is an ordinary random id. The signature is the one the
+    old writer actually emitted — it zero-padded to three (`024-slug.md`), so a
+    legacy name is all digits, at least three long, and not ID_LEN long.
+
+    Worth a targeted error because the fallout otherwise is obscure. `filename`
+    no longer zero-pads, so such a tracker reports every issue as both missing on
+    disk and misnamed, and nothing in that output says why."""
+    out = []
+    for p in sorted((Path(tracker_dir) / ITEMS_DIR).glob("*.md")):
+        m = FILENAME_RE.match(p.name)
+        g = m.group(1) if m else ""
+        if g.isdigit() and 3 <= len(g) != ID_LEN:
+            out.append(p.name)
+    return out
+
+
 def is_actionable(cfg: dict, name: str) -> bool:
     """Whether `ready`/`next` may propose this as work to pick up. False for `in-review`
     — in flight, but its own output is pending someone else\'s judgement, so there is
@@ -411,7 +432,7 @@ def resolve_tracker_dir_or_die(dir_opt, env=None) -> Path:
 CANON_KEYS = [
     "id", "slug", "title", "status", "priority", "points", "parent",
     "labels", "depends_on", "spec", "review_url", "created", "started", "closed",
-    "resolution", "manual_status", "legacy_id",
+    "resolution", "manual_status",
 ]
 
 # Per-field defaults for the optional trck-owned fields. A field whose value
@@ -432,7 +453,6 @@ FIELD_DEFAULTS = {
     "closed": None,
     "resolution": None,
     "manual_status": False,
-    "legacy_id": None,
 }
 
 
@@ -490,13 +510,14 @@ class Issue:
     closed: str | None = None
     resolution: str | None = None
     manual_status: bool = False
-    legacy_id: int | None = None
     extra: dict = field(default_factory=dict)
 
     def __post_init__(self):
-        # Ids are opaque strings. Coerce legacy integer ids (and the int ids that
-        # tests/handlers still pass) to str at the single construction choke point,
-        # so id/parent/depends_on are uniformly typed everywhere downstream.
+        # Ids are opaque strings. This is type normalisation, not integer-id
+        # support: `index.jsonl` must carry strings (`from_dict` rejects anything
+        # else), but in-process callers — tests especially — pass short int ids as a
+        # convenience, and coercing at the single construction choke point keeps
+        # id/parent/depends_on uniformly typed everywhere downstream.
         if self.id is not None:
             self.id = str(self.id)
         if self.parent is not None:
@@ -533,9 +554,9 @@ class Issue:
                 bad(name, f"must be an integer, got {v!r}")
 
         def want_id(name, v):
-            if isinstance(v, bool) or not isinstance(v, (int, str)):
-                bad(name, f"must be a string or integer id, got {v!r}")
-            if isinstance(v, str) and not v:
+            if not isinstance(v, str):
+                bad(name, f"must be a string id, got {v!r}")
+            if not v:
                 bad(name, "must not be empty")
 
         for k in ("id", "slug", "title", "status", "priority"):
@@ -562,8 +583,6 @@ class Issue:
                 bad(k, f"must be a string, got {d[k]!r}")
         if "manual_status" in d and not isinstance(d["manual_status"], bool):
             bad("manual_status", f"must be a boolean, got {d['manual_status']!r}")
-        if d.get("legacy_id") is not None:
-            want_int("legacy_id", d["legacy_id"])
 
         known = {k: v for k, v in d.items() if k in CANON_KEYS}
         extra = {k: v for k, v in d.items() if k not in CANON_KEYS}
@@ -630,22 +649,21 @@ def build_ctx_or_die(args, guard_layout: bool = True) -> Ctx:
             die(f"legacy status-folder layout: {len(stale)} issue file(s) under "
                 f"{folders} — run `trck repo migrate-layout` to move them into "
                 f"{ITEMS_DIR}/ (status now lives only in index.jsonl)")
+    stale_ids = detect_legacy_ids(ctx.dir)
+    if stale_ids:
+        die(f"legacy integer ids: {len(stale_ids)} issue file(s) still named by "
+            f"number (e.g. {stale_ids[0]}) — integer ids are no longer supported. "
+            f"Convert with scripts/renumber.py (it writes an old->new map), or stay "
+            f"on trck 0.25.")
     return ctx
 
 def file_id(m: re.Match) -> str:
-    """The issue id from a FILENAME_RE match. A legacy zero-padded numeric name
-    (064) normalizes to its bare integer string (64) so it matches the index's
-    coerced string id; a random alphanumeric id is returned unchanged."""
-    g = m.group(1)
-    return str(int(g)) if g.isdigit() else g
+    """The issue id from a FILENAME_RE match — the id verbatim."""
+    return m.group(1)
 
 
 def filename(row: Issue) -> str:
-    # Numeric ids keep the historical 3-wide zero padding (so existing on-disk
-    # names are byte-identical and `check` stays green with no rename); random
-    # alphanumeric ids are written bare.
-    head = f"{int(row.id):03d}" if row.id.isdigit() else row.id
-    return f"{head}-{row.slug}.md"
+    return f"{row.id}-{row.slug}.md"
 
 
 def rel_link(row: Issue) -> str:
@@ -724,22 +742,14 @@ def save_index(ctx: Ctx, rows: list[Issue]) -> None:
 def resolve_ref(rows: list[Issue], token) -> Issue:
     """Resolve a CLI id token to exactly one issue, git-short-hash style. Tiers,
     tried in order; the first tier with matches decides (one match wins, more than
-    one is ambiguous): (1) exact id, (2) exact legacy_id (numeric token only),
-    (3) unique id prefix. `die`s on no match or an ambiguous reference, listing
-    the candidates."""
+    one is ambiguous): (1) exact id, (2) unique id prefix. `die`s on no match or an
+    ambiguous reference, listing the candidates."""
     token = str(token)
     if token.startswith("#"):
         token = token[1:]  # ids print as "#abc1234"; tolerate a pasted-back "#"
     exact = [r for r in rows if r.id == token]
     if exact:
         return exact[0]
-    if token.isdigit():
-        legacy = [r for r in rows if r.legacy_id == int(token)]
-        if len(legacy) == 1:
-            return legacy[0]
-        if len(legacy) > 1:
-            cands = ", ".join(sorted(r.id for r in legacy))
-            die(f"ambiguous legacy id '{token}' matches: {cands}")
     pref = [r for r in rows if r.id.startswith(token)]
     if len(pref) == 1:
         return pref[0]
@@ -1801,13 +1811,15 @@ def _existing_ids(ctx: Ctx) -> set[str]:
 def gen_id(ctx: Ctx) -> str:
     """A fresh random id. Within-branch guard: redraw if it collides with any id
     already visible in the index or on disk; the unseen cross-branch tail stays
-    optimistic (collision improbable, not impossible). Also redraws all-digit
-    candidates (reserved for legacy integer ids so the all-digit ⇔ legacy
-    discriminator in renumber/filename stays sound)."""
+    optimistic (collision improbable, not impossible).
+
+    All-digit candidates used to be redrawn, to keep `all-digit ⇔ legacy integer
+    id` sound. Nothing reads that discriminator now, so `2345678` is an ordinary
+    id and the alphabet is used in full."""
     seen = _existing_ids(ctx)
     while True:
         cand = "".join(secrets.choice(ID_ALPHABET) for _ in range(ID_LEN))
-        if cand not in seen and not cand.isdigit():
+        if cand not in seen:
             return cand
 
 
@@ -2672,8 +2684,8 @@ Each issue is keyed by a short **random alphanumeric** id (7 chars from a look-a
 base32 alphabet, e.g. `k3m9x2a`) — **not** a sequential integer. Ids are random, so listing
 order is *creation* order, not id order. Anywhere a command wants an `ID`, **any unambiguous
 prefix works** (`trck show k3m` resolves `k3m9x2a`); an ambiguous prefix errors and lists the
-candidates. Legacy integer-id trackers keep working, and `trck repo renumber` migrates them — a
-renumbered issue records its old number in `legacy_id`, so stale `#NN` references still resolve.
+candidates. Integer ids were an earlier iteration and are no longer supported at all — a
+tracker that still has them is refused, with `scripts/renumber.py` in the trck repo as the way out.
 
 ## Common verbs (run `trck --help` for all)
 Run from anywhere in the repo — `trck` finds the tracker by walking up to the folder
@@ -2691,7 +2703,6 @@ holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
   is `done`. `trck set ID --review-url none` unlinks.
 - `trck list` · `trck tree` · `trck deps ID` · `trck show ID` · `trck check` · `trck summary`
 - `trck repo normalize` — rewrite `index.jsonl` in canonical slim form (no data change)
-- `trck repo renumber` — convert legacy integer ids to random alphanumeric ids
 - `trck repo install-hook` — install the pre-commit consistency hook
 - `trck repo setup-git` — **run once per clone.** Writes this folder's `.gitattributes` and
   registers trck's merge drivers in *your* `.git/config`. Git shares `.gitattributes` but never
@@ -3444,49 +3455,6 @@ def cmd_normalize(args) -> None:
     print(f"normalized {ctx.index_path} ({len(rows)} issues)")
 
 
-def cmd_renumber(args) -> None:
-    """One-shot migration: convert every legacy integer id to a fresh random id.
-    Rewrites parent/depends_on through the old->new map, records each issue's prior
-    integer id in legacy_id, and renames files. Random ids are left untouched, so a
-    second run is a no-op. #NN prose mentions in bodies are unchanged but still
-    resolve via the legacy_id alias."""
-    ctx = build_ctx_or_die(args)
-    rows = load_index(ctx)
-    legacy = [r for r in rows if r.id.isdigit()]
-    if not legacy:
-        print("renumber: no legacy integer ids to convert")
-        return
-    assigned = _existing_ids(ctx)
-    mapping = {}
-    for r in legacy:
-        while True:
-            cand = "".join(secrets.choice(ID_ALPHABET) for _ in range(ID_LEN))
-            if cand not in assigned:
-                assigned.add(cand)
-                break
-        mapping[r.id] = cand
-
-    # For each legacy row: snapshot its current path, switch it to the new id,
-    # then move the file to the new path.
-    for r in legacy:
-        old = issue_path(ctx, r)
-        r.legacy_id = int(r.id)
-        r.id = mapping[r.id]
-        new = issue_path(ctx, r)
-        new.parent.mkdir(parents=True, exist_ok=True)
-        if old.resolve() != new.resolve():
-            shutil.move(str(old), str(new))
-    # Rewrite cross-references across ALL rows (a random-id row may point at a
-    # renumbered one).
-    for r in rows:
-        if r.parent in mapping:
-            r.parent = mapping[r.parent]
-        r.depends_on = [mapping.get(d, d) for d in r.depends_on]
-
-    finalize(ctx, rows)
-    print(f"renumber: converted {len(legacy)} issue(s) to random ids")
-
-
 def cmd_install_hook(args) -> None:
     ctx = build_ctx_or_die(args)
     common = subprocess.run(["git", "rev-parse", "--git-common-dir"],
@@ -4036,8 +4004,9 @@ MODEL
   ids         short random alphanumeric strings (7 chars from a base32 alphabet
               with look-alike chars removed). Any unambiguous prefix works in
               place of a full id: `trck show k3m` matches k3m9x2a. An ambiguous
-              prefix is an error that lists the candidates. Legacy integer-id
-              trackers keep working; `trck repo renumber` migrates them.
+              prefix is an error that lists the candidates. Integer ids
+              were an earlier iteration; a tracker that still has them is
+              refused, and scripts/renumber.py converts it.
   status      every issue has exactly one of the four; move it with mv /
               start / review / done. Work sitting in in-review stays out of
               ready/next -- nothing there to pick up -- but still blocks.
@@ -4406,7 +4375,7 @@ def build_parser() -> argparse.ArgumentParser:
     # Tracker maintenance lives under `repo`: verbs you run *on a tracker*, rarely,
     # to migrate or tidy it. `init` and `update` stay at the root — they act on your
     # setup rather than on a tracker, and `init` runs before one exists at all.
-    rp = sub.add_parser("repo", help="tracker maintenance (normalize, renumber, …)",
+    rp = sub.add_parser("repo", help="tracker maintenance (normalize, install-hook, …)",
                         description="Maintenance verbs that operate on an existing "
                                     "tracker. Run them rarely; the daily verbs live "
                                     "at the top level.")
@@ -4416,15 +4385,6 @@ def build_parser() -> argparse.ArgumentParser:
                          description="Rewrite index.jsonl in canonical slim form "
                                      "(stable key order, stripped defaults).")
     nm.set_defaults(func=cmd_normalize)
-
-    rn = rsub.add_parser("renumber",
-                         help="convert legacy integer ids to random alphanumeric ids",
-                         description="One-shot migration: replace every legacy integer "
-                                     "id with a random alphanumeric id, rewriting "
-                                     "parent/depends_on, recording the prior id in "
-                                     "legacy_id (a resolvable alias), and renaming files. "
-                                     "Idempotent; random ids are left untouched.")
-    rn.set_defaults(func=cmd_renumber)
 
     ih = rsub.add_parser("install-hook", help="install the pre-commit consistency hook",
                          description="Install a git pre-commit hook that runs `trck check`.")

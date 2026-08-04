@@ -18,7 +18,7 @@ class TestSummary(unittest.TestCase):
         p.write_text("# x\n")
 
     def base(self, **over):
-        fields = {"id": 1, "slug": "a", "title": "A",
+        fields = {"id": "1", "slug": "a", "title": "A",
                   "status": "backlog", "priority": "high", "depends_on": []}
         fields.update(over)
         return self.t.Issue(**fields)

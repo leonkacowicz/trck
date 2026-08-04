@@ -1,6 +1,6 @@
 from __future__ import annotations
 import argparse
-from .cmd_maint import cmd_changelog, cmd_check, cmd_done, cmd_init, cmd_install_hook, cmd_merge_index, cmd_merge_summary, cmd_migrate_layout, cmd_normalize, cmd_renumber, cmd_review, cmd_setup_git, cmd_start, cmd_summary, cmd_version
+from .cmd_maint import cmd_changelog, cmd_check, cmd_done, cmd_init, cmd_install_hook, cmd_merge_index, cmd_merge_summary, cmd_migrate_layout, cmd_normalize, cmd_review, cmd_setup_git, cmd_start, cmd_summary, cmd_version
 from .cmd_mutate import cmd_dep, cmd_label, cmd_mv, cmd_new, cmd_set
 from .cmd_query import cmd_deps, cmd_diff, cmd_list, cmd_next, cmd_path, cmd_ready, cmd_show, cmd_which
 from .cmd_selfmgmt import cmd_update
@@ -16,8 +16,9 @@ MODEL
   ids         short random alphanumeric strings (7 chars from a base32 alphabet
               with look-alike chars removed). Any unambiguous prefix works in
               place of a full id: `trck show k3m` matches k3m9x2a. An ambiguous
-              prefix is an error that lists the candidates. Legacy integer-id
-              trackers keep working; `trck repo renumber` migrates them.
+              prefix is an error that lists the candidates. Integer ids
+              were an earlier iteration; a tracker that still has them is
+              refused, and scripts/renumber.py converts it.
   status      every issue has exactly one of the four; move it with mv /
               start / review / done. Work sitting in in-review stays out of
               ready/next -- nothing there to pick up -- but still blocks.
@@ -386,7 +387,7 @@ def build_parser() -> argparse.ArgumentParser:
     # Tracker maintenance lives under `repo`: verbs you run *on a tracker*, rarely,
     # to migrate or tidy it. `init` and `update` stay at the root — they act on your
     # setup rather than on a tracker, and `init` runs before one exists at all.
-    rp = sub.add_parser("repo", help="tracker maintenance (normalize, renumber, …)",
+    rp = sub.add_parser("repo", help="tracker maintenance (normalize, install-hook, …)",
                         description="Maintenance verbs that operate on an existing "
                                     "tracker. Run them rarely; the daily verbs live "
                                     "at the top level.")
@@ -396,15 +397,6 @@ def build_parser() -> argparse.ArgumentParser:
                          description="Rewrite index.jsonl in canonical slim form "
                                      "(stable key order, stripped defaults).")
     nm.set_defaults(func=cmd_normalize)
-
-    rn = rsub.add_parser("renumber",
-                         help="convert legacy integer ids to random alphanumeric ids",
-                         description="One-shot migration: replace every legacy integer "
-                                     "id with a random alphanumeric id, rewriting "
-                                     "parent/depends_on, recording the prior id in "
-                                     "legacy_id (a resolvable alias), and renaming files. "
-                                     "Idempotent; random ids are left untouched.")
-    rn.set_defaults(func=cmd_renumber)
 
     ih = rsub.add_parser("install-hook", help="install the pre-commit consistency hook",
                          description="Install a git pre-commit hook that runs `trck check`.")

@@ -15,7 +15,7 @@ from tests.helpers import load_trck, make_tracker, ns
 
 
 def row(iid="abc1234", **over):
-    r = {"id": iid, "slug": "alpha", "title": "Alpha", "kind": "task",
+    r = {"id": str(iid), "slug": "alpha", "title": "Alpha", "kind": "task",
          "status": "backlog", "priority": "medium"}
     r.update(over)
     return r

@@ -85,9 +85,9 @@ class TestTimestampBackCompat(unittest.TestCase):
             d = self.setup_dir(tmp)
             (d / "items").mkdir()
             # create the issue body file the index points at
-            (d / "items" / "001-legacy.md").write_text("# Legacy\n")
+            (d / "items" / "1-legacy.md").write_text("# Legacy\n")
             self.write_index(d, [{
-                "id": 1, "slug": "legacy", "title": "Legacy", "kind": "task",
+                "id": "1", "slug": "legacy", "title": "Legacy", "kind": "task",
                 "status": "backlog", "priority": "medium",
                 "created": "2026-06-05",  # legacy day-only value
             }])
@@ -105,12 +105,12 @@ class TestTimestampBackCompat(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = self.setup_dir(tmp)
             (d / "items").mkdir()
-            (d / "items" / "001-older.md").write_text("# Older\n")
-            (d / "items" / "002-newer.md").write_text("# Newer\n")
+            (d / "items" / "1-older.md").write_text("# Older\n")
+            (d / "items" / "2-newer.md").write_text("# Newer\n")
             self.write_index(d, [
-                {"id": 1, "slug": "older", "title": "Older", "kind": "task",
+                {"id": "1", "slug": "older", "title": "Older", "kind": "task",
                  "status": "backlog", "priority": "medium", "created": "2026-06-05"},
-                {"id": 2, "slug": "newer", "title": "Newer", "kind": "task",
+                {"id": "2", "slug": "newer", "title": "Newer", "kind": "task",
                  "status": "backlog", "priority": "medium",
                  "created": "2026-06-05T09:00:00Z"},
             ])

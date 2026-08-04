@@ -125,8 +125,8 @@ class TestIndexIO(unittest.TestCase):
         # required string, and a wrong-typed field all fail loudly at load.
         for row in (
             '{"slug":"a","title":"A","kind":"task","status":"backlog","priority":"high"}',
-            '{"id":1,"title":"A","kind":"task","status":"backlog","priority":"high"}',
-            '{"id":1,"slug":"a","title":"A","kind":"task","status":"backlog","priority":"high","points":"lots"}',
+            '{"id":"1","title":"A","kind":"task","status":"backlog","priority":"high"}',
+            '{"id":"1","slug":"a","title":"A","kind":"task","status":"backlog","priority":"high","points":"lots"}',
             '"not an object"',
         ):
             with TemporaryDirectory() as tmp:

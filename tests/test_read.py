@@ -50,7 +50,7 @@ class TestRead(unittest.TestCase):
             out = self.cap(self.t.cmd_show, ns(dir=str(d), id=id1, json=False))
             self.assertIn("title", out)        # aligned key: value, not raw JSON
             self.assertIn("Hello", out)
-            self.assertNotIn('"id": 1', out)
+            self.assertNotIn('"id": "1"', out)
             self.assertIn("--- body ---", out)
             self.assertIn("# Hello", out)
 
@@ -484,9 +484,9 @@ class TestRead(unittest.TestCase):
     def test_list_dangling_parent_renders_as_root(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
-            self.write_index(d, {"id": 2, "slug": "child", "title": "Orphanish",
+            self.write_index(d, {"id": "2", "slug": "child", "title": "Orphanish",
                                  "status": "backlog",
-                                 "priority": "high", "parent": 99})
+                                 "priority": "high", "parent": "99"})
             out = self.nested(d)                              # parent 99 missing
             self.assertIn("#2", out)                          # promoted to a root, no crash
             self.assertNotIn("└─", self.row_for(out, 2))
@@ -495,10 +495,10 @@ class TestRead(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.write_index(d,
-                {"id": 1, "slug": "a", "title": "A",
-                 "status": "backlog", "priority": "high", "parent": 2},
-                {"id": 2, "slug": "b", "title": "B",
-                 "status": "backlog", "priority": "high", "parent": 1})
+                {"id": "1", "slug": "a", "title": "A",
+                 "status": "backlog", "priority": "high", "parent": "2"},
+                {"id": "2", "slug": "b", "title": "B",
+                 "status": "backlog", "priority": "high", "parent": "1"})
             out = self.nested(d)                              # must return, not hang/raise
             self.assertIsInstance(out, str)
 
@@ -549,10 +549,10 @@ class TestRead(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             self.write_index(d,
-                {"id": 1, "slug": "a", "title": "A",
-                 "status": "backlog", "priority": "high", "depends_on": [2]},
-                {"id": 2, "slug": "b", "title": "B",
-                 "status": "backlog", "priority": "high", "depends_on": [1]})
+                {"id": "1", "slug": "a", "title": "A",
+                 "status": "backlog", "priority": "high", "depends_on": ["2"]},
+                {"id": "2", "slug": "b", "title": "B",
+                 "status": "backlog", "priority": "high", "depends_on": ["1"]})
             out = self.nested(d)                              # dep cycle: must render, not hang
             self.assertIn("#1", out)
             self.assertIn("#2", out)

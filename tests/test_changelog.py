@@ -9,10 +9,10 @@ from tests.helpers import load_trck, make_tracker, ns
 
 def row(iid, *, status="done", closed=None, parent=None,
         resolution=None, component=None, title=None):
-    d = {"id": iid, "slug": f"i{iid}", "title": title or f"I{iid}",
+    d = {"id": str(iid), "slug": f"i{iid}", "title": title or f"I{iid}",
          "status": status, "priority": "medium"}
     if parent is not None:
-        d["parent"] = parent
+        d["parent"] = str(parent)
     if closed is not None:
         d["closed"] = closed
     if resolution is not None:

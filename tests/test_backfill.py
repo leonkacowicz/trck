@@ -39,13 +39,13 @@ class TestRewriteLines(unittest.TestCase):
 
     def test_rewrite_replaces_day_only_and_leaves_others_byte_identical(self):
         recovered = {
-            (1, "created"): "2026-06-05T09:00:00+00:00",
-            (1, "closed"): "2026-06-06T12:00:00-03:00",
+            ("1", "created"): "2026-06-05T09:00:00+00:00",
+            ("1", "closed"): "2026-06-06T12:00:00-03:00",
         }
-        line1 = self.canonical(id=1, slug="x", title="X",
+        line1 = self.canonical(id="1", slug="x", title="X",
                                status="done", priority="medium",
                                created="2026-06-05", closed="2026-06-06")
-        line2 = self.canonical(id=2, slug="y", title="Y",
+        line2 = self.canonical(id="2", slug="y", title="Y",
                                status="backlog", priority="low",
                                created="2026-06-05T08:00:00Z")
         new_lines, changes, warnings = self.b.rewrite_lines([line1, line2], recovered)
@@ -56,18 +56,18 @@ class TestRewriteLines(unittest.TestCase):
         self.assertEqual(row1["created"], "2026-06-05T09:00:00Z")
         self.assertEqual(row1["closed"], "2026-06-06T15:00:00Z")
         self.assertEqual(set(changes), {
-            (1, "created", "2026-06-05", "2026-06-05T09:00:00Z"),
-            (1, "closed", "2026-06-06", "2026-06-06T15:00:00Z"),
+            ("1", "created", "2026-06-05", "2026-06-05T09:00:00Z"),
+            ("1", "closed", "2026-06-06", "2026-06-06T15:00:00Z"),
         })
         self.assertEqual(warnings, [])
 
     def test_rewrite_warns_when_no_history_and_leaves_value(self):
-        line = self.canonical(id=3, slug="z", title="Z",
+        line = self.canonical(id="3", slug="z", title="Z",
                               status="done", priority="medium", created="2026-06-05")
         new_lines, changes, warnings = self.b.rewrite_lines([line], {})
         self.assertEqual(new_lines[0], line)  # unchanged
         self.assertEqual(changes, [])
-        self.assertEqual(warnings, [(3, "created", "2026-06-05")])
+        self.assertEqual(warnings, [("3", "created", "2026-06-05")])
 
     def test_rewrite_preserves_blank_lines(self):
         new_lines, changes, warnings = self.b.rewrite_lines(["", "  "], {})
@@ -77,7 +77,7 @@ class TestRewriteLines(unittest.TestCase):
 
     def test_rows_without_integer_id_are_passed_through_untouched(self):
         # A row with no integer id and a day-only date must NOT produce a warning
-        # with a None id (which would later crash the #{:03d} report). It is left
+        # with a None id (which would later crash the #{id} report). It is left
         # byte-identical and ignored.
         noid = self.canonical(slug="noid", title="No id",
                               status="done", priority="medium", created="2026-06-05")
@@ -94,30 +94,30 @@ class TestReduceTransitions(unittest.TestCase):
         self.b = load_backfill()
 
     def test_first_appearance_sets_created(self):
-        snaps = [("2026-06-01T10:00:00+00:00", [{"id": 1, "created": "2026-06-01"}])]
+        snaps = [("2026-06-01T10:00:00+00:00", [{"id": "1", "created": "2026-06-01"}])]
         rec = self.b.reduce_transitions(snaps)
-        self.assertEqual(rec[(1, "created")], "2026-06-01T10:00:00+00:00")
+        self.assertEqual(rec[("1", "created")], "2026-06-01T10:00:00+00:00")
 
     def test_last_close_wins_after_reopen(self):
         snaps = [
-            ("2026-06-01T10:00:00+00:00", [{"id": 1, "created": "2026-06-01"}]),
-            ("2026-06-02T10:00:00+00:00", [{"id": 1, "created": "2026-06-01", "closed": "2026-06-02"}]),
-            ("2026-06-03T10:00:00+00:00", [{"id": 1, "created": "2026-06-01"}]),               # reopened: closed cleared
-            ("2026-06-04T10:00:00+00:00", [{"id": 1, "created": "2026-06-01", "closed": "2026-06-04"}]),  # reclosed
+            ("2026-06-01T10:00:00+00:00", [{"id": "1", "created": "2026-06-01"}]),
+            ("2026-06-02T10:00:00+00:00", [{"id": "1", "created": "2026-06-01", "closed": "2026-06-02"}]),
+            ("2026-06-03T10:00:00+00:00", [{"id": "1", "created": "2026-06-01"}]),               # reopened: closed cleared
+            ("2026-06-04T10:00:00+00:00", [{"id": "1", "created": "2026-06-01", "closed": "2026-06-04"}]),  # reclosed
         ]
         rec = self.b.reduce_transitions(snaps)
-        self.assertEqual(rec[(1, "closed")], "2026-06-04T10:00:00+00:00")
-        self.assertEqual(rec[(1, "created")], "2026-06-01T10:00:00+00:00")
+        self.assertEqual(rec[("1", "closed")], "2026-06-04T10:00:00+00:00")
+        self.assertEqual(rec[("1", "created")], "2026-06-01T10:00:00+00:00")
 
     def test_clear_to_none_keeps_last_set_time(self):
         snaps = [
-            ("2026-06-02T10:00:00+00:00", [{"id": 1, "closed": "2026-06-02"}]),
-            ("2026-06-03T10:00:00+00:00", [{"id": 1}]),  # cleared
+            ("2026-06-02T10:00:00+00:00", [{"id": "1", "closed": "2026-06-02"}]),
+            ("2026-06-03T10:00:00+00:00", [{"id": "1"}]),  # cleared
         ]
         rec = self.b.reduce_transitions(snaps)
-        self.assertEqual(rec[(1, "closed")], "2026-06-02T10:00:00+00:00")
+        self.assertEqual(rec[("1", "closed")], "2026-06-02T10:00:00+00:00")
 
-    def test_non_integer_id_rows_are_ignored(self):
+    def test_rows_without_an_id_are_ignored(self):
         snaps = [("2026-06-01T10:00:00+00:00", [{"slug": "noid", "created": "2026-06-01"}])]
         rec = self.b.reduce_transitions(snaps)
         self.assertEqual(rec, {})
@@ -152,7 +152,7 @@ def _commit_index(repo, content, author_iso):
 
 
 def _row(iid, **extra):
-    row = {"id": iid, "slug": f"i{iid}", "title": f"I{iid}", "kind": "task",
+    row = {"id": str(iid), "slug": f"i{iid}", "title": f"I{iid}", "kind": "task",
            "status": "backlog", "priority": "medium"}
     row.update(extra)
     return json.dumps(row, ensure_ascii=False)
@@ -186,9 +186,9 @@ class TestGitLayer(unittest.TestCase):
                           "2026-06-03T10:00:00+00:00")
             root, index_rel, _ = self.b.resolve_index(str(Path(tmp) / "issues"))
             rec = self.b.recover_times(root, index_rel)
-            self.assertEqual(rec[(1, "created")], "2026-06-01T09:00:00+00:00")
-            self.assertEqual(rec[(1, "started")], "2026-06-02T12:00:00-03:00")
-            self.assertEqual(rec[(1, "closed")], "2026-06-03T10:00:00+00:00")
+            self.assertEqual(rec[("1", "created")], "2026-06-01T09:00:00+00:00")
+            self.assertEqual(rec[("1", "started")], "2026-06-02T12:00:00-03:00")
+            self.assertEqual(rec[("1", "closed")], "2026-06-03T10:00:00+00:00")
 
 
 @unittest.skipUnless(shutil.which("git"), "git not available")

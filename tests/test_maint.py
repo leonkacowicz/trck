@@ -94,7 +94,7 @@ class TestMaint(unittest.TestCase):
             d = make_tracker(tmp, {})
             self.seed(d)
             # write a verbose row by hand (old engine format: every key present)
-            verbose = ('{"id": 1, "slug": "001-item", "title": "Item", '
+            verbose = ('{"id": "1", "slug": "001-item", "title": "Item", '
                        '"kind": "task", "status": "backlog", "priority": "high", '
                        '"parent": null, "milestone": null, "depends_on": [], '
                        '"spec": null, "created": "2026-06-05", "started": null, '

@@ -3,7 +3,7 @@ from dataclasses import dataclass, field, fields
 from pathlib import Path
 import json
 import re
-from .config import detect_legacy_layout, load_config, resolve_tracker_dir, resolve_tracker_dir_or_die
+from .config import detect_legacy_ids, detect_legacy_layout, load_config, resolve_tracker_dir, resolve_tracker_dir_or_die
 from .constants import FIELD_KEY_RE, ITEMS_DIR, die
 
 # --------------------------------------------------------------------------- #
@@ -12,7 +12,7 @@ from .constants import FIELD_KEY_RE, ITEMS_DIR, die
 CANON_KEYS = [
     "id", "slug", "title", "status", "priority", "points", "parent",
     "labels", "depends_on", "spec", "review_url", "created", "started", "closed",
-    "resolution", "manual_status", "legacy_id",
+    "resolution", "manual_status",
 ]
 
 # Per-field defaults for the optional trck-owned fields. A field whose value
@@ -33,7 +33,6 @@ FIELD_DEFAULTS = {
     "closed": None,
     "resolution": None,
     "manual_status": False,
-    "legacy_id": None,
 }
 
 
@@ -91,13 +90,14 @@ class Issue:
     closed: str | None = None
     resolution: str | None = None
     manual_status: bool = False
-    legacy_id: int | None = None
     extra: dict = field(default_factory=dict)
 
     def __post_init__(self):
-        # Ids are opaque strings. Coerce legacy integer ids (and the int ids that
-        # tests/handlers still pass) to str at the single construction choke point,
-        # so id/parent/depends_on are uniformly typed everywhere downstream.
+        # Ids are opaque strings. This is type normalisation, not integer-id
+        # support: `index.jsonl` must carry strings (`from_dict` rejects anything
+        # else), but in-process callers — tests especially — pass short int ids as a
+        # convenience, and coercing at the single construction choke point keeps
+        # id/parent/depends_on uniformly typed everywhere downstream.
         if self.id is not None:
             self.id = str(self.id)
         if self.parent is not None:
@@ -134,9 +134,9 @@ class Issue:
                 bad(name, f"must be an integer, got {v!r}")
 
         def want_id(name, v):
-            if isinstance(v, bool) or not isinstance(v, (int, str)):
-                bad(name, f"must be a string or integer id, got {v!r}")
-            if isinstance(v, str) and not v:
+            if not isinstance(v, str):
+                bad(name, f"must be a string id, got {v!r}")
+            if not v:
                 bad(name, "must not be empty")
 
         for k in ("id", "slug", "title", "status", "priority"):
@@ -163,8 +163,6 @@ class Issue:
                 bad(k, f"must be a string, got {d[k]!r}")
         if "manual_status" in d and not isinstance(d["manual_status"], bool):
             bad("manual_status", f"must be a boolean, got {d['manual_status']!r}")
-        if d.get("legacy_id") is not None:
-            want_int("legacy_id", d["legacy_id"])
 
         known = {k: v for k, v in d.items() if k in CANON_KEYS}
         extra = {k: v for k, v in d.items() if k not in CANON_KEYS}
@@ -231,22 +229,21 @@ def build_ctx_or_die(args, guard_layout: bool = True) -> Ctx:
             die(f"legacy status-folder layout: {len(stale)} issue file(s) under "
                 f"{folders} — run `trck repo migrate-layout` to move them into "
                 f"{ITEMS_DIR}/ (status now lives only in index.jsonl)")
+    stale_ids = detect_legacy_ids(ctx.dir)
+    if stale_ids:
+        die(f"legacy integer ids: {len(stale_ids)} issue file(s) still named by "
+            f"number (e.g. {stale_ids[0]}) — integer ids are no longer supported. "
+            f"Convert with scripts/renumber.py (it writes an old->new map), or stay "
+            f"on trck 0.25.")
     return ctx
 
 def file_id(m: re.Match) -> str:
-    """The issue id from a FILENAME_RE match. A legacy zero-padded numeric name
-    (064) normalizes to its bare integer string (64) so it matches the index's
-    coerced string id; a random alphanumeric id is returned unchanged."""
-    g = m.group(1)
-    return str(int(g)) if g.isdigit() else g
+    """The issue id from a FILENAME_RE match — the id verbatim."""
+    return m.group(1)
 
 
 def filename(row: Issue) -> str:
-    # Numeric ids keep the historical 3-wide zero padding (so existing on-disk
-    # names are byte-identical and `check` stays green with no rename); random
-    # alphanumeric ids are written bare.
-    head = f"{int(row.id):03d}" if row.id.isdigit() else row.id
-    return f"{head}-{row.slug}.md"
+    return f"{row.id}-{row.slug}.md"
 
 
 def rel_link(row: Issue) -> str:
@@ -325,22 +322,14 @@ def save_index(ctx: Ctx, rows: list[Issue]) -> None:
 def resolve_ref(rows: list[Issue], token) -> Issue:
     """Resolve a CLI id token to exactly one issue, git-short-hash style. Tiers,
     tried in order; the first tier with matches decides (one match wins, more than
-    one is ambiguous): (1) exact id, (2) exact legacy_id (numeric token only),
-    (3) unique id prefix. `die`s on no match or an ambiguous reference, listing
-    the candidates."""
+    one is ambiguous): (1) exact id, (2) unique id prefix. `die`s on no match or an
+    ambiguous reference, listing the candidates."""
     token = str(token)
     if token.startswith("#"):
         token = token[1:]  # ids print as "#abc1234"; tolerate a pasted-back "#"
     exact = [r for r in rows if r.id == token]
     if exact:
         return exact[0]
-    if token.isdigit():
-        legacy = [r for r in rows if r.legacy_id == int(token)]
-        if len(legacy) == 1:
-            return legacy[0]
-        if len(legacy) > 1:
-            cands = ", ".join(sorted(r.id for r in legacy))
-            die(f"ambiguous legacy id '{token}' matches: {cands}")
     pref = [r for r in rows if r.id.startswith(token)]
     if len(pref) == 1:
         return pref[0]

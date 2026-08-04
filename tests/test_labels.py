@@ -146,7 +146,7 @@ class TestLabels(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             ctx = self.t.Ctx(d, self.t.load_config(d))
-            legacy = ('{"id": 1, "slug": "a", "title": "A", "kind": "task", '
+            legacy = ('{"id": "1", "slug": "a", "title": "A", "kind": "task", '
                       '"status": "backlog", "priority": "high", '
                       '"milestone": "v1.0"}\n')
             (Path(d) / "index.jsonl").write_text(legacy)
@@ -158,7 +158,7 @@ class TestLabels(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             ctx = self.t.Ctx(d, self.t.load_config(d))
-            legacy = ('{"id": 1, "slug": "a", "title": "A", "kind": "task", '
+            legacy = ('{"id": "1", "slug": "a", "title": "A", "kind": "task", '
                       '"status": "backlog", "priority": "high", '
                       '"milestone": null}\n')
             (Path(d) / "index.jsonl").write_text(legacy)
@@ -175,7 +175,7 @@ class TestLabels(unittest.TestCase):
             p = self.t.issue_path(ctx, r)
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text("# x\n")
-            legacy = ('{"id": 1, "slug": "a", "title": "A", "kind": "task", '
+            legacy = ('{"id": "1", "slug": "a", "title": "A", "kind": "task", '
                       '"status": "backlog", "priority": "high", '
                       '"milestone": "v1.0"}\n')
             (Path(d) / "index.jsonl").write_text(legacy)

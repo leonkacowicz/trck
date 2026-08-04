@@ -558,13 +558,15 @@ def _existing_ids(ctx: Ctx) -> set[str]:
 def gen_id(ctx: Ctx) -> str:
     """A fresh random id. Within-branch guard: redraw if it collides with any id
     already visible in the index or on disk; the unseen cross-branch tail stays
-    optimistic (collision improbable, not impossible). Also redraws all-digit
-    candidates (reserved for legacy integer ids so the all-digit ⇔ legacy
-    discriminator in renumber/filename stays sound)."""
+    optimistic (collision improbable, not impossible).
+
+    All-digit candidates used to be redrawn, to keep `all-digit ⇔ legacy integer
+    id` sound. Nothing reads that discriminator now, so `2345678` is an ordinary
+    id and the alphabet is used in full."""
     seen = _existing_ids(ctx)
     while True:
         cand = "".join(secrets.choice(ID_ALPHABET) for _ in range(ID_LEN))
-        if cand not in seen and not cand.isdigit():
+        if cand not in seen:
             return cand
 
 

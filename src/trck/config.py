@@ -2,7 +2,7 @@ from __future__ import annotations
 from pathlib import Path
 import json
 import os
-from .constants import DEFAULT_UPDATE_REPO, FILENAME_RE, ITEMS_DIR, KNOWN_EXTENSIONS, PR_URL_RE, SELF_PATH, SUPPORTED_FORMAT, die
+from .constants import DEFAULT_UPDATE_REPO, FILENAME_RE, ID_LEN, ITEMS_DIR, KNOWN_EXTENSIONS, PR_URL_RE, SELF_PATH, SUPPORTED_FORMAT, die
 
 # --------------------------------------------------------------------------- #
 # config + discovery
@@ -200,6 +200,27 @@ def detect_legacy_layout(cfg: dict, tracker_dir: Path) -> list[Path]:
         if not d.is_dir():
             continue
         out.extend(p for p in sorted(d.glob("*.md")) if FILENAME_RE.match(p.name))
+    return out
+
+
+def detect_legacy_ids(tracker_dir: Path) -> list[str]:
+    """Issue bodies still named by an integer id — the pre-0.20 scheme, dropped
+    outright rather than migrated. Returns the offending filenames, sorted.
+
+    An all-digit id is not itself the discriminator: the id alphabet contains
+    digits, so `2345678` is an ordinary random id. The signature is the one the
+    old writer actually emitted — it zero-padded to three (`024-slug.md`), so a
+    legacy name is all digits, at least three long, and not ID_LEN long.
+
+    Worth a targeted error because the fallout otherwise is obscure. `filename`
+    no longer zero-pads, so such a tracker reports every issue as both missing on
+    disk and misnamed, and nothing in that output says why."""
+    out = []
+    for p in sorted((Path(tracker_dir) / ITEMS_DIR).glob("*.md")):
+        m = FILENAME_RE.match(p.name)
+        g = m.group(1) if m else ""
+        if g.isdigit() and 3 <= len(g) != ID_LEN:
+            out.append(p.name)
     return out
 
 
