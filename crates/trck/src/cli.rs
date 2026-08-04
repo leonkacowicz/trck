@@ -11,6 +11,7 @@
 
 use crate::config;
 use crate::discovery::Ctx;
+use crate::query::{self, ListOpts};
 use crate::verbs::{self, NewOpts, SetOpts};
 
 /// Verbs the Python engine has, so `--help` is honest about what is missing.
@@ -69,6 +70,7 @@ const VALUED: &[&str] = &[
     "--remove",
     "--sort",
     "--label",
+    "--show-field",
     "--match",
     "--since",
 ];
@@ -123,9 +125,142 @@ impl Args {
             .collect()
     }
 
+    fn has(&self, name: &str) -> bool {
+        self.options.iter().any(|(n, _)| n == name)
+    }
+
     fn positional_at(&self, n: usize) -> Option<&str> {
         self.positional.get(n).map(String::as_str)
     }
+}
+
+/// The flags each verb accepts, so a typo is refused rather than ignored.
+///
+/// Silently dropping an unrecognised option is the worst of both worlds: `list
+/// --stauts done` would list everything and read as a successful filter. Python's
+/// argparse rejects it; so does this, though the message differs — argparse prints its
+/// own usage block, and reproducing that is pinning argparse rather than trck.
+const KNOWN_FLAGS: &[(&str, usize, &[&str])] = &[
+    (
+        "new",
+        0,
+        &[
+            "--dir",
+            "--id",
+            "--slug",
+            "--priority",
+            "--points",
+            "--parent",
+            "--depends",
+            "--spec",
+            "--review-url",
+        ],
+    ),
+    ("mv", 0, &["--dir", "--resolution", "--review-url"]),
+    ("start", 0, &["--dir"]),
+    ("review", 0, &["--dir", "--review-url"]),
+    ("done", 0, &["--dir", "--resolution"]),
+    (
+        "set",
+        0,
+        &[
+            "--dir",
+            "--auto",
+            "--priority",
+            "--points",
+            "--parent",
+            "--spec",
+            "--review-url",
+            "--title",
+            "--slug",
+            "--field",
+            "--unset",
+        ],
+    ),
+    ("dep", 0, &["--dir", "--add", "--remove"]),
+    ("label", 0, &["--dir", "--add", "--remove"]),
+    (
+        "list",
+        0,
+        &[
+            "--dir",
+            "--status",
+            "--priority",
+            "--label",
+            "--parent",
+            "--match",
+            "--field",
+            "--show-field",
+            "--sort",
+            "--blocked",
+            "--orphan",
+            "--all",
+            "--flat",
+            "--paths",
+            "--json",
+        ],
+    ),
+    (
+        "tree",
+        0,
+        &[
+            "--dir",
+            "--status",
+            "--priority",
+            "--label",
+            "--parent",
+            "--match",
+            "--field",
+            "--show-field",
+            "--sort",
+            "--blocked",
+            "--orphan",
+            "--all",
+            "--flat",
+            "--paths",
+            "--json",
+        ],
+    ),
+    ("show", 0, &["--dir", "--json"]),
+];
+
+/// How many positionals each verb requires.
+const MIN_POSITIONAL: &[(&str, usize, &str)] = &[
+    ("new", 1, "a title"),
+    ("mv", 2, "an issue id and a target status"),
+    ("start", 1, "an issue id"),
+    ("review", 1, "an issue id"),
+    ("done", 1, "an issue id"),
+    ("set", 1, "an issue id"),
+    ("dep", 1, "an issue id"),
+    ("label", 1, "an issue id"),
+    ("show", 1, "an issue id"),
+];
+
+/// Everything wrong with the *shape* of the invocation, as opposed to what it asks for.
+///
+/// Kept separate because it exits 2, not 1. That is argparse's convention and it is a
+/// real distinction: a script can tell "you called me wrong" from "the thing you asked
+/// for failed".
+fn usage_error(args: &Args) -> Option<String> {
+    if !args.verb.is_empty() && !VERBS.contains(&args.verb.as_str()) {
+        return Some(format!("unknown verb `{}`", args.verb));
+    }
+    if let Some((_, _, flags)) = KNOWN_FLAGS.iter().find(|(verb, ..)| *verb == args.verb)
+        && let Some(n) = args
+            .options
+            .iter()
+            .map(|(n, _)| n.as_str())
+            .find(|n| !flags.contains(n))
+    {
+        return Some(format!("{}: unrecognized argument {n}", args.verb));
+    }
+    if let Some((_, want, what)) = MIN_POSITIONAL.iter().find(|(verb, ..)| *verb == args.verb)
+        && args.positional.len() < *want
+    {
+        return Some(format!("{}: missing {what}", args.verb));
+    }
+    None
 }
 
 fn usage() -> String {
@@ -170,32 +305,7 @@ fn dispatch(raw: &[String]) -> Result<String, String> {
     match args.verb.as_str() {
         "new" => {
             let ctx = context(&args)?;
-            let title = args
-                .positional_at(0)
-                .ok_or_else(|| "new: missing a title".to_string())?;
-            let opts = NewOpts {
-                title: title.to_string(),
-                id: args.opt("--id").map(str::to_string),
-                slug: args.opt("--slug").map(str::to_string),
-                priority: args.opt("--priority").map(str::to_string),
-                points: args
-                    .opt("--points")
-                    .map(|v| v.parse().map_err(|_| format!("bad points '{v}'")))
-                    .transpose()?,
-                parent: args.opt("--parent").map(str::to_string),
-                depends: args
-                    .opt("--depends")
-                    .map(|v| {
-                        v.split(',')
-                            .map(str::trim)
-                            .filter(|s| !s.is_empty())
-                            .map(str::to_string)
-                            .collect()
-                    })
-                    .unwrap_or_default(),
-                spec: args.opt("--spec").map(str::to_string),
-                review_url: args.opt("--review-url").map(str::to_string),
-            };
+            let opts = new_opts(&args)?;
             verbs::cmd_new(&ctx, &opts)
         }
         "mv" => {
@@ -225,21 +335,7 @@ fn dispatch(raw: &[String]) -> Result<String, String> {
         }
         "set" => {
             let ctx = context(&args)?;
-            let opts = SetOpts {
-                auto: args.options.iter().any(|(n, _)| n == "--auto"),
-                priority: args.opt("--priority"),
-                points: args
-                    .opt("--points")
-                    .map(|v| v.parse().map_err(|_| format!("bad points '{v}'")))
-                    .transpose()?,
-                parent: args.opt("--parent"),
-                spec: args.opt("--spec"),
-                review_url: args.opt("--review-url"),
-                title: args.opt("--title"),
-                slug: args.opt("--slug"),
-                fields: args.all("--field"),
-                unset: args.all("--unset"),
-            };
+            let opts = set_opts(&args)?;
             verbs::cmd_set(&ctx, id_of(0)?, &opts)
         }
         "label" => {
@@ -250,12 +346,89 @@ fn dispatch(raw: &[String]) -> Result<String, String> {
             let ctx = context(&args)?;
             verbs::cmd_dep(&ctx, id_of(0)?, args.opt("--add"), args.opt("--remove"))
         }
+        "list" | "tree" => {
+            let ctx = context(&args)?;
+            query::cmd_list(&ctx, &list_opts(&args))
+        }
+        "show" => {
+            let ctx = context(&args)?;
+            query::cmd_show(&ctx, id_of(0)?)
+        }
         "" => Err("no verb given".to_string()),
         other if VERBS.contains(&other) => Err(format!(
             "`{other}` is not implemented yet in the Rust engine"
         )),
         other => Err(format!("unknown verb `{other}`")),
     }
+}
+
+/// `set`'s options.
+fn set_opts(args: &Args) -> Result<SetOpts<'_>, String> {
+    Ok(SetOpts {
+        auto: args.has("--auto"),
+        priority: args.opt("--priority"),
+        points: args
+            .opt("--points")
+            .map(|v| v.parse().map_err(|_| format!("bad points '{v}'")))
+            .transpose()?,
+        parent: args.opt("--parent"),
+        spec: args.opt("--spec"),
+        review_url: args.opt("--review-url"),
+        title: args.opt("--title"),
+        slug: args.opt("--slug"),
+        fields: args.all("--field"),
+        unset: args.all("--unset"),
+    })
+}
+
+/// `list`'s options. The flags map one-to-one, which is why there are so many booleans.
+fn list_opts(args: &Args) -> ListOpts<'_> {
+    ListOpts {
+        root: args.positional_at(0),
+        status: args.opt("--status"),
+        priority: args.opt("--priority"),
+        label: args.opt("--label"),
+        parent: args.opt("--parent"),
+        match_title: args.opt("--match"),
+        fields: args.all("--field"),
+        show_fields: args.all("--show-field"),
+        sort: args.opt("--sort"),
+        blocked: args.has("--blocked"),
+        orphan: args.has("--orphan"),
+        all: args.has("--all"),
+        flat: args.has("--flat"),
+        paths: args.has("--paths"),
+    }
+}
+
+/// `new`'s options.
+fn new_opts(args: &Args) -> Result<NewOpts, String> {
+    let title = args
+        .positional_at(0)
+        .ok_or_else(|| "new: missing a title".to_string())?;
+    Ok(NewOpts {
+        title: title.to_string(),
+        id: args.opt("--id").map(str::to_string),
+        slug: args.opt("--slug").map(str::to_string),
+        priority: args.opt("--priority").map(str::to_string),
+        points: args
+            .opt("--points")
+            .map(|v| v.parse().map_err(|_| format!("bad points '{v}'")))
+            .transpose()?,
+        parent: args.opt("--parent").map(str::to_string),
+        depends: args
+            .opt("--depends")
+            .map(|v| {
+                v.split(',')
+                    .map(str::trim)
+                    .filter(|s| !s.is_empty())
+                    .map(str::to_string)
+                    .collect()
+            })
+            .unwrap_or_default(),
+        spec: args.opt("--spec").map(str::to_string),
+        review_url: args.opt("--review-url").map(str::to_string),
+    })
 }
 
 /// Entry point. Returns the process status; everything user-facing goes to stdout on
@@ -265,6 +438,10 @@ pub(crate) fn main() -> std::process::ExitCode {
     if argv.is_empty() || argv.iter().any(|a| a == "-h" || a == "--help") {
         print!("{}", usage());
         return std::process::ExitCode::SUCCESS;
+    }
+    if let Some(msg) = usage_error(&parse_args(&argv)) {
+        eprintln!("error: {msg}");
+        return std::process::ExitCode::from(2);
     }
     match dispatch(&argv) {
         Ok(out) => {
@@ -347,10 +524,38 @@ mod tests {
     }
 
     #[test]
+    fn an_unrecognised_flag_is_refused_rather_than_ignored() {
+        // `list --stauts done` would otherwise list everything and read as a filter.
+        let bad = parse_args(&["list".into(), "--stauts".into(), "done".into()]);
+        assert!(
+            usage_error(&bad).is_some_and(|m| m.contains("unrecognized argument --stauts")),
+            "a typo'd flag must be refused, not dropped"
+        );
+        // A flag the verb does accept passes.
+        assert_eq!(
+            usage_error(&parse_args(&["list".into(), "--all".into()])),
+            None
+        );
+    }
+
+    #[test]
+    fn a_missing_positional_is_a_usage_error_not_an_operation_that_fails() {
+        // It exits 2, like argparse: a script can tell "you called me wrong" from
+        // "what you asked for failed".
+        assert!(usage_error(&parse_args(&["show".into()])).is_some_and(|m| m.contains("missing")));
+        assert!(
+            usage_error(&parse_args(&["mv".into(), "abc".into()]))
+                .is_some_and(|m| m.contains("missing"))
+        );
+    }
+
+    #[test]
     fn an_unimplemented_verb_says_so_rather_than_guessing() {
-        let err = dispatch(&["list".to_string()]).expect_err("not implemented");
+        // `deps` is still #bdmgj7r's. Saying so beats producing something approximate:
+        // a half-implemented verb is what would turn the conformance pass rate into a lie.
+        let err = dispatch(&["deps".to_string()]).expect_err("not implemented");
         assert!(err.contains("not implemented"), "{err}");
-        let err = dispatch(&["nonesuch".to_string()]).expect_err("unknown");
-        assert!(err.contains("unknown verb"), "{err}");
+        let unknown = usage_error(&parse_args(&["nonesuch".to_string()]));
+        assert!(unknown.is_some_and(|m| m.contains("unknown verb")));
     }
 }

@@ -24,6 +24,8 @@ mod id;
 mod index;
 mod issue;
 mod json;
+mod query;
+mod render;
 mod summary;
 mod verbs;
 

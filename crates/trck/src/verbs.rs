@@ -17,6 +17,7 @@ use crate::graph::Graph;
 use crate::id;
 use crate::index::{parse_index, render_index};
 use crate::issue::{DEFAULT_POINTS, Issue, check_field_key};
+use crate::render::python_list;
 use crate::summary::{filename, generate_summary};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -746,19 +747,6 @@ pub(crate) fn cmd_dep(
     let shown = python_list(&row.depends_on);
     finalize(ctx, rows)?;
     Ok(format!("#{iid} depends_on={shown}"))
-}
-
-/// A Python list literal, because these two verbs echo one back and the conformance
-/// suite compares stdout literally.
-fn python_list(items: &[String]) -> String {
-    format!(
-        "[{}]",
-        items
-            .iter()
-            .map(|s| format!("'{s}'"))
-            .collect::<Vec<_>>()
-            .join(", ")
-    )
 }
 
 #[cfg(test)]
