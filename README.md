@@ -175,6 +175,20 @@ One honest limit: this protects engines from the release that introduced it onwa
 older than that ignores both keys and can still be fooled — which is exactly why the vendored
 copy stays until an installed engine is guaranteed to be newer.
 
+### Pinning the clock
+
+`TRCK_NOW` fixes the timestamp a command stamps into `created`/`started`/`closed`:
+
+```bash
+TRCK_NOW=2026-01-01T00:00:00Z trck new "Reproducible"
+```
+
+It's read per invocation, so a script can advance it between commands. Any ISO-8601
+instant is accepted and normalised to UTC; a malformed or day-only value is an error
+rather than a silent fall back to the real clock. This exists so the conformance suite
+can compare `index.jsonl` byte for byte — it's part of the contract both engines
+implement, not a Python-side test hook.
+
 ## Issue ids
 
 Each issue gets a **short random alphanumeric id** — 7 characters drawn from a base32

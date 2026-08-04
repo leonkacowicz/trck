@@ -87,6 +87,12 @@ TYPICAL FLOW
 DISCOVERY
   Finds the tracker by walking up for a dir containing trck.json; override with
   --dir or $TRCK_DIR. Run `trck <verb> -h` for per-verb options.
+
+ENVIRONMENT
+  TRCK_DIR    the tracker dir, when discovery would find the wrong one.
+  TRCK_NOW    pins the clock to an ISO-8601 instant (2026-01-01T00:00:00Z), so
+              the dates a command stamps are reproducible. Refuses a malformed
+              or day-only value rather than falling back to the real clock.
 """
 
 

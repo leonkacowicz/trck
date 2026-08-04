@@ -2,6 +2,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import NoReturn
+import os
 import re
 import sys
 
@@ -56,6 +57,7 @@ ID_RE = re.compile(rf"^[{ID_ALPHABET}]+$")
 FIELD_KEY_RE = re.compile(r"^[a-z][a-z0-9_-]*$")
 PR_URL_RE = re.compile(r"^https?://\S+$")  # forge-agnostic: any absolute http(s) link
 SINCE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}Z)?$")
+DAY_ONLY_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 def die(msg: str) -> NoReturn:
@@ -64,7 +66,36 @@ def die(msg: str) -> NoReturn:
 
 
 def now_utc() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    """The stamp written to `created`/`started`/`closed`.
+
+    `TRCK_NOW` overrides the clock. Every verb that records a date goes through here, so
+    setting it makes a sequence of commands reproducible — which is what the conformance
+    fixtures need, since otherwise any expectation covering `index.jsonl` compares
+    against a value that changes every run. Read per call rather than cached, so a
+    fixture can advance the clock between invocations and assert the difference.
+
+    Any ISO-8601 instant is accepted and normalised to the one shape the engine writes.
+    A day-only value is refused: those are a legacy form the engine no longer emits, and
+    expanding one to midnight would reintroduce them through the back door. A malformed
+    value is refused rather than ignored — falling back to the real clock would make a
+    fixture pass locally and fail elsewhere for a reason nothing in the output explains.
+
+    The Rust engine implements this too; it is part of the conformance contract, not a
+    Python-side test hook."""
+    override = os.environ.get("TRCK_NOW")
+    if not override:
+        return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if DAY_ONLY_RE.match(override):
+        die(f"TRCK_NOW={override!r} is a date, not an instant "
+            f"(want e.g. 2026-01-01T00:00:00Z)")
+    try:
+        dt = datetime.fromisoformat(override)
+    except ValueError:
+        die(f"TRCK_NOW={override!r} is not an ISO-8601 instant "
+            f"(want e.g. 2026-01-01T00:00:00Z)")
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def date_slice(ts: str | None) -> str:
