@@ -18,6 +18,7 @@
 
 mod config;
 mod discovery;
+mod graph;
 mod id;
 mod index;
 mod issue;
