@@ -110,6 +110,53 @@ def compare(name, golden_path, actual, failures, update):
         failures.append(diff or f"{name}: differs only in trailing whitespace")
 
 
+def capture(fixture, binary):
+    """Run a fixture end to end against one binary. Returns
+    `{"stdout", "stderr", "code", <artifact paths>}` with the tracker path normalised
+    out, or raises RuntimeError if the fixture is malformed or its setup failed."""
+    import tempfile
+    cmd_lines = read_lines(fixture / "cmd")
+    if len(cmd_lines) != 1:
+        raise RuntimeError(
+            f"cmd: expected exactly one command line, found {len(cmd_lines)}")
+    env_extra = dict(kv.split("=", 1) for kv in read_lines(fixture / "env")) or None
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tracker = build_tracker(fixture, tmp, binary, env_extra)
+        r = run_trck(binary, tracker, split_args(cmd_lines[0]), env_extra)
+        got = {"stdout": normalise(r.stdout, tracker),
+               "stderr": normalise(r.stderr, tracker),
+               "code": r.returncode}
+        for rel in ARTIFACTS.values():
+            path = tracker / rel
+            got[rel] = normalise(path.read_text(), tracker) if path.is_file() else ""
+    return got
+
+
+def differential(fixture, a_bin, b_bin):
+    """Run one fixture against two binaries and diff them against *each other*.
+
+    The oracle for the port: it answers "do these two agree" for cases nobody wrote a
+    golden for, so a fixture is not required to have an opinion about every field before
+    a disagreement can be caught."""
+    try:
+        a, b = capture(fixture, a_bin), capture(fixture, b_bin)
+    except RuntimeError as e:
+        return [str(e)]
+    problems = []
+    for key in ("code", "stdout", "stderr", *ARTIFACTS.values()):
+        if a[key] == b[key]:
+            continue
+        if key == "code":
+            problems.append(f"exit code: {a_bin.name}={a[key]} {b_bin.name}={b[key]}")
+            continue
+        problems.append("".join(difflib.unified_diff(
+            str(a[key]).splitlines(keepends=True),
+            str(b[key]).splitlines(keepends=True),
+            fromfile=f"{a_bin.name}/{key}", tofile=f"{b_bin.name}/{key}")))
+    return problems
+
+
 def run_fixture(fixture, binary, update):
     """Returns a list of failure descriptions; empty means the fixture passed."""
     import tempfile
@@ -172,13 +219,25 @@ def main(argv=None):
                     help="rewrite the goldens from actual output")
     ap.add_argument("--bin", default=os.environ.get("TRCK_BIN") or str(DEFAULT_BIN),
                     help="the trck binary under test (or $TRCK_BIN)")
+    ap.add_argument("--compare-bin", metavar="BIN",
+                    help="differential mode: run each fixture against this binary too "
+                         "and diff the two against each other instead of the goldens")
+    ap.add_argument("--min-pass", type=int, metavar="N",
+                    help="succeed as long as at least N fixtures pass. A floor for a "
+                         "half-finished implementation: it cannot regress, and raising "
+                         "it is a visible commit. Without it every fixture must pass.")
     args = ap.parse_args(argv)
 
-    binary = Path(args.bin).resolve()
-    if not binary.is_file():
-        sys.exit(f"error: {binary} not found (set --bin or $TRCK_BIN)")
-    if not os.access(binary, os.X_OK):
-        sys.exit(f"error: {binary} is not executable")
+    def resolve_bin(value, flag):
+        b = Path(value).resolve()
+        if not b.is_file():
+            sys.exit(f"error: {b} not found (set {flag})")
+        if not os.access(b, os.X_OK):
+            sys.exit(f"error: {b} is not executable")
+        return b
+
+    binary = resolve_bin(args.bin, "--bin or $TRCK_BIN")
+    other = resolve_bin(args.compare_bin, "--compare-bin") if args.compare_bin else None
 
     names = sorted(p.name for p in FIXTURES.iterdir()
                    if p.is_dir() and (p / "cmd").is_file())
@@ -189,7 +248,12 @@ def main(argv=None):
 
     failed = 0
     for name in names:
-        problems = run_fixture(FIXTURES / name, binary, args.update)
+        if other:
+            problems = differential(FIXTURES / name, binary, other)
+            label = "agree"
+        else:
+            problems = run_fixture(FIXTURES / name, binary, args.update)
+            label = "ok   "
         if problems:
             failed += 1
             print(f"FAIL {name}")
@@ -198,10 +262,23 @@ def main(argv=None):
         elif args.update:
             print(f"updated {name}")
         else:
-            print(f"ok   {name}")
+            print(f"{label} {name}")
 
-    verb = "updated" if args.update else "passed"
-    print(f"\n{len(names) - failed}/{len(names)} {verb}  ({binary})")
+    passed = len(names) - failed
+    verb = "updated" if args.update else "agree" if other else "passed"
+    where = f"{binary} vs {other}" if other else binary
+    print(f"\n{passed}/{len(names)} {verb}  ({where})")
+
+    if args.min_pass is not None:
+        # A ratchet, not a mute button. A half-ported engine is expected to fail most
+        # fixtures, but "most" has to be a number that only goes up — otherwise the job
+        # is either permanently red and ignored, or green and meaningless.
+        if passed < args.min_pass:
+            print(f"REGRESSION: {passed} < the committed floor of {args.min_pass}")
+            return 1
+        if passed > args.min_pass:
+            print(f"floor is {args.min_pass}; {passed} now pass — raise --min-pass")
+        return 0
     return 1 if failed else 0
 
 

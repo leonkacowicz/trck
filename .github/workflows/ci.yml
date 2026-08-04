@@ -46,3 +46,37 @@ jobs:
 
       - name: Tracker consistency
         run: python3 ./trck check
+
+  # The port, measured rather than described. The binary is empty today, so the
+  # conformance job reports 0 and passes; --min-pass is a floor that only moves up,
+  # so the port cannot regress and raising it is a visible commit.
+  rust:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Toolchain
+        run: rustup toolchain install stable --profile minimal --component rustfmt,clippy
+
+      - name: Format
+        run: cargo fmt --all --check
+
+      - name: Lints
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Test
+        run: cargo test --all
+
+      # Linux only: the fixtures compare output literally, and path rendering and
+      # line endings differ on Windows. Cross-platform correctness is the build and
+      # test matrix above; the fixtures are about behaviour.
+      - name: Conformance (pass rate)
+        if: matrix.os == 'ubuntu-latest'
+        run: python3 conformance/run.py --bin target/release/trck --min-pass 0

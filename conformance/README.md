@@ -89,6 +89,29 @@ python3 conformance/run.py --update -k <name>
 would make every fixture assert everything on its first run, which is exactly the
 property this format is built around.
 
+## Measuring a half-finished implementation
+
+```bash
+python3 conformance/run.py --bin target/release/trck --min-pass 0
+```
+
+`--min-pass N` succeeds as long as at least N fixtures pass. It is a **ratchet, not a
+mute button**: an engine mid-port is expected to fail most fixtures, but "most" has to be
+a number that only goes up. Without a floor the job is either permanently red and
+therefore ignored, or green and therefore meaningless. When more pass than the floor, the
+runner says so and asks you to raise it — one visible commit per step forward.
+
+## Differential mode
+
+```bash
+python3 conformance/run.py --compare-bin target/release/trck
+```
+
+Runs every fixture against **two** binaries and diffs them against each other rather than
+against the goldens. This is the oracle for the port: it answers "do these two agree" for
+cases nobody wrote a fixture for, so a disagreement can be caught before anyone has
+decided what the right answer is.
+
 ## What belongs here
 
 Anything a user or a downstream tool would notice: command output, exit codes, the

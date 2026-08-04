@@ -68,6 +68,22 @@ flattened into `./trck` by **`build.py`**. This repo **self-hosts** its own issu
   `./issues/`. (`trck init` vendors `issues/trck` for *consumer* repos; this repo was set up with
   `trck init --no-vendor` so there's no second engine to drift.)
 
+## The Rust port (`#sp2rwzx`)
+
+`crates/trck/` is the Rust engine, and it is **empty on purpose**. The conformance suite
+(`conformance/`) runs against a *binary*, so the port is measured from its first commit rather
+than assessed at the end by reading code: CI runs the fixtures against `target/release/trck` with
+`--min-pass 0` and reports the pass rate. That floor is a ratchet — raise it as fixtures go green,
+and the build fails if the number ever drops.
+
+- `cargo fmt --all --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test --all`.
+- **No dependencies**, same constraint as the Python engine: the binary is a single artifact a
+  repo depends on for years. Lints deny `unsafe`, `unwrap`, `expect` and `panic` — a bad tracker
+  must produce a diagnostic, not a stack trace.
+- `python3 conformance/run.py --compare-bin target/release/trck` is the oracle: run both engines
+  over every fixture and diff them against each other, catching disagreements nobody wrote a
+  golden for.
+
 ## Releasing
 
 Bump `__version__` in **`src/trck/constants.py`** → `python3 build.py` (regenerate `./trck`) →
