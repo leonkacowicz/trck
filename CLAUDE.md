@@ -22,8 +22,8 @@ Each issue is keyed by a short **random alphanumeric** id (7 chars from a look-a
 base32 alphabet, e.g. `k3m9x2a`) — **not** a sequential integer. Ids are random, so listing
 order is *creation* order, not id order. Anywhere a command wants an `ID`, **any unambiguous
 prefix works** (`trck show k3m` resolves `k3m9x2a`); an ambiguous prefix errors and lists the
-candidates. Legacy integer-id trackers keep working, and `trck repo renumber` migrates them — a
-renumbered issue records its old number in `legacy_id`, so stale `#NN` references still resolve.
+candidates. Integer ids were an earlier iteration and are no longer supported at all — a
+tracker that still has them is refused, with `scripts/renumber.py` in the trck repo as the way out.
 
 ## Common verbs (run `trck --help` for all)
 Run from anywhere in the repo — `trck` finds the tracker by walking up to the folder
@@ -41,7 +41,6 @@ holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
   is `done`. `trck set ID --review-url none` unlinks.
 - `trck list` · `trck tree` · `trck deps ID` · `trck show ID` · `trck check` · `trck summary`
 - `trck repo normalize` — rewrite `index.jsonl` in canonical slim form (no data change)
-- `trck repo renumber` — convert legacy integer ids to random alphanumeric ids
 - `trck repo install-hook` — install the pre-commit consistency hook
 - `trck repo setup-git` — **run once per clone.** Writes this folder's `.gitattributes` and
   registers trck's merge drivers in *your* `.git/config`. Git shares `.gitattributes` but never
