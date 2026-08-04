@@ -2,9 +2,9 @@
 
 ## Summary
 
-Phase 3 of #031. Add the traversal the merged browse verb needs onto the `Graph` class,
-unit-tested in isolation with no command wiring. Demand-driven entirely by #031 (no other
-consumer), so it is a #031 child even though the code lands in the `Graph` class — see the
+Phase 3 of #qapvxpz. Add the traversal the merged browse verb needs onto the `Graph` class,
+unit-tested in isolation with no command wiring. Demand-driven entirely by #qapvxpz (no other
+consumer), so it is a #qapvxpz child even though the code lands in the `Graph` class — see the
 spec's placement note: `docs/specs/2026-06-09-graph-derived-view-design.md`.
 
 Surface to add:
@@ -23,4 +23,4 @@ Surface to add:
 
 ## Notes
 
-Consumed by #038. Builds on the Graph substrate from #033/#035.
+Consumed by #ub2ssg4. Builds on the Graph substrate from #chzay3q/#n2gdhdd.

@@ -8,16 +8,16 @@ stdout as a single JSON document; default human output is unchanged.
 
 This epic is delivered by its children:
 
-- **#059** — drop the `tree` alias (nested forest is already `list`'s default), so
+- **#kaqhtfc** — drop the `tree` alias (nested forest is already `list`'s default), so
   the JSON story is `list --json` (nested) / `list --flat --json` (flat) with no
   separate `tree` shape.
-- **#060** — shared `emit_json` stdout seam + `--json` flag plumbing (blocks the rest).
-- **#061** — `list --json` → nested hierarchy; `list --flat --json` → flat array.
-- **#062** — `show --json` → single document, `{...metadata, "body": ...}`.
-- **#063** — `deps --json` → `{ requires: [...], blocks: [...] }`.
+- **#v8tmkrt** — shared `emit_json` stdout seam + `--json` flag plumbing (blocks the rest).
+- **#k9snjz3** — `list --json` → nested hierarchy; `list --flat --json` → flat array.
+- **#e75dysa** — `show --json` → single document, `{...metadata, "body": ...}`.
+- **#57kz6xp** — `deps --json` → `{ requires: [...], blocks: [...] }`.
 
 ## Acceptance criteria
-- [ ] `--json` accepted by `list`, `show`, `deps` (`tree` dropped per #059).
+- [ ] `--json` accepted by `list`, `show`, `deps` (`tree` dropped per #kaqhtfc).
 - [ ] Output is valid JSON (one document per invocation), stdlib `json` only.
 - [ ] `list --json` honors all existing filters; nested by default, flat under `--flat`.
 - [ ] `show --json` includes metadata and the raw body in one object.

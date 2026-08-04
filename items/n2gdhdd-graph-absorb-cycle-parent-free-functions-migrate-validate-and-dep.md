@@ -2,7 +2,7 @@
 
 ## Summary
 
-Phase 1b of the Graph epic (#032) — decision (b) from the spec. Give the dependency
+Phase 1b of the Graph epic (#ee2crq3) — decision (b) from the spec. Give the dependency
 graph one home: fold the standalone `find_dep_cycles`, `dep_would_cycle`, and
 `parent_ids` into `Graph` as `cycles()`, `would_cycle(src, dep)`, and `is_leaf`, then
 delete the free functions. `validate` and `cmd_dep` build a `Graph` and call the methods.
@@ -21,4 +21,4 @@ lands independently.
 
 ## Notes
 
-This is the seam before #031: Phase 2 (#036) depends on this completing.
+This is the seam before #qapvxpz: Phase 2 (#33frt7s) depends on this completing.

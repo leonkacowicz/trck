@@ -14,11 +14,11 @@ filter/sort exactly as the human render does.
 - [ ] `list --flat --json` produces a flat array in the same order as `--flat` human output.
 - [ ] All existing filters (`--status/--kind/--priority/--label/--parent/--match/--field/--blocked/--orphan`), `--sort`, and the optional root `id` are honoured; empty result → `[]`.
 - [ ] Nested shape reuses the existing forest layout (`match_closure`/`forest_layout`); dimmed ancestor-context rows are included (they appear in the forest).
-- [ ] Output is one valid JSON document via the #060 helper; default human output unchanged.
+- [ ] Output is one valid JSON document via the #v8tmkrt helper; default human output unchanged.
 - [ ] Field shape documented in `list` help; tests assert parseable JSON + nesting + filter honouring.
 
 ## Notes
-Depends on #060 (emit_json + `--json` flag). Handler `cmd_list` —
+Depends on #v8tmkrt (emit_json + `--json` flag). Handler `cmd_list` —
 `src/trck/cmd_query.py:68`; `forest_layout` — `src/trck/cmd_query.py:44`;
 `Graph.match_closure` — `src/trck/graph.py:112`, called at `cmd_query.py:155` —
 builds `shown`/`dim`. For the nested form, build the child lists from the same

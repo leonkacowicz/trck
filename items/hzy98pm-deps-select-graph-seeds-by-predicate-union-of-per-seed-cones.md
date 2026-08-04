@@ -1,7 +1,7 @@
 # deps: select graph seeds by predicate (union of per-seed cones)
 
 ## Summary
-Generalize `deps <id>` (single-issue scope, #047) to seed the graph from a *set* of
+Generalize `deps <id>` (single-issue scope, #w8a87ky) to seed the graph from a *set* of
 issues chosen by a predicate. Conceptually: run `deps NNN` for every issue NNN matching
 the predicate, then merge the resulting graphs by deduping nodes and taking the union of
 edges.
@@ -22,7 +22,7 @@ The predicate should reuse the existing `list` filter vocabulary (`--status`, `-
 - [ ] Result is deterministic and order-independent (nodes deduped, edges unioned).
 - [ ] A seed that matches but has no edges renders as a singleton node.
 - [ ] `deps <id>` remains the singleton special case (no behavior change).
-- [ ] The flag is named so it is NOT confused with display-side pruning (#056) — this
+- [ ] The flag is named so it is NOT confused with display-side pruning (#dbq2wqn) — this
       selects *where expansion starts*, it is not a node filter (see Notes).
 - [ ] Tests cover: single-seed equals old `deps <id>`; multi-seed union dedups shared
       nodes and unions edges; overlapping cones collapse; an isolated seed shows alone.
@@ -35,9 +35,9 @@ Design context (from discussion):
   predicate (anything downstream of a seed). That is the correct generalization of
   `deps <id>`. It is deliberately different from "show only issues matching p" — e.g. a
   status-based seed shows matching issues *plus their dependencies*, not only matching
-  nodes. Display-side pruning lives in #056. Name the two features so they cannot be
+  nodes. Display-side pruning lives in #dbq2wqn. Name the two features so they cannot be
   mistaken for each other (avoid a bare `--filter`).
 - **Direction** is inherited from `deps <id>` (whatever cone direction it already walks);
   the union introduces no new ambiguity.
-- Touchpoints: the `deps` command handler / Graph view scoping added in #046/#047, and
+- Touchpoints: the `deps` command handler / Graph view scoping added in #tazdgkg/#w8a87ky, and
   the shared `list`-filter predicate builder.

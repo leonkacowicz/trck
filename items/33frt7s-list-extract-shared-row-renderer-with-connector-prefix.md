@@ -2,10 +2,10 @@
 
 ## Summary
 
-Phase 2 of #031 (first child past the Graph seam). A no-op refactor: extract `print_rows`
-into the single shared renderer that #031 needs for both flat and nested output, taking a
+Phase 2 of #qapvxpz (first child past the Graph seam). A no-op refactor: extract `print_rows`
+into the single shared renderer that #qapvxpz needs for both flat and nested output, taking a
 connector `prefix` argument. Pass `""` at every call site for now so flat output stays
-byte-identical. Phase 4 (#038) supplies real connectors for the nested path.
+byte-identical. Phase 4 (#ub2ssg4) supplies real connectors for the nested path.
 
 Row layout is unchanged: `icon · #id · status · priority · <prefix>title · tags ·
 annotations`, with the prefix sitting immediately before the title.
@@ -19,5 +19,5 @@ annotations`, with the prefix sitting immediately before the title.
 
 ## Notes
 
-Independent of #037 in principle (renderer vs. traversal), but kept serial per the
-chosen linear order. Consumed by #038.
+Independent of #uqtjp9p in principle (renderer vs. traversal), but kept serial per the
+chosen linear order. Consumed by #ub2ssg4.

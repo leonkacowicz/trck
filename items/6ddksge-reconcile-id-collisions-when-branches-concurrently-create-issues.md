@@ -28,7 +28,7 @@ This is an investigation: decide the approach before committing to an implementa
       referenced by another issue, and a no-collision merge (no spurious renumbering).
 
 ## Notes
-**Status: on hold pending #65.** Direction (2) is being pursued first as #65 (short random
+**Status: on hold pending #dscmxng.** Direction (2) is being pursued first as #dscmxng (short random
 ids). If that ships and no collision is ever observed in practice, this issue (the
 renumber-on-merge driver) is likely YAGNI — revisit only if a real clash occurs.
 

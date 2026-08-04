@@ -14,7 +14,7 @@ something non-default. Readers already tolerate this — every field access goes
 
 **Strip criterion is "equals the field's default", not "is empty/falsy".** For most
 fields the default is `None` (or `[]` for `depends_on`), so the redundant case is the
-empty one. But a field can have a non-empty default: `points` (#019) defaults to `1`, so
+empty one. But a field can have a non-empty default: `points` (#9pf42be) defaults to `1`, so
 `points: 1` is the redundant line to strip — while `points: 0` is *real information*
 ("trivial task") and must be kept. A generic emptiness/falsiness test would get this
 backwards (drop the `0`, keep the `1`), so the rule must compare against per-field
@@ -42,7 +42,7 @@ defaults.
       is kept (non-default — "trivial"), `points: 3` is kept. Numeric `0` / `False` are
       never collateral-stripped because the test is equality-to-default, not falsiness.
       → *Mechanism is in place (compares to `FIELD_DEFAULTS[k]`, not falsiness); the
-      `points`-specific assertion lands with #019 when the field exists.*
+      `points`-specific assertion lands with #9pf42be when the field exists.*
 - [x] CANON_KEYS ordering is preserved for the keys that *are* present; unknown/extra keys
       still follow in the existing stable sorted order.
 - [x] Output is idempotent: loading a stripped index and re-saving produces byte-identical
@@ -63,7 +63,7 @@ defaults.
 - [x] `save_index` omits fields equal to their default (`milestone: None`,
       `depends_on: []`, ...) and keeps non-default ones in CANON order.
 - [~] Non-empty default case: a leaf with `points: 1` (default) is stripped, `points: 0`
-      and `points: 3` (non-default) are kept. Deferred to #019 (no `points` field yet); the
+      and `points: 3` (non-default) are kept. Deferred to #9pf42be (no `points` field yet); the
       equals-default-not-falsiness mechanism is covered by the `depends_on: []`-vs-`[1]`
       cases here.
 - [x] Round-trip: `load_index(save_index(rows))` equals the logical rows, and a second
@@ -81,7 +81,7 @@ defaults.
 - The first write after this lands will rewrite all 20-ish existing rows into the slimmer
   form — expect a one-time churn diff on `index.jsonl`. No migration step needed.
 - Decision: strip by **equals-the-default test, not emptiness/falsiness**. The default is
-  per-field — `None`/`[]` for most, but `1` for `points` (#019). So `points: 1` is the
+  per-field — `None`/`[]` for most, but `1` for `points` (#9pf42be). So `points: 1` is the
   redundant line that gets stripped, while `points: 0` ("trivial") is kept as real signal.
   A naive `if not value` would invert this (drop the `0`, keep the `1`) — guard against
   that simplification.

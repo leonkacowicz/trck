@@ -1,7 +1,7 @@
 # Harden Issue.from_dict with a structural/type contract
 
 ## Summary
-Follow-up to #022. The `Issue` dataclass introduced in #022 defaulted its
+Follow-up to #evsw9tr. The `Issue` dataclass introduced in #evsw9tr defaulted its
 identity/state fields to `None` so a malformed `index.jsonl` row would still
 construct, deferring all checking to `validate`. Make the parse layer own the
 *structural* contract instead: the six identity/state fields (id, slug, title,

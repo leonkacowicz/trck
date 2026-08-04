@@ -2,11 +2,11 @@
 
 ## Summary
 `trck list` shows only a status icon for parent rows. The points-weighted completion
-rollup added in #019 lives solely in `SUMMARY.md` (the `### … — {pct}% (… pts · … done)`
+rollup added in #9pf42be lives solely in `SUMMARY.md` (the `### … — {pct}% (… pts · … done)`
 heading). Surface that same derived percentage in `list` so progress is visible while
 browsing, without opening `SUMMARY.md`.
 
-Reuse the existing recursive leaf-tally helper from #019 (the one that feeds
+Reuse the existing recursive leaf-tally helper from #9pf42be (the one that feeds
 `generate_summary`) — this is a display concern only, no change to the rollup math or to
 how `points` is stored.
 
@@ -29,9 +29,9 @@ how `points` is stored.
       diverges from a plain count; `ptotal == 0` guard yields `0%`; leaves render no figure.
 
 ## Notes
-- Split out of the points rollup work in #019, which deliberately scoped the derived
+- Split out of the points rollup work in #9pf42be, which deliberately scoped the derived
   number to `SUMMARY.md` ("the summary owns the derived number"). This issue extends that
   display to `list`.
-- Status rollup (#067) is a separate, already-done concern (parent *status* from children),
+- Status rollup (#ge5jt9s) is a separate, already-done concern (parent *status* from children),
   not points/percent.
 - Consider the same treatment for `show` later — out of scope here.

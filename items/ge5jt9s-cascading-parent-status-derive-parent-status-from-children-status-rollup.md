@@ -22,7 +22,7 @@ verb ends in `finalize`.
 - [ ] A manual `mv`/`start`/`done` on a node with children sets `manual_status`
       **only when the requested status diverges from `reconcile(children)`** (a move
       that agrees with derivation leaves the node unpinned); `set --auto` clears it and
-      re-derives. This conditional rule is what lets #18's `--recurse` compose without
+      re-derives. This conditional rule is what lets #wh3mv52's `--recurse` compose without
       special-casing — it closes the leaves first, so the target agrees and isn't pinned.
 - [ ] `check`: exactly one status of each role `initial`/`active`/`terminal`; every
       non-overridden parent satisfies `status == reconcile(children)`.
@@ -35,10 +35,10 @@ verb ends in `finalize`.
 - Design discussion resolved: the engine stays vocabulary-agnostic by reasoning
   only about the three roles (never the `start`/`done` aliases, which are pure
   `mv` synonyms). "Not really done" stays a resolution, not a status.
-- **Fully compatible with #018** (#018 depends on this). #018 is the *downward*
-  bulk-close convenience (`mv X <terminal> --recurse`); #67 is the *upward* derivation.
+- **Fully compatible with #wh3mv52** (#wh3mv52 depends on this). #wh3mv52 is the *downward*
+  bulk-close convenience (`mv X <terminal> --recurse`); #ge5jt9s is the *upward* derivation.
   They compose cleanly: `--recurse` closes the non-terminal *leaf* descendants and `X`
   derives to terminal via rollup (no `manual_status` pin). A plain `mv X <terminal>`
-  with open descendants is the `manual_status` override here, which #018's guard turns
-  into a warning that suggests `--recurse`. See #018's "Reconciled with #67" note.
+  with open descendants is the `manual_status` override here, which #wh3mv52's guard turns
+  into a warning that suggests `--recurse`. See #wh3mv52's "Reconciled with #ge5jt9s" note.
 - Out of scope: multiple in-progress statuses; tree/list override markers.

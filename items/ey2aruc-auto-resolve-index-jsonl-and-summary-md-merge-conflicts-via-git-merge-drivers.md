@@ -21,7 +21,7 @@ SUMMARY.md   merge=trck-summary
 
 This issue previously claimed:
 
-> `index.jsonl → merge=union` … is correct **once #65 lands** (random ids ⇒ no key clash ⇒ a
+> `index.jsonl → merge=union` … is correct **once #dscmxng lands** (random ids ⇒ no key clash ⇒ a
 > line-union is always valid)
 
 **That reasoning is wrong**, and was wrong before the flat-layout change. Random ids stop two
@@ -262,10 +262,10 @@ Rejected alternative: `SUMMARY.md merge=ours` + a `post-merge` hook running `trc
 It works but leaves SUMMARY dirty *after* the merge commit, forcing a follow-up commit — worse
 ergonomics than the driver, which resolves inline.
 
-Originally noted as depending on #65 (random ids) for the `index.jsonl merge=union` half to be
+Originally noted as depending on #dscmxng (random ids) for the `index.jsonl merge=union` half to be
 sound. That dependency was necessary but **not sufficient** — see the correction above. Now
 depends on #s5585hq, which makes the failure detectable at all. Tagged `conflict-resolution`
-alongside #64/#65.
+alongside #6ddksge/#dscmxng.
 
 Re-audited 2026-07-30 against the flat-layout change (#2srvf6j); the design section above was
 settled in the same pass. Related: #nuf3t68 makes the corrupt lifecycle tuple detectable by

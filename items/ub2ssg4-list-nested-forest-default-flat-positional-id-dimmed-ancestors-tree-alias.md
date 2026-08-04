@@ -2,8 +2,8 @@
 
 ## Summary
 
-Phase 4 of #031 — the real work, written once on top of the Graph (#037) and the shared
-renderer (#036). Implements the merged browse verb per #031's "Design (decided)".
+Phase 4 of #qapvxpz — the real work, written once on top of the Graph (#uqtjp9p) and the shared
+renderer (#33frt7s). Implements the merged browse verb per #qapvxpz's "Design (decided)".
 
 - `list` renders a nested forest by default; `--flat` recovers today's flat, globally
   sorted output via the same renderer with an empty prefix.
@@ -24,5 +24,5 @@ renderer (#036). Implements the merged browse verb per #031's "Design (decided)"
 
 ## Notes
 
-Depends on #036 (renderer) and #037 (traversal). Help/README and acceptance tests are
-split into #039.
+Depends on #33frt7s (renderer) and #uqtjp9p (traversal). Help/README and acceptance tests are
+split into #sdun4vt.

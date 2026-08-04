@@ -12,11 +12,11 @@ so the whole output is parseable as one document.
 - [ ] Output is exactly one JSON document (no `--- body ---` text, no trailing prose).
 - [ ] Object includes the issue metadata (current `show` key selection) plus a `body` string holding the raw file body.
 - [ ] Non-leaf `points` handling matches today's human `show` (points omitted where it's derived, not an input).
-- [ ] Routed through the #060 helper; default (non-`--json`) `show` output unchanged.
+- [ ] Routed through the #v8tmkrt helper; default (non-`--json`) `show` output unchanged.
 - [ ] Field shape documented in `show` help; test asserts single parseable document with metadata + `body`.
 
 ## Notes
-Depends on #060. Handler `cmd_show` — `src/trck/cmd_query.py:12`; the current
+Depends on #v8tmkrt. Handler `cmd_show` — `src/trck/cmd_query.py:12`; the current
 partial branch is the `if getattr(args, "json", False)` at `cmd_query.py:20`,
 followed by the unconditional `--- body ---` print at `cmd_query.py:33` — that
 print must move inside the JSON object on the `--json` path (and stay where it is

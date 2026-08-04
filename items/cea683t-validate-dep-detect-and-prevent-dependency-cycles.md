@@ -20,7 +20,7 @@ Defense in depth: catch it at **both** layers.
       clear error naming the edge, and does not write the index.
 - [x] Self-edge (`dep N --add N`) is rejected.
 - [x] `validate` reports a dependency cycle as an **error** (one per cycle, not one
-      per node — mirror the parent-cycle treatment and align with #008).
+      per node — mirror the parent-cycle treatment and align with #g76mtuw).
 - [x] Tests cover: 2-node cycle, longer cycle, self-edge, and a valid DAG (diamond)
       that is left untouched.
 - [n/a] `trck new --depends`: a brand-new issue gets a fresh max+1 id, and no
@@ -36,4 +36,4 @@ Defense in depth: catch it at **both** layers.
   - `find_dep_cycles(by_id)` — white/gray/black DFS returning each cycle once
     (deduped by node set). Used by `validate` to emit `dependency cycle: #a -> #b ->
     #a`.
-- Pairs naturally with the existing dep-validation issues #008 / #009.
+- Pairs naturally with the existing dep-validation issues #g76mtuw / #kj2c95b.
