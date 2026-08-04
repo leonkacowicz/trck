@@ -84,8 +84,11 @@ them, `check_status_states`, the `state -> name` table form, and `init` scaffold
 backward compatible — `role` and `actionable` still derive, so this repo's tracker was untouched.
 
 Still open here:
-- [ ] `pr` renamed to `review_url`. A persisted-field rename, so it needs a migration path;
-      `Issue.from_dict` already has precedent, migrating `milestone` to a label.
+- [x] `pr` renamed to `review_url`, migrated on read exactly like `milestone` — a tracker
+      carrying `pr` loads fine and is rewritten on the issue's next mutation, so no flag day
+      and no migration verb. `--pr` became `--review-url` with no alias. Both legacy names
+      are now reserved against `--field`, since a custom field under either would have been
+      swallowed by the migration on the next load (`milestone` had that hole already).
 - [x] Resolutions fixed to a canonical set, valid only on `done`. Three of them —
       `superseded`/`wontfix`/`duplicate` — and the *absence* of one is the load-bearing
       case: `select_shipped` keys off it, so a resolution means closed-without-shipping
