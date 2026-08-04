@@ -16,6 +16,8 @@
 // to delete this than a comment would be.
 #![expect(dead_code, reason = "the model lands before the verbs that read it")]
 
+mod config;
+mod discovery;
 mod id;
 mod index;
 mod issue;
