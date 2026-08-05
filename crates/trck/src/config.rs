@@ -260,7 +260,7 @@ impl Config {
         {
             return Some(format!(
                 "tracker format {fmt} is newer than this engine understands \
-                 (format {SUPPORTED_FORMAT}) — run `trck update`"
+                 (format {SUPPORTED_FORMAT}) — upgrade trck"
             ));
         }
         match raw.get("extensions") {
@@ -276,7 +276,7 @@ impl Config {
                     return None;
                 }
                 Some(format!(
-                    "tracker uses unknown extension(s): {} — run `trck update`",
+                    "tracker uses unknown extension(s): {} — upgrade trck",
                     unknown.join(", ")
                 ))
             }
@@ -398,7 +398,7 @@ mod tests {
         let cfg = Config::parse(r#"{"format": 99}"#, "trck.json").expect("parses");
         let msg = cfg.check_format().expect("refused");
         assert!(msg.contains("newer than this engine"), "{msg}");
-        assert!(msg.contains("trck update"), "{msg}");
+        assert!(msg.contains("upgrade trck"), "{msg}");
     }
 
     #[test]

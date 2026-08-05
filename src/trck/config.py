@@ -85,14 +85,14 @@ def check_format(cfg: dict) -> str | None:
         return f"bad 'format' {fmt!r} in trck.json (must be an integer)"
     if fmt > SUPPORTED_FORMAT:
         return (f"tracker format {fmt} is newer than this engine understands "
-                f"(format {SUPPORTED_FORMAT}) — run `trck update`")
+                f"(format {SUPPORTED_FORMAT}) — upgrade trck")
     exts = cfg.get("extensions", {})
     if not isinstance(exts, dict):
         return f"bad 'extensions' {exts!r} in trck.json (must be an object)"
     unknown = sorted(k for k in exts if k not in KNOWN_EXTENSIONS)
     if unknown:
-        return (f"tracker uses unknown extension(s): {', '.join(unknown)} — run "
-                f"`trck update`")
+        return (f"tracker uses unknown extension(s): {', '.join(unknown)} — "
+                f"upgrade trck")
     return None
 
 

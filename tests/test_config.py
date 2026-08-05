@@ -348,7 +348,7 @@ class TestFormatVersion(unittest.TestCase):
         msg = self.t.check_format({"format": self.t.SUPPORTED_FORMAT + 1})
         self.assertIsNotNone(msg)
         self.assertIn(str(self.t.SUPPORTED_FORMAT + 1), msg)
-        self.assertIn("trck update", msg)
+        self.assertIn("upgrade trck", msg)
 
     def test_a_malformed_format_is_a_clean_error(self):
         for bad in ("1", 1.5, None, True, []):
@@ -395,7 +395,7 @@ class TestFormatExtensions(unittest.TestCase):
         msg = self.t.check_format({"extensions": {"partial-clone": {}}})
         self.assertIsNotNone(msg)
         self.assertIn("partial-clone", msg)
-        self.assertIn("trck update", msg)
+        self.assertIn("upgrade trck", msg)
 
     def test_every_unknown_extension_is_named_not_just_the_first(self):
         msg = self.t.check_format({"extensions": {"zeta": {}, "alpha": {}}})
