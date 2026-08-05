@@ -99,6 +99,50 @@ pub(crate) struct Ctx {
     pub(crate) config: Config,
 }
 
+/// Issue files still sitting in per-status folders, the pre-0.23 layout.
+///
+/// Status used to be encoded in the path and now lives only in `index.jsonl`, so such a
+/// tracker has two sources of truth that can disagree. Every verb refuses one until
+/// `repo migrate-layout` has run.
+pub(crate) fn legacy_layout_files(dir: &Path) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    for status in crate::config::STATUSES {
+        let folder = dir.join(status);
+        let Ok(entries) = std::fs::read_dir(&folder) else {
+            continue;
+        };
+        out.extend(
+            entries
+                .flatten()
+                .map(|e| e.path())
+                .filter(|p| p.extension().is_some_and(|x| x == "md")),
+        );
+    }
+    out.sort();
+    out
+}
+
+/// The refusal an unmigrated tracker gets, naming the remedy.
+fn check_layout(dir: &Path) -> Option<String> {
+    let stale = legacy_layout_files(dir);
+    if stale.is_empty() {
+        return None;
+    }
+    let mut folders: Vec<String> = stale
+        .iter()
+        .filter_map(|p| p.parent()?.file_name())
+        .map(|f| format!("{}/", f.to_string_lossy()))
+        .collect();
+    folders.sort();
+    folders.dedup();
+    Some(format!(
+        "legacy status-folder layout: {} issue file(s) under {} — run `trck repo \
+         migrate-layout` to move them into {ITEMS_DIR}/ (status now lives only in index.jsonl)",
+        stale.len(),
+        folders.join(", ")
+    ))
+}
+
 impl Ctx {
     /// Load the tracker at `dir`, applying the format guard.
     ///
@@ -111,6 +155,9 @@ impl Ctx {
         let text = std::fs::read_to_string(&path).unwrap_or_default();
         let config = Config::parse(&text, &path.display().to_string())?;
         if guard_format && let Some(msg) = config.check_format() {
+            return Err(msg);
+        }
+        if guard_format && let Some(msg) = check_layout(&dir) {
             return Err(msg);
         }
         Ok(Ctx { dir, config })

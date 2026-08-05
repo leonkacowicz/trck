@@ -198,6 +198,121 @@ fn make_executable(_path: &Path) -> Result<(), String> {
     Ok(()) // Windows has no executable bit; git runs hooks through the shell there.
 }
 
+/// `repo normalize` — rewrite `index.jsonl` in canonical slim form.
+///
+/// No data change: it re-serialises through the same write path every verb ends in, which
+/// also regenerates the summary and re-derives what is derived.
+pub(crate) fn cmd_normalize(ctx: &Ctx) -> Result<String, String> {
+    let text = std::fs::read_to_string(ctx.index_path()).unwrap_or_default();
+    let rows = parse_index(&text, "index.jsonl")?;
+    let n = rows.len();
+    crate::verbs::finalize(ctx, rows)?;
+    Ok(format!(
+        "normalized {} ({n} issues)",
+        ctx.index_path().display()
+    ))
+}
+
+/// `repo migrate-layout [--dry-run]` — move issue bodies out of per-status folders.
+///
+/// One-shot and idempotent: a flat tracker is a no-op. Deliberately conservative about the
+/// one ambiguity a legacy tracker can carry — if a file's folder disagrees with its index
+/// status, the two sources of truth have already drifted and only the author knows which is
+/// right, so it stops rather than silently canonising one.
+pub(crate) fn cmd_migrate_layout(ctx: &Ctx, dry_run: bool) -> Result<String, String> {
+    let stale = crate::discovery::legacy_layout_files(&ctx.dir);
+    if stale.is_empty() {
+        return Ok(format!(
+            "migrate-layout: nothing to migrate (already flat in {}/)",
+            crate::discovery::ITEMS_DIR
+        ));
+    }
+    let text = std::fs::read_to_string(ctx.index_path()).unwrap_or_default();
+    let rows = parse_index(&text, "index.jsonl")?;
+    let dest_dir = ctx.items_dir();
+
+    let (mut drift, mut collisions, mut moves) = (Vec::new(), Vec::new(), Vec::new());
+    for p in &stale {
+        let name = p
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+        let iid = name.split('-').next().unwrap_or_default().to_string();
+        let folder = p
+            .parent()
+            .and_then(|d| d.file_name())
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+        if let Some(row) = rows.iter().find(|r| r.id == iid)
+            && row.status != folder
+        {
+            drift.push(format!(
+                "#{iid}: index says '{}', file sits in '{folder}/'",
+                row.status
+            ));
+            continue;
+        }
+        let dest = dest_dir.join(&name);
+        if dest.exists() {
+            collisions.push(format!("#{iid}: {} already exists", dest.display()));
+            continue;
+        }
+        moves.push((p.clone(), dest, folder, name));
+    }
+
+    if !drift.is_empty() {
+        return Err(format!(
+            "index status and folder disagree for {} issue(s); fix the index (or move the \
+             files) so they agree, then re-run:\n  {}",
+            drift.len(),
+            drift.join("\n  ")
+        ));
+    }
+    if !collisions.is_empty() {
+        return Err(format!(
+            "destination already occupied for {} file(s):\n  {}",
+            collisions.len(),
+            collisions.join("\n  ")
+        ));
+    }
+
+    if dry_run {
+        let mut out = vec![format!(
+            "migrate-layout: would move {} file(s) into {}/",
+            moves.len(),
+            crate::discovery::ITEMS_DIR
+        )];
+        for (_, _, folder, name) in &moves {
+            out.push(format!(
+                "  {folder}/{name} -> {}/{name}",
+                crate::discovery::ITEMS_DIR
+            ));
+        }
+        return Ok(out.join("\n"));
+    }
+
+    std::fs::create_dir_all(&dest_dir).map_err(|e| format!("{}: {e}", dest_dir.display()))?;
+    for (src, dest, _, _) in &moves {
+        std::fs::rename(src, dest)
+            .map_err(|e| format!("{} -> {}: {e}", src.display(), dest.display()))?;
+    }
+    // Drop the status folders that are now empty. One holding anything else — a README, a
+    // scratch note — is left alone, which `remove_dir` gives for free by refusing.
+    let mut folders: Vec<&Path> = moves.iter().filter_map(|(s, ..)| s.parent()).collect();
+    folders.sort_unstable();
+    folders.dedup();
+    for folder in folders {
+        let _ = std::fs::remove_dir(folder);
+    }
+    Ok(format!(
+        "migrate-layout: moved {} file(s) into {}/",
+        moves.len(),
+        crate::discovery::ITEMS_DIR
+    ))
+}
+
 /// Read an index file into raw JSON rows.
 ///
 /// A merge operand is not validated on the way in: it may hold a row this engine would

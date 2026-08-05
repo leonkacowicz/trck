@@ -331,20 +331,25 @@ fn usage() -> String {
 }
 
 /// Resolve the tracker and load it, applying the format guard.
-fn context(args: &Args) -> Result<Ctx, String> {
+/// Where the tracker is, without loading it. Split out for `migrate-layout`, which must
+/// reach a tracker the guards in `Ctx::load` would refuse.
+fn tracker_dir(args: &Args) -> Result<std::path::PathBuf, String> {
     let cwd =
         std::env::current_dir().map_err(|e| format!("cannot read the working directory: {e}"))?;
     let self_dir = std::env::current_exe()
         .ok()
         .and_then(|p| p.parent().map(std::path::Path::to_path_buf));
     let env_dir = std::env::var("TRCK_DIR").ok().filter(|v| !v.is_empty());
-    let dir = crate::discovery::resolve_tracker_dir(
+    crate::discovery::resolve_tracker_dir(
         args.opt("--dir"),
         env_dir.as_deref(),
         self_dir.as_deref(),
         &cwd,
-    )?;
-    Ctx::load(dir, true)
+    )
+}
+
+fn context(args: &Args) -> Result<Ctx, String> {
+    Ctx::load(tracker_dir(args)?, true)
 }
 
 /// Run the command described by `argv` (without the program name), returning what to
@@ -472,6 +477,14 @@ fn dispatch(raw: &[String]) -> Result<String, String> {
                 // These need a real tracker, unlike the drivers.
                 "setup-git" => repo::cmd_setup_git(&context(&args)?),
                 "install-hook" => repo::cmd_install_hook(&context(&args)?),
+                "normalize" => repo::cmd_normalize(&context(&args)?),
+                // The one verb whose whole job is to operate on a legacy tracker, so it
+                // resolves the context without the layout guard that refuses one.
+                "migrate-layout" => {
+                    let dir = tracker_dir(&args)?;
+                    let ctx = Ctx::load(dir, false)?;
+                    repo::cmd_migrate_layout(&ctx, args.has("--dry-run"))
+                }
                 "" => Err("repo: missing a subcommand".into()),
                 other => Err(format!(
                     "repo: `{other}` is not implemented yet in the Rust engine"
