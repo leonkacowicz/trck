@@ -277,6 +277,16 @@ fn usage_error(args: &Args) -> Option<String> {
     if !args.verb.is_empty() && !VERBS.contains(&args.verb.as_str()) {
         return Some(format!("unknown verb `{}`", args.verb));
     }
+    // `--json` is in the known-flag tables so the read verbs keep parsing the way the Python
+    // engine's do, but no verb honours it yet. Refusing it is the whole point: a flag that is
+    // accepted and ignored returns human text with exit 0, and a caller piping into `jq` finds
+    // out far from the cause. Drop this once the read verbs emit JSON.
+    if args.has("--json") {
+        return Some(format!(
+            "{}: --json is not implemented in this engine yet",
+            args.verb
+        ));
+    }
     if let Some((_, _, flags)) = KNOWN_FLAGS.iter().find(|(verb, ..)| *verb == args.verb)
         && let Some(n) = args
             .options
@@ -706,6 +716,34 @@ mod tests {
             usage_error(&parse_args(&["list".into(), "--all".into()])),
             None
         );
+    }
+
+    #[test]
+    fn json_is_refused_rather_than_silently_ignored() {
+        // The flag is listed as known so the message can name it specifically, but nothing
+        // honours it yet. Printing human output and exiting 0 would be the one failure a
+        // caller cannot detect — `trck list --json | jq` would break far from its cause.
+        for argv in [
+            vec!["list".to_string(), "--json".to_string()],
+            vec!["tree".to_string(), "--json".to_string()],
+            vec![
+                "show".to_string(),
+                "aaaaaaa".to_string(),
+                "--json".to_string(),
+            ],
+            vec!["ready".to_string(), "--json".to_string()],
+            vec!["next".to_string(), "--json".to_string()],
+            vec!["deps".to_string(), "--json".to_string()],
+        ] {
+            let verb = argv[0].clone();
+            let msg = usage_error(&parse_args(&argv));
+            assert!(
+                msg.as_ref().is_some_and(|m| m.contains("--json")),
+                "{verb} --json must be refused, got {msg:?}"
+            );
+        }
+        // Without the flag the same verbs are fine.
+        assert_eq!(usage_error(&parse_args(&["list".into()])), None);
     }
 
     #[test]
