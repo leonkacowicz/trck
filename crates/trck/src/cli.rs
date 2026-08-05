@@ -36,6 +36,9 @@ const VERBS: &[&str] = &[
     "diff",
     "check",
     "summary",
+    // `html` has no Python counterpart: it is `tools/trck-html`, folded in. The verb
+    // list is what this binary offers, not a mirror of the old CLI.
+    "html",
     "repo",
     "init",
     "update",
@@ -75,6 +78,8 @@ const VALUED: &[&str] = &[
     "--since",
     "--from",
     "--to",
+    "--out",
+    "--cmd",
 ];
 
 fn parse_args(argv: &[String]) -> Args {
@@ -225,6 +230,7 @@ const KNOWN_FLAGS: &[(&str, usize, &[&str])] = &[
     ),
     ("show", 0, &["--dir", "--json"]),
     ("check", 0, &["--dir"]),
+    ("html", 0, &["--dir", "--out", "--cmd"]),
     ("diff", 0, &["--dir", "--from", "--to"]),
     ("changelog", 0, &["--dir", "--since"]),
     ("summary", 0, &["--dir"]),
@@ -419,6 +425,10 @@ fn dispatch(raw: &[String]) -> Result<String, String> {
                 fanout: args.has("--fanout"),
             };
             query::cmd_deps(&ctx, &opts)
+        }
+        "html" => {
+            let ctx = context(&args)?;
+            crate::html::cmd_html(&ctx, args.opt("--out"), args.opt("--cmd"))
         }
         "diff" => cmd_diff(&context(&args)?, &args),
         "changelog" => cmd_changelog(&context(&args)?, &args),

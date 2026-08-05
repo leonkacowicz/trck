@@ -1,0 +1,37 @@
+<header class="topbar">
+  <h1 id="repo"></h1>
+  <div id="counts" class="counts"></div>
+</header>
+<div class="filters">
+  <div class="viewtoggle">
+    <button data-view="list" class="on" type="button">list</button>
+    <button data-view="graph" type="button">graph</button>
+    <button data-view="tree" type="button">tree</button>
+    <button data-view="board" type="button">board</button>
+    <button data-view="ready" type="button">ready</button>
+  </div>
+  <input id="q" type="search" placeholder="Search id / title / body / label…" autocomplete="off">
+  <div id="ffstatus" class="facets"></div>
+  <div id="ffpriority" class="facets"></div>
+</div>
+<main>
+  <div class="leftpane">
+    <ul id="list" class="list"></ul>
+    <div id="graph" class="graph" hidden></div>
+    <div id="tree" class="tree" hidden></div>
+    <div id="board" class="board" hidden></div>
+    <ul id="ready" class="list" hidden></ul>
+  </div>
+  <div id="split" class="divider" title="drag to resize"></div>
+  <section id="detail" class="detail"><p class="empty">Select an issue.</p></section>
+</main>
+<div id="pending" class="pending" hidden>
+  <div class="pbar">
+    <span id="pcount" class="pcount"></span>
+    <span class="phint">staged edits don't persist — run these in your terminal</span>
+    <span class="pspace"></span>
+    <button id="pcopy" type="button">Copy all</button>
+    <button id="pclear" type="button">Clear</button>
+  </div>
+  <ul id="plist" class="plist"></ul>
+</div>

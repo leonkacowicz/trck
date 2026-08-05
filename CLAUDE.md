@@ -37,6 +37,10 @@ flattened into `./trck` by **`build.py`**. This repo **self-hosts** its own issu
   - `python3 -m unittest discover -s scripts/tests -v` — standalone one-shots under `scripts/`
     that don't import the engine. Separate because tests shelling out to `git` for a migration
     nobody will run again shouldn't gate every engine change.
+    - `cargo test --all` — the Rust engine, including `crates/trck/tests/app_js.rs`, which lifts
+    pure functions out of the compiled-in `assets/app.js` and runs them under `node` (skipped
+    when node is absent). That asset is a string to the compiler, so nothing else would catch a
+    syntax error in it.
   - `python3 conformance/run.py` — the executable spec (`conformance/README.md`). It **execs**
     the binary (`TRCK_BIN`, default `./trck`) and never imports it, so it will run unchanged
     against the Rust engine. Anything a user or downstream tool would notice belongs there;

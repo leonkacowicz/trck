@@ -326,7 +326,7 @@ one move:
 The value must be an absolute `http(s)` URL (`check` enforces it) but is otherwise
 forge-agnostic — trck never talks to GitHub, and the URL need not be a pull request at all
 (a design doc out for comment, a vendor ticket, a sign-off thread). It shows in `trck show`,
-links from `SUMMARY.md`, and renders as a clickable anchor in `tools/trck-html`. An issue in
+links from `SUMMARY.md`, and renders as a clickable anchor in the HTML view. An issue in
 `in-review` drops out of `ready`/`next` while it waits — there is nothing there to pick up —
 yet still blocks its dependents until it's `done`.
 
