@@ -73,6 +73,8 @@ const VALUED: &[&str] = &[
     "--show-field",
     "--match",
     "--since",
+    "--from",
+    "--to",
 ];
 
 fn parse_args(argv: &[String]) -> Args {
@@ -223,6 +225,8 @@ const KNOWN_FLAGS: &[(&str, usize, &[&str])] = &[
     ),
     ("show", 0, &["--dir", "--json"]),
     ("check", 0, &["--dir"]),
+    ("diff", 0, &["--dir", "--from", "--to"]),
+    ("changelog", 0, &["--dir", "--since"]),
     ("summary", 0, &["--dir"]),
     ("ready", 0, &["--dir", "--next", "--json"]),
     (
@@ -255,6 +259,9 @@ const MIN_POSITIONAL: &[(&str, usize, &str)] = &[
     ("show", 1, "an issue id"),
 ];
 
+/// Options a verb cannot run without.
+const REQUIRED_OPTS: &[(&str, &str)] = &[("changelog", "--since")];
+
 /// Everything wrong with the *shape* of the invocation, as opposed to what it asks for.
 ///
 /// Kept separate because it exits 2, not 1. That is argparse's convention and it is a
@@ -277,6 +284,14 @@ fn usage_error(args: &Args) -> Option<String> {
         && args.positional.len() < *want
     {
         return Some(format!("{}: missing {what}", args.verb));
+    }
+    if let Some((_, opt)) = REQUIRED_OPTS.iter().find(|(verb, _)| *verb == args.verb)
+        && args.opt(opt).is_none()
+    {
+        return Some(format!(
+            "{}: the following arguments are required: {opt}",
+            args.verb
+        ));
     }
     None
 }
@@ -313,60 +328,76 @@ fn context(args: &Args) -> Result<Ctx, String> {
 
 /// Run the command described by `argv` (without the program name), returning what to
 /// print on success.
-fn dispatch(raw: &[String]) -> Result<String, String> {
-    let args = parse_args(raw);
+/// The verbs that write. Returns `None` when the verb is not one of them, so `dispatch`
+/// can fall through to the read side — the split is by what they do to the tracker, which
+/// is also the split in how much can go wrong.
+fn dispatch_mutating(args: &Args) -> Option<Result<String, String>> {
     let id_of = |n: usize| -> Result<&str, String> {
         args.positional_at(n)
             .ok_or_else(|| format!("{}: missing an issue id", args.verb))
     };
-
-    match args.verb.as_str() {
-        "new" => {
-            let ctx = context(&args)?;
-            let opts = new_opts(&args)?;
-            verbs::cmd_new(&ctx, &opts)
-        }
-        "mv" => {
-            let ctx = context(&args)?;
+    let ctx = || context(args);
+    Some(match args.verb.as_str() {
+        "new" => ctx().and_then(|c| new_opts(args).and_then(|o| verbs::cmd_new(&c, &o))),
+        "mv" => ctx().and_then(|c| {
             let status = args
                 .positional_at(1)
                 .ok_or_else(|| "mv: missing a target status".to_string())?;
             verbs::cmd_mv(
-                &ctx,
+                &c,
                 id_of(0)?,
                 status,
                 args.opt("--resolution"),
                 args.opt("--review-url"),
             )
-        }
-        verb @ ("start" | "review" | "done") => {
-            let ctx = context(&args)?;
+        }),
+        verb @ ("start" | "review" | "done") => ctx().and_then(|c| {
             let status = config::resolve_alias(verb).unwrap_or(config::BACKLOG);
-            // `review` takes the URL positionally, because the moment a review exists
-            // is the moment both facts are known.
+            // `review` takes the URL positionally: the moment a review exists is the
+            // moment both facts are known.
             let url = if verb == "review" {
                 args.positional_at(1).or_else(|| args.opt("--review-url"))
             } else {
                 args.opt("--review-url")
             };
-            verbs::cmd_mv(&ctx, id_of(0)?, status, args.opt("--resolution"), url)
-        }
-        "set" => {
-            let ctx = context(&args)?;
-            let opts = set_opts(&args)?;
-            verbs::cmd_set(&ctx, id_of(0)?, &opts)
-        }
-        "label" => {
-            let ctx = context(&args)?;
-            verbs::cmd_label(&ctx, id_of(0)?, &args.all("--add"), &args.all("--remove"))
-        }
-        "dep" => {
-            let ctx = context(&args)?;
-            verbs::cmd_dep(&ctx, id_of(0)?, args.opt("--add"), args.opt("--remove"))
-        }
+            verbs::cmd_mv(&c, id_of(0)?, status, args.opt("--resolution"), url)
+        }),
+        "set" => ctx().and_then(|c| set_opts(args).and_then(|o| verbs::cmd_set(&c, id_of(0)?, &o))),
+        "label" => ctx().and_then(|c| {
+            verbs::cmd_label(&c, id_of(0)?, &args.all("--add"), &args.all("--remove"))
+        }),
+        "dep" => ctx()
+            .and_then(|c| verbs::cmd_dep(&c, id_of(0)?, args.opt("--add"), args.opt("--remove"))),
+        "summary" => ctx().and_then(|c| {
+            let rows = verbs::load_rows(&c)?;
+            let g = crate::graph::Graph::new(rows);
+            let n = g.rows.len();
+            verbs::write_file(&c.summary_path(), &crate::summary::generate_summary(&g))?;
+            Ok(format!("wrote {} ({n} issues)", c.summary_path().display()))
+        }),
+        _ => return None,
+    })
+}
+
+/// Run the command described by `argv` (without the program name), returning what to
+/// print on success.
+fn dispatch(raw: &[String]) -> Result<String, String> {
+    let args = parse_args(raw);
+    if let Some(result) = dispatch_mutating(&args) {
+        return result;
+    }
+    let id_of = |n: usize| -> Result<&str, String> {
+        args.positional_at(n)
+            .ok_or_else(|| format!("{}: missing an issue id", args.verb))
+    };
+    match args.verb.as_str() {
         "list" | "tree" => {
             let ctx = context(&args)?;
             query::cmd_list(&ctx, &list_opts(&args))
+        }
+        "show" => {
+            let ctx = context(&args)?;
+            query::cmd_show(&ctx, id_of(0)?)
         }
         verb @ ("ready" | "next") => {
             let ctx = context(&args)?;
@@ -375,21 +406,6 @@ fn dispatch(raw: &[String]) -> Result<String, String> {
                 args.positional_at(0),
                 verb == "next" || args.has("--next"),
             )
-        }
-        "check" => {
-            let ctx = context(&args)?;
-            cmd_check(&ctx)
-        }
-        "summary" => {
-            let ctx = context(&args)?;
-            let rows = verbs::load_rows(&ctx)?;
-            let g = crate::graph::Graph::new(rows);
-            let n = g.rows.len();
-            verbs::write_file(&ctx.summary_path(), &crate::summary::generate_summary(&g))?;
-            Ok(format!(
-                "wrote {} ({n} issues)",
-                ctx.summary_path().display()
-            ))
         }
         "deps" => {
             let ctx = context(&args)?;
@@ -404,16 +420,76 @@ fn dispatch(raw: &[String]) -> Result<String, String> {
             };
             query::cmd_deps(&ctx, &opts)
         }
-        "show" => {
-            let ctx = context(&args)?;
-            query::cmd_show(&ctx, id_of(0)?)
-        }
+        "diff" => cmd_diff(&context(&args)?, &args),
+        "changelog" => cmd_changelog(&context(&args)?, &args),
+        "check" => cmd_check(&context(&args)?),
         "" => Err("no verb given".to_string()),
         other if VERBS.contains(&other) => Err(format!(
             "`{other}` is not implemented yet in the Rust engine"
         )),
         other => Err(format!("unknown verb `{other}`")),
     }
+}
+
+/// What shipped since a cutoff.
+fn cmd_changelog(ctx: &Ctx, args: &Args) -> Result<String, String> {
+    // `usage_error` has already established --since is present.
+    let since = crate::diff::parse_since(args.opt("--since").unwrap_or_default())?;
+    let rows = verbs::load_rows(ctx)?;
+    let shipped = crate::diff::select_shipped(&rows, &since);
+    Ok(crate::diff::render_changelog(&shipped, &since)
+        .trim_end_matches('\n')
+        .to_string())
+}
+
+/// Compare the tracker at two points and report what changed.
+///
+/// A bare revision spec goes through git; `--from`/`--to` name sources directly and never
+/// touch it. With neither, the default is HEAD versus the working tree — "what have I not
+/// committed?" — which is the git path too.
+///
+/// The output is deliberately minimal, one plain line per changed issue. The real layouts
+/// are separate issues in the Python engine and are not ported ahead of it: see #2w5panf.
+fn cmd_diff(ctx: &Ctx, args: &Args) -> Result<String, String> {
+    let (old, new) = if let Some(rev) = args.positional_at(0) {
+        let (old_rev, new_rev) = crate::diff::parse_rev_spec(rev)?;
+        let old = crate::diff::git_snapshot(ctx, &old_rev)?;
+        let new = match new_rev {
+            Some(r) => crate::diff::git_snapshot(ctx, &r)?,
+            None => crate::diff::resolve_source(args.opt("--to"), ctx)?,
+        };
+        (old, new)
+    } else if let Some(from) = args.opt("--from") {
+        (
+            crate::diff::resolve_source(Some(from), ctx)?,
+            crate::diff::resolve_source(args.opt("--to"), ctx)?,
+        )
+    } else {
+        (
+            crate::diff::git_snapshot(ctx, "HEAD")?,
+            crate::diff::resolve_source(args.opt("--to"), ctx)?,
+        )
+    };
+    let changes = crate::diff::diff_snapshots(&old, &new);
+    let mut out = vec![format!("{} → {}", old.label, new.label)];
+    if changes.is_empty() {
+        out.push("no changes".into());
+        return Ok(out.join("\n"));
+    }
+    for c in &changes {
+        let sigil = match c.kind {
+            "added" => "+",
+            "removed" => "-",
+            _ => "~",
+        };
+        let detail = match c.kind {
+            "added" => "new".to_string(),
+            "removed" => "removed".to_string(),
+            _ => crate::diff::change_summary(c),
+        };
+        out.push(format!("{sigil} #{} {detail} — {}", c.id, c.title));
+    }
+    Ok(out.join("\n"))
 }
 
 /// `check` prints its findings on stdout and fails on any error. The report *is* the
@@ -623,6 +699,22 @@ mod tests {
     }
 
     #[test]
+    fn a_missing_required_option_is_a_usage_error() {
+        assert!(
+            usage_error(&parse_args(&["changelog".into()]))
+                .is_some_and(|m| m.contains("required: --since"))
+        );
+        assert_eq!(
+            usage_error(&parse_args(&[
+                "changelog".into(),
+                "--since".into(),
+                "2026-01-01".into()
+            ])),
+            None
+        );
+    }
+
+    #[test]
     fn a_missing_positional_is_a_usage_error_not_an_operation_that_fails() {
         // It exits 2, like argparse: a script can tell "you called me wrong" from
         // "what you asked for failed".
@@ -635,11 +727,11 @@ mod tests {
 
     #[test]
     fn an_unimplemented_verb_says_so_rather_than_guessing() {
-        // `changelog` is still unported. Saying so beats producing something
-        // approximate: a half-implemented verb is what would turn the conformance pass
-        // rate into a lie. (This named `list`, then `deps`, as each landed — which is
-        // the intended churn: the test tracks the frontier.)
-        let err = dispatch(&["changelog".to_string()]).expect_err("not implemented");
+        // `init` is still unported. Saying so beats producing something approximate: a
+        // half-implemented verb is what would turn the conformance pass rate into a lie.
+        // (This named `list`, then `deps`, then `changelog` as each landed — the churn
+        // is the point: the test tracks the frontier.)
+        let err = dispatch(&["init".to_string()]).expect_err("not implemented");
         assert!(err.contains("not implemented"), "{err}");
         let unknown = usage_error(&parse_args(&["nonesuch".to_string()]));
         assert!(unknown.is_some_and(|m| m.contains("unknown verb")));

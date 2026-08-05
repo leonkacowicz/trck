@@ -18,6 +18,7 @@
 
 mod cli;
 mod config;
+mod diff;
 mod discovery;
 mod graph;
 mod gutter;
