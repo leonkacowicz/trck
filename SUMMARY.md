@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 49 |
-| ongoing | 4 |
+| backlog | 50 |
+| ongoing | 5 |
 | in-review | 0 |
 | done | 143 |
-| **total** | **196** |
+| **total** | **198** |
 
 ## Hierarchies
 
@@ -166,7 +166,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#qktc8z7 rust: the git-integration verbs — hooks, merge drivers, setup](items/qktc8z7-rust-the-git-integration-verbs-hooks-merge-drivers-setup.md) _(backlog)_
 - [ ] [#rbast9r repo: migrate an existing tracker to the fixed vocabulary and the new format](items/rbast9r-repo-migrate-an-existing-tracker-to-the-fixed-vocabulary-and-the-new-format.md) _(backlog)_
 - [x] [#s5uw8mx rust: issue model, index I/O and canonical serialisation](items/s5uw8mx-rust-issue-model-index-i-o-and-canonical-serialisation.md)
-- [ ] [#uq2zc2p conformance: convert the deps gutter tests](items/uq2zc2p-conformance-convert-the-deps-gutter-tests.md) _(backlog)_
+- [ ] [#uq2zc2p conformance: convert the deps gutter tests](items/uq2zc2p-conformance-convert-the-deps-gutter-tests.md) _(ongoing)_
 - [ ] [#xm6h2qn conformance: convert the command-output tests](items/xm6h2qn-conformance-convert-the-command-output-tests.md) _(backlog)_
 
 ### [#u5fc5vm trck diff: semantic diff of tracker state between revisions](items/u5fc5vm-trck-diff-semantic-diff-of-tracker-state-between-revisions.md) — 29% (5/17 pts · 2/8 done) · _medium_ · ongoing
@@ -193,6 +193,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#cbf4sxp config: friendly errors for empty statuses/priorities/kinds lists](items/cbf4sxp-config-friendly-errors-for-empty-statuses-priorities-kinds-lists.md) — _low_
 - [#eemqu4g Support configurable custom fields](items/eemqu4g-support-configurable-custom-fields.md) — _low_ [tracker-features]
 - [#gybeetp decide how to record status-transition history: event log vs. git reconstruction](items/gybeetp-decide-how-to-record-status-transition-history-event-log-vs-git-reconstruction.md) — _low_ [dates]
+- [#j967byf deps: order graph components by demand (most-demanded cluster first)](items/j967byf-deps-order-graph-components-by-demand-most-demanded-cluster-first.md) — _low_
 - [#kj2c95b validate: suppress redundant bad-slug error when filename-slug mismatch already reported](items/kj2c95b-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
 - [#m3z2ywb summary: include foreign/unknown statuses in the counts table](items/m3z2ywb-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
 - [#s3d6xyz Add reconfigure verb to rename/reorder statuses](items/s3d6xyz-add-reconfigure-verb-to-rename-reorder-statuses.md) — _low_ [tracker-features]
@@ -200,6 +201,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#v9nyy42 Part C: curses TUI for browsing and quick actions](items/v9nyy42-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
 - [#xr994r6 list --as-of DATE: reconstruct and browse tracker state at a past date](items/xr994r6-list-as-of-date-reconstruct-and-browse-tracker-state-at-a-past-date.md) — _low_ [dates]
 - [#9ax2ny2 deps: --depth N to cut expansion N hops from the seed(s)](items/9ax2ny2-deps-depth-n-to-cut-expansion-n-hops-from-the-seed-s.md) — _lowest_
+- [#p4vp2ae deps: demand as innermost tie-break within a component's layout](items/p4vp2ae-deps-demand-as-innermost-tie-break-within-a-component-s-layout.md) — _lowest_
 
 ## Ongoing
 
