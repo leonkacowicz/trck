@@ -1,0 +1,4 @@
+# A done node in an otherwise-live chain is kept: dropping it would break the chain.
+new "Done base" --id aaaaaaa
+new "Live top" --id bbbbbbb --depends aaaaaaa
+done aaaaaaa

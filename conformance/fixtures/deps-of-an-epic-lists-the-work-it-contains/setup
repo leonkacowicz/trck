@@ -1,0 +1,5 @@
+# A parent's line reaches its children through inferred containment edges — before
+# these, an epic printed "(no dependencies)".
+new "Epic" --id aaaaaaa
+new "Kid one" --id bbbbbbb --parent aaaaaaa
+new "Kid two" --id ccccccc --parent aaaaaaa

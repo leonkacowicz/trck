@@ -1,0 +1,6 @@
+# Same graph as deps-scoped-excludes-cousins; --full restores the weakly-connected
+# component, so the cousin C reappears.
+new "A" --id aaaaaaa
+new "B" --id bbbbbbb --depends aaaaaaa
+new "C" --id ccccccc --depends aaaaaaa
+new "D" --id ddddddd --depends bbbbbbb

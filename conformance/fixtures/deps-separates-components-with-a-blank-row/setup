@@ -1,0 +1,6 @@
+# Two disjoint chains: exactly one blank row separates the components, and there is
+# no trailing separator.
+new "A-base" --id aaaaaaa
+new "A-top" --id bbbbbbb --depends aaaaaaa
+new "B-base" --id eeeeeee
+new "B-top" --id fffffff --depends eeeeeee

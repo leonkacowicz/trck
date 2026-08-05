@@ -1,0 +1,6 @@
+# Authored so id order (a,b,c) and dependency order (c before b before a) disagree;
+# every requirement must still render above the issue that needs it. Created in
+# dependency order because --depends needs its target to exist first.
+new "Deepest" --id ccccccc
+new "Middle" --id bbbbbbb --depends ccccccc
+new "Head" --id aaaaaaa --depends bbbbbbb

@@ -1,0 +1,4 @@
+# Chain A<-B<-C. --blocks on A is the downward (dependent) cone: what waits on A.
+new "A" --id aaaaaaa
+new "B" --id bbbbbbb --depends aaaaaaa
+new "C" --id ccccccc --depends bbbbbbb

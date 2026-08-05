@@ -1,0 +1,4 @@
+# 1 unblocks both 2 and 3: the lane forks.
+new "Base" --id aaaaaaa
+new "Left" --id bbbbbbb --depends aaaaaaa
+new "Right" --id ccccccc --depends aaaaaaa

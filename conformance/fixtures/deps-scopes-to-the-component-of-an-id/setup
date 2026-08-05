@@ -1,0 +1,5 @@
+# Two components; asking for one issue shows only its component.
+new "A-base" --id aaaaaaa
+new "A-top" --id bbbbbbb --depends aaaaaaa
+new "B-base" --id ccccccc
+new "B-top" --id ddddddd --depends ccccccc
