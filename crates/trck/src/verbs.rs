@@ -203,7 +203,7 @@ pub(crate) fn write_file(path: &Path, contents: &str) -> Result<(), String> {
     write_atomic(path, contents)
 }
 
-fn write_atomic(path: &Path, contents: &str) -> Result<(), String> {
+pub(crate) fn write_atomic(path: &Path, contents: &str) -> Result<(), String> {
     let tmp = path.with_extension(format!("tmp{}", std::process::id()));
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;

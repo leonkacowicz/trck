@@ -12,6 +12,7 @@
 use crate::config;
 use crate::discovery::Ctx;
 use crate::query::{self, DepsOpts, ListOpts};
+use crate::repo;
 use crate::verbs::{self, NewOpts, SetOpts};
 
 /// Verbs the Python engine has, so `--help` is honest about what is missing.
@@ -453,6 +454,27 @@ fn dispatch(raw: &[String]) -> Result<String, String> {
             let ctx = context(&args)?;
             crate::html::cmd_html(&ctx, args.opt("--out"), args.opt("--cmd"))
         }
+        "repo" => {
+            // The drivers must work outside a tracker: git may invoke them from anywhere in
+            // the worktree, and a merge with no reachable trck.json still has to merge the
+            // rows it was handed. So the context is optional here, unlike every other verb.
+            let ctx = context(&args).ok();
+            let sub = args.positional_at(0).unwrap_or("");
+            let operand = |n: usize| -> Result<&str, String> {
+                args.positional_at(n)
+                    .ok_or_else(|| format!("repo {sub}: missing operand {n}"))
+            };
+            match sub {
+                "merge-index" => {
+                    repo::cmd_merge_index(ctx.as_ref(), operand(1)?, operand(2)?, operand(3)?)
+                }
+                "merge-summary" => repo::cmd_merge_summary(ctx.as_ref(), operand(1)?),
+                "" => Err("repo: missing a subcommand".into()),
+                other => Err(format!(
+                    "repo: `{other}` is not implemented yet in the Rust engine"
+                )),
+            }
+        }
         "diff" => cmd_diff(&context(&args)?, &args),
         "changelog" => cmd_changelog(&context(&args)?, &args),
         "check" => cmd_check(&context(&args)?),
@@ -644,6 +666,15 @@ pub(crate) fn main() -> std::process::ExitCode {
             std::process::ExitCode::SUCCESS
         }
         Err(msg) if msg.is_empty() => std::process::ExitCode::FAILURE,
+        // A message that already labels itself is printed verbatim. The merge drivers are
+        // the case: git shows their stderr to the user as-is, so the diagnostic is written
+        // as a whole report — a headline, the conflicting rows, and what to do next — and
+        // prefixing `error:` onto its first line would read as though only that line were
+        // the error.
+        Err(msg) if msg.starts_with("trck: ") => {
+            eprintln!("{msg}");
+            std::process::ExitCode::FAILURE
+        }
         Err(msg) => {
             eprintln!("error: {msg}");
             std::process::ExitCode::FAILURE
