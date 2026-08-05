@@ -8,8 +8,8 @@
 | backlog | 51 |
 | ongoing | 4 |
 | in-review | 0 |
-| done | 140 |
-| **total** | **195** |
+| done | 141 |
+| **total** | **196** |
 
 ## Hierarchies
 
@@ -140,7 +140,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#kaqhtfc list/tree: drop the tree alias (nested forest is list's default)](items/kaqhtfc-list-tree-drop-the-tree-alias-nested-forest-is-list-s-default.md) _(backlog)_
 - [x] [#v8tmkrt json: shared emit_json stdout seam + --json flag plumbing](items/v8tmkrt-json-shared-emit-json-stdout-seam-json-flag-plumbing.md)
 
-### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 55% (54/99 pts · 14/25 done) · _medium_ · ongoing
+### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 58% (59/102 pts · 15/26 done) · _medium_ · ongoing
 
 - [ ] [#2w5panf rust: diff and changelog](items/2w5panf-rust-diff-and-changelog.md) _(backlog)_
 - [x] [#4susb3g rust: query verbs — list, tree, show](items/4susb3g-rust-query-verbs-list-tree-show.md)
@@ -155,7 +155,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#d7y2emr rust: config, vocabulary and tracker discovery](items/d7y2emr-rust-config-vocabulary-and-tracker-discovery.md)
 - [x] [#dfe48ds ids: drop renumber and every trace of integer ids](items/dfe48ds-ids-drop-renumber-and-every-trace-of-integer-ids.md)
 - [ ] [#djx63gk cutover: un-vendor, retire the Python engine, rewrite the docs](items/djx63gk-cutover-un-vendor-retire-the-python-engine-rewrite-the-docs.md) _(backlog)_
-- [ ] [#eek4hat rust: check, validate and the repo maintenance verbs](items/eek4hat-rust-check-validate-and-the-repo-maintenance-verbs.md) _(backlog)_
+- [x] [#eek4hat rust: check, validate and the repo maintenance verbs](items/eek4hat-rust-check-validate-and-the-repo-maintenance-verbs.md)
 - [x] [#ehqv6sk rust: graph semantics — parents, effective deps, demand, readiness](items/ehqv6sk-rust-graph-semantics-parents-effective-deps-demand-readiness.md)
 - [ ] [#gh363h3 rust: --json output for list, show, deps and ready](items/gh363h3-rust-json-output-for-list-show-deps-and-ready.md) _(backlog)_
 - [x] [#gtkastb rust: mutating verbs and SUMMARY generation](items/gtkastb-rust-mutating-verbs-and-summary-generation.md)
@@ -163,6 +163,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#jpash72 new: --id to supply an issue id instead of generating one](items/jpash72-new-id-to-supply-an-issue-id-instead-of-generating-one.md)
 - [x] [#n8v8qba rust: workspace, CI, and the conformance runner](items/n8v8qba-rust-workspace-ci-and-the-conformance-runner.md)
 - [x] [#qgpk65t vocabulary: fix the four statuses in code, not in config](items/qgpk65t-vocabulary-fix-the-four-statuses-in-code-not-in-config.md)
+- [ ] [#qktc8z7 rust: the git-integration verbs — hooks, merge drivers, setup](items/qktc8z7-rust-the-git-integration-verbs-hooks-merge-drivers-setup.md) _(backlog)_
 - [ ] [#rbast9r repo: migrate an existing tracker to the fixed vocabulary and the new format](items/rbast9r-repo-migrate-an-existing-tracker-to-the-fixed-vocabulary-and-the-new-format.md) _(backlog)_
 - [x] [#s5uw8mx rust: issue model, index I/O and canonical serialisation](items/s5uw8mx-rust-issue-model-index-i-o-and-canonical-serialisation.md)
 - [ ] [#uq2zc2p conformance: convert the deps gutter tests](items/uq2zc2p-conformance-convert-the-deps-gutter-tests.md) _(backlog)_
