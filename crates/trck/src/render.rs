@@ -9,6 +9,8 @@ use crate::config::{self, PRIORITIES, is_terminal};
 use crate::graph::Graph;
 use crate::issue::Issue;
 use std::collections::BTreeMap;
+use std::ffi::OsStr;
+use std::io::IsTerminal;
 
 /// Single-width, so the id column lines up whatever the status.
 pub(crate) fn status_icon(status: &str) -> &'static str {
@@ -43,26 +45,28 @@ fn ansi(code: &str) -> &'static str {
 /// Whether to emit escape codes at all.
 ///
 /// `NO_COLOR` set to anything, including empty, disables — that is the no-color.org
-/// convention. Otherwise only when stdout is a terminal.
+/// convention. `FORCE_COLOR` set to anything but `0` forces colour on even off a terminal
+/// (its companion convention). Otherwise, colour only when stdout is a real terminal —
+/// `is_terminal()` is `isatty(1)` from std, so no dependency and no `unsafe` are needed.
 pub(crate) fn use_colour() -> bool {
-    if std::env::var_os("NO_COLOR").is_some() {
+    colour_decision(
+        std::env::var_os("NO_COLOR").is_some(),
+        std::env::var_os("FORCE_COLOR").as_deref(),
+        std::io::stdout().is_terminal(),
+    )
+}
+
+/// The colour gate with its three inputs passed in rather than read from the environment,
+/// so the precedence (`NO_COLOR` > `FORCE_COLOR` > isatty) is testable without mutating process
+/// state — `set_var` is unsafe in this edition, and the crate forbids unsafe.
+fn colour_decision(no_color: bool, force_color: Option<&OsStr>, is_tty: bool) -> bool {
+    if no_color {
         return false;
     }
-    is_terminal_stdout()
-}
-
-#[cfg(unix)]
-fn is_terminal_stdout() -> bool {
-    // `isatty(1)` without a dependency. The only unsafe-adjacent thing the engine needs,
-    // and the crate forbids `unsafe`, so it is answered from the environment instead:
-    // a terminal sets TERM, a pipe or a captured run does not.
-    std::env::var_os("TERM").is_some_and(|t| t != "dumb")
-        && std::env::var_os("TRCK_PIPED").is_none()
-}
-
-#[cfg(not(unix))]
-fn is_terminal_stdout() -> bool {
-    false
+    if force_color.is_some_and(|v| v != OsStr::new("0")) {
+        return true;
+    }
+    is_tty
 }
 
 /// Wrap `text` in the given codes, or return it unchanged when colour is off.
@@ -436,6 +440,22 @@ mod tests {
         }
         assert_eq!(status_icon("done"), "●");
         assert_eq!(status_icon("in-review"), status_icon("ongoing"));
+    }
+
+    #[test]
+    fn colour_decision_matches_the_python_gate() {
+        let f = OsStr::new;
+        // NO_COLOR wins over FORCE_COLOR and over a real tty.
+        assert!(!colour_decision(true, Some(f("1")), true));
+        // FORCE_COLOR set to anything but "0" forces on, even when piped.
+        assert!(colour_decision(false, Some(f("1")), false));
+        assert!(colour_decision(false, Some(f("")), false)); // "" != "0" → forced on
+        // FORCE_COLOR=0 does not force; the tty check decides.
+        assert!(!colour_decision(false, Some(f("0")), false));
+        assert!(colour_decision(false, Some(f("0")), true));
+        // Unset FORCE_COLOR: follow the terminal.
+        assert!(colour_decision(false, None, true));
+        assert!(!colour_decision(false, None, false));
     }
 
     #[test]
