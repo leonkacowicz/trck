@@ -5,10 +5,10 @@
 
 | State | Count |
 |---|---:|
-| backlog | 51 |
+| backlog | 50 |
 | ongoing | 4 |
 | in-review | 0 |
-| done | 141 |
+| done | 142 |
 | **total** | **196** |
 
 ## Hierarchies
@@ -140,9 +140,9 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#kaqhtfc list/tree: drop the tree alias (nested forest is list's default)](items/kaqhtfc-list-tree-drop-the-tree-alias-nested-forest-is-list-s-default.md) _(backlog)_
 - [x] [#v8tmkrt json: shared emit_json stdout seam + --json flag plumbing](items/v8tmkrt-json-shared-emit-json-stdout-seam-json-flag-plumbing.md)
 
-### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 58% (59/102 pts · 15/26 done) · _medium_ · ongoing
+### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 63% (64/102 pts · 16/26 done) · _medium_ · ongoing
 
-- [ ] [#2w5panf rust: diff and changelog](items/2w5panf-rust-diff-and-changelog.md) _(backlog)_
+- [x] [#2w5panf rust: diff and changelog](items/2w5panf-rust-diff-and-changelog.md)
 - [x] [#4susb3g rust: query verbs — list, tree, show](items/4susb3g-rust-query-verbs-list-tree-show.md)
 - [x] [#5p738hu conformance: fixture format and the Python runner](items/5p738hu-conformance-fixture-format-and-the-python-runner.md)
 - [ ] [#88ax67p conformance: convert the graph-semantics tests](items/88ax67p-conformance-convert-the-graph-semantics-tests.md) _(backlog)_
