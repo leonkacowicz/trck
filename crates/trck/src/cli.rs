@@ -268,6 +268,10 @@ const MIN_POSITIONAL: &[(&str, usize, &str)] = &[
 /// Options a verb cannot run without.
 const REQUIRED_OPTS: &[(&str, &str)] = &[("changelog", "--since")];
 
+/// Verbs whose `--json` is implemented. The rest still refuse the flag: accepted-and-ignored
+/// returns human text with exit 0, and a caller piping into `jq` finds out far from the cause.
+const JSON_VERBS: &[&str] = &["list", "tree", "show", "ready", "next", "deps"];
+
 /// Everything wrong with the *shape* of the invocation, as opposed to what it asks for.
 ///
 /// Kept separate because it exits 2, not 1. That is argparse's convention and it is a
@@ -281,7 +285,7 @@ fn usage_error(args: &Args) -> Option<String> {
     // engine's do, but no verb honours it yet. Refusing it is the whole point: a flag that is
     // accepted and ignored returns human text with exit 0, and a caller piping into `jq` finds
     // out far from the cause. Drop this once the read verbs emit JSON.
-    if args.has("--json") {
+    if args.has("--json") && !JSON_VERBS.contains(&args.verb.as_str()) {
         return Some(format!(
             "{}: --json is not implemented in this engine yet",
             args.verb
@@ -413,15 +417,20 @@ fn dispatch(raw: &[String]) -> Result<String, String> {
         }
         "show" => {
             let ctx = context(&args)?;
-            query::cmd_show(&ctx, id_of(0)?)
+            if args.has("--json") {
+                query::cmd_show_json(&ctx, id_of(0)?)
+            } else {
+                query::cmd_show(&ctx, id_of(0)?)
+            }
         }
         verb @ ("ready" | "next") => {
             let ctx = context(&args)?;
-            query::cmd_ready(
-                &ctx,
-                args.positional_at(0),
-                verb == "next" || args.has("--next"),
-            )
+            let only_next = verb == "next" || args.has("--next");
+            if args.has("--json") {
+                query::cmd_ready_json(&ctx, args.positional_at(0), only_next)
+            } else {
+                query::cmd_ready(&ctx, args.positional_at(0), only_next)
+            }
         }
         "deps" => {
             let ctx = context(&args)?;
@@ -434,7 +443,11 @@ fn dispatch(raw: &[String]) -> Result<String, String> {
                 include_done_chains: args.has("--include-done-chains"),
                 fanout: args.has("--fanout"),
             };
-            query::cmd_deps(&ctx, &opts)
+            if args.has("--json") {
+                query::cmd_deps_json(&ctx, &opts)
+            } else {
+                query::cmd_deps(&ctx, &opts)
+            }
         }
         "html" => {
             let ctx = context(&args)?;
@@ -577,6 +590,7 @@ fn list_opts(args: &Args) -> ListOpts<'_> {
         all: args.has("--all"),
         flat: args.has("--flat"),
         paths: args.has("--paths"),
+        json: args.has("--json"),
     }
 }
 
@@ -719,10 +733,10 @@ mod tests {
     }
 
     #[test]
-    fn json_is_refused_rather_than_silently_ignored() {
-        // The flag is listed as known so the message can name it specifically, but nothing
-        // honours it yet. Printing human output and exiting 0 would be the one failure a
+    fn json_is_honoured_by_the_read_verbs_and_refused_elsewhere() {
+        // Accepting the flag and printing human output with exit 0 is the one failure a
         // caller cannot detect — `trck list --json | jq` would break far from its cause.
+        // So every verb either implements it or says it does not.
         for argv in [
             vec!["list".to_string(), "--json".to_string()],
             vec!["tree".to_string(), "--json".to_string()],
@@ -736,13 +750,18 @@ mod tests {
             vec!["deps".to_string(), "--json".to_string()],
         ] {
             let verb = argv[0].clone();
-            let msg = usage_error(&parse_args(&argv));
-            assert!(
-                msg.as_ref().is_some_and(|m| m.contains("--json")),
-                "{verb} --json must be refused, got {msg:?}"
+            assert_eq!(
+                usage_error(&parse_args(&argv)),
+                None,
+                "{verb} --json is implemented and must parse"
             );
         }
-        // Without the flag the same verbs are fine.
+        // A verb with no --json still refuses it rather than ignoring it.
+        let msg = usage_error(&parse_args(&["summary".to_string(), "--json".to_string()]));
+        assert!(
+            msg.as_ref().is_some_and(|m| m.contains("--json")),
+            "summary --json must be refused, got {msg:?}"
+        );
         assert_eq!(usage_error(&parse_args(&["list".into()])), None);
     }
 

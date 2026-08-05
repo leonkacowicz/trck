@@ -14,6 +14,7 @@ use crate::discovery::Ctx;
 use crate::graph::{Graph, priority_rank};
 use crate::gutter;
 use crate::issue::{CANON_KEYS, Issue, check_field_key};
+use crate::json::Json;
 use crate::render::{
     Annotation, LANE_PALETTE, RowOpts, field_value, field_value_raw, hl_id, lane_palette_index,
     paint, render_rows, status_codes, status_icon, unique_prefix_lens,
@@ -46,6 +47,7 @@ pub(crate) struct ListOpts<'a> {
     pub(crate) all: bool,
     pub(crate) flat: bool,
     pub(crate) paths: bool,
+    pub(crate) json: bool,
 }
 
 /// `--status a,b` keeps those; `--status '!done'` drops them. Returns `(keep, drop)`.
@@ -117,6 +119,42 @@ fn check_list_opts(opts: &ListOpts) -> Result<Vec<(String, String)>, String> {
     Ok(field_filters)
 }
 
+/// One nested node of `list --json`, recursing into the children that are on screen.
+///
+/// A node carries two keys the flat form has no use for: `children`, so a consumer wanting
+/// the hierarchy need not rebuild it from `parent` pointers, and `context`, marking a row
+/// present only to keep a match attached to its ancestors — what the human view dims.
+/// `seen` guards a hand-edited parent cycle the same way the human forest walk does.
+fn json_node(
+    g: &Graph,
+    sel: &Selection,
+    id: &str,
+    sorted: &mut impl FnMut(&mut Vec<String>),
+    seen: &mut BTreeSet<String>,
+) -> Json {
+    let mut kids: Vec<String> = g
+        .children_of(id)
+        .iter()
+        .filter(|c| sel.shown.contains(*c))
+        .cloned()
+        .collect();
+    sorted(&mut kids);
+    let children: Vec<Json> = if seen.insert(id.to_string()) {
+        kids.iter()
+            .map(|c| json_node(g, sel, c, sorted, seen))
+            .collect()
+    } else {
+        Vec::new()
+    };
+    let mut obj = match g.get(id).map(Issue::to_full) {
+        Some(Json::Object(pairs)) => pairs,
+        _ => Vec::new(),
+    };
+    obj.push(("context".into(), Json::Bool(!sel.matched.contains(id))));
+    obj.push(("children".into(), Json::Array(children)));
+    Json::Object(obj)
+}
+
 pub(crate) fn cmd_list(ctx: &Ctx, opts: &ListOpts) -> Result<String, String> {
     let rows = load_rows(ctx)?;
     let root = opts.root.map(|t| resolve_ref(&rows, t)).transpose()?;
@@ -165,6 +203,9 @@ pub(crate) fn cmd_list(ctx: &Ctx, opts: &ListOpts) -> Result<String, String> {
     };
 
     if opts.paths {
+        if opts.json {
+            return Err("--paths and --json are different output modes; pick one".into());
+        }
         let mut ids: Vec<String> = g
             .rows
             .iter()
@@ -173,6 +214,10 @@ pub(crate) fn cmd_list(ctx: &Ctx, opts: &ListOpts) -> Result<String, String> {
             .collect();
         sorted(&mut ids);
         return Ok(paths_of(ctx, &g, &ids));
+    }
+
+    if opts.json {
+        return Ok(list_json(&g, opts, &keep, &mut sorted, root.as_deref()));
     }
 
     let abbrev = unique_prefix_lens(g.rows.iter().map(|r| r.id.as_str()));
@@ -209,19 +254,22 @@ pub(crate) fn cmd_list(ctx: &Ctx, opts: &ListOpts) -> Result<String, String> {
     ))
 }
 
-/// The nested view: show a node iff it matches or has a matching descendant, with the
-/// non-matching ancestors kept as dimmed context so a matched child never floats free.
-fn forest(
+/// Which rows the nested view covers: the matches, everything shown (matches plus the
+/// ancestor spine that keeps them attached), and the roots to walk from.
+struct Selection {
+    matched: BTreeSet<String>,
+    shown: BTreeSet<String>,
+    roots: Vec<String>,
+}
+
+/// The nested view's row selection, shared by the human forest and the `--json` one so the
+/// two can never disagree about what a filter selected — only about how it is rendered.
+fn select_forest(
     g: &Graph,
-    opts: &ListOpts,
     keep: &impl Fn(&Issue) -> bool,
     sorted: &mut impl FnMut(&mut Vec<String>),
-    show_fields: Vec<String>,
-    abbrev: BTreeMap<String, usize>,
     root: Option<&str>,
-) -> String {
-    let _ = opts;
-
+) -> Selection {
     let matched: BTreeSet<String> = g
         .rows
         .iter()
@@ -232,8 +280,6 @@ fn forest(
     for id in &matched {
         shown.extend(g.ancestors_of(id));
     }
-    let dim: Vec<String> = shown.difference(&matched).cloned().collect();
-
     let mut roots: Vec<String> = if let Some(id) = root {
         if shown.contains(id) {
             vec![id.to_string()]
@@ -250,6 +296,70 @@ fn forest(
             .collect()
     };
     sorted(&mut roots);
+    Selection {
+        matched,
+        shown,
+        roots,
+    }
+}
+
+/// `list --json`: the rows the human view would print, as one document.
+///
+/// Takes the *same* `keep` and `sorted` the human path built, so the two renderings cannot
+/// drift on what a filter selected — only on how it is shown. Nested by default and flat
+/// under `--flat`, mirroring the human view: a consumer wanting the hierarchy should not
+/// have to rebuild it from `parent` pointers. Rows are [`Issue::to_full`], so every
+/// canonical key is present even where unset.
+fn list_json(
+    g: &Graph,
+    opts: &ListOpts,
+    keep: &impl Fn(&Issue) -> bool,
+    sorted: &mut impl FnMut(&mut Vec<String>),
+    root: Option<&str>,
+) -> String {
+    if opts.flat {
+        let mut ids: Vec<String> = g
+            .rows
+            .iter()
+            .filter(|r| keep(r))
+            .map(|r| r.id.clone())
+            .collect();
+        sorted(&mut ids);
+        let rows: Vec<Json> = ids
+            .iter()
+            .filter_map(|id| g.get(id))
+            .map(Issue::to_full)
+            .collect();
+        return Json::Array(rows).to_json_pretty();
+    }
+    let sel = select_forest(g, keep, sorted, root);
+    let nodes: Vec<Json> = sel
+        .roots
+        .iter()
+        .map(|id| json_node(g, &sel, id, sorted, &mut BTreeSet::new()))
+        .collect();
+    Json::Array(nodes).to_json_pretty()
+}
+
+/// The nested view: show a node iff it matches or has a matching descendant, with the
+/// non-matching ancestors kept as dimmed context so a matched child never floats free.
+fn forest(
+    g: &Graph,
+    opts: &ListOpts,
+    keep: &impl Fn(&Issue) -> bool,
+    sorted: &mut impl FnMut(&mut Vec<String>),
+    show_fields: Vec<String>,
+    abbrev: BTreeMap<String, usize>,
+    root: Option<&str>,
+) -> String {
+    let _ = opts;
+
+    let Selection {
+        matched,
+        shown,
+        roots,
+    } = select_forest(g, keep, sorted, root);
+    let dim: Vec<String> = shown.difference(&matched).cloned().collect();
 
     let mut f = Forest {
         shown: &shown,
@@ -328,6 +438,44 @@ fn walk(g: &Graph, f: &mut Forest, id: &str, pfx: &str, sorted: &mut impl FnMut(
 /// and ranking are computed over: blocking is effective, so a leaf here may be waiting on
 /// an issue outside the subtree. Narrow the graph and those blockers vanish, making
 /// blocked work look actionable.
+/// `ready --json` / `next --json`: the ranked actionable rows, as a flat array.
+///
+/// Flat and unnested, unlike `list --json`: readiness is a property of leaves, so there is
+/// no hierarchy to carry. The order is the ranking — the whole point of the verb — and no
+/// `↑demand` marker appears, because the caller can compute it from the rows.
+pub(crate) fn cmd_ready_json(
+    ctx: &Ctx,
+    root: Option<&str>,
+    only_next: bool,
+) -> Result<String, String> {
+    let ids = ready_ids(ctx, root, only_next)?;
+    let rows = load_rows(ctx)?;
+    let g = Graph::new(rows);
+    let out: Vec<Json> = ids
+        .iter()
+        .filter_map(|id| g.get(id))
+        .map(Issue::to_full)
+        .collect();
+    Ok(Json::Array(out).to_json_pretty())
+}
+
+/// The ranked ready set, scoped to a subtree and truncated for `next` — shared so the two
+/// renderings can never disagree about *which* issues are ready or in what order.
+fn ready_ids(ctx: &Ctx, root: Option<&str>, only_next: bool) -> Result<Vec<String>, String> {
+    let rows = load_rows(ctx)?;
+    let root = root.map(|t| resolve_ref(&rows, t)).transpose()?;
+    let g = Graph::new(rows);
+    let mut ids = g.ranked_ready();
+    if let Some(id) = &root {
+        let kept: BTreeSet<String> = g.subtree(id).into_iter().collect();
+        ids.retain(|i| kept.contains(i));
+    }
+    if only_next {
+        ids.truncate(1);
+    }
+    Ok(ids)
+}
+
 pub(crate) fn cmd_ready(ctx: &Ctx, root: Option<&str>, only_next: bool) -> Result<String, String> {
     let rows = load_rows(ctx)?;
     let root = root.map(|t| resolve_ref(&rows, t)).transpose()?;
@@ -369,6 +517,40 @@ pub(crate) struct DepsOpts<'a> {
     pub(crate) omit_done: bool,
     pub(crate) include_done_chains: bool,
     pub(crate) fanout: bool,
+}
+
+/// `deps --json`: one issue's two cones, as `{requires, blocks}`.
+///
+/// Needs an id. The whole-graph view is an edge list — a different shape entirely — and
+/// silently returning one under the same key names would be worse than refusing.
+///
+/// Rows are emitted in index order rather than the order the cone walk happens to produce:
+/// the walk works off a set, so its iteration order is not something a golden file could
+/// survive.
+pub(crate) fn cmd_deps_json(ctx: &Ctx, opts: &DepsOpts) -> Result<String, String> {
+    let rows = load_rows(ctx)?;
+    let Some(token) = opts.root else {
+        return Err(
+            "deps --json needs an issue id (the whole-graph view is an edge \
+                    list, a different shape from one issue's cones)"
+                .into(),
+        );
+    };
+    let iid = resolve_ref(&rows, token)?;
+    let g = Graph::new(rows);
+    let cone = |up: bool, down: bool| -> Vec<Json> {
+        let line = g.dependency_line(&iid, up, down);
+        g.rows
+            .iter()
+            .filter(|r| r.id != iid && line.contains(&r.id))
+            .map(Issue::to_full)
+            .collect()
+    };
+    Ok(Json::Object(vec![
+        ("requires".into(), Json::Array(cone(true, false))),
+        ("blocks".into(), Json::Array(cone(false, true))),
+    ])
+    .to_json_pretty())
 }
 
 pub(crate) fn cmd_deps(ctx: &Ctx, opts: &DepsOpts) -> Result<String, String> {
@@ -516,6 +698,43 @@ fn node_label(
         paint(status_icon(&r.status), &status_codes(&r.status)),
         paint(&r.title, emph)
     )
+}
+
+/// `show --json`: one document with the body folded in.
+///
+/// Metadata *and* body together, rather than the human view's metadata-then-separator: the
+/// obvious way to consume this is `json.loads(stdout)`, and a trailing `--- body ---` block
+/// would break it. `points` is dropped on a parent for the same reason the human view drops
+/// it — there it is derived, not an input.
+pub(crate) fn cmd_show_json(ctx: &Ctx, token: &str) -> Result<String, String> {
+    let (row, body, is_leaf) = show_parts(ctx, token)?;
+    let mut obj = match row.to_full() {
+        Json::Object(pairs) => pairs,
+        _ => Vec::new(),
+    };
+    if !is_leaf {
+        obj.retain(|(k, _)| k != "points");
+    }
+    obj.push(("body".into(), Json::String(body)));
+    Ok(Json::Object(obj).to_json_pretty())
+}
+
+/// The row, its body text and whether it is a leaf — everything both `show` renderings need,
+/// resolved and guarded once so the two cannot disagree about which issue they are showing.
+fn show_parts(ctx: &Ctx, token: &str) -> Result<(Issue, String, bool), String> {
+    let rows = load_rows(ctx)?;
+    let iid = resolve_ref(&rows, token)?;
+    let g = Graph::new(rows);
+    let row = g
+        .get(&iid)
+        .ok_or_else(|| format!("no issue matching '{iid}'"))?
+        .clone();
+    let path = issue_path(ctx, &row);
+    if !path.exists() {
+        return Err(format!("file missing for #{}: {}", row.id, path.display()));
+    }
+    let body = std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+    Ok((row, body, g.is_leaf(&iid)))
 }
 
 pub(crate) fn cmd_show(ctx: &Ctx, token: &str) -> Result<String, String> {
