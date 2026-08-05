@@ -5,10 +5,10 @@
 
 | State | Count |
 |---|---:|
-| backlog | 51 |
+| backlog | 48 |
 | ongoing | 5 |
 | in-review | 0 |
-| done | 152 |
+| done | 155 |
 | **total** | **208** |
 
 ## Hierarchies
@@ -140,12 +140,12 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#kaqhtfc list/tree: drop the tree alias (nested forest is list's default)](items/kaqhtfc-list-tree-drop-the-tree-alias-nested-forest-is-list-s-default.md) _(backlog)_
 - [x] [#v8tmkrt json: shared emit_json stdout seam + --json flag plumbing](items/v8tmkrt-json-shared-emit-json-stdout-seam-json-flag-plumbing.md)
 
-### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 80% (86/107 pts · 26/35 done) · _medium_ · ongoing
+### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 83% (89/107 pts · 29/35 done) · _medium_ · ongoing
 
 - [x] [#2w5panf rust: diff and changelog](items/2w5panf-rust-diff-and-changelog.md)
 - [x] [#4susb3g rust: query verbs — list, tree, show](items/4susb3g-rust-query-verbs-list-tree-show.md)
 - [x] [#5p738hu conformance: fixture format and the Python runner](items/5p738hu-conformance-fixture-format-and-the-python-runner.md)
-- [ ] [#6vpkjxg rust: validation-error order differs after a mutating verb re-sorts extras](items/6vpkjxg-rust-validation-error-order-differs-after-a-mutating-verb-re-sorts-extras.md) _(backlog)_
+- [x] [#6vpkjxg rust: validation-error order differs after a mutating verb re-sorts extras](items/6vpkjxg-rust-validation-error-order-differs-after-a-mutating-verb-re-sorts-extras.md)
 - [x] [#88ax67p conformance: convert the graph-semantics tests](items/88ax67p-conformance-convert-the-graph-semantics-tests.md)
 - [x] [#8pwztvy rust: ready and next, with the demand annotations](items/8pwztvy-rust-ready-and-next-with-the-demand-annotations.md)
 - [ ] [#9898xru rust: release artifacts per platform, and self-update](items/9898xru-rust-release-artifacts-per-platform-and-self-update.md) _(backlog)_
@@ -154,7 +154,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#av3efth conformance: convert the on-disk artifact tests](items/av3efth-conformance-convert-the-on-disk-artifact-tests.md)
 - [x] [#b2r89au rust: fold in the html view](items/b2r89au-rust-fold-in-the-html-view.md)
 - [x] [#bdmgj7r rust: the deps gutter renderer](items/bdmgj7r-rust-the-deps-gutter-renderer.md)
-- [ ] [#d6mquku rust: re-parent cycle error drops the explanation of which edge closes the loop](items/d6mquku-rust-re-parent-cycle-error-drops-the-explanation-of-which-edge-closes-the-loop.md) _(backlog)_
+- [x] [#d6mquku rust: re-parent cycle error drops the explanation of which edge closes the loop](items/d6mquku-rust-re-parent-cycle-error-drops-the-explanation-of-which-edge-closes-the-loop.md)
 - [x] [#d7y2emr rust: config, vocabulary and tracker discovery](items/d7y2emr-rust-config-vocabulary-and-tracker-discovery.md)
 - [x] [#dfe48ds ids: drop renumber and every trace of integer ids](items/dfe48ds-ids-drop-renumber-and-every-trace-of-integer-ids.md)
 - [ ] [#djx63gk cutover: un-vendor, retire the Python engine, rewrite the docs](items/djx63gk-cutover-un-vendor-retire-the-python-engine-rewrite-the-docs.md) _(backlog)_
@@ -162,7 +162,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#ehqv6sk rust: graph semantics — parents, effective deps, demand, readiness](items/ehqv6sk-rust-graph-semantics-parents-effective-deps-demand-readiness.md)
 - [ ] [#gh363h3 rust: --json output for list, show, deps and ready](items/gh363h3-rust-json-output-for-list-show-deps-and-ready.md) _(backlog)_
 - [x] [#gtkastb rust: mutating verbs and SUMMARY generation](items/gtkastb-rust-mutating-verbs-and-summary-generation.md)
-- [ ] [#gw9qnmw rust: duplicate-id diagnostic is terser than the Python engine's](items/gw9qnmw-rust-duplicate-id-diagnostic-is-terser-than-the-python-engine-s.md) _(backlog)_
+- [x] [#gw9qnmw rust: duplicate-id diagnostic is terser than the Python engine's](items/gw9qnmw-rust-duplicate-id-diagnostic-is-terser-than-the-python-engine-s.md)
 - [x] [#h8nxqx7 vocabulary: fix priorities at five canonical levels](items/h8nxqx7-vocabulary-fix-priorities-at-five-canonical-levels-names-as-display-aliases.md)
 - [x] [#jpash72 new: --id to supply an issue id instead of generating one](items/jpash72-new-id-to-supply-an-issue-id-instead-of-generating-one.md)
 - [x] [#n8v8qba rust: workspace, CI, and the conformance runner](items/n8v8qba-rust-workspace-ci-and-the-conformance-runner.md)
