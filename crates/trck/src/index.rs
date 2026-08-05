@@ -6,7 +6,7 @@
 
 use crate::issue::Issue;
 use crate::json::parse;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 #[cfg(test)]
 use std::path::Path;
 
@@ -38,19 +38,32 @@ pub(crate) fn parse_index(text: &str, origin: &str) -> Result<Vec<Issue>, String
 /// would write straight past. Every duplicate is collected before failing — fixing them
 /// one round-trip at a time is miserable.
 fn check_unique_ids(rows: &[Issue], origin: &str) -> Result<(), String> {
-    let mut counts: BTreeMap<&str, usize> = BTreeMap::new();
+    // Statuses ride along with the count: a duplicate almost always arrives from a bad
+    // merge, and which two statuses collided is what tells you which side to keep.
+    let mut seen: BTreeMap<&str, (usize, BTreeSet<&str>)> = BTreeMap::new();
     for r in rows {
-        *counts.entry(r.id.as_str()).or_default() += 1;
+        let e = seen.entry(r.id.as_str()).or_default();
+        e.0 += 1;
+        e.1.insert(r.status.as_str());
     }
-    let dupes: Vec<String> = counts
+    let dupes: Vec<String> = seen
         .into_iter()
-        .filter(|&(_, n)| n > 1)
-        .map(|(id, n)| format!("  #{id} appears {n} times"))
+        .filter(|&(_, (n, _))| n > 1)
+        .map(|(id, (n, statuses))| {
+            format!(
+                "  #{id} appears {n} times (statuses: {})",
+                statuses.into_iter().collect::<Vec<_>>().join(", ")
+            )
+        })
         .collect();
     if dupes.is_empty() {
         return Ok(());
     }
-    Err(format!("{origin}: duplicate ids\n{}", dupes.join("\n")))
+    Err(format!(
+        "{origin}: ids must be unique, but {} id(s) are repeated:\n{}",
+        dupes.len(),
+        dupes.join("\n")
+    ))
 }
 
 /// Serialise rows to index text: sorted by id, canonical form, trailing newline when
@@ -79,6 +92,22 @@ mod tests {
         r#"{"id": "bbbbbbb", "slug": "b", "title": "B", "status": "backlog", "priority": "high"}"#;
     const B: &str =
         r#"{"id": "aaaaaaa", "slug": "a", "title": "A", "status": "backlog", "priority": "low"}"#;
+
+    #[test]
+    fn duplicate_ids_are_reported_with_their_statuses() {
+        // A duplicate usually arrives from a bad merge, so the statuses of the colliding
+        // rows are the useful part: they say which two versions of the row survived.
+        let text = format!(
+            "{A}\n{}\n",
+            r#"{"id": "bbbbbbb", "slug": "b", "title": "B", "status": "done", "priority": "high"}"#
+        );
+        let err = parse_index(&text, "index.jsonl").expect_err("duplicate must fail");
+        assert_eq!(
+            err,
+            "index.jsonl: ids must be unique, but 1 id(s) are repeated:\n  \
+             #bbbbbbb appears 2 times (statuses: backlog, done)"
+        );
+    }
 
     #[test]
     fn round_trips_byte_for_byte() {
