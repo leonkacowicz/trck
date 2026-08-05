@@ -1,0 +1,3 @@
+{"id": "aaaaaaa", "slug": "alpha", "title": "Alpha", "status": "backlog", "priority": "high", "points": 3, "parent": "qqqqqqq", "labels": ["backend"], "depends_on": ["ppppppp"], "created": "2026-01-01T00:00:00Z"}
+{"id": "ppppppp", "slug": "prereq", "title": "Prereq", "status": "backlog", "priority": "medium", "created": "2026-01-01T00:00:00Z"}
+{"id": "qqqqqqq", "slug": "epic", "title": "Epic", "status": "backlog", "priority": "medium", "created": "2026-01-01T00:00:00Z"}

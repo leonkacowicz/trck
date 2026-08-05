@@ -1,0 +1,4 @@
+# Within a status section, rows sort by priority, then by id.
+new "Med B" --id bbbbbbb --priority medium
+new "High A" --id ccccccc --priority high
+new "Med A" --id aaaaaaa --priority medium

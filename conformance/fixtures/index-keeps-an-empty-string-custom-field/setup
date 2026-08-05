@@ -1,0 +1,2 @@
+# An empty-string custom field is a valid value, not a default, so a mutating verb must
+# preserve it rather than strip it (the round-trip that keeps the byte-form load-bearing).
