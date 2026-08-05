@@ -1,0 +1,1 @@
+error: this change would create an effective dependency cycle: #aaaaaaa -> #aaaaaaa; authored: #bbbbbbb -> #aaaaaaa; #aaaaaaa inherits #bbbbbbb's deps

@@ -2,4 +2,3 @@
 # depends on a, so putting a under b would make a wait on its own parent.
 new "A" --id aaaaaaa
 new "B" --id bbbbbbb --depends aaaaaaa
-# Exit code only: the engines word this differently (#d6mquku).

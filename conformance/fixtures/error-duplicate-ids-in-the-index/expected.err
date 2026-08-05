@@ -1,0 +1,2 @@
+error: index.jsonl: ids must be unique, but 1 id(s) are repeated:
+  #aaaaaaa appears 2 times (statuses: backlog)

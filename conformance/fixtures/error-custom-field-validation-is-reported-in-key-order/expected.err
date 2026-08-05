@@ -1,0 +1,6 @@
+
+INCONSISTENCIES after this operation:
+  error: #aaaaaaa custom field 'aa_list' must be a string, got []
+  error: #aaaaaaa custom field 'mm_num' must be a string, got 5
+  error: #aaaaaaa custom field 'zz_null' must be a string, got None
+the tracker is now inconsistent — fix before committing.

@@ -1,0 +1,5 @@
+# Custom fields must be strings. Three invalid ones, seeded in an order that is neither
+# alphabetical nor the order they will be written back in, so the report order is actually
+# tested. It is sorted by key: the diagnostics run after the verb has already rewritten the
+# index, and canonical form sorts the extras, so this is the order of the file the reader is
+# about to open — and it does not depend on how the row happened to be typed.
