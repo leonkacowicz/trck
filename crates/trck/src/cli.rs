@@ -42,7 +42,6 @@ const VERBS: &[&str] = &[
     "html",
     "repo",
     "init",
-    "update",
     "version",
 ];
 
@@ -279,6 +278,18 @@ const JSON_VERBS: &[&str] = &["list", "tree", "show", "ready", "next", "deps"];
 /// real distinction: a script can tell "you called me wrong" from "the thing you asked
 /// for failed".
 fn usage_error(args: &Args) -> Option<String> {
+    // Answered specifically rather than as a typo: the Python engine had `update`, and
+    // someone with the habit deserves to be told what replaced it. The binary does not
+    // replace itself — whatever installed it owns the file, and a self-updater fighting
+    // a package manager is worse than having none.
+    if args.verb == "update" {
+        return Some(
+            "`update` is gone: trck is a binary now, upgraded however you installed it \
+             (your package manager, or re-running the install script). `trck version` \
+             reports what you have."
+                .to_string(),
+        );
+    }
     if !args.verb.is_empty() && !VERBS.contains(&args.verb.as_str()) {
         return Some(format!("unknown verb `{}`", args.verb));
     }
@@ -494,6 +505,15 @@ fn dispatch(raw: &[String]) -> Result<String, String> {
         "diff" => cmd_diff(&context(&args)?, &args),
         "changelog" => cmd_changelog(&context(&args)?, &args),
         "check" => cmd_check(&context(&args)?),
+        // Version on stdout, tracker on stderr — the same split the Python engine uses,
+        // so `trck version` stays pipeable to something that wants only the number while
+        // a human still sees which tracker they are pointed at.
+        "version" => {
+            if let Ok(dir) = tracker_dir(&args) {
+                eprintln!("tracker: {}", dir.display());
+            }
+            Ok(env!("CARGO_PKG_VERSION").to_string())
+        }
         "" => Err("no verb given".to_string()),
         other if VERBS.contains(&other) => Err(format!(
             "`{other}` is not implemented yet in the Rust engine"
