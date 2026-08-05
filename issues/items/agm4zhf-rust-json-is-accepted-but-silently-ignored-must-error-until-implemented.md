@@ -1,23 +1,29 @@
 # rust: --json is accepted but silently ignored — must error until implemented
 
 ## Summary
-The Rust argument tables list `--json` as a valid flag for `list`, `show`, `ready` and `next`
-(`crates/trck/src/cli.rs`), but nothing honours it: the verb prints its ordinary human output and
-exits 0. A caller doing `trck list --json | jq` therefore gets human text, a zero exit, and a
-parse error downstream — the failure surfaces far from its cause.
+The Rust argument tables list `--json` as a valid flag for `list`, `tree`, `show`, `ready`,
+`next` and `deps` (`crates/trck/src/cli.rs`), but nothing honoured it: the verb printed its
+ordinary human output and exited 0. A caller doing `trck list --json | jq` therefore got human
+text, a zero exit, and a parse error downstream — the failure surfaced far from its cause.
 
-This is worse than not supporting the flag at all. Rust already rejects genuinely unknown flags
-(`list --totally-bogus-flag` → `error: list: unrecognized argument …`, exit 2), so `--json` is
-uniquely dangerous: it is the one flag that lies about having worked.
+That was worse than not supporting the flag at all. Rust already rejects genuinely unknown flags
+(`list --totally-bogus-flag` → exit 2), so `--json` was uniquely dangerous: the one flag that
+lied about having worked.
 
 ## Acceptance criteria
-- [ ] `--json` either produces JSON or fails loudly; it never returns human output with exit 0.
-- [ ] Until #gh363h3 lands, the flag exits non-zero with a message naming it as not yet
-      implemented in this engine.
-- [ ] A conformance fixture pins whichever behaviour is chosen.
+- [x] `--json` either produces JSON or fails loudly; it never returns human output with exit 0.
+- [x] Until #gh363h3 lands, the flag exits non-zero with a message naming it as not yet
+      implemented in this engine — `list: --json is not implemented in this engine yet`, exit 2,
+      on all six verbs.
+- [x] The behaviour is pinned by a test — see the note below on *where*.
 
 ## Notes
-Found while inventorying the command-output surface for #xm6h2qn. #gh363h3 is the issue that
-actually implements `--json` for the read verbs; this one is only about not lying in the meantime,
-so it should land first and be cheap. If #gh363h3 is picked up straight away, fold this into it
-and close this one as superseded.
+Fixed in `usage_error`, ahead of the unrecognized-argument check so the message can name the flag
+specifically rather than reporting it as unknown.
+
+**The pinning test is a Rust unit test (`cli::tests::json_is_refused_rather_than_silently_ignored`),
+not a conformance fixture, and deliberately so.** Conformance is the *shared* spec: every fixture
+asserts one golden that both engines must produce. Here the engines differ on purpose — Python
+emits real JSON, Rust refuses — so a fixture would have to fail for one of them by construction.
+The conformance fixture for `--json` is the one that pins the *real*, shared behaviour, and it
+arrives with #gh363h3 / #t84am5s; this error is transitional scaffolding that gets deleted then.
