@@ -469,6 +469,9 @@ fn dispatch(raw: &[String]) -> Result<String, String> {
                     repo::cmd_merge_index(ctx.as_ref(), operand(1)?, operand(2)?, operand(3)?)
                 }
                 "merge-summary" => repo::cmd_merge_summary(ctx.as_ref(), operand(1)?),
+                // These need a real tracker, unlike the drivers.
+                "setup-git" => repo::cmd_setup_git(&context(&args)?),
+                "install-hook" => repo::cmd_install_hook(&context(&args)?),
                 "" => Err("repo: missing a subcommand".into()),
                 other => Err(format!(
                     "repo: `{other}` is not implemented yet in the Rust engine"
