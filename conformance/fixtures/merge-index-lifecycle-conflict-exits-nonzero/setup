@@ -1,0 +1,4 @@
+# One side advanced the issue to ongoing, the other closed it: the driver cannot pick a
+# winner, so it exits non-zero, names the id on stderr without orientation words (the two
+# sides are not ours/theirs), writes conflict markers into the file, and — refusing to
+# launder a half-merge — leaves SUMMARY.md untouched.

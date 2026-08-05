@@ -1,0 +1,3 @@
+trck: index.jsonl has 1 unresolved conflict(s):
+  #abc1234: lifecycle status is 'done' on one side and 'ongoing' on the other (status/closed/resolution merge as a unit)
+resolve the marked rows, then `git add` and re-run `trck check`.

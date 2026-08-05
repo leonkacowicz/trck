@@ -1,0 +1,2 @@
+# Each side created a different issue; the merge keeps both and, because it resolved
+# cleanly, regenerates SUMMARY.md from the merged rows.

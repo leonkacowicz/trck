@@ -58,6 +58,12 @@ def run_trck(binary, tracker, argv, env_extra=None):
     env = dict(os.environ, TRCK_NOW=NOW, NO_COLOR="1")
     env.pop("TRCK_DIR", None)      # the fixture's tracker, never the caller's
     env.update(env_extra or {})
+    # `{DIR}` in any argument expands to the tracker's absolute path. The tracker lives in
+    # a throwaway temp dir whose name is unknown when the fixture is written, so a verb that
+    # takes a path operand — the merge drivers, handed git's %O/%A/%B — has no other way to
+    # name a file inside it. Resolved to match what `normalise` strips from the output.
+    root = str(Path(tracker).resolve())
+    argv = [a.replace("{DIR}", root) for a in argv]
     return subprocess.run([str(binary), "--dir", str(tracker), *argv],
                           capture_output=True, text=True, env=env)
 

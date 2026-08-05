@@ -44,6 +44,13 @@ view does not churn every golden in the suite.
 argument. Lines starting with `#` are comments — use them; a fixture whose name is its
 only explanation is a fixture nobody dares change.
 
+`{DIR}` in any `setup`/`cmd` argument expands to the tracker's absolute path. The tracker
+lives in a throwaway temp dir whose name is unknown when the fixture is written, so a verb
+that takes a **path operand** — the merge drivers, which git hands `%O`/`%A`/`%B` — has no
+other way to name a file inside it. Seed the operands via `initial/` and point the driver
+at them, writing the result over `index.jsonl` so `expected.index.jsonl` can assert it:
+`repo merge-index {DIR}/base.jsonl {DIR}/index.jsonl {DIR}/other.jsonl`.
+
 ## Two things make this reproducible
 
 **Ids are chosen, not generated.** Setup uses `new --id aaaaaaa`, so a golden can name

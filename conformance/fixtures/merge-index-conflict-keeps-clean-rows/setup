@@ -1,0 +1,2 @@
+# abc1234 conflicts (ongoing vs done) but zzz9999 is identical on both sides: the clean
+# row must still appear in the merged file next to the conflict block.
