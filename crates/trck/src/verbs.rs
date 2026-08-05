@@ -199,6 +199,10 @@ pub(crate) fn issue_path(ctx: &Ctx, row: &Issue) -> PathBuf {
 /// A rename within a directory is atomic on every platform trck runs on, so an
 /// interrupted run leaves the previous contents rather than a truncated file. The index
 /// is the tracker's only source of truth; half of one is worse than none.
+pub(crate) fn write_file(path: &Path, contents: &str) -> Result<(), String> {
+    write_atomic(path, contents)
+}
+
 fn write_atomic(path: &Path, contents: &str) -> Result<(), String> {
     let tmp = path.with_extension(format!("tmp{}", std::process::id()));
     if let Some(dir) = path.parent() {
@@ -303,6 +307,22 @@ pub(crate) fn finalize(ctx: &Ctx, rows: Vec<Issue>) -> Result<Vec<Issue>, String
 
     write_atomic(&ctx.index_path(), &render_index(&g.rows))?;
     write_atomic(&ctx.summary_path(), &generate_summary(&g))?;
+
+    // Validate what was just written, reusing the rows rather than re-parsing. A verb
+    // that leaves the tracker inconsistent still succeeds — it did what it was asked —
+    // but says so loudly, because the next thing that runs is usually a commit.
+    if let Ok(report) = crate::validate::validate(ctx, &g.rows) {
+        for w in &report.warnings {
+            eprintln!("warning: {w}");
+        }
+        if !report.errors.is_empty() {
+            eprintln!("\nINCONSISTENCIES after this operation:");
+            for e in &report.errors {
+                eprintln!("  error: {e}");
+            }
+            eprintln!("the tracker is now inconsistent — fix before committing.");
+        }
+    }
     Ok(g.rows)
 }
 

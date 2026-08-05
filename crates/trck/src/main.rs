@@ -28,6 +28,7 @@ mod json;
 mod query;
 mod render;
 mod summary;
+mod validate;
 mod verbs;
 
 fn main() -> std::process::ExitCode {

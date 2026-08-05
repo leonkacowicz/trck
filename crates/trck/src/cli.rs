@@ -222,6 +222,8 @@ const KNOWN_FLAGS: &[(&str, usize, &[&str])] = &[
         ],
     ),
     ("show", 0, &["--dir", "--json"]),
+    ("check", 0, &["--dir"]),
+    ("summary", 0, &["--dir"]),
     ("ready", 0, &["--dir", "--next", "--json"]),
     (
         "deps",
@@ -374,6 +376,21 @@ fn dispatch(raw: &[String]) -> Result<String, String> {
                 verb == "next" || args.has("--next"),
             )
         }
+        "check" => {
+            let ctx = context(&args)?;
+            cmd_check(&ctx)
+        }
+        "summary" => {
+            let ctx = context(&args)?;
+            let rows = verbs::load_rows(&ctx)?;
+            let g = crate::graph::Graph::new(rows);
+            let n = g.rows.len();
+            verbs::write_file(&ctx.summary_path(), &crate::summary::generate_summary(&g))?;
+            Ok(format!(
+                "wrote {} ({n} issues)",
+                ctx.summary_path().display()
+            ))
+        }
         "deps" => {
             let ctx = context(&args)?;
             let opts = DepsOpts {
@@ -397,6 +414,35 @@ fn dispatch(raw: &[String]) -> Result<String, String> {
         )),
         other => Err(format!("unknown verb `{other}`")),
     }
+}
+
+/// `check` prints its findings on stdout and fails on any error. The report *is* the
+/// message, so a failing run returns an empty error rather than a second diagnostic.
+fn cmd_check(ctx: &Ctx) -> Result<String, String> {
+    let rows = verbs::load_rows(ctx)?;
+    let report = crate::validate::validate(ctx, &rows)?;
+    let mut out: Vec<String> = report
+        .warnings
+        .iter()
+        .map(|w| format!("warning: {w}"))
+        .collect();
+    out.extend(report.errors.iter().map(|e| format!("error: {e}")));
+    if report.errors.is_empty() {
+        out.push(format!(
+            "OK — {} issues, 0 errors, {} warning(s)",
+            rows.len(),
+            report.warnings.len()
+        ));
+        return Ok(out.join("\n"));
+    }
+    out.push(String::new());
+    out.push(format!(
+        "{} error(s), {} warning(s) — FAIL",
+        report.errors.len(),
+        report.warnings.len()
+    ));
+    println!("{}", out.join("\n"));
+    Err(String::new())
 }
 
 /// `set`'s options.
@@ -487,6 +533,7 @@ pub(crate) fn main() -> std::process::ExitCode {
             }
             std::process::ExitCode::SUCCESS
         }
+        Err(msg) if msg.is_empty() => std::process::ExitCode::FAILURE,
         Err(msg) => {
             eprintln!("error: {msg}");
             std::process::ExitCode::FAILURE
