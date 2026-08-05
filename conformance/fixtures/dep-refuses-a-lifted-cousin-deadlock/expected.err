@@ -1,0 +1,1 @@
+error: #ccccccc -> #ddddddd would create an effective dependency cycle (a dependency inherited through the parent hierarchy closes the loop)

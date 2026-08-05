@@ -1,0 +1,2 @@
+# A hand-edited row where a child depends on its own parent — an effective self-cycle the
+# mutating verbs would have refused. check must catch it rather than trust the file.

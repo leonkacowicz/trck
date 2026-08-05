@@ -1,0 +1,6 @@
+# Two blockers lifted to the same level: the one unblocking more high tasks ranks first.
+new "Blocks two" --id aaaaaaa --priority medium
+new "Blocks one" --id bbbbbbb --priority medium
+new "High 1" --id ccccccc --priority high --depends aaaaaaa
+new "High 2" --id ddddddd --priority high --depends aaaaaaa
+new "High 3" --id eeeeeee --priority high --depends bbbbbbb

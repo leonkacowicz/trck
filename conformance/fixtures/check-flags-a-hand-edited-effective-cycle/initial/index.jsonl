@@ -1,0 +1,2 @@
+{"id": "aaaaaaa", "slug": "parent", "title": "Parent", "status": "backlog", "priority": "medium", "created": "2026-01-01T00:00:00Z"}
+{"id": "bbbbbbb", "slug": "child", "title": "Child", "status": "backlog", "priority": "medium", "parent": "aaaaaaa", "depends_on": ["aaaaaaa"], "created": "2026-01-01T00:00:00Z"}

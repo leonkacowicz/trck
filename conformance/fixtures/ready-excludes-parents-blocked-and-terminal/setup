@@ -1,0 +1,7 @@
+# ready lists only actionable leaves: not a parent, not blocked, not terminal.
+new "Free leaf" --id aaaaaaa
+new "Blocked leaf" --id bbbbbbb --depends aaaaaaa
+new "Epic" --id ccccccc
+new "Kid" --id ddddddd --parent ccccccc
+new "Finished" --id eeeeeee
+done eeeeeee
