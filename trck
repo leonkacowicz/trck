@@ -3113,12 +3113,18 @@ def cmd_show(args) -> None:
     keys = CANON_KEYS + sorted(row.extra)
     if not Graph(ctx.cfg, rows).is_leaf(row):
         keys = [k for k in keys if k != "points"]  # derived from leaves, not an input here
+    # Both output paths end in reading the body, so guard once, here. A row whose file has
+    # gone missing is an inconsistency `check` reports; `show` must report it too rather
+    # than surface it as an uncaught FileNotFoundError. Mirrors `move_issue`'s guard.
+    body_path = issue_path(ctx, row)
+    if not body_path.exists():
+        die(f"file missing for #{row.id}: {body_path}")
     if getattr(args, "json", False):
         # One document, body folded in. It used to print metadata and then dump the
         # body after a `--- body ---` separator, which meant the obvious way to consume
         # it — json.loads(stdout) — failed on the trailer.
         emit_json({**{k: full.get(k) for k in keys},
-                   "body": issue_path(ctx, row).read_text()})
+                   "body": body_path.read_text()})
         return
 
     abbrev = unique_prefix_lens([r.id for r in rows])
@@ -3133,7 +3139,7 @@ def cmd_show(args) -> None:
             v = hl_id(v, abbrev, hash_prefix=False)  # bold the shortest unique prefix, as in `list`
         print(f"{paint(f'{k:>{w}}', 'dim')}  {v}")
     print("\n--- body ---\n")
-    print(issue_path(ctx, row).read_text())
+    print(body_path.read_text())
 
 
 def cmd_path(args) -> None:

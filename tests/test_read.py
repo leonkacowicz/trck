@@ -35,16 +35,18 @@ class TestRead(unittest.TestCase):
             fn(args)
         return buf.getvalue()
 
-    def test_show_human_metadata_and_body(self):
+    def test_show_reports_a_missing_body_file(self):
+        """An index row whose body file is gone is an inconsistency `check` reports, and
+        `show` must report it the same way — with a diagnostic naming the file, not an
+        uncaught FileNotFoundError traceback. `move_issue` has guarded this for the
+        mutating verbs all along; the read path did not."""
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
             id1 = self.seed(d, "Hello")
-            out = self.cap(self.t.cmd_show, ns(dir=str(d), id=id1, json=False))
-            self.assertIn("title", out)        # aligned key: value, not raw JSON
-            self.assertIn("Hello", out)
-            self.assertNotIn('"id": "1"', out)
-            self.assertIn("--- body ---", out)
-            self.assertIn("# Hello", out)
+            next(Path(d, "items").glob(f"{id1}-*.md")).unlink()
+            for as_json in (False, True):
+                with self.assertRaises(SystemExit):
+                    self.cap(self.t.cmd_show, ns(dir=str(d), id=id1, json=as_json))
 
     def test_show_json_flag(self):
         """One document, body folded in. This used to assert the opposite — metadata
