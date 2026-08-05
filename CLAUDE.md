@@ -90,9 +90,29 @@ and the build fails if the number ever drops.
 
 ## Releasing
 
-Bump `__version__` in **`src/trck/constants.py`** → `python3 build.py` (regenerate `./trck`) →
-`python3 build.py --check` → commit `./trck` together with the source → tag `vX.Y.Z` → create a
-GitHub Release. `trck update` consumes the latest release on the stable channel.
+**Python engine (current).** Bump `__version__` in **`src/trck/constants.py`** → `python3
+build.py` (regenerate `./trck`) → `python3 build.py --check` → commit `./trck` together with the
+source → tag `vX.Y.Z` → create a GitHub Release. `trck update` consumes the latest release on the
+stable channel.
+
+**Rust binary (from `#9898xru`).** Bump `version` in the workspace **`Cargo.toml`** → commit →
+tag `vX.Y.Z`. `.github/workflows/release.yml` takes it from there: it cross-builds six targets,
+**installs the musl artifact and runs the conformance suite against it**, and only then creates
+the release and uploads the assets. A build that cannot pass its own spec never becomes a
+download.
+
+Targets are `x86_64-unknown-linux-{gnu,musl}`, `aarch64-unknown-linux-musl`,
+`{x86_64,aarch64}-apple-darwin`, `x86_64-pc-windows-msvc`. musl is the default the installer
+picks on Linux: statically linked, so it does not care whether the machine's glibc is older than
+the builder's.
+
+Install paths: `scripts/install.sh` (`curl … | sh`, computes the target from `uname`, verifies
+the published `.sha256`), and `packaging/homebrew/trck.rb` for a tap. Bump the formula's
+`version` in the same commit as `Cargo.toml`.
+
+The binary has **no self-update**: whatever installed it owns the file, and a self-updater
+fighting a package manager is worse than none. `trck update` answers with the upgrade path
+instead of doing anything.
 
 ## Working method
 

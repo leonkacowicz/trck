@@ -1,0 +1,141 @@
+name: Release
+
+# Builds the per-platform binaries and attaches them to the release for the tag that
+# triggered it. Runs on a tag rather than a published release so the assets exist before
+# anyone can download them; the release is created here if it does not exist yet.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to build assets for'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # glibc: the default on any mainstream distro.
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          # musl: statically linked, so it runs on Alpine and on a distro older than
+          # the builder's glibc — which is what makes "download and run" true rather
+          # than "download and discover your glibc is too old".
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Toolchain
+        run: rustup toolchain install stable --profile minimal --target ${{ matrix.target }}
+
+      # The only cross-compile that needs a linker the runner does not ship. No
+      # dependencies means nothing else to cross-build, which is why this is one line
+      # rather than a cross-compilation harness.
+      - name: Linker for aarch64-musl
+        if: matrix.target == 'aarch64-unknown-linux-musl'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools gcc-aarch64-linux-gnu
+          mkdir -p .cargo
+          {
+            echo '[target.aarch64-unknown-linux-musl]'
+            echo 'linker = "aarch64-linux-gnu-gcc"'
+          } >> .cargo/config.toml
+
+      - name: Musl tools
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      # One binary per archive, named for the target, so the install script can compute
+      # the asset name from `uname` without listing the release first.
+      - name: Package (unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          tag="${{ inputs.tag || github.ref_name }}"
+          name="trck-${tag}-${{ matrix.target }}"
+          mkdir -p "dist/${name}"
+          cp "target/${{ matrix.target }}/release/trck" "dist/${name}/"
+          cp README.md LICENSE "dist/${name}/" 2>/dev/null || true
+          tar -czf "dist/${name}.tar.gz" -C dist "${name}"
+          (cd dist && shasum -a 256 "${name}.tar.gz" > "${name}.tar.gz.sha256")
+
+      - name: Package (windows)
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: |
+          tag="${{ inputs.tag || github.ref_name }}"
+          name="trck-${tag}-${{ matrix.target }}"
+          mkdir -p "dist/${name}"
+          cp "target/${{ matrix.target }}/release/trck.exe" "dist/${name}/"
+          cp README.md LICENSE "dist/${name}/" 2>/dev/null || true
+          (cd dist && 7z a "${name}.zip" "${name}" >/dev/null)
+          (cd dist && certutil -hashfile "${name}.zip" SHA256 | sed -n 2p > "${name}.zip.sha256")
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: dist/*.*
+          if-no-files-found: error
+
+  # The gate the issue asks for: install the artifact exactly as a user would, then run
+  # the conformance suite against it. A release that cannot pass its own spec must not
+  # be publishable, and the only way to know is to run the thing that was built rather
+  # than the thing in target/.
+  verify:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: x86_64-unknown-linux-musl
+          path: dist
+      - name: Unpack as a user would
+        run: |
+          tar -xzf dist/*.tar.gz -C dist
+          find dist -name trck -type f -exec install -m 755 {} /usr/local/bin/trck \;
+          trck version
+      - name: Conformance against the published artifact
+        run: python3 conformance/run.py --bin "$(command -v trck)"
+
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ inputs.tag || github.ref_name }}"
+          gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            || gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
+                 --title "$tag" --generate-notes
+          gh release upload "$tag" dist/* --repo "$GITHUB_REPOSITORY" --clobber
