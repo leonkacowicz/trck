@@ -5,10 +5,10 @@
 
 | State | Count |
 |---|---:|
-| backlog | 53 |
+| backlog | 52 |
 | ongoing | 5 |
 | in-review | 0 |
-| done | 148 |
+| done | 149 |
 | **total** | **206** |
 
 ## Hierarchies
@@ -140,7 +140,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#kaqhtfc list/tree: drop the tree alias (nested forest is list's default)](items/kaqhtfc-list-tree-drop-the-tree-alias-nested-forest-is-list-s-default.md) _(backlog)_
 - [x] [#v8tmkrt json: shared emit_json stdout seam + --json flag plumbing](items/v8tmkrt-json-shared-emit-json-stdout-seam-json-flag-plumbing.md)
 
-### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 78% (82/105 pts · 22/33 done) · _medium_ · ongoing
+### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 79% (83/105 pts · 23/33 done) · _medium_ · ongoing
 
 - [x] [#2w5panf rust: diff and changelog](items/2w5panf-rust-diff-and-changelog.md)
 - [x] [#4susb3g rust: query verbs — list, tree, show](items/4susb3g-rust-query-verbs-list-tree-show.md)
@@ -182,13 +182,13 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#xvgdq25 diff -v: per-issue field-level change blocks](items/xvgdq25-diff-v-per-issue-field-level-change-blocks.md) _(backlog)_
 - [ ] [#yfxtkd8 diff --flat: ledger layout, one line per changed issue](items/yfxtkd8-diff-flat-ledger-layout-one-line-per-changed-issue.md) _(backlog)_
 
-### [#xm6h2qn conformance: convert the command-output tests](items/xm6h2qn-conformance-convert-the-command-output-tests.md) — 17% (1/6 pts · 1/6 done) · _medium_ · ongoing
+### [#xm6h2qn conformance: convert the command-output tests](items/xm6h2qn-conformance-convert-the-command-output-tests.md) — 33% (2/6 pts · 2/6 done) · _medium_ · ongoing
 
 - [ ] [#582stb4 conformance: convert the error-path and exit-code tests](items/582stb4-conformance-convert-the-error-path-and-exit-code-tests.md) _(backlog)_
 - [ ] [#fpcvhp8 conformance: convert the changelog output tests](items/fpcvhp8-conformance-convert-the-changelog-output-tests.md) _(backlog)_
 - [x] [#rqs5ptd conformance: convert the list/tree output tests](items/rqs5ptd-conformance-convert-the-list-tree-output-tests.md)
 - [ ] [#t84am5s conformance: convert the --json output tests](items/t84am5s-conformance-convert-the-json-output-tests.md) _(backlog)_
-- [ ] [#wdpmpwf conformance: convert the mutating-verb output tests](items/wdpmpwf-conformance-convert-the-mutating-verb-output-tests.md) _(backlog)_
+- [x] [#wdpmpwf conformance: convert the mutating-verb output tests](items/wdpmpwf-conformance-convert-the-mutating-verb-output-tests.md)
 - [ ] [#wtwzr4s conformance: convert the show output tests](items/wtwzr4s-conformance-convert-the-show-output-tests.md) _(backlog)_
 
 ## Backlog
