@@ -13,7 +13,7 @@ use crate::config::is_terminal;
 use crate::discovery::Ctx;
 use crate::graph::{Graph, priority_rank};
 use crate::gutter;
-use crate::issue::{CANON_KEYS, Issue};
+use crate::issue::{CANON_KEYS, Issue, check_field_key};
 use crate::render::{
     Annotation, LANE_PALETTE, RowOpts, field_value, hl_id, lane_palette_index, paint, render_rows,
     status_codes, status_icon, unique_prefix_lens,
@@ -98,6 +98,12 @@ fn check_list_opts(opts: &ListOpts) -> Result<Vec<(String, String)>, String> {
         let (k, v) = spec
             .split_once('=')
             .ok_or_else(|| format!("--field expects key=value, got '{spec}'"))?;
+        // The same key rule the write side enforces. Without it a filter on a built-in —
+        // `--field status=backlog` — would look up a custom field that can never exist and
+        // quietly match nothing, or worse, appear to work.
+        if let Some(msg) = check_field_key(k) {
+            return Err(msg);
+        }
         field_filters.push((k.to_string(), v.to_string()));
     }
     if let Some(s) = opts.sort
