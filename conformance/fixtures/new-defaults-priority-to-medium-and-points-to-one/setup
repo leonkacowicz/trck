@@ -1,0 +1,2 @@
+# Both defaults are stripped from the row rather than written out: points defaults to 1 and
+# does not appear, priority defaults to medium and does (it is a canonical key).

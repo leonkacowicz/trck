@@ -1,0 +1,4 @@
+# Moving back out of a terminal status must clear both stamps, or the row would claim to be
+# closed and open at once.
+new "Alpha" --id aaaaaaa
+done aaaaaaa --resolution wontfix

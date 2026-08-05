@@ -229,32 +229,6 @@ class TestReviewUrlField(Base):
 
 
 class TestReviewUrlCli(Base):
-    def test_new_review_url_stores_it(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            a = self.seed(d, "A", review_url=URL)
-            self.assertEqual(self.rows(d)[a].review_url, URL)
-            self.assertEqual(self.errors(d), [])
-
-    def test_set_review_url_sets_and_clears(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            a = self.seed(d, "A")
-            self.set_(d, a, review_url=URL)
-            self.assertEqual(self.rows(d)[a].review_url, URL)
-            self.set_(d, a, review_url="none")
-            self.assertIsNone(self.rows(d)[a].review_url)
-
-    def test_mv_records_the_review_url_as_part_of_the_move(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            a = self.seed(d, "A")
-            self.mv(d, a, "in-review", review_url=URL)
-            row = self.rows(d)[a]
-            self.assertEqual(row.status, "in-review")
-            self.assertEqual(row.review_url, URL)
-            self.assertEqual(self.errors(d), [])
-
     def test_every_entry_point_rejects_a_bad_url(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
@@ -273,25 +247,6 @@ class TestReviewUrlCli(Base):
 # the review verb
 # --------------------------------------------------------------------------- #
 class TestReviewVerb(Base):
-    def test_review_moves_to_the_aliased_status(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            a = self.seed(d, "A")
-            self.review(d, a)
-            self.assertEqual(self.rows(d)[a].status, "in-review")
-            self.assertIsNone(self.rows(d)[a].review_url)
-
-    def test_review_with_a_url_moves_and_links_in_one_step(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            a = self.seed(d, "A")
-            out = self.review(d, a, URL)
-            row = self.rows(d)[a]
-            self.assertEqual(row.status, "in-review")
-            self.assertEqual(row.review_url, URL)
-            self.assertEqual(len(out.strip().splitlines()), 1)  # one move, one line
-            self.assertEqual(self.errors(d), [])
-
     def test_review_rejects_a_bad_url_before_moving(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})

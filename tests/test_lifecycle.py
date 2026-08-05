@@ -24,59 +24,6 @@ class TestLifecycle(unittest.TestCase):
             self.t.cmd_new(args)
         return Path(buf.getvalue().strip()).name.split("-")[0]
 
-    def rows(self, d):
-        ctx = self.t.Ctx(d, self.t.load_config(d))
-        return self.t.load_index(ctx)
-
-    def stub_now(self, value="2026-06-12T10:00:00Z"):
-        self.t.now_utc = lambda: value
-        return value
-
-    def test_new_lands_in_initial_status(self):
-        with TemporaryDirectory() as tmp:
-            d = self.setup_dir(tmp)
-            ts = self.stub_now()
-            r_id = self.new(d)
-            r = self.rows(d)[0]
-            self.assertEqual(r.status, "backlog")
-            self.assertEqual(r.created, ts)
-            self.assertIsNone(r.started)
-            ctx2 = self.t.Ctx(d, self.t.load_config(d))
-            self.assertTrue(self.t.issue_path(ctx2, r).exists())
-
-    def test_mv_stamps_started_on_leaving_initial(self):
-        with TemporaryDirectory() as tmp:
-            d = self.setup_dir(tmp)
-            ts = self.stub_now()
-            r_id = self.new(d)
-            self.t.cmd_mv(ns(dir=str(d), id=r_id, status="ongoing", resolution=None))
-            r = self.rows(d)[0]
-            self.assertEqual(r.status, "ongoing")
-            self.assertEqual(r.started, ts)
-            self.assertIsNone(r.closed)
-            ctx2 = self.t.Ctx(d, self.t.load_config(d))
-            self.assertTrue(self.t.issue_path(ctx2, r).exists())
-
-    def test_mv_to_terminal_stamps_closed_and_resolution(self):
-        with TemporaryDirectory() as tmp:
-            d = self.setup_dir(tmp)
-            ts = self.stub_now()
-            r_id = self.new(d)
-            self.t.cmd_mv(ns(dir=str(d), id=r_id, status="done", resolution="wontfix"))
-            r = self.rows(d)[0]
-            self.assertEqual(r.closed, ts)
-            self.assertEqual(r.resolution, "wontfix")
-
-    def test_reopen_clears_closed_and_resolution(self):
-        with TemporaryDirectory() as tmp:
-            d = self.setup_dir(tmp)
-            r_id = self.new(d)
-            self.t.cmd_mv(ns(dir=str(d), id=r_id, status="done", resolution="wontfix"))
-            self.t.cmd_mv(ns(dir=str(d), id=r_id, status="ongoing", resolution=None))
-            r = self.rows(d)[0]
-            self.assertIsNone(r.closed)
-            self.assertIsNone(r.resolution)
-
     def test_mv_unknown_status_dies(self):
         with TemporaryDirectory() as tmp:
             d = self.setup_dir(tmp)

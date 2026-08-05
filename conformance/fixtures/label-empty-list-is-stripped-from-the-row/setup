@@ -1,0 +1,3 @@
+# An empty label list is the default, so it is not written out.
+new "Alpha" --id aaaaaaa
+label aaaaaaa --add only

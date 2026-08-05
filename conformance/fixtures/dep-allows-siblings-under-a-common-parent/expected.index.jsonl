@@ -1,0 +1,3 @@
+{"id": "aaaaaaa", "slug": "epic", "title": "Epic", "status": "backlog", "priority": "medium", "created": "2026-01-01T00:00:00Z"}
+{"id": "bbbbbbb", "slug": "first", "title": "First", "status": "backlog", "priority": "medium", "parent": "aaaaaaa", "created": "2026-01-01T00:00:00Z"}
+{"id": "ccccccc", "slug": "second", "title": "Second", "status": "backlog", "priority": "medium", "parent": "aaaaaaa", "depends_on": ["bbbbbbb"], "created": "2026-01-01T00:00:00Z"}

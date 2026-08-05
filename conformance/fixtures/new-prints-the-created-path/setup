@@ -1,0 +1,1 @@
+# `new` echoes the path of the body file it created — the one thing a caller needs next.

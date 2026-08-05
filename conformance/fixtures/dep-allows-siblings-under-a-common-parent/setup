@@ -1,0 +1,4 @@
+# Siblings are not in each other's subtree, so an edge between them is not a cycle.
+new "Epic" --id aaaaaaa
+new "First" --id bbbbbbb --parent aaaaaaa
+new "Second" --id ccccccc --parent aaaaaaa

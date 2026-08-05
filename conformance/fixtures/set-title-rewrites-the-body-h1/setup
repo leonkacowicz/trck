@@ -1,0 +1,3 @@
+# The stored title and the body's H1 must not drift apart, so `set --title` rewrites both.
+# The slug (and so the filename) is untouched unless asked for.
+new "Old title" --id aaaaaaa

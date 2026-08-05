@@ -35,42 +35,6 @@ class TestLabels(unittest.TestCase):
     def label(self, d, iid, add=None, remove=None):
         self.t.cmd_label(ns(dir=str(d), id=iid, add=add, remove=remove))
 
-    # -- the label verb ------------------------------------------------------
-    def test_label_add_records_label(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d)
-            self.label(d, id1, add=["backend"])
-            self.assertEqual(self.rows(d)[id1].labels, ["backend"])
-
-    def test_label_add_multiple_dedups_and_sorts(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d)
-            self.label(d, id1, add=["beta", "alpha", "beta"])
-            self.assertEqual(self.rows(d)[id1].labels, ["alpha", "beta"])
-
-    def test_label_remove_drops_label(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d)
-            self.label(d, id1, add=["x", "y"])
-            self.label(d, id1, remove=["x"])
-            self.assertEqual(self.rows(d)[id1].labels, ["y"])
-
-    def test_label_remove_missing_is_noop(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d)
-            self.label(d, id1, remove=["nope"])  # should not raise
-            self.assertEqual(self.rows(d)[id1].labels, [])
-
-    def test_default_labels_stripped_from_index(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            self.seed(d)
-            self.assertNotIn('"labels"', self.raw_lines(d))  # empty list is default
-
     # -- list --label --------------------------------------------------------
     def test_list_filters_by_label(self):
         with TemporaryDirectory() as tmp:

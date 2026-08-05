@@ -1,0 +1,2 @@
+# --resolution records *why* it closed; no resolution means it simply shipped.
+new "Alpha" --id aaaaaaa

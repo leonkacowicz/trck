@@ -1,0 +1,2 @@
+new "Alpha" --id aaaaaaa
+set aaaaaaa --field area=core --field owner=team

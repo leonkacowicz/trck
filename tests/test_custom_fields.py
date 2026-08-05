@@ -28,53 +28,6 @@ class TestCustomFields(unittest.TestCase):
                   field=over.pop("field", None), unset=over.pop("unset", None))
         self.t.cmd_set(args)
 
-    def rows(self, d):
-        ctx = self.t.Ctx(d, self.t.load_config(d))
-        return {r.id: r for r in self.t.load_index(ctx)}
-
-    def raw(self, d):
-        return (Path(d) / "index.jsonl").read_text()
-
-    # -- write side ----------------------------------------------------------
-    def test_field_sets_value(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d)
-            self.set_(d, id1, field=["assignee=alice"])
-            self.assertEqual(self.rows(d)[id1].extra, {"assignee": "alice"})
-
-    def test_field_overwrites(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d)
-            self.set_(d, id1, field=["assignee=alice"])
-            self.set_(d, id1, field=["assignee=mara"])
-            self.assertEqual(self.rows(d)[id1].extra, {"assignee": "mara"})
-
-    def test_multiple_fields_one_call(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d)
-            self.set_(d, id1, field=["assignee=alice", "component=ui"])
-            self.assertEqual(self.rows(d)[id1].extra,
-                             {"assignee": "alice", "component": "ui"})
-
-    def test_unset_removes(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d)
-            self.set_(d, id1, field=["assignee=alice"])
-            self.set_(d, id1, unset=["assignee"])
-            self.assertEqual(self.rows(d)[id1].extra, {})
-
-    def test_empty_value_clears(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d)
-            self.set_(d, id1, field=["assignee=alice"])
-            self.set_(d, id1, field=["assignee="])
-            self.assertEqual(self.rows(d)[id1].extra, {})
-
     def test_reserved_key_rejected(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
@@ -89,17 +42,6 @@ class TestCustomFields(unittest.TestCase):
             for bad in ["Assignee=x", "1tag=x", "a b=x"]:
                 with self.assertRaises(SystemExit):
                     self.set_(d, id1, field=[bad])
-
-    def test_field_persists_in_index(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d)
-            self.set_(d, id1, field=["component=ui", "assignee=alice"])
-            line = json.loads(self.raw(d).splitlines()[0])
-            self.assertEqual(line["assignee"], "alice")
-            self.assertEqual(line["component"], "ui")
-            keys = list(line)
-            self.assertLess(keys.index("assignee"), keys.index("component"))
 
     def test_field_missing_equals_rejected(self):
         with TemporaryDirectory() as tmp:

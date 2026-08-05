@@ -1,0 +1,4 @@
+# --auto drops the pin, and the status falls back to what the children imply.
+new "Epic" --id aaaaaaa
+new "Kid" --id bbbbbbb --parent aaaaaaa
+mv aaaaaaa ongoing

@@ -1,0 +1,3 @@
+# Removing something that was never there is not an error: the end state is what was asked for.
+new "Alpha" --id aaaaaaa
+label aaaaaaa --add alpha

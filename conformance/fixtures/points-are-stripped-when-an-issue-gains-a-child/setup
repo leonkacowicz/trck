@@ -1,0 +1,4 @@
+# Points roll up from leaves, so a stored value on a parent is no longer an input and is
+# dropped from the row when the issue stops being a leaf.
+new "Was a leaf" --id aaaaaaa --points 5
+new "Kid" --id bbbbbbb

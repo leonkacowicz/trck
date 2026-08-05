@@ -1,0 +1,4 @@
+# Removing the last edge leaves an empty list in the echo and drops the default-valued key
+# from the stored row.
+new "Blocker" --id aaaaaaa
+new "Dependent" --id bbbbbbb --depends aaaaaaa

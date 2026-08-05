@@ -1,0 +1,4 @@
+# An empty value is how the CLI spells "remove this field", distinct from --unset only in
+# spelling.
+new "Alpha" --id aaaaaaa
+set aaaaaaa --field area=core

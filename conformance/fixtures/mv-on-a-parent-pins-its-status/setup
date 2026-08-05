@@ -1,0 +1,4 @@
+# A parent's status is normally derived from its children. Setting one by hand is allowed but
+# recorded as a pin (manual_status), so the rollup knows not to overwrite it.
+new "Epic" --id aaaaaaa
+new "Kid" --id bbbbbbb --parent aaaaaaa
