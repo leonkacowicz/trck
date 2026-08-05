@@ -78,6 +78,55 @@ impl Json {
         out
     }
 
+    /// The machine-readable rendering every `--json` path emits: Python's
+    /// `json.dumps(obj, ensure_ascii=False, indent=2)`, byte for byte.
+    ///
+    /// Indented output is not the same encoder with whitespace inserted — Python drops the
+    /// space after `,` once `indent` is set, and keeps an empty container on one line
+    /// rather than splitting it across two. Both are reproduced here, because a consumer
+    /// diffing two engines' output would see either as a difference.
+    pub(crate) fn to_json_pretty(&self) -> String {
+        let mut out = String::new();
+        self.write_pretty(0, &mut out);
+        out
+    }
+
+    fn write_pretty(&self, depth: usize, out: &mut String) {
+        let pad = |n: usize, out: &mut String| out.push_str(&"  ".repeat(n));
+        match self {
+            Json::Array(items) if !items.is_empty() => {
+                out.push_str("[\n");
+                for (i, item) in items.iter().enumerate() {
+                    if i > 0 {
+                        out.push_str(",\n");
+                    }
+                    pad(depth + 1, out);
+                    item.write_pretty(depth + 1, out);
+                }
+                out.push('\n');
+                pad(depth, out);
+                out.push(']');
+            }
+            Json::Object(pairs) if !pairs.is_empty() => {
+                out.push_str("{\n");
+                for (i, (k, v)) in pairs.iter().enumerate() {
+                    if i > 0 {
+                        out.push_str(",\n");
+                    }
+                    pad(depth + 1, out);
+                    write_string(k, out);
+                    out.push_str(": ");
+                    v.write_pretty(depth + 1, out);
+                }
+                out.push('\n');
+                pad(depth, out);
+                out.push('}');
+            }
+            // Scalars, and the empty containers, render the same either way.
+            other => other.write(out),
+        }
+    }
+
     fn write(&self, out: &mut String) {
         match self {
             Json::Null => out.push_str("null"),
@@ -368,6 +417,29 @@ mod tests {
 
     fn roundtrip(text: &str) -> String {
         parse(text).expect("parses").to_json()
+    }
+
+    #[test]
+    fn pretty_matches_pythons_indent_two() {
+        // Verbatim from `json.dumps(obj, ensure_ascii=False, indent=2)`: no space after a
+        // comma, and empty containers stay on one line instead of splitting.
+        let doc = parse(
+            r#"{"id": "a", "labels": [], "extra": {}, "depends_on": ["x", "y"],
+                "nested": {"k": 1}, "n": null, "b": true}"#,
+        )
+        .expect("parses");
+        assert_eq!(
+            doc.to_json_pretty(),
+            "{\n  \"id\": \"a\",\n  \"labels\": [],\n  \"extra\": {},\n  \"depends_on\": [\n    \
+             \"x\",\n    \"y\"\n  ],\n  \"nested\": {\n    \"k\": 1\n  },\n  \"n\": null,\n  \
+             \"b\": true\n}"
+        );
+    }
+
+    #[test]
+    fn pretty_leaves_a_bare_scalar_alone() {
+        assert_eq!(parse("42").expect("parses").to_json_pretty(), "42");
+        assert_eq!(parse("[]").expect("parses").to_json_pretty(), "[]");
     }
 
     #[test]
