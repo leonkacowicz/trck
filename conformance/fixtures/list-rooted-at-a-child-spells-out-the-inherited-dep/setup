@@ -1,0 +1,4 @@
+# Rooting at the child cuts the spine above it, so nothing else carries the note.
+new "Dep" --id aaaaaaa
+new "Parent epic" --id bbbbbbb --depends aaaaaaa
+new "Child leaf" --id ccccccc --parent bbbbbbb

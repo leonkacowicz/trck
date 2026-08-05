@@ -79,4 +79,4 @@ jobs:
       # test matrix above; the fixtures are about behaviour.
       - name: Conformance (pass rate)
         if: matrix.os == 'ubuntu-latest'
-        run: python3 conformance/run.py --bin target/release/trck --min-pass 64
+        run: python3 conformance/run.py --bin target/release/trck --min-pass 112

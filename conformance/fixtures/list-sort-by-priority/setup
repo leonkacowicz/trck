@@ -1,0 +1,3 @@
+new "Low" --id aaaaaaa --priority low
+new "Urgent" --id bbbbbbb --priority urgent
+new "Medium" --id ccccccc --priority medium

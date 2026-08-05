@@ -1,0 +1,2 @@
+# A hand-edited self-parent: the rollup's cycle guard yields no leaf points, and the display
+# must fall back to 0% rather than dividing by zero. list has to render, not crash.

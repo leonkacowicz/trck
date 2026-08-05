@@ -1,0 +1,9 @@
+# Mid's children are all done so Mid is terminal, but its parent is still open: Mid stays
+# as context while its own done leaves collapse underneath it.
+new "Epic" --id aaaaaaa
+new "Mid" --id bbbbbbb --parent aaaaaaa
+new "g1" --id ccccccc --parent bbbbbbb
+new "g2" --id ddddddd --parent bbbbbbb
+new "Open" --id eeeeeee --parent aaaaaaa
+done ccccccc
+done ddddddd

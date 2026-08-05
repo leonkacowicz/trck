@@ -1,0 +1,3 @@
+# Both ends of an open edge are annotated: the dependent needs, the blocker blocks.
+new "Dep" --id aaaaaaa
+new "Blocked" --id bbbbbbb --depends aaaaaaa

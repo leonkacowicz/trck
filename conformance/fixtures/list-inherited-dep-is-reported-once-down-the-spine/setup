@@ -1,0 +1,5 @@
+# Both mid and leaf inherit the same edge; only the highest row on screen states it.
+new "Dep" --id aaaaaaa
+new "Top epic" --id bbbbbbb --depends aaaaaaa
+new "Child mid" --id ccccccc --parent bbbbbbb
+new "Child leaf" --id ddddddd --parent ccccccc

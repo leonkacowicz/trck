@@ -1,0 +1,3 @@
+new "A" --id aaaaaaa
+new "B" --id bbbbbbb
+start bbbbbbb

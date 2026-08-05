@@ -1,0 +1,4 @@
+# --sort reorders each sibling group in place; the nesting itself is unchanged.
+new "Epic" --id aaaaaaa
+new "Low child" --id bbbbbbb --parent aaaaaaa --priority low
+new "High child" --id ccccccc --parent aaaaaaa --priority high

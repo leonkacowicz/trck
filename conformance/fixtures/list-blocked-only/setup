@@ -1,0 +1,5 @@
+# --blocked keeps only issues with an unmet dependency. The blocker itself is not a row;
+# it appears only inside the dependent's needs note.
+new "Dep" --id aaaaaaa
+new "Blocked" --id bbbbbbb --depends aaaaaaa
+new "Free" --id ccccccc

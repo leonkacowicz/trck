@@ -1,0 +1,6 @@
+# The rollup reaches leaves at any depth, not just direct children.
+new "Epic" --id aaaaaaa
+new "Mid" --id bbbbbbb --parent aaaaaaa
+new "g1" --id ccccccc --parent bbbbbbb
+new "g2" --id ddddddd --parent bbbbbbb
+done ccccccc

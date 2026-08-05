@@ -1,0 +1,5 @@
+# Once every child is done the epic rolls up terminal and the whole family collapses.
+new "Epic" --id aaaaaaa
+new "A" --id bbbbbbb --parent aaaaaaa
+new "Other" --id ccccccc
+done bbbbbbb

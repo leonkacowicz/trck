@@ -1,0 +1,6 @@
+# Filters AND together: only the ongoing issue whose title matches.
+new "Match ongoing" --id aaaaaaa --priority high
+new "Match backlog" --id bbbbbbb --priority high
+new "Other ongoing" --id ccccccc --priority high
+start aaaaaaa
+start ccccccc

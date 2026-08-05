@@ -1,0 +1,4 @@
+new "Mine" --id aaaaaaa
+new "Theirs" --id bbbbbbb
+set aaaaaaa --field area=core
+set bbbbbbb --field area=docs

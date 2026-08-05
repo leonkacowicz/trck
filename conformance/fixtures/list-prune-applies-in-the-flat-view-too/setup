@@ -1,0 +1,3 @@
+new "Open" --id aaaaaaa
+new "Settled" --id bbbbbbb
+done bbbbbbb

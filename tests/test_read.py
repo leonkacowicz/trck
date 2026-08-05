@@ -23,15 +23,6 @@ class TestRead(unittest.TestCase):
             self.t.cmd_new(a)
         return Path(buf.getvalue().strip()).name.split("-")[0]
 
-    def listing(self, d, **over):
-        """cmd_list defaulted to the flat view (the stable regression baseline);
-        override `flat=False` for nested-forest tests."""
-        a = dict(dir=str(d), status=None, priority=None, label=None,
-                 parent=None, match=None, sort=None, blocked=False, orphan=False,
-                 flat=True, id=None)
-        a.update(over)
-        return self.cap(self.t.cmd_list, ns(**a))
-
     def ready(self, d, **over):
         """cmd_ready with flags defaulted; override per test."""
         a = dict(dir=str(d), next=False)
@@ -66,92 +57,6 @@ class TestRead(unittest.TestCase):
             self.assertNotIn("--- body ---", out)
             self.assertEqual(json.loads(out)["id"], id1)
 
-    def test_list_filters_by_status(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "A")
-            id2 = self.seed(d, "B")
-            self.t.cmd_mv(ns(dir=str(d), id=id2, status="ongoing", resolution=None))
-            out = self.cap(self.t.cmd_list, ns(dir=str(d), status="ongoing",
-                                               priority=None, parent=None,
-                                               flat=True, id=None))
-            self.assertIn(f"#{id2}", out)
-            self.assertNotIn(f"#{id1}", out)
-
-    def test_list_filters_by_parent(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic")
-            id2 = self.seed(d, "Child", parent=id1)
-            id3 = self.seed(d, "Loose")
-            out = self.cap(self.t.cmd_list, ns(dir=str(d), status=None,
-                                               priority=None, parent=id1,
-                                               flat=True, id=None))
-            self.assertIn(f"#{id2}", out)
-            self.assertNotIn(f"#{id1}", out)
-            self.assertNotIn(f"#{id3}", out)
-
-    def test_list_status_multi_and_negated(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "A")
-            id2 = self.seed(d, "B")
-            id3 = self.seed(d, "C")
-            self.t.cmd_mv(ns(dir=str(d), id=id2, status="ongoing", resolution=None))
-            self.t.cmd_mv(ns(dir=str(d), id=id3, status="done", resolution=None))
-            out = self.listing(d, status="backlog,ongoing")
-            self.assertIn(f"#{id1}", out)
-            self.assertIn(f"#{id2}", out)
-            self.assertNotIn(f"#{id3}", out)
-            out = self.listing(d, status="!done")
-            self.assertIn(f"#{id1}", out)
-            self.assertIn(f"#{id2}", out)
-            self.assertNotIn(f"#{id3}", out)
-
-    def test_list_match_is_case_insensitive_substring(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Fix the parser")
-            id2 = self.seed(d, "Add a feature")
-            out = self.listing(d, match="PARSER")
-            self.assertIn(f"#{id1}", out)
-            self.assertNotIn(f"#{id2}", out)
-
-    def test_list_sort_by_priority(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Low one", priority="low")
-            id2 = self.seed(d, "High one", priority="high")
-            id3 = self.seed(d, "Mid one", priority="medium")
-            out = self.listing(d, sort="priority")
-            self.assertLess(out.index(f"#{id2}"), out.index(f"#{id3}"))
-            self.assertLess(out.index(f"#{id3}"), out.index(f"#{id1}"))
-
-    def test_list_sort_by_points(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Small", points=1)
-            id2 = self.seed(d, "Big", points=8)
-            id3 = self.seed(d, "Mid", points=3)
-            out = self.listing(d, sort="points")
-            self.assertLess(out.index(f"#{id2}"), out.index(f"#{id3}"))
-            self.assertLess(out.index(f"#{id3}"), out.index(f"#{id1}"))
-
-    def test_list_blocked_only(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Dep")
-            id2 = self.seed(d, "Blocked", depends=id1)
-            id3 = self.seed(d, "Free")
-            out = self.listing(d, blocked=True)
-            self.assertIn(f"#{id2}", out)
-            # only #id2 is listed as a row; #id1 appears only inside its `needs` note
-            self.assertEqual("", self.row_for(out, id1))
-            self.assertEqual("", self.row_for(out, id3))
-            # once the dependency is terminal, nothing is blocked
-            self.t.cmd_mv(ns(dir=str(d), id=id1, status="done", resolution=None))
-            self.assertEqual(self.listing(d, blocked=True), "")
-
     @staticmethod
     def row_for(out, issue_id):
         """The output line whose OWN id (the first #NNN on the line, the id column) is
@@ -162,63 +67,6 @@ class TestRead(unittest.TestCase):
             if m and m.group(0) == tok:
                 return ln
         return ""
-
-    def test_list_annotates_blocked_row_with_needs(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Dep")
-            id2 = self.seed(d, "Blocked", depends=id1)
-            out = self.listing(d)
-            self.assertIn(f"needs #{id1}", self.row_for(out, id2))
-
-    def test_list_needs_omits_terminal_blocker(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Dep")
-            id2 = self.seed(d, "Blocked", depends=id1)
-            self.t.cmd_mv(ns(dir=str(d), id=id1, status="done", resolution=None))
-            out = self.listing(d)
-            # block cleared: the dependent no longer advertises a blocker
-            self.assertNotIn("needs", self.row_for(out, id2))
-
-    def test_list_needs_lists_only_open_blockers(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "DepA")
-            id2 = self.seed(d, "DepB")
-            id3 = self.seed(d, "Blocked", depends=f"{id1},{id2}")
-            self.t.cmd_mv(ns(dir=str(d), id=id1, status="done", resolution=None))
-            line = self.row_for(self.listing(d), id3)
-            self.assertIn(f"needs #{id2}", line)               # still open
-            self.assertNotIn(f"#{id1}", line)                  # done -> dropped
-
-    def test_list_annotates_blocker_row_with_blocks(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Dep")
-            id2 = self.seed(d, "Blocked", depends=id1)
-            line = self.row_for(self.listing(d), id1)
-            self.assertIn(f"blocks #{id2}", line)
-
-    def test_list_blocks_cleared_when_blocker_done(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Dep")
-            id2 = self.seed(d, "Blocked", depends=id1)
-            self.t.cmd_mv(ns(dir=str(d), id=id1, status="done", resolution=None))
-            out = self.listing(d)
-            # a done task blocks nothing — both sides of the edge go quiet
-            self.assertNotIn("blocks", self.row_for(out, id1))
-            self.assertNotIn("needs", self.row_for(out, id2))
-
-    def test_list_block_annotations_are_plain_without_color(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Dep")
-            id2 = self.seed(d, "Blocked", depends=id1)
-            out = self.listing(d)
-            self.assertIn(f"needs #{id1}", out)
-            self.assertNotIn("\x1b[", out)                 # no ANSI when color is off
 
     def test_ready_has_no_block_annotations(self):
         with TemporaryDirectory() as tmp:
@@ -242,98 +90,6 @@ class TestRead(unittest.TestCase):
         par = self.seed(d, "Parent epic", depends=dep)
         kid = self.seed(d, "Child leaf", parent=par)
         return dep, par, kid
-
-    def test_list_spells_out_inherited_dep_when_ancestor_not_shown(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            dep, par, kid = self.inherit_fixture(d)
-            # only the child matches, so its parent's row is absent from the output
-            line = self.row_for(self.listing(d, match="Child leaf"), kid)
-            self.assertIn(f"needs #{dep}", line)      # agrees with ready/is_blocked
-            self.assertIn(f"(via #{par})", line)      # ...but the edge lives on par
-
-    def test_list_omits_inherited_dep_when_ancestor_is_shown(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            dep, par, kid = self.inherit_fixture(d)
-            out = self.listing(d)                     # unfiltered: par is printed too
-            self.assertIn(f"needs #{dep}", self.row_for(out, par))
-            self.assertNotIn("needs", self.row_for(out, kid))
-
-    def test_list_nested_forest_keeps_ancestor_so_child_stays_quiet(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            dep, par, kid = self.inherit_fixture(d)
-            # the forest keeps a match's ancestor spine as context -> par is on screen
-            out = self.listing(d, flat=False, match="Child leaf")
-            self.assertIn(f"#{par}", out)
-            self.assertNotIn("needs", self.row_for(out, kid))
-
-    def test_list_rooted_at_child_spells_out_inherited_dep(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            dep, par, kid = self.inherit_fixture(d)
-            # rooting at the child cuts the spine above it: nothing else carries it
-            line = self.row_for(self.listing(d, flat=False, id=kid), kid)
-            self.assertIn(f"needs #{dep} (via #{par})", line)
-
-    def test_list_inherited_dep_follows_its_own_authored_deps(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            dep, par, kid = self.inherit_fixture(d)
-            own = self.seed(d, "Own dep")
-            self.t.cmd_dep(ns(dir=str(d), id=kid, add=own, remove=None))
-            line = self.row_for(self.listing(d, match="Child leaf"), kid)
-            self.assertIn(f"needs #{own} #{dep} (via #{par})", line)
-
-    def test_list_inherited_dep_clears_when_the_blocker_is_done(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            dep, par, kid = self.inherit_fixture(d)
-            self.t.cmd_mv(ns(dir=str(d), id=dep, status="done", resolution=None))
-            out = self.listing(d, match="Child leaf")
-            self.assertNotIn("needs", self.row_for(out, kid))
-
-    def test_list_inherited_dep_is_reported_once_down_the_spine(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            dep = self.seed(d, "Dep")
-            top = self.seed(d, "Top epic", depends=dep)
-            mid = self.seed(d, "Child mid", parent=top)
-            kid = self.seed(d, "Child leaf", parent=mid)
-            out = self.listing(d, match="Child")      # prints mid + kid, not top
-            self.assertIn(f"needs #{dep} (via #{top})", self.row_for(out, mid))
-            self.assertNotIn("needs", self.row_for(out, kid))  # mid already says it
-
-    def test_list_blocks_stays_at_the_authored_altitude(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            dep, par, kid = self.inherit_fixture(d)
-            line = self.row_for(self.listing(d), dep)
-            self.assertIn(f"blocks #{par}", line)     # the subtree under par is implied
-            self.assertNotIn(f"#{kid}", line)
-
-    def test_list_orphan_only(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic")
-            id2 = self.seed(d, "Child", parent=id1)
-            out = self.listing(d, orphan=True)
-            self.assertIn(f"#{id1}", out)
-            self.assertNotIn(f"#{id2}", out)
-
-    def test_list_filters_compose(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Match ongoing", priority="high")
-            id2 = self.seed(d, "Match backlog", priority="high")
-            id3 = self.seed(d, "Other ongoing", priority="high")
-            self.t.cmd_mv(ns(dir=str(d), id=id1, status="ongoing", resolution=None))
-            self.t.cmd_mv(ns(dir=str(d), id=id3, status="ongoing", resolution=None))
-            out = self.listing(d, status="ongoing", match="match")
-            self.assertIn(f"#{id1}", out)
-            self.assertNotIn(f"#{id2}", out)     # filtered by status
-            self.assertNotIn(f"#{id3}", out)     # filtered by match
 
     def paths(self, d, **over):
         """cmd_list in --paths output mode; filters default as in `listing`."""
@@ -404,64 +160,6 @@ class TestRead(unittest.TestCase):
         import json
         (d / "index.jsonl").write_text("\n".join(json.dumps(o) for o in objs) + "\n")
 
-    def test_list_nested_by_default_indents_children(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic")
-            id2 = self.seed(d, "Child", parent=id1)
-            out = self.nested(d)
-            self.assertIn("Epic", self.row_for(out, id1))
-            self.assertIn("└─ Child", self.row_for(out, id2))   # sole child -> last branch
-            self.assertNotIn("└─", self.row_for(out, id1))      # root carries no connector
-            self.assertNotIn("├─", self.row_for(out, id1))
-
-    def test_list_flat_has_no_connectors(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic")
-            id2 = self.seed(d, "Child", parent=id1)
-            out = self.listing(d)                          # flat=True
-            self.assertIn(f"#{id1}", out)
-            self.assertIn(f"#{id2}", out)
-            self.assertNotIn("└─", out)
-            self.assertNotIn("├─", out)
-
-    def test_list_nested_child_omits_parent_pointer_tag(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic")
-            id2 = self.seed(d, "Child", parent=id1)
-            out = self.nested(d)
-            self.assertNotIn("↳", self.row_for(out, id2))   # the connector already shows the parent
-
-    def test_list_flat_child_keeps_parent_pointer_tag(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic")
-            id2 = self.seed(d, "Child", parent=id1)
-            out = self.listing(d)                          # flat: no indentation, so keep ↳
-            self.assertIn(f"↳{id1}", self.row_for(out, id2))
-
-    def test_list_positional_id_roots_subtree(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic")
-            id2 = self.seed(d, "Child", parent=id1)
-            id3 = self.seed(d, "Other")
-            out = self.nested(d, id=id1)
-            self.assertIn(f"#{id1}", out)
-            self.assertIn(f"#{id2}", out)
-            self.assertEqual("", self.row_for(out, id3))    # outside the subtree
-
-    def test_list_filter_keeps_ancestor_spine(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic")
-            id2 = self.seed(d, "Child", parent=id1)
-            out = self.nested(d, match="child")
-            self.assertIn(f"#{id1}", self.row_for(out, id1))    # spine kept as context
-            self.assertIn("Child", self.row_for(out, id2))
-
     def test_list_filter_dims_nonmatching_ancestor(self):
         self.t._use_color = lambda: True
         with TemporaryDirectory() as tmp:
@@ -472,55 +170,6 @@ class TestRead(unittest.TestCase):
             out = self.nested(d, match="child")
             self.assertTrue(self.row_for(out, id1).startswith("\033[2m"))    # dimmed ancestor
             self.assertFalse(self.row_for(out, id2).startswith("\033[2m"))   # matched row colored
-
-    def test_list_sort_orders_siblings_within_parent(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic")
-            id2 = self.seed(d, "Low child", parent=id1, priority="low")
-            id3 = self.seed(d, "High child", parent=id1, priority="high")
-            out = self.nested(d)                              # default id sort: both appear
-            self.assertIn(f"#{id2}", out)
-            self.assertIn(f"#{id3}", out)
-            out = self.nested(d, sort="priority")             # high before low among siblings
-            self.assertLess(out.index(f"#{id3}"), out.index(f"#{id2}"))
-
-    def test_list_dangling_parent_renders_as_root(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            self.write_index(d, {"id": "2", "slug": "child", "title": "Orphanish",
-                                 "status": "backlog",
-                                 "priority": "high", "parent": "99"})
-            out = self.nested(d)                              # parent 99 missing
-            self.assertIn("#2", out)                          # promoted to a root, no crash
-            self.assertNotIn("└─", self.row_for(out, 2))
-
-    def test_list_parent_cycle_does_not_crash(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            self.write_index(d,
-                {"id": "1", "slug": "a", "title": "A",
-                 "status": "backlog", "priority": "high", "parent": "2"},
-                {"id": "2", "slug": "b", "title": "B",
-                 "status": "backlog", "priority": "high", "parent": "1"})
-            out = self.nested(d)                              # must return, not hang/raise
-            self.assertIsInstance(out, str)
-
-    def test_tree_is_alias_for_list(self):
-        parser = self.t.build_parser()
-        flat = parser.parse_args(["list"])
-        treed = parser.parse_args(["tree", "5"])
-        self.assertIs(treed.func, flat.func)                 # tree dispatches to cmd_list
-        self.assertEqual(treed.id, "5")                      # carries the positional id
-
-    def test_tree_shows_children(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic")
-            id2 = self.seed(d, "Child", parent=id1)
-            out = self.nested(d)                              # tree is now the nested list
-            self.assertIn("Epic", out)
-            self.assertIn("Child", out)
 
     def test_list_argparse_exposes_flat_and_id(self):
         parser = self.t.build_parser()
@@ -537,29 +186,6 @@ class TestRead(unittest.TestCase):
         help_text = buf.getvalue()
         self.assertIn("nested", help_text)
         self.assertIn("--flat", help_text)
-
-    def test_list_sort_orders_siblings_recursively(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d, "Epic")
-            id2 = self.seed(d, "Mid", parent=id1)
-            id3 = self.seed(d, "Low grand", parent=id2, priority="low")
-            id4 = self.seed(d, "High grand", parent=id2, priority="high")
-            out = self.nested(d, sort="priority")
-            # the sort reaches the grandchild sibling group, not just the top level
-            self.assertLess(out.index(f"#{id4}"), out.index(f"#{id3}"))
-
-    def test_list_dependency_cycle_does_not_crash(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            self.write_index(d,
-                {"id": "1", "slug": "a", "title": "A",
-                 "status": "backlog", "priority": "high", "depends_on": ["2"]},
-                {"id": "2", "slug": "b", "title": "B",
-                 "status": "backlog", "priority": "high", "depends_on": ["1"]})
-            out = self.nested(d)                              # dep cycle: must render, not hang
-            self.assertIn("#1", out)
-            self.assertIn("#2", out)
 
     def test_ready_lists_unblocked_not_done_leaves(self):
         with TemporaryDirectory() as tmp:
@@ -703,13 +329,6 @@ class TestRead(unittest.TestCase):
             blocker = self.seed(d, "Blocker", priority="medium")
             urgent = self.seed(d, "Urgent", priority="urgent", depends=blocker)
             self.assertIn(f"↑urgent(#{urgent})", self.ready(d, next=True))
-
-    def test_list_carries_no_demand_marker(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            blocker = self.seed(d, "Blocker", priority="medium")
-            self.seed(d, "Urgent", priority="urgent", depends=blocker)
-            self.assertNotIn("↑", self.listing(d))
 
     def test_next_prints_only_top_pick(self):
         with TemporaryDirectory() as tmp:

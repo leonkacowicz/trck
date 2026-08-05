@@ -1,0 +1,2 @@
+# The parent id does not exist. The row is promoted to a root rather than dropped or
+# crashing: an unresolvable pointer must not hide the issue.

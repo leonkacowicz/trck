@@ -1,0 +1,2 @@
+# A hand-edited parent cycle. The forest walk must terminate and render something rather
+# than hang or blow the stack; check is what reports the cycle as an error.

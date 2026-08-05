@@ -1,0 +1,5 @@
+new "Backlog" --id aaaaaaa
+new "Ongoing" --id bbbbbbb
+new "Done" --id ccccccc
+start bbbbbbb
+done ccccccc

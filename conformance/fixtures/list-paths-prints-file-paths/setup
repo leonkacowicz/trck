@@ -1,0 +1,3 @@
+# --paths prints one body-file path per row, for piping into rg/grep/fzf.
+new "Alpha" --id aaaaaaa
+new "Beta" --id bbbbbbb

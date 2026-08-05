@@ -1,0 +1,4 @@
+# The default view is a nested forest with connector glyphs.
+new "Epic" --id aaaaaaa
+new "Kid one" --id bbbbbbb --parent aaaaaaa
+new "Kid two" --id ccccccc --parent aaaaaaa

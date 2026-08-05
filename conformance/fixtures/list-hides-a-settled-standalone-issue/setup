@@ -1,0 +1,4 @@
+# By default settled work is hidden: a done issue with no parent is pruned.
+new "Open task" --id aaaaaaa
+new "Old task" --id bbbbbbb
+done bbbbbbb

@@ -1,0 +1,4 @@
+# --flat is a globally-sorted list: no tree connectors, but a child keeps a pointer tag
+# naming its parent so the relationship is not lost.
+new "Epic" --id aaaaaaa
+new "Kid" --id bbbbbbb --parent aaaaaaa

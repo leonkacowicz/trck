@@ -1,0 +1,3 @@
+new "With" --id aaaaaaa
+new "Without" --id bbbbbbb
+set aaaaaaa --field area=core
