@@ -28,6 +28,14 @@ fn ansi(code: &str) -> &'static str {
         "red" => "\u{1b}[31m",
         "green" => "\u{1b}[32m",
         "yellow" => "\u{1b}[33m",
+        "blue" => "\u{1b}[34m",
+        "magenta" => "\u{1b}[35m",
+        "cyan" => "\u{1b}[36m",
+        "bgreen" => "\u{1b}[92m",
+        "byellow" => "\u{1b}[93m",
+        "bblue" => "\u{1b}[94m",
+        "bmagenta" => "\u{1b}[95m",
+        "bcyan" => "\u{1b}[96m",
         _ => "",
     }
 }
@@ -93,6 +101,31 @@ pub(crate) fn status_codes(status: &str) -> Vec<&'static str> {
         config::DONE => vec!["green"],
         config::BACKLOG => vec!["dim"],
         _ => vec!["yellow"],
+    }
+}
+
+/// Rotating palette used to colour graph lanes; each lane keeps one colour for its whole
+/// descent so it can be traced through crossings (`deps`). Distinguishing lanes *from each
+/// other* is the point, so this is a spread of hues rather than the status trichrome.
+pub(crate) const LANE_PALETTE: [&str; 11] = [
+    "red", "green", "yellow", "blue", "magenta", "cyan", "bgreen", "byellow", "bblue", "bmagenta",
+    "bcyan",
+];
+
+/// The palette slot a lane's owning id lands in. An id is read as one big integer — decimal
+/// if it is all digits, otherwise its bytes big-endian — then taken mod the palette length,
+/// so the same id always draws the same hue. Only the remainder is ever needed, so it is
+/// folded a byte at a time rather than materialising the (unbounded) integer.
+pub(crate) fn lane_palette_index(id: &str) -> usize {
+    let n = LANE_PALETTE.len();
+    // Fold in `usize`: every intermediate is a remainder < n plus one base-256/base-10 digit,
+    // so it stays far below `usize::MAX` and never truncates.
+    if !id.is_empty() && id.bytes().all(|b| b.is_ascii_digit()) {
+        id.bytes()
+            .fold(0usize, |acc, b| (acc * 10 + usize::from(b - b'0')) % n)
+    } else {
+        id.bytes()
+            .fold(0usize, |acc, b| (acc * 256 + usize::from(b)) % n)
     }
 }
 
@@ -412,6 +445,31 @@ mod tests {
         assert_eq!(paint_with(false, "x", &["red", "bold"]), "x");
         assert_eq!(paint_with(true, "x", &["red"]), "\u{1b}[31mx\u{1b}[0m");
         assert_eq!(paint_with(true, "x", &[]), "x", "no codes, no escapes");
+    }
+
+    #[test]
+    fn lane_palette_index_matches_the_python_engine() {
+        // Oracle values from the Python `paint_lane`: `int.from_bytes(id.encode(), "big")`
+        // (or `int(id)` when all-digit) mod len(_LANE_PALETTE).
+        for (id, want) in [
+            ("sp2rwzx", "green"),
+            ("eek4hat", "magenta"),
+            ("qktc8z7", "bmagenta"),
+            ("bdmgj7r", "magenta"),
+            ("2w5panf", "blue"),
+            ("a", "bmagenta"),
+            ("123", "yellow"),  // all-digit: int("123") % 11 == 2
+            ("007", "byellow"), // all-digit, leading zeros: int("007") == 7
+        ] {
+            assert_eq!(LANE_PALETTE[lane_palette_index(id)], want, "{id}");
+        }
+    }
+
+    #[test]
+    fn every_lane_palette_colour_has_an_escape() {
+        for c in LANE_PALETTE {
+            assert_ne!(ansi(c), "", "{c} has no ANSI code");
+        }
     }
 
     #[test]

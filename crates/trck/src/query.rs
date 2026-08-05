@@ -15,8 +15,8 @@ use crate::graph::{Graph, priority_rank};
 use crate::gutter;
 use crate::issue::{CANON_KEYS, Issue};
 use crate::render::{
-    Annotation, RowOpts, field_value, hl_id, paint, render_rows, status_codes, status_icon,
-    unique_prefix_lens,
+    Annotation, LANE_PALETTE, RowOpts, field_value, hl_id, lane_palette_index, paint, render_rows,
+    status_codes, status_icon, unique_prefix_lens,
 };
 use crate::verbs::{issue_path, load_rows, resolve_ref};
 use std::collections::{BTreeMap, BTreeSet};
@@ -446,7 +446,7 @@ pub(crate) fn cmd_deps(ctx: &Ctx, opts: &DepsOpts) -> Result<String, String> {
             Some(_) if focal => format!("{} ", paint("▸", &["bold"])),
             Some(_) => "  ".to_string(),
         };
-        let painted = paint_lanes(&g, gut, owners);
+        let painted = paint_lanes(gut, owners);
         let Some(row) = g.get(iid) else { continue };
         out.push(format!(
             "{marker}{painted}{}  {}",
@@ -457,23 +457,27 @@ pub(crate) fn cmd_deps(ctx: &Ctx, opts: &DepsOpts) -> Result<String, String> {
     Ok(out.join("\n"))
 }
 
-/// A gutter row with each lane coloured by the status of the issue it heads to, and an
-/// inferred containment edge dimmed so it reads as structure rather than an authored
-/// constraint.
-fn paint_lanes(g: &Graph, gut: &str, owners: &[gutter::LaneOwner]) -> String {
+/// A gutter row with each lane coloured by a rotating palette keyed on the id it heads to,
+/// so a lane keeps one hue for its whole descent and can be traced through crossings. An
+/// inferred containment edge is dimmed *on top of* its hue — weight, not colour, marks it as
+/// structure — since box-drawing has no dashed corner to distinguish it by shape. The node's
+/// own bullet (`●`) is bold rather than palette-coloured.
+fn paint_lanes(gut: &str, owners: &[gutter::LaneOwner]) -> String {
     gut.chars()
         .zip(owners.iter())
-        .map(|(ch, owner)| match owner {
-            None => ch.to_string(),
-            Some((id, kind)) => {
-                let mut codes = g
-                    .get(id)
-                    .map(|r| status_codes(&r.status))
-                    .unwrap_or_default();
-                if *kind == gutter::EdgeKind::Child || *kind == gutter::EdgeKind::Inherited {
-                    codes = vec!["dim"];
+        .map(|(ch, owner)| {
+            if ch == '●' {
+                return paint("●", &["bold"]);
+            }
+            match owner {
+                None => ch.to_string(),
+                Some((id, kind)) => {
+                    let mut codes = vec![LANE_PALETTE[lane_palette_index(id)]];
+                    if *kind == gutter::EdgeKind::Child {
+                        codes.insert(0, "dim");
+                    }
+                    paint(&ch.to_string(), &codes)
                 }
-                paint(&ch.to_string(), &codes)
             }
         })
         .collect()
