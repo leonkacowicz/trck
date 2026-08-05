@@ -451,10 +451,27 @@ pub(crate) fn cmd_ready_json(
     let ids = ready_ids(ctx, root, only_next)?;
     let rows = load_rows(ctx)?;
     let g = Graph::new(rows);
+    // The array order is this verb's whole answer, so a consumer never re-derives the
+    // ranking. The note the human view renders as `↑urgent(#a1b2c3)` travels as two fields
+    // instead of a coloured string — and only on the rows that carry one: most issues are
+    // their own maximum, and emitting nulls everywhere would imply the fields mean
+    // something on every row.
     let out: Vec<Json> = ids
         .iter()
         .filter_map(|id| g.get(id))
-        .map(Issue::to_full)
+        .map(|r| {
+            let mut obj = match r.to_full() {
+                Json::Object(pairs) => pairs,
+                other => return other,
+            };
+            if let Some(src) = g.demand_source(&r.id)
+                && let Some(row) = g.get(&src)
+            {
+                obj.push(("demand_priority".into(), Json::String(row.priority.clone())));
+                obj.push(("demand_source".into(), Json::String(src.clone())));
+            }
+            Json::Object(obj)
+        })
         .collect();
     Ok(Json::Array(out).to_json_pretty())
 }
