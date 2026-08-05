@@ -6,9 +6,9 @@
 | State | Count |
 |---|---:|
 | backlog | 50 |
-| ongoing | 5 |
+| ongoing | 4 |
 | in-review | 0 |
-| done | 144 |
+| done | 145 |
 | **total** | **199** |
 
 ## Hierarchies
@@ -140,7 +140,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#kaqhtfc list/tree: drop the tree alias (nested forest is list's default)](items/kaqhtfc-list-tree-drop-the-tree-alias-nested-forest-is-list-s-default.md) _(backlog)_
 - [x] [#v8tmkrt json: shared emit_json stdout seam + --json flag plumbing](items/v8tmkrt-json-shared-emit-json-stdout-seam-json-flag-plumbing.md)
 
-### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 70% (72/103 pts · 18/27 done) · _medium_ · ongoing
+### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 73% (75/103 pts · 19/27 done) · _medium_ · ongoing
 
 - [x] [#2w5panf rust: diff and changelog](items/2w5panf-rust-diff-and-changelog.md)
 - [x] [#4susb3g rust: query verbs — list, tree, show](items/4susb3g-rust-query-verbs-list-tree-show.md)
@@ -150,7 +150,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#8pwztvy rust: ready and next, with the demand annotations](items/8pwztvy-rust-ready-and-next-with-the-demand-annotations.md)
 - [ ] [#9898xru rust: release artifacts per platform, and self-update](items/9898xru-rust-release-artifacts-per-platform-and-self-update.md) _(backlog)_
 - [x] [#9fajv3x format: version trck.json and refuse a tracker newer than the engine](items/9fajv3x-format-version-trck-json-and-refuse-a-tracker-newer-than-the-engine.md)
-- [ ] [#av3efth conformance: convert the on-disk artifact tests](items/av3efth-conformance-convert-the-on-disk-artifact-tests.md) _(ongoing)_
+- [x] [#av3efth conformance: convert the on-disk artifact tests](items/av3efth-conformance-convert-the-on-disk-artifact-tests.md)
 - [x] [#b2r89au rust: fold in the html view](items/b2r89au-rust-fold-in-the-html-view.md)
 - [x] [#bdmgj7r rust: the deps gutter renderer](items/bdmgj7r-rust-the-deps-gutter-renderer.md)
 - [x] [#d7y2emr rust: config, vocabulary and tracker discovery](items/d7y2emr-rust-config-vocabulary-and-tracker-discovery.md)
