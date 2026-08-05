@@ -231,7 +231,11 @@ pub(crate) fn apply_status(row: &mut Issue, new_status: &str) -> Result<(), Stri
             row.closed = Some(now_utc()?);
         }
     } else {
+        // Reopening clears the whole closure record. Dropping the timestamp but keeping
+        // the resolution would leave a row that is open and yet says *why* it closed —
+        // a state `check` rejects, so the verb would be writing an invalid tracker.
         row.closed = None;
+        row.resolution = None;
     }
     Ok(())
 }
@@ -777,6 +781,38 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
     use super::*;
+
+    #[test]
+    fn reopening_clears_both_closed_and_resolution() {
+        // Leaving a terminal status must clear the whole closure record, not just the
+        // timestamp: a row that is 'ongoing' while carrying a resolution is one our own
+        // `check` rejects, so keeping it would have the verb write an invalid tracker.
+        let mut row = Issue {
+            id: "aaaaaaa".into(),
+            slug: "alpha".into(),
+            title: "Alpha".into(),
+            status: config::DONE.into(),
+            priority: "medium".into(),
+            points: 1,
+            parent: None,
+            labels: Vec::new(),
+            depends_on: Vec::new(),
+            spec: None,
+            review_url: None,
+            created: Some("2026-01-01T00:00:00Z".into()),
+            started: Some("2026-01-01T00:00:00Z".into()),
+            closed: Some("2026-01-01T00:00:00Z".into()),
+            resolution: Some("wontfix".into()),
+            manual_status: false,
+            extra: BTreeMap::new(),
+        };
+        apply_status(&mut row, config::ONGOING).unwrap();
+        assert_eq!(row.closed, None);
+        assert_eq!(
+            row.resolution, None,
+            "resolution must not outlive the closure"
+        );
+    }
 
     #[test]
     fn slugify_matches_the_python_rule() {
