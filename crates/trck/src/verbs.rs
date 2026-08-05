@@ -668,15 +668,24 @@ pub(crate) fn cmd_set(ctx: &Ctx, token: &str, opts: &SetOpts) -> Result<String, 
         let g = Graph::new(std::mem::take(&mut rows));
         let cycles = g.effective_cycles();
         let parent_cycles = g.parent_cycles();
+        // Compose the message while the graph is still alive: the node loop alone says a
+        // cycle exists but not which edge to remove, and a re-parent has no single edge to
+        // point at — which is exactly why it has to be spelled out. Same explanation
+        // `check` gives: the authored edge, and the containment that lifts it.
+        let refusal = parent_cycles.first().map_or_else(
+            || {
+                cycles.first().map(|cyc| {
+                    format!(
+                        "this change would create an effective dependency cycle: {}",
+                        crate::validate::describe_cycle(&g, cyc)
+                    )
+                })
+            },
+            |cyc| Some(format!("parent cycle: {}", cyc.join(" -> "))),
+        );
         rows = g.rows;
-        if let Some(cyc) = parent_cycles.first() {
-            return Err(format!("parent cycle: {}", cyc.join(" -> ")));
-        }
-        if let Some(cyc) = cycles.first() {
-            return Err(format!(
-                "re-parenting #{iid} would create an effective dependency cycle: {}",
-                cyc.join(" -> ")
-            ));
+        if let Some(msg) = refusal {
+            return Err(msg);
         }
     }
 

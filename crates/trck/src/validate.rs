@@ -77,7 +77,7 @@ fn scan_files(ctx: &Ctx) -> Result<BTreeMap<String, (String, String)>, String> {
     clippy::many_single_char_names,
     reason = "u/v are the loop edge, a/b the witness"
 )]
-fn describe_cycle(g: &Graph, cyc: &[String]) -> String {
+pub(crate) fn describe_cycle(g: &Graph, cyc: &[String]) -> String {
     let mut seq: Vec<&String> = cyc.iter().collect();
     if let Some(first) = cyc.first() {
         seq.push(first);
