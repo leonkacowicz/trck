@@ -326,6 +326,39 @@ impl Issue {
         })
     }
 
+    /// The full mapping every `--json` payload is built from: **every** canonical key in
+    /// canonical order, `null` where unset, then the extras.
+    ///
+    /// The counterpart to [`to_canonical`](Self::to_canonical), and deliberately not the
+    /// same shape. The index strips defaults because it is storage and a smaller diff is
+    /// worth more there; a machine-readable payload keeps them, so a consumer can index a
+    /// field without first checking whether this particular tracker happens to use it.
+    pub(crate) fn to_full(&self) -> Json {
+        let strings = |v: &[String]| Json::Array(v.iter().cloned().map(Json::String).collect());
+        let s = |v: &str| Json::String(v.to_string());
+        let opt = |v: &Option<String>| v.clone().map_or(Json::Null, Json::String);
+        let mut out: Vec<(String, Json)> = vec![
+            ("id".into(), s(&self.id)),
+            ("slug".into(), s(&self.slug)),
+            ("title".into(), s(&self.title)),
+            ("status".into(), s(&self.status)),
+            ("priority".into(), s(&self.priority)),
+            ("points".into(), Json::Number(self.points.to_string())),
+            ("parent".into(), opt(&self.parent)),
+            ("labels".into(), strings(&self.labels)),
+            ("depends_on".into(), strings(&self.depends_on)),
+            ("spec".into(), opt(&self.spec)),
+            ("review_url".into(), opt(&self.review_url)),
+            ("created".into(), opt(&self.created)),
+            ("started".into(), opt(&self.started)),
+            ("closed".into(), opt(&self.closed)),
+            ("resolution".into(), opt(&self.resolution)),
+            ("manual_status".into(), Json::Bool(self.manual_status)),
+        ];
+        out.extend(self.extra.iter().map(|(k, v)| (k.clone(), v.clone())));
+        Json::Object(out)
+    }
+
     /// The slim, ordered form written to `index.jsonl`: known keys in canonical order
     /// with defaults stripped, then unknown keys in sorted order.
     pub(crate) fn to_canonical(&self) -> Json {
