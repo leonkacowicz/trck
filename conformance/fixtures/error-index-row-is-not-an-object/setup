@@ -1,0 +1,1 @@
+# A hand-mangled row must produce a located diagnostic naming the line, not a traceback.

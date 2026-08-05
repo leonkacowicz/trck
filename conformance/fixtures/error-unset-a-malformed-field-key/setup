@@ -1,0 +1,2 @@
+# --unset validates its key the same way --field does.
+new "Alpha" --id aaaaaaa

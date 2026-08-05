@@ -1,0 +1,4 @@
+# The mirror of the child-to-ancestor case: a parent cannot wait on its own descendant
+# either, since the parent is not done until that descendant is.
+new "Epic" --id aaaaaaa
+new "Kid" --id bbbbbbb --parent aaaaaaa

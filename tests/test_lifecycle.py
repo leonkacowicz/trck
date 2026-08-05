@@ -24,20 +24,6 @@ class TestLifecycle(unittest.TestCase):
             self.t.cmd_new(args)
         return Path(buf.getvalue().strip()).name.split("-")[0]
 
-    def test_mv_unknown_status_dies(self):
-        with TemporaryDirectory() as tmp:
-            d = self.setup_dir(tmp)
-            r_id = self.new(d)
-            with self.assertRaises(SystemExit):
-                self.t.cmd_mv(ns(dir=str(d), id=r_id, status="nope", resolution=None))
-
-    def test_resolution_on_nonterminal_dies(self):
-        with TemporaryDirectory() as tmp:
-            d = self.setup_dir(tmp)
-            r_id = self.new(d)
-            with self.assertRaises(SystemExit):
-                self.t.cmd_mv(ns(dir=str(d), id=r_id, status="ongoing", resolution="wontfix"))
-
     def test_new_issue_id_is_string(self):
         with TemporaryDirectory() as tmp:
             d = self.setup_dir(tmp)

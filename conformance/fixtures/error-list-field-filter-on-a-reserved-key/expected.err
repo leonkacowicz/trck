@@ -1,0 +1,1 @@
+error: 'status' is a built-in field; use its flag/verb, not --field/--unset

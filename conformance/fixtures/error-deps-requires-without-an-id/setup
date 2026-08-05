@@ -1,0 +1,2 @@
+# --requires/--blocks scope one issue's graph, so they are meaningless without an id.
+new "Alpha" --id aaaaaaa

@@ -1,0 +1,1 @@
+error: bad priority 'nosuch' (expected one of: urgent, high, medium, low, lowest)

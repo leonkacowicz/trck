@@ -84,13 +84,6 @@ class TestRead(unittest.TestCase):
     # only when the authoring ancestor is NOT itself on screen — where it is, its
     # own row already carries the note and repeating it on every child is noise.
 
-    def inherit_fixture(self, d):
-        """`kid` under `par`, where `par` (not `kid`) authored the dep on `dep`."""
-        dep = self.seed(d, "Dep")
-        par = self.seed(d, "Parent epic", depends=dep)
-        kid = self.seed(d, "Child leaf", parent=par)
-        return dep, par, kid
-
     def paths(self, d, **over):
         """cmd_list in --paths output mode; filters default as in `listing`."""
         a = dict(dir=str(d), status=None, priority=None, label=None,
@@ -153,12 +146,6 @@ class TestRead(unittest.TestCase):
                  flat=False, id=None)
         a.update(over)
         return self.cap(self.t.cmd_list, ns(**a))
-
-    def write_index(self, d, *objs):
-        """Write a raw index.jsonl (for fixtures the verbs refuse to create, e.g.
-        a dangling parent or a parent cycle)."""
-        import json
-        (d / "index.jsonl").write_text("\n".join(json.dumps(o) for o in objs) + "\n")
 
     def test_list_filter_dims_nonmatching_ancestor(self):
         self.t._use_color = lambda: True
@@ -398,14 +385,6 @@ class TestRead(unittest.TestCase):
             # the cone is transitive: both the direct and transitive requirement appear
             self.assertIn(f"#{id2}", out)
             self.assertIn(f"#{id1}", out)
-
-    def test_deps_requires_without_id_is_an_error(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            self.seed(d, "Solo")
-            with self.assertRaises(SystemExit):
-                self.deps(d, None, requires=True)          # cone flags need an id
-
 
 class TestScopedReady(unittest.TestCase):
     """`ready`/`next` take an optional issue id and answer within that subtree: what

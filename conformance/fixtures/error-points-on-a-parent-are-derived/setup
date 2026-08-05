@@ -1,0 +1,4 @@
+# Points roll up from leaves, so setting one on a parent would be an input the rollup
+# immediately overwrites. Refuse rather than accept-and-discard.
+new "Epic" --id aaaaaaa
+new "Kid" --id bbbbbbb --parent aaaaaaa

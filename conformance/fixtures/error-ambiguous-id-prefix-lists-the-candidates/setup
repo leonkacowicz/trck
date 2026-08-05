@@ -1,0 +1,4 @@
+# An ambiguous prefix must name the candidates: the whole point of prefixes is that you
+# retype as little as possible, so the error has to say what to disambiguate with.
+new "Alpha" --id aaaaaaa
+new "Alpha two" --id aaabbbb

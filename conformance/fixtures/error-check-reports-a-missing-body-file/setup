@@ -1,0 +1,2 @@
+# The index names a body file that is not on disk — the tracker is internally inconsistent.
+# `check` is what must notice: a located diagnostic and a nonzero exit, never a traceback.

@@ -1,0 +1,4 @@
+# A cycle closed through three hops is no more legal than a two-node one.
+new "A" --id aaaaaaa
+new "B" --id bbbbbbb --depends aaaaaaa
+new "C" --id ccccccc --depends bbbbbbb

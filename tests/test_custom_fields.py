@@ -28,35 +28,6 @@ class TestCustomFields(unittest.TestCase):
                   field=over.pop("field", None), unset=over.pop("unset", None))
         self.t.cmd_set(args)
 
-    def test_reserved_key_rejected(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d)
-            with self.assertRaises(SystemExit):
-                self.set_(d, id1, field=["status=foo"])
-
-    def test_malformed_key_rejected(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d)
-            for bad in ["Assignee=x", "1tag=x", "a b=x"]:
-                with self.assertRaises(SystemExit):
-                    self.set_(d, id1, field=[bad])
-
-    def test_field_missing_equals_rejected(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d)
-            with self.assertRaises(SystemExit):
-                self.set_(d, id1, field=["justkey"])
-
-    def test_unset_bad_key_rejected(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d)
-            with self.assertRaises(SystemExit):
-                self.set_(d, id1, unset=["status"])
-
     def test_check_passes_with_custom_fields(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})
@@ -142,13 +113,6 @@ class TestCustomFields(unittest.TestCase):
             line2 = next(l for l in out.splitlines() if f"#{id2}" in l)
             self.assertIn("component=ui", line1)
             self.assertNotIn("component=", line2)
-
-    def test_list_field_reserved_key_rejected(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            self.seed(d)
-            with self.assertRaises(SystemExit):
-                self.list_(d, field=["status=backlog"])
 
     def test_show_displays_custom_field(self):
         with TemporaryDirectory() as tmp:

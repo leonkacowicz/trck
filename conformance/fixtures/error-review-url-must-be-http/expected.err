@@ -1,0 +1,1 @@
+error: bad review_url 'notaurl' (must be an absolute http(s) URL)

@@ -1,0 +1,2 @@
+# Exit code only: both engines locate the bad line and refuse, but the parenthetical detail
+# comes from each language's JSON parser and is not a cross-engine contract.
