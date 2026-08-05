@@ -252,21 +252,6 @@ class TestPresentation(unittest.TestCase):
         ctx = self.t.Ctx("/tmp/x", cfg)
         self.assertEqual(self.t.status_icon(ctx, "ongoing"), "◐")
 
-    def test_show_marks_a_pinned_issue(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id_p = self.new(d, "p")
-            id_leaf = self.new(d, "leaf", parent=id_p)
-            self.mv(d, id_p, "done")  # pin p
-            self.assertIn("manual_status", self.show(d, id_p))
-
-    def test_show_omits_manual_status_when_unset(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id_solo = self.new(d, "solo")
-            self.assertNotIn("manual_status", self.show(d, id_solo))
-
-
 class TestPureStatusTransition(unittest.TestCase):
     """`apply_status` is the status transition without the filesystem guard, so a
     pure derivation (`normalize_statuses`) does not depend on the working tree —

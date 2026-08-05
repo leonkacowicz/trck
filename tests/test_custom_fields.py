@@ -114,18 +114,6 @@ class TestCustomFields(unittest.TestCase):
             self.assertIn("component=ui", line1)
             self.assertNotIn("component=", line2)
 
-    def test_show_displays_custom_field(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d)
-            self.set_(d, id1, field=["assignee=alice"])
-            buf = io.StringIO()
-            with redirect_stdout(buf):
-                self.t.cmd_show(ns(dir=str(d), id=id1, json=False))
-            out = buf.getvalue()
-            self.assertIn("assignee", out)
-            self.assertIn("alice", out)
-
     def test_field_filter_composes_with_status(self):
         with TemporaryDirectory() as tmp:
             d = make_tracker(tmp, {})

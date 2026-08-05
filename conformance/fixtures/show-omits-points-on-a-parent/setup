@@ -1,0 +1,4 @@
+# Points roll up from leaves, so on a parent the stored value is not an input and the human
+# view drops the key entirely rather than showing a number nobody set.
+new "Epic" --id aaaaaaa --points 5
+new "Kid" --id bbbbbbb --parent aaaaaaa

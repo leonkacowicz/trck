@@ -1,0 +1,3 @@
+# An empty string is a value, not an absence, so `--field note=` selects the row carrying one
+# rather than matching nothing. (A --show-field column still omits it: showing `note=` on
+# every row would carry no information.)

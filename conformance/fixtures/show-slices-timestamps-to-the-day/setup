@@ -1,0 +1,5 @@
+# Stored stamps are full ISO instants; the human view shows the date only. (--json keeps the
+# instant — that belongs to the --json fixtures.)
+new "Alpha" --id aaaaaaa
+start aaaaaaa
+done aaaaaaa

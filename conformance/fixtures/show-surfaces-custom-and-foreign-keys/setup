@@ -1,0 +1,4 @@
+# Custom fields are listed after the canonical ones, sorted, and an empty-string value is
+# shown (it is a value, not an absent field). A key the engine does not know is surfaced the
+# same way rather than dropped — dropping it would hide data a future version wrote. The key
+# column widens to fit the longest name.

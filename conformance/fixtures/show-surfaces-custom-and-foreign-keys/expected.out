@@ -1,0 +1,15 @@
+             id  aaaaaaa
+           slug  a
+          title  A
+         status  backlog
+       priority  medium
+         points  1
+        created  2026-01-01
+           area  core
+from_the_future  a key this engine has never heard of
+           note  
+
+--- body ---
+
+# A
+

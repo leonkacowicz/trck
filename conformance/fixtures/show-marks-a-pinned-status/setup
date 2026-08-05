@@ -1,0 +1,2 @@
+# A parent whose status was set by hand carries manual_status, and show surfaces it — that
+# pin is why the rollup is not overwriting the status, so it has to be visible.

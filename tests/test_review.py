@@ -218,16 +218,6 @@ class TestReviewUrlField(Base):
         self.assertIsNotNone(msg)
         self.assertIn("built-in", msg)
 
-    def test_show_review_urlints_the_pr(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            a = self.seed(d, "A", review_url=URL)
-            buf = io.StringIO()
-            with redirect_stdout(buf):
-                self.t.cmd_show(ns(dir=str(d), id=a, json=False))
-            self.assertIn(URL, buf.getvalue())
-
-
 class TestReviewUrlCli(Base):
     def test_every_entry_point_rejects_a_bad_url(self):
         with TemporaryDirectory() as tmp:

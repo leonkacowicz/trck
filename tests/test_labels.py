@@ -61,19 +61,6 @@ class TestLabels(unittest.TestCase):
                                    priority=None, parent=None, label=None))
             self.assertIn("backend", buf.getvalue())
 
-    # -- show ----------------------------------------------------------------
-    def test_show_displays_labels(self):
-        with TemporaryDirectory() as tmp:
-            d = make_tracker(tmp, {})
-            id1 = self.seed(d)
-            self.label(d, id1, add=["docs"])
-            buf = io.StringIO()
-            with redirect_stdout(buf):
-                self.t.cmd_show(ns(dir=str(d), id=id1, json=False))
-            out = buf.getvalue()
-            self.assertIn("labels", out)
-            self.assertIn("docs", out)
-
     # -- summary -------------------------------------------------------------
     def test_summary_shows_child_labels(self):
         with TemporaryDirectory() as tmp:

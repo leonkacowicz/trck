@@ -1,0 +1,20 @@
+           id  aaaaaaa
+         slug  epic
+        title  Epic
+       status  backlog
+     priority  medium
+      created  2026-01-01
+
+--- body ---
+
+# Epic
+
+## Summary
+<!-- What needs doing and why. For an epic, link the spec instead of re-narrating it. -->
+
+## Acceptance criteria
+- [ ]
+
+## Notes
+<!-- Context, links to files/commits, open questions, decisions. -->
+

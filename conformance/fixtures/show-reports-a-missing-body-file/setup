@@ -1,0 +1,2 @@
+# The index names a body file that is not on disk. show must report it the way the mutating
+# verbs do — naming the issue and the path — not surface a raw io error or a traceback.

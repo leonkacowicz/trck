@@ -1,0 +1,23 @@
+           id  aaaaaaa
+         slug  alpha
+        title  Alpha
+       status  done
+     priority  medium
+       points  1
+      created  2026-01-01
+      started  2026-01-01
+       closed  2026-01-01
+
+--- body ---
+
+# Alpha
+
+## Summary
+<!-- What needs doing and why. For an epic, link the spec instead of re-narrating it. -->
+
+## Acceptance criteria
+- [ ]
+
+## Notes
+<!-- Context, links to files/commits, open questions, decisions. -->
+
