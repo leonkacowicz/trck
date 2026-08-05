@@ -5,10 +5,10 @@
 
 | State | Count |
 |---|---:|
-| backlog | 45 |
+| backlog | 44 |
 | ongoing | 4 |
 | in-review | 0 |
-| done | 159 |
+| done | 160 |
 | **total** | **208** |
 
 ## Hierarchies
@@ -140,7 +140,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#kaqhtfc list/tree: drop the tree alias (nested forest is list's default)](items/kaqhtfc-list-tree-drop-the-tree-alias-nested-forest-is-list-s-default.md) _(backlog)_
 - [x] [#v8tmkrt json: shared emit_json stdout seam + --json flag plumbing](items/v8tmkrt-json-shared-emit-json-stdout-seam-json-flag-plumbing.md)
 
-### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 90% (96/107 pts · 32/35 done) · _medium_ · ongoing
+### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 93% (99/107 pts · 33/35 done) · _medium_ · ongoing
 
 - [x] [#2w5panf rust: diff and changelog](items/2w5panf-rust-diff-and-changelog.md)
 - [x] [#4susb3g rust: query verbs — list, tree, show](items/4susb3g-rust-query-verbs-list-tree-show.md)
@@ -168,7 +168,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#n8v8qba rust: workspace, CI, and the conformance runner](items/n8v8qba-rust-workspace-ci-and-the-conformance-runner.md)
 - [x] [#qgpk65t vocabulary: fix the four statuses in code, not in config](items/qgpk65t-vocabulary-fix-the-four-statuses-in-code-not-in-config.md)
 - [x] [#qktc8z7 rust: the git-integration verbs — hooks, merge drivers, setup](items/qktc8z7-rust-the-git-integration-verbs-hooks-merge-drivers-setup.md)
-- [ ] [#rbast9r repo: migrate an existing tracker to the fixed vocabulary and the new format](items/rbast9r-repo-migrate-an-existing-tracker-to-the-fixed-vocabulary-and-the-new-format.md) _(backlog)_
+- [x] [#rbast9r repo: migrate an existing tracker to the fixed vocabulary and the new format](items/rbast9r-repo-migrate-an-existing-tracker-to-the-fixed-vocabulary-and-the-new-format.md)
 - [x] [#s5uw8mx rust: issue model, index I/O and canonical serialisation](items/s5uw8mx-rust-issue-model-index-i-o-and-canonical-serialisation.md)
 - [x] [#uq2zc2p conformance: convert the deps gutter tests](items/uq2zc2p-conformance-convert-the-deps-gutter-tests.md)
 - [x] [#xm6h2qn conformance: convert the command-output tests](items/xm6h2qn-conformance-convert-the-command-output-tests.md)
