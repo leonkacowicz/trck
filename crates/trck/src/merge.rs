@@ -298,3 +298,194 @@ fn merge_one(iid: &str, base: &Row, a: &Row, b: &Row, conflicts: &mut Vec<String
     }
     out
 }
+
+#[cfg(test)]
+mod tests {
+    // Tests assert; that is their job. The crate denies unwrap/expect/panic because a
+    // malformed tracker must produce a diagnostic rather than a stack trace, but a test
+    // that cannot panic cannot fail.
+    #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
+    use super::*;
+
+    fn row(id: &str, extra: &str) -> Json {
+        let body = if extra.is_empty() {
+            String::new()
+        } else {
+            format!(", {extra}")
+        };
+        crate::json::parse(&format!(
+            r#"{{"id": "{id}", "slug": "s", "title": "T", "status": "backlog",
+                "priority": "medium"{body}}}"#
+        ))
+        .expect("fixture parses")
+    }
+
+    fn merge(base: &[Json], a: &[Json], b: &[Json]) -> (Vec<Issue>, Vec<String>) {
+        merge_rows(base, a, b).expect("merges")
+    }
+
+    /// The invariant the whole design rests on: `%A`/`%B` are handed over in opposite order
+    /// by `git merge` and `git rebase` on the same branch, so a rule that is not symmetric
+    /// silently produces a different result depending on how you integrated.
+    fn assert_symmetric(base: &[Json], a: &[Json], b: &[Json]) {
+        let (rows_ab, conf_ab) = merge(base, a, b);
+        let (rows_ba, conf_ba) = merge(base, b, a);
+        let canon = |rows: &[Issue]| {
+            rows.iter()
+                .map(|r| r.to_canonical().to_json())
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(
+            canon(&rows_ab),
+            canon(&rows_ba),
+            "rows differ by operand order"
+        );
+        assert_eq!(conf_ab, conf_ba, "conflicts differ by operand order");
+    }
+
+    #[test]
+    fn disjoint_creations_keep_both_rows() {
+        let (rows, conflicts) = merge(&[], &[row("aaaaaaa", "")], &[row("bbbbbbb", "")]);
+        assert!(conflicts.is_empty(), "{conflicts:?}");
+        assert_eq!(
+            rows.iter().map(|r| r.id.as_str()).collect::<Vec<_>>(),
+            ["aaaaaaa", "bbbbbbb"]
+        );
+        assert_symmetric(&[], &[row("aaaaaaa", "")], &[row("bbbbbbb", "")]);
+    }
+
+    #[test]
+    fn a_lifecycle_divergence_conflicts_as_one_unit() {
+        let base = [row("aaaaaaa", "")];
+        let a = [row("aaaaaaa", r#""status": "ongoing""#)];
+        let b = [row(
+            "aaaaaaa",
+            r#""status": "done", "closed": "2026-01-01T00:00:00Z""#,
+        )];
+        let (_, conflicts) = merge(&base, &a, &b);
+        assert_eq!(conflicts.len(), 1, "{conflicts:?}");
+        assert!(conflicts[0].contains("lifecycle status"), "{conflicts:?}");
+        // Neither side is named: those words reverse between merge and rebase.
+        for word in ["ours", "theirs", "yours"] {
+            assert!(!conflicts[0].to_lowercase().contains(word), "{conflicts:?}");
+        }
+        assert_symmetric(&base, &a, &b);
+    }
+
+    #[test]
+    fn one_sided_lifecycle_change_is_taken_not_conflicted() {
+        let base = [row("aaaaaaa", "")];
+        let a = [row("aaaaaaa", r#""status": "ongoing""#)];
+        let (rows, conflicts) = merge(&base, &a, &base);
+        assert!(conflicts.is_empty(), "{conflicts:?}");
+        assert_eq!(rows[0].status, "ongoing");
+        assert_symmetric(&base, &a, &base);
+    }
+
+    #[test]
+    fn a_removal_on_one_side_wins_when_the_other_left_it_alone() {
+        let base = [row("aaaaaaa", ""), row("bbbbbbb", "")];
+        let a = [row("aaaaaaa", "")];
+        let (rows, conflicts) = merge(&base, &a, &base);
+        assert!(conflicts.is_empty(), "{conflicts:?}");
+        assert_eq!(rows.len(), 1, "the deletion should have won");
+        assert_symmetric(&base, &a, &base);
+    }
+
+    #[test]
+    fn a_removal_against_a_modification_conflicts() {
+        let base = [row("aaaaaaa", ""), row("bbbbbbb", "")];
+        let a = [row("aaaaaaa", "")]; // removed bbbbbbb
+        let b = [row("aaaaaaa", ""), row("bbbbbbb", r#""priority": "high""#)];
+        let (_, conflicts) = merge(&base, &a, &b);
+        assert_eq!(conflicts.len(), 1, "{conflicts:?}");
+        assert!(
+            conflicts[0].contains("removed on one side"),
+            "{conflicts:?}"
+        );
+        assert_symmetric(&base, &a, &b);
+    }
+
+    #[test]
+    fn label_sets_union_additions_and_honour_removals() {
+        let base = [row("aaaaaaa", r#""labels": ["keep", "drop"]"#)];
+        let a = [row("aaaaaaa", r#""labels": ["keep", "drop", "from-a"]"#)];
+        let b = [row("aaaaaaa", r#""labels": ["keep", "from-b"]"#)]; // dropped "drop"
+        let (rows, conflicts) = merge(&base, &a, &b);
+        assert!(conflicts.is_empty(), "{conflicts:?}");
+        assert_eq!(rows[0].labels, ["from-a", "from-b", "keep"]);
+        assert_symmetric(&base, &a, &b);
+    }
+
+    #[test]
+    fn created_takes_the_earliest_of_the_two() {
+        let base = [row("aaaaaaa", "")];
+        let a = [row("aaaaaaa", r#""created": "2026-05-05T00:00:00Z""#)];
+        let b = [row("aaaaaaa", r#""created": "2026-01-01T00:00:00Z""#)];
+        let (rows, conflicts) = merge(&base, &a, &b);
+        assert!(conflicts.is_empty(), "{conflicts:?}");
+        assert_eq!(rows[0].created.as_deref(), Some("2026-01-01T00:00:00Z"));
+        assert_symmetric(&base, &a, &b);
+    }
+
+    #[test]
+    fn custom_fields_merge_per_key_so_both_branches_additions_survive() {
+        let base = [row("aaaaaaa", "")];
+        let a = [row("aaaaaaa", r#""assignee": "ada""#)];
+        let b = [row("aaaaaaa", r#""component": "core""#)];
+        let (rows, conflicts) = merge(&base, &a, &b);
+        assert!(conflicts.is_empty(), "{conflicts:?}");
+        assert_eq!(
+            rows[0].extra.get("assignee").and_then(Json::as_str),
+            Some("ada")
+        );
+        assert_eq!(
+            rows[0].extra.get("component").and_then(Json::as_str),
+            Some("core")
+        );
+        assert_symmetric(&base, &a, &b);
+    }
+
+    #[test]
+    fn a_derived_parent_divergence_is_not_a_conflict() {
+        // Both sides recomputed the epic's status from different child sets. That is not two
+        // people disagreeing, so it must not surface as a conflict the user has to resolve.
+        let base = [row("aaaaaaa", ""), row("bbbbbbb", r#""parent": "aaaaaaa""#)];
+        let a = [
+            row("aaaaaaa", r#""status": "ongoing""#),
+            row("bbbbbbb", r#""parent": "aaaaaaa", "status": "ongoing""#),
+        ];
+        let b = [
+            row(
+                "aaaaaaa",
+                r#""status": "done", "closed": "2026-01-01T00:00:00Z""#,
+            ),
+            row(
+                "bbbbbbb",
+                r#""parent": "aaaaaaa", "status": "done", "closed": "2026-01-01T00:00:00Z""#,
+            ),
+        ];
+        let (_, conflicts) = merge(&base, &a, &b);
+        let on_parent: Vec<&String> = conflicts
+            .iter()
+            .filter(|c| c.starts_with("#aaaaaaa:"))
+            .collect();
+        assert!(
+            on_parent.is_empty(),
+            "derived parent conflict surfaced: {on_parent:?}"
+        );
+    }
+
+    #[test]
+    fn conflict_ids_reads_the_ids_back_out_of_the_messages() {
+        let conflicts = vec![
+            "#aaaaaaa: lifecycle status is 'a' on one side and 'b' on the other".to_string(),
+            "not a row message".to_string(),
+        ];
+        assert_eq!(
+            conflict_ids(&conflicts),
+            BTreeSet::from(["aaaaaaa".to_string()])
+        );
+    }
+}
