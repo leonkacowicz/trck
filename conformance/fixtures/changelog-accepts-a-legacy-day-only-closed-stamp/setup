@@ -1,0 +1,2 @@
+# Older trackers stamped `closed` with a bare date. The engine no longer writes those, but it
+# must still read them rather than skip or crash on the rows an old version left behind.

@@ -1,0 +1,2 @@
+# The boundary is >=, so an issue closed at exactly the cutoff instant is included. Picking the
+# previous release's timestamp therefore cannot drop the issue that ended it.

@@ -1,0 +1,1 @@
+# Legacy day-only stamp

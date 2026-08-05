@@ -1,0 +1,2 @@
+# A window with nothing in it still prints its header and an explicit placeholder, so an empty
+# release note is visibly empty rather than a truncated file.

@@ -1,0 +1,2 @@
+# The cutoff is the whole input; a value that cannot be parsed has to be reported rather than
+# silently treated as "the beginning of time" and dumping everything.

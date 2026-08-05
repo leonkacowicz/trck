@@ -1,0 +1,2 @@
+# A bare date means midnight that day, so anything closed during the day is in and the previous
+# day is out.

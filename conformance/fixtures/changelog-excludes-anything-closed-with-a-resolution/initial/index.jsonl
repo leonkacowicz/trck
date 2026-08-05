@@ -1,0 +1,4 @@
+{"id": "aaaaaaa", "slug": "p", "title": "Plain ship", "status": "done", "priority": "medium", "created": "2026-01-01T00:00:00Z", "closed": "2026-03-05T10:00:00Z"}
+{"id": "bbbbbbb", "slug": "s", "title": "Superseded", "status": "done", "priority": "medium", "created": "2026-01-01T00:00:00Z", "closed": "2026-03-05T10:00:00Z", "resolution": "superseded"}
+{"id": "ccccccc", "slug": "d", "title": "Duplicate", "status": "done", "priority": "medium", "created": "2026-01-01T00:00:00Z", "closed": "2026-03-05T10:00:00Z", "resolution": "duplicate"}
+{"id": "ddddddd", "slug": "w", "title": "Wontfix", "status": "done", "priority": "medium", "created": "2026-01-01T00:00:00Z", "closed": "2026-03-05T10:00:00Z", "resolution": "wontfix"}

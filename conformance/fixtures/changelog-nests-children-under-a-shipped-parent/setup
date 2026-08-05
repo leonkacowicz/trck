@@ -1,0 +1,2 @@
+# A shipped epic carries its shipped children as an indented group, so the notes read as one
+# delivery rather than three unrelated lines. Children are newest-first among themselves.
