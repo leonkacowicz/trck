@@ -15,8 +15,8 @@ use crate::graph::{Graph, priority_rank};
 use crate::gutter;
 use crate::issue::{CANON_KEYS, Issue, check_field_key};
 use crate::render::{
-    Annotation, LANE_PALETTE, RowOpts, field_value, hl_id, lane_palette_index, paint, render_rows,
-    status_codes, status_icon, unique_prefix_lens,
+    Annotation, LANE_PALETTE, RowOpts, field_value, field_value_raw, hl_id, lane_palette_index,
+    paint, render_rows, status_codes, status_icon, unique_prefix_lens,
 };
 use crate::verbs::{issue_path, load_rows, resolve_ref};
 use std::collections::{BTreeMap, BTreeSet};
@@ -153,7 +153,7 @@ pub(crate) fn cmd_list(ctx: &Ctx, opts: &ListOpts) -> Result<String, String> {
             && (!prune_settled || !settled(r))
             && field_filters
                 .iter()
-                .all(|(k, v)| field_value(r, k).as_ref() == Some(v))
+                .all(|(k, v)| field_value_raw(r, k).as_ref() == Some(v))
     };
 
     let sort = opts.sort.unwrap_or("created");
@@ -540,7 +540,7 @@ pub(crate) fn cmd_show(ctx: &Ctx, token: &str) -> Result<String, String> {
     let width = keys.iter().map(|k| k.chars().count()).max().unwrap_or(0);
     let shown: Vec<(String, String)> = keys
         .iter()
-        .filter_map(|k| field_value(row, k).map(|v| (k.clone(), v)))
+        .filter_map(|k| field_value_raw(row, k).map(|v| (k.clone(), v)))
         .collect();
     let mut out: Vec<String> = Vec::new();
     for (k, v) in &shown {
@@ -554,8 +554,14 @@ pub(crate) fn cmd_show(ctx: &Ctx, token: &str) -> Result<String, String> {
     out.push(String::new());
     out.push("--- body ---".into());
     out.push(String::new());
-    let body = std::fs::read_to_string(issue_path(ctx, row))
-        .map_err(|e| format!("{}: {e}", issue_path(ctx, row).display()))?;
+    // Same wording as the mutating verbs' guard: a row whose body has gone missing is one
+    // inconsistency, and it should read the same whichever verb runs into it. Passing the
+    // raw io error through instead would name the file but not the issue.
+    let path = issue_path(ctx, row);
+    if !path.exists() {
+        return Err(format!("file missing for #{}: {}", row.id, path.display()));
+    }
+    let body = std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
     out.push(body);
     Ok(out.join("\n"))
 }

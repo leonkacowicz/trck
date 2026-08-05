@@ -7,7 +7,7 @@
 
 use crate::config::{self, PRIORITIES, is_terminal};
 use crate::graph::Graph;
-use crate::issue::Issue;
+use crate::issue::{CANON_KEYS, Issue};
 use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::io::IsTerminal;
@@ -394,6 +394,23 @@ pub(crate) fn python_list(items: &[String]) -> String {
             .collect::<Vec<_>>()
             .join(", ")
     )
+}
+
+/// One field value, built-in or custom, or `None` when the field is genuinely absent.
+///
+/// An **empty string is a value**, not an absence: `--field note=` sets one and the index
+/// keeps it, so `show` must display it and a `--field note=` filter must match it. That is
+/// the difference from [`field_value`], which additionally drops empties because a column
+/// showing `note=` for every row carries no information.
+pub(crate) fn field_value_raw(r: &Issue, name: &str) -> Option<String> {
+    match name {
+        other if !CANON_KEYS.contains(&other) => r.extra.get(other).and_then(|v| match v {
+            crate::json::Json::String(s) => Some(s.clone()),
+            crate::json::Json::Null => None,
+            v => Some(v.to_json()),
+        }),
+        _ => field_value(r, name),
+    }
 }
 
 /// One displayable field value, built-in or custom, or `None` when unset or empty.
