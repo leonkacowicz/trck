@@ -20,6 +20,7 @@ mod cli;
 mod config;
 mod discovery;
 mod graph;
+mod gutter;
 mod id;
 mod index;
 mod issue;

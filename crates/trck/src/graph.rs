@@ -311,6 +311,50 @@ impl Graph {
         out.into_iter().map(|r| r.id.clone()).collect()
     }
 
+    /// The ids in an issue's directed dependency line: itself, plus — when `up` —
+    /// everything it transitively depends on, and — when `down` — everything that
+    /// transitively depends on it.
+    ///
+    /// Excludes "cousins" joined only through a shared neighbour: unlike a weakly
+    /// connected component, the two sweeps never cross direction. Containment is
+    /// followed too, so `up` from a parent descends its whole subtree (what it is
+    /// waiting on) and `down` from a child climbs to the parents that contain it.
+    /// Siblings stay cousins — they meet only at the parent, and neither sweep turns
+    /// around there.
+    pub(crate) fn dependency_line(&self, id: &str, up: bool, down: bool) -> BTreeSet<String> {
+        let mut seen: BTreeSet<String> = BTreeSet::from([id.to_string()]);
+        if up {
+            let mut stack = vec![id.to_string()];
+            while let Some(node) = stack.pop() {
+                let mut targets = self.requires_of(&node);
+                targets.extend(self.children_of(&node).iter().cloned());
+                targets.extend(self.lifted_deps(&node));
+                for t in targets {
+                    if self.get(&t).is_some() && seen.insert(t.clone()) {
+                        stack.push(t);
+                    }
+                }
+            }
+        }
+        if down {
+            let mut stack = vec![id.to_string()];
+            while let Some(node) = stack.pop() {
+                let mut sources: Vec<String> = self.dependents_of(&node).to_vec();
+                if let Some(p) = self.get(&node).and_then(|r| r.parent.clone())
+                    && self.get(&p).is_some()
+                {
+                    sources.push(p);
+                }
+                for s in sources {
+                    if seen.insert(s.clone()) {
+                        stack.push(s);
+                    }
+                }
+            }
+        }
+        seen
+    }
+
     // --- cycles -------------------------------------------------------------- //
 
     /// Everything effectively depended on, transitively, by anything in `start`: from

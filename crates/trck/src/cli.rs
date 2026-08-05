@@ -11,7 +11,7 @@
 
 use crate::config;
 use crate::discovery::Ctx;
-use crate::query::{self, ListOpts};
+use crate::query::{self, DepsOpts, ListOpts};
 use crate::verbs::{self, NewOpts, SetOpts};
 
 /// Verbs the Python engine has, so `--help` is honest about what is missing.
@@ -223,6 +223,20 @@ const KNOWN_FLAGS: &[(&str, usize, &[&str])] = &[
     ),
     ("show", 0, &["--dir", "--json"]),
     ("ready", 0, &["--dir", "--next", "--json"]),
+    (
+        "deps",
+        0,
+        &[
+            "--dir",
+            "--requires",
+            "--blocks",
+            "--full",
+            "--omit-done",
+            "--include-done-chains",
+            "--fanout",
+            "--json",
+        ],
+    ),
     ("next", 0, &["--dir", "--json"]),
 ];
 
@@ -359,6 +373,19 @@ fn dispatch(raw: &[String]) -> Result<String, String> {
                 args.positional_at(0),
                 verb == "next" || args.has("--next"),
             )
+        }
+        "deps" => {
+            let ctx = context(&args)?;
+            let opts = DepsOpts {
+                root: args.positional_at(0),
+                requires: args.has("--requires"),
+                blocks: args.has("--blocks"),
+                full: args.has("--full"),
+                omit_done: args.has("--omit-done"),
+                include_done_chains: args.has("--include-done-chains"),
+                fanout: args.has("--fanout"),
+            };
+            query::cmd_deps(&ctx, &opts)
         }
         "show" => {
             let ctx = context(&args)?;
@@ -561,9 +588,11 @@ mod tests {
 
     #[test]
     fn an_unimplemented_verb_says_so_rather_than_guessing() {
-        // `deps` is still #bdmgj7r's. Saying so beats producing something approximate:
-        // a half-implemented verb is what would turn the conformance pass rate into a lie.
-        let err = dispatch(&["deps".to_string()]).expect_err("not implemented");
+        // `changelog` is still unported. Saying so beats producing something
+        // approximate: a half-implemented verb is what would turn the conformance pass
+        // rate into a lie. (This named `list`, then `deps`, as each landed — which is
+        // the intended churn: the test tracks the frontier.)
+        let err = dispatch(&["changelog".to_string()]).expect_err("not implemented");
         assert!(err.contains("not implemented"), "{err}");
         let unknown = usage_error(&parse_args(&["nonesuch".to_string()]));
         assert!(unknown.is_some_and(|m| m.contains("unknown verb")));

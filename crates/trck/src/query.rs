@@ -12,9 +12,11 @@
 use crate::config::is_terminal;
 use crate::discovery::Ctx;
 use crate::graph::{Graph, priority_rank};
+use crate::gutter;
 use crate::issue::{CANON_KEYS, Issue};
 use crate::render::{
-    Annotation, RowOpts, field_value, hl_id, paint, render_rows, unique_prefix_lens,
+    Annotation, RowOpts, field_value, hl_id, paint, render_rows, status_codes, status_icon,
+    unique_prefix_lens,
 };
 use crate::verbs::{issue_path, load_rows, resolve_ref};
 use std::collections::{BTreeMap, BTreeSet};
@@ -345,6 +347,165 @@ pub(crate) fn cmd_ready(ctx: &Ctx, root: Option<&str>, only_next: bool) -> Resul
         abbrev: Some(abbrev),
     };
     Ok(render_rows(&g, &rows, &row_opts).join("\n"))
+}
+
+/// Options `deps` accepts.
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "mirrors the CLI flags one-to-one"
+)]
+#[derive(Default)]
+pub(crate) struct DepsOpts<'a> {
+    pub(crate) root: Option<&'a str>,
+    pub(crate) requires: bool,
+    pub(crate) blocks: bool,
+    pub(crate) full: bool,
+    pub(crate) omit_done: bool,
+    pub(crate) include_done_chains: bool,
+    pub(crate) fanout: bool,
+}
+
+pub(crate) fn cmd_deps(ctx: &Ctx, opts: &DepsOpts) -> Result<String, String> {
+    let rows = load_rows(ctx)?;
+    let root = opts.root.map(|t| resolve_ref(&rows, t)).transpose()?;
+    if (opts.requires || opts.blocks) && root.is_none() {
+        return Err("deps: --requires/--blocks scope one issue's graph — pass an issue id".into());
+    }
+    let abbrev = unique_prefix_lens(rows.iter().map(|r| r.id.as_str()));
+    let g = Graph::new(rows);
+
+    // Default (neither flag) shows both cones; one flag scopes to that direction.
+    let up = opts.requires || !opts.blocks;
+    let down = opts.blocks || !opts.requires;
+
+    let ids: BTreeSet<String> = if let Some(id) = &root {
+        let has_edges = !g.requires_of(id).is_empty()
+            || !g.dependents_of(id).is_empty()
+            || !g.children_of(id).is_empty()
+            || g.get(id).and_then(|r| r.parent.clone()).is_some();
+        if !has_edges {
+            if opts.omit_done && g.get(id).is_some_and(|r| is_terminal(&r.status)) {
+                return Ok(String::new());
+            }
+            let Some(row) = g.get(id) else {
+                return Err(format!("no issue matching '{id}'"));
+            };
+            return Ok(format!(
+                "{}  (no dependencies)",
+                node_label(&g, row, true, Some(&abbrev))
+            ));
+        }
+        if opts.full {
+            // The focal node's whole component, computed over *every* issue — not over
+            // the overview set, which drops the components the bare view suppresses and
+            // could therefore lose the focal node itself.
+            let all: BTreeSet<String> = g.rows.iter().map(|r| r.id.clone()).collect();
+            let edges = gutter::drawn_edges(&g, &all, false, false);
+            gutter::components(&all, &edges)
+                .into_iter()
+                .find(|c| c.contains(id))
+                .unwrap_or_default()
+                .into_iter()
+                .collect()
+        } else {
+            g.dependency_line(id, up, down)
+        }
+    } else {
+        let ids = gutter::overview_ids(&g);
+        if ids.is_empty() {
+            return Ok("no dependencies recorded yet".into());
+        }
+        ids
+    };
+    let ids = gutter::filter_done(
+        &g,
+        &ids,
+        opts.omit_done,
+        opts.include_done_chains,
+        root.is_none(),
+    );
+
+    let rendered = gutter::render_graph(&g, &ids, opts.fanout);
+    let width = rendered
+        .iter()
+        .flatten()
+        .map(|(_, gut, _)| gut.chars().count())
+        .max()
+        .unwrap_or(0);
+    let mut out: Vec<String> = Vec::new();
+    for row in &rendered {
+        let Some((iid, gut, owners)) = row else {
+            out.push(String::new());
+            continue;
+        };
+        let focal = root.as_deref() == Some(iid.as_str());
+        // A left-margin caret marks the focal row; a blank 2-column margin on every
+        // other row keeps the graph aligned. The whole-graph view has no focal node.
+        let marker = match &root {
+            None => String::new(),
+            Some(_) if focal => format!("{} ", paint("▸", &["bold"])),
+            Some(_) => "  ".to_string(),
+        };
+        let painted = paint_lanes(&g, gut, owners);
+        let Some(row) = g.get(iid) else { continue };
+        out.push(format!(
+            "{marker}{painted}{}  {}",
+            " ".repeat(width - gut.chars().count()),
+            node_label(&g, row, focal, Some(&abbrev))
+        ));
+    }
+    Ok(out.join("\n"))
+}
+
+/// A gutter row with each lane coloured by the status of the issue it heads to, and an
+/// inferred containment edge dimmed so it reads as structure rather than an authored
+/// constraint.
+fn paint_lanes(g: &Graph, gut: &str, owners: &[gutter::LaneOwner]) -> String {
+    gut.chars()
+        .zip(owners.iter())
+        .map(|(ch, owner)| match owner {
+            None => ch.to_string(),
+            Some((id, kind)) => {
+                let mut codes = g
+                    .get(id)
+                    .map(|r| status_codes(&r.status))
+                    .unwrap_or_default();
+                if *kind == gutter::EdgeKind::Child || *kind == gutter::EdgeKind::Inherited {
+                    codes = vec!["dim"];
+                }
+                paint(&ch.to_string(), &codes)
+            }
+        })
+        .collect()
+}
+
+/// One node's label in the graph: id, status icon, title, and a derived epic marker.
+///
+/// `·epic·` comes from the hierarchy, not from a stored kind — an issue with children
+/// *is* an epic, and a declared marker only drifts from that.
+fn node_label(
+    g: &Graph,
+    r: &Issue,
+    focal: bool,
+    abbrev: Option<&BTreeMap<String, usize>>,
+) -> String {
+    let tag = if g.children_of(&r.id).is_empty() {
+        String::new()
+    } else {
+        " ·epic·".to_string()
+    };
+    let labels = if r.labels.is_empty() {
+        String::new()
+    } else {
+        paint(&format!(" [{}]", r.labels.join(" ")), &["dim"])
+    };
+    let emph: &[&str] = if focal { &["bold"] } else { &[] };
+    format!(
+        "{} {} {}{tag}{labels}",
+        hl_id(&r.id, abbrev, true),
+        paint(status_icon(&r.status), &status_codes(&r.status)),
+        paint(&r.title, emph)
+    )
 }
 
 pub(crate) fn cmd_show(ctx: &Ctx, token: &str) -> Result<String, String> {
