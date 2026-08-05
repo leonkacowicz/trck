@@ -1,0 +1,3 @@
+# Most issues are their own maximum. Emitting nulls everywhere would suggest the fields mean
+# something on every row; the human view prints nothing there either.
+new "Alone" --id aaaaaaa --priority high

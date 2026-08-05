@@ -1,0 +1,1 @@
+error: deps --json needs an issue id (the whole-graph view is an edge list, a different shape from one issue's cones)

@@ -1,0 +1,22 @@
+{
+  "id": "aaaaaaa",
+  "slug": "a",
+  "title": "A",
+  "status": "backlog",
+  "priority": "medium",
+  "points": 1,
+  "parent": null,
+  "labels": [],
+  "depends_on": [],
+  "spec": null,
+  "review_url": null,
+  "created": "2026-01-01T00:00:00Z",
+  "started": null,
+  "closed": null,
+  "resolution": null,
+  "manual_status": false,
+  "area": "core",
+  "from_the_future": "a key this engine has never heard of",
+  "note": "",
+  "body": "# A\n"
+}

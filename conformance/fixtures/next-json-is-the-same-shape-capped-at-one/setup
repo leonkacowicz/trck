@@ -1,0 +1,2 @@
+new "First" --id aaaaaaa --priority urgent
+new "Second" --id bbbbbbb --priority high

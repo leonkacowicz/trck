@@ -1,0 +1,20 @@
+[
+  {
+    "id": "ddddddd",
+    "slug": "in-subtree-free",
+    "title": "In subtree, free",
+    "status": "backlog",
+    "priority": "medium",
+    "points": 1,
+    "parent": "bbbbbbb",
+    "labels": [],
+    "depends_on": [],
+    "spec": null,
+    "review_url": null,
+    "created": "2026-01-01T00:00:00Z",
+    "started": null,
+    "closed": null,
+    "resolution": null,
+    "manual_status": false
+  }
+]

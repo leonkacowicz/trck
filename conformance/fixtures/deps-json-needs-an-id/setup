@@ -1,0 +1,3 @@
+# The whole-graph view is an edge list, a different shape from one issue's cones, so it is
+# refused rather than returned under the same key names.
+new "Solo" --id aaaaaaa

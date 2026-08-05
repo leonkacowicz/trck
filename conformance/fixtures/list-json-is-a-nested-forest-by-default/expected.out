@@ -1,0 +1,89 @@
+[
+  {
+    "id": "aaaaaaa",
+    "slug": "epic",
+    "title": "Epic",
+    "status": "backlog",
+    "priority": "medium",
+    "points": 1,
+    "parent": null,
+    "labels": [],
+    "depends_on": [],
+    "spec": null,
+    "review_url": null,
+    "created": "2026-01-01T00:00:00Z",
+    "started": null,
+    "closed": null,
+    "resolution": null,
+    "manual_status": false,
+    "context": false,
+    "children": [
+      {
+        "id": "bbbbbbb",
+        "slug": "kid",
+        "title": "Kid",
+        "status": "backlog",
+        "priority": "medium",
+        "points": 1,
+        "parent": "aaaaaaa",
+        "labels": [],
+        "depends_on": [
+          "ddddddd"
+        ],
+        "spec": null,
+        "review_url": null,
+        "created": "2026-01-01T00:00:00Z",
+        "started": null,
+        "closed": null,
+        "resolution": null,
+        "manual_status": false,
+        "area": "core",
+        "context": false,
+        "children": [
+          {
+            "id": "ccccccc",
+            "slug": "grandkid",
+            "title": "Grandkid",
+            "status": "backlog",
+            "priority": "medium",
+            "points": 1,
+            "parent": "bbbbbbb",
+            "labels": [],
+            "depends_on": [],
+            "spec": null,
+            "review_url": null,
+            "created": "2026-01-01T00:00:00Z",
+            "started": null,
+            "closed": null,
+            "resolution": null,
+            "manual_status": false,
+            "context": false,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ddddddd",
+    "slug": "blocker",
+    "title": "Blocker",
+    "status": "backlog",
+    "priority": "medium",
+    "points": 1,
+    "parent": null,
+    "labels": [
+      "urgent"
+    ],
+    "depends_on": [],
+    "spec": null,
+    "review_url": null,
+    "created": "2026-01-01T00:00:00Z",
+    "started": null,
+    "closed": null,
+    "resolution": null,
+    "manual_status": false,
+    "context": false,
+    "children": []
+  }
+]

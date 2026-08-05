@@ -1,0 +1,18 @@
+{
+  "id": "aaaaaaa",
+  "slug": "epic",
+  "title": "Epic",
+  "status": "backlog",
+  "priority": "medium",
+  "parent": null,
+  "labels": [],
+  "depends_on": [],
+  "spec": null,
+  "review_url": null,
+  "created": "2026-01-01T00:00:00Z",
+  "started": null,
+  "closed": null,
+  "resolution": null,
+  "manual_status": false,
+  "body": "# Epic\n\n## Summary\n<!-- What needs doing and why. For an epic, link the spec instead of re-narrating it. -->\n\n## Acceptance criteria\n- [ ]\n\n## Notes\n<!-- Context, links to files/commits, open questions, decisions. -->\n"
+}

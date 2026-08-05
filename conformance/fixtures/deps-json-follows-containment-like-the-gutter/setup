@@ -1,0 +1,4 @@
+# The inferred parent->child edges count here too, so an epic's cone lists the work it
+# contains rather than coming back empty.
+new "Epic" --id aaaaaaa
+new "Kid" --id bbbbbbb --parent aaaaaaa

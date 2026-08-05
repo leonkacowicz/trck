@@ -1,0 +1,4 @@
+# Same derivation rule as the human view: on a parent, points roll up from leaves and the
+# stored value is not an input, so the key is absent rather than misleading.
+new "Epic" --id aaaaaaa --points 5
+new "Kid" --id bbbbbbb --parent aaaaaaa

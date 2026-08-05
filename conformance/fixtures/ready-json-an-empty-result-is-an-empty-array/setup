@@ -1,0 +1,3 @@
+# Nothing actionable is not an error: an empty document and exit 0.
+new "Done already" --id aaaaaaa
+done aaaaaaa

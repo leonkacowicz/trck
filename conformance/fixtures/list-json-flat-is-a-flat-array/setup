@@ -1,0 +1,7 @@
+new "Epic" --id aaaaaaa
+new "Kid" --id bbbbbbb --parent aaaaaaa
+new "Grandkid" --id ccccccc --parent bbbbbbb
+new "Blocker" --id ddddddd
+dep bbbbbbb --add ddddddd
+set bbbbbbb --field area=core
+label ddddddd --add urgent
