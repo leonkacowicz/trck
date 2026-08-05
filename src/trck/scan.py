@@ -82,7 +82,11 @@ def validate(ctx: Ctx, rows: list[Issue] | None = None) -> tuple[list[str], list
                               f"closed '{r.closed}'")
         if r.review_url is not None and (m := check_review_url(r.review_url)):
             errors.append(f"#{iid} {m}")
-        for k, v in r.extra.items():
+        # Sorted, not insertion order: these are reported *after* a mutating verb has
+        # already rewritten the index, and canonical form sorts the extra keys. Sorting
+        # here makes the diagnostics run in the same order as the file the reader is about
+        # to open, and makes them independent of how the row happened to be typed.
+        for k, v in sorted(r.extra.items()):
             if not FIELD_KEY_RE.match(k):
                 errors.append(f"#{iid} bad custom field key '{k}'")
             elif not isinstance(v, str):
