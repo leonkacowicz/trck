@@ -38,3 +38,16 @@ Output is layered on git's own gradient — `--stat` (counts), default (epic-rol
 - Deliberately out of scope for now: a "grouped by event kind" layout (Created / Started / Closed /
   Reprioritized sections). It reads well as release notes but double-lists issues that changed in
   two ways; revisit after the four layers below are in.
+
+## Sequencing against the Rust port (decided in `2w5panf`)
+The four unbuilt children — `jxxz2fm`, `kch7b6r`, `xvgdq25`, `yfxtkd8` — are **not** to be
+built in Python. `2w5panf` ported what exists (source seam, change model, git layer, the
+minimal output) and stopped there deliberately.
+
+The reason is the port's verification strategy: every Rust verb is checked by diffing it
+against the Python engine, and a feature Rust has that Python lacks has no oracle. Building
+these in Python now means writing them twice; building them in Rust now means writing them
+unverified. Neither is worth it while the port is mid-flight.
+
+So: these wait for the cutover (`djx63gk`), then land in Rust once. Their acceptance
+criteria stand as written — only the language and the timing change.
