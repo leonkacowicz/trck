@@ -20,6 +20,45 @@ jobs:
       - name: Helper-script suite
         run: python3 -m unittest discover -s scripts/tests -v
 
+  # The code-quality ratchet: existing debt is grandfathered and may only ever shrink.
+  #
+  # Two gates. `check` is freshness — the committed report must describe the code as it
+  # now stands, so a change that adds a long function cannot pass by leaving the report
+  # behind. `compare` is the ratchet proper.
+  #
+  # `compare` needs a baseline, and where that comes from depends on the event. Upstream's
+  # own workflow compares only on pull requests, which is right for a repo that takes them;
+  # this one is pushed to directly, so a PR-only gate would never fire. On a push the
+  # baseline is the commit that was at the head before it — `github.event.before` — which
+  # makes the ratchet bite on exactly the change being pushed.
+  quality:
+    name: quality ratchet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # `compare` resolves its baseline with `git show <base>:quality-report.json`,
+          # which a shallow checkout cannot answer.
+          fetch-depth: 0
+
+      - uses: leonkacowicz/ratchet@v0.1.1
+
+      # The report must describe the code as it is, or the ratchet measures fiction.
+      - name: Report is fresh
+        run: ratchet check --root .
+
+      - name: No quality regression vs the base branch
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+          ratchet compare --root . --base "origin/${{ github.base_ref }}"
+
+      # A branch's first push reports an all-zero "before" and has nothing to compare
+      # against; ratchet's own bootstrap mode covers a baseline with no report yet.
+      - name: No quality regression vs the previous commit
+        if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
+        run: ratchet compare --root . --base "${{ github.event.before }}"
+
   # The installer, on the platform it was broken on.
   #
   # It unpacks the Windows artifact with `tar`, because Windows 10 1803+ ships bsdtar and a

@@ -40,6 +40,20 @@ The engine is **`src/`** — one package at the repo root, no workspace. Build i
 
 Add a test for every change (TDD), in whichever of the three it belongs to.
 
+**The quality ratchet.** `quality-report.json` is a committed snapshot of structural metrics —
+function length, cognitive and cyclomatic complexity, argument counts, file size. CI runs
+[ratchet](https://github.com/leonkacowicz/ratchet) over it twice: `check` fails if the report
+no longer describes the code, and `compare` fails if any metric got worse than the baseline.
+
+Existing debt is grandfathered and may only shrink. You cannot add a longer or more complex
+function than what is already there without paying it down elsewhere in the same category —
+and splitting something oversized passes, because the category total drops.
+
+**So a change that touches `src/` needs `ratchet generate` and the regenerated report staged
+with it.** The pre-commit hook says so rather than letting CI be the one to tell you. If a
+threshold itself needs to move, that is its own commit: ratchet refuses a threshold edit in
+the same change as a new violation.
+
 **Enable the pre-commit guard once per clone:** `git config core.hooksPath scripts/hooks`. It
 runs `trck check` before commits, preferring the binary in `target/` over an installed one — in
 this repo the engine under change is the one that should answer.
