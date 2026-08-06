@@ -117,15 +117,20 @@ jobs:
 
       # One binary per archive, named for the target, so the install script can compute
       # the asset name from `uname` without listing the release first.
+      # The staging tree is built in stage/, NOT in dist/, so dist/ holds exactly the files
+      # that get published and nothing else. It used to stage inside dist/, and the upload
+      # glob was `dist/*.*` — which matches the staging *directory*, because the version
+      # number in its name contains dots. Every artifact therefore carried a loose copy of
+      # its own contents, and `gh release upload dist/*` died on "is a directory".
       - name: Package (unix)
         if: matrix.os != 'windows-latest'
         run: |
           tag="${{ inputs.tag || github.ref_name }}"
           name="trck-${tag}-${{ matrix.target }}"
-          mkdir -p "dist/${name}"
-          cp "target/${{ matrix.target }}/release/trck" "dist/${name}/"
-          cp README.md LICENSE "dist/${name}/" 2>/dev/null || true
-          tar -czf "dist/${name}.tar.gz" -C dist "${name}"
+          mkdir -p "stage/${name}" dist
+          cp "target/${{ matrix.target }}/release/trck" "stage/${name}/"
+          cp README.md LICENSE "stage/${name}/" 2>/dev/null || true
+          tar -czf "dist/${name}.tar.gz" -C stage "${name}"
           (cd dist && shasum -a 256 "${name}.tar.gz" > "${name}.tar.gz.sha256")
 
       - name: Package (windows)
@@ -134,16 +139,27 @@ jobs:
         run: |
           tag="${{ inputs.tag || github.ref_name }}"
           name="trck-${tag}-${{ matrix.target }}"
-          mkdir -p "dist/${name}"
-          cp "target/${{ matrix.target }}/release/trck.exe" "dist/${name}/"
-          cp README.md LICENSE "dist/${name}/" 2>/dev/null || true
-          (cd dist && 7z a "${name}.zip" "${name}" >/dev/null)
+          mkdir -p "stage/${name}" dist
+          cp "target/${{ matrix.target }}/release/trck.exe" "stage/${name}/"
+          cp README.md LICENSE "stage/${name}/" 2>/dev/null || true
+          (cd stage && 7z a "../dist/${name}.zip" "${name}" >/dev/null)
           (cd dist && certutil -hashfile "${name}.zip" SHA256 | sed -n 2p > "${name}.zip.sha256")
+
+      # Every publishable file, and only those: dist/ now contains nothing else.
+      - name: Nothing but files in dist/
+        shell: bash
+        run: |
+          if find dist -mindepth 1 -maxdepth 1 -type d | grep -q .; then
+            echo "::error::dist/ contains a directory; only release assets belong there" >&2
+            find dist -mindepth 1 -maxdepth 1 >&2
+            exit 1
+          fi
+          ls -l dist
 
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}
-          path: dist/*.*
+          path: dist/*
           if-no-files-found: error
 
   # The gate the issue asks for: install the artifact exactly as a user would, then run
@@ -161,10 +177,17 @@ jobs:
         with:
           name: x86_64-unknown-linux-musl
           path: dist
+      # Unpacked into its own directory and installed from there by an exact path. Searching
+      # `dist` for anything called `trck` would have been satisfied by a stray copy sitting
+      # beside the tarball — which is precisely what the artifacts used to contain — so the
+      # suite could have certified a binary the tarball never held.
       - name: Unpack as a user would
         run: |
-          tar -xzf dist/*.tar.gz -C dist
-          find dist -name trck -type f -exec install -m 755 {} /usr/local/bin/trck \;
+          mkdir -p unpacked
+          tar -xzf dist/*.tar.gz -C unpacked
+          bin="$(find unpacked -name trck -type f | head -1)"
+          [ -n "$bin" ] || { echo "::error::no trck inside the tarball" >&2; exit 1; }
+          install -m 755 "$bin" /usr/local/bin/trck
           trck version
       - name: Conformance against the published artifact
         run: python3 conformance/run.py --bin "$(command -v trck)"
