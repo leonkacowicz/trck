@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 49 |
+| backlog | 50 |
 | ongoing | 4 |
 | in-review | 0 |
 | done | 168 |
-| **total** | **221** |
+| **total** | **222** |
 
 ## Hierarchies
 
@@ -209,6 +209,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## Backlog
 
+- [#35qkx68 install: Windows has assets but no working install path](items/35qkx68-install-windows-has-assets-but-no-working-install-path.md) — _high_
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](items/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#jkvexgs docs: record a terminal demo of the next-driven loop for the README](items/jkvexgs-docs-record-a-terminal-demo-of-the-next-driven-loop-for-the-readme.md) — _medium_
 - [#k6g7kvf CI: a consistency check a consumer repo can drop in](items/k6g7kvf-ci-a-consistency-check-a-consumer-repo-can-drop-in.md) — _medium_
