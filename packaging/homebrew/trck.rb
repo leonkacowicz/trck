@@ -13,7 +13,7 @@ class Trck < Formula
   desc "Deterministic in-repo issue tracker"
   homepage "https://github.com/leonkacowicz/trck"
   license "MIT"
-  version "0.0.0"
+  version "0.26.0"
 
   on_macos do
     on_arm do
