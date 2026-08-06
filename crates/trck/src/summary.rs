@@ -27,18 +27,12 @@ pub(crate) fn filename(row: &Issue) -> String {
 
 /// ` [a b]` for a labelled issue, empty otherwise.
 fn label_tag(row: &Issue) -> String {
-    if row.labels.is_empty() {
-        String::new()
-    } else {
-        format!(" [{}]", row.labels.join(" "))
-    }
+    if row.labels.is_empty() { String::new() } else { format!(" [{}]", row.labels.join(" ")) }
 }
 
 /// ` · [review](url)` when an issue records where its output is being judged.
 fn review_tag(row: &Issue) -> String {
-    row.review_url
-        .as_ref()
-        .map_or_else(String::new, |u| format!(" · [review]({u})"))
+    row.review_url.as_ref().map_or_else(String::new, |u| format!(" · [review]({u})"))
 }
 
 /// The date part of a timestamp. Summary rows show the day, not the second.
@@ -49,19 +43,13 @@ fn date_slice(ts: &str) -> &str {
 /// Percentage, rounding half away from zero as Python's `round` does not — but both
 /// agree on every value reachable here, since points are non-negative.
 fn pct(done: i64, total: i64) -> i64 {
-    if total == 0 {
-        0
-    } else {
-        (200 * done + total) / (2 * total)
-    }
+    if total == 0 { 0 } else { (200 * done + total) / (2 * total) }
 }
 
 /// Capitalise the first character, as Python's `str.capitalize` does for these names.
 fn capitalise(s: &str) -> String {
     let mut chars = s.chars();
-    chars.next().map_or_else(String::new, |c| {
-        c.to_uppercase().collect::<String>() + chars.as_str()
-    })
+    chars.next().map_or_else(String::new, |c| c.to_uppercase().collect::<String>() + chars.as_str())
 }
 
 /// The counts table: one row per status, whether or not anything is in it. The table is
@@ -123,11 +111,7 @@ fn hierarchies_section(g: &Graph) -> Vec<String> {
                         k.title,
                         rel_link(k),
                         label_tag(k),
-                        if done {
-                            String::new()
-                        } else {
-                            format!(" _({})_", k.status)
-                        },
+                        if done { String::new() } else { format!(" _({})_", k.status) },
                         review_tag(k),
                     ));
                 }
@@ -143,16 +127,8 @@ fn hierarchies_section(g: &Graph) -> Vec<String> {
 fn status_sections(g: &Graph) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     for status in config::STATUSES {
-        let mut items: Vec<&Issue> = g
-            .rows
-            .iter()
-            .filter(|r| r.status == *status && g.is_leaf(&r.id) && r.parent.is_none())
-            .collect();
-        items.sort_by(|a, b| {
-            priority_rank(&a.priority)
-                .cmp(&priority_rank(&b.priority))
-                .then(a.id.cmp(&b.id))
-        });
+        let mut items: Vec<&Issue> = g.rows.iter().filter(|r| r.status == *status && g.is_leaf(&r.id) && r.parent.is_none()).collect();
+        items.sort_by(|a, b| priority_rank(&a.priority).cmp(&priority_rank(&b.priority)).then(a.id.cmp(&b.id)));
         out.push(format!("## {}", capitalise(status)));
         out.push(String::new());
         if items.is_empty() {
@@ -168,16 +144,7 @@ fn status_sections(g: &Graph) -> Vec<String> {
             {
                 let _ = write!(extra, " (closed {})", date_slice(closed));
             }
-            out.push(format!(
-                "- [#{} {}]({}) — _{}_{}{}{}",
-                r.id,
-                r.title,
-                rel_link(r),
-                r.priority,
-                label_tag(r),
-                extra,
-                review_tag(r),
-            ));
+            out.push(format!("- [#{} {}]({}) — _{}_{}{}{}", r.id, r.title, rel_link(r), r.priority, label_tag(r), extra, review_tag(r),));
         }
         out.push(String::new());
     }
@@ -235,25 +202,16 @@ mod tests {
     fn a_standalone_leaf_is_listed_once_under_its_status() {
         let s = generate_summary(&graph_of(ONE));
         assert_eq!(s.matches("#aaaaaaa").count(), 1, "{s}");
-        assert!(
-            s.contains("- [#aaaaaaa Alpha](items/aaaaaaa-a.md) — _high_"),
-            "{s}"
-        );
+        assert!(s.contains("- [#aaaaaaa Alpha](items/aaaaaaa-a.md) — _high_"), "{s}");
     }
 
     #[test]
     fn a_parented_issue_appears_under_its_parent_not_in_the_status_list() {
         // Otherwise every child is counted twice by anyone reading the file.
-        let text = format!(
-            "{ONE}\n{}\n",
-            r#"{"id": "bbbbbbb", "slug": "b", "title": "Beta", "status": "backlog", "priority": "low", "parent": "aaaaaaa"}"#
-        );
+        let text = format!("{ONE}\n{}\n", r#"{"id": "bbbbbbb", "slug": "b", "title": "Beta", "status": "backlog", "priority": "low", "parent": "aaaaaaa"}"#);
         let s = generate_summary(&graph_of(&text));
         assert!(s.contains("### [#aaaaaaa Alpha]"), "{s}");
-        assert!(
-            s.contains("- [ ] [#bbbbbbb Beta](items/bbbbbbb-b.md)"),
-            "{s}"
-        );
+        assert!(s.contains("- [ ] [#bbbbbbb Beta](items/bbbbbbb-b.md)"), "{s}");
         // Alpha is a parent now, so it is not a standalone leaf either.
         assert!(!s.contains("- [#bbbbbbb"), "{s}");
         assert!(!s.contains("- [#aaaaaaa"), "{s}");
@@ -266,25 +224,13 @@ mod tests {
             r#"{"id": "bbbbbbb", "slug": "b", "title": "Beta", "status": "done", "priority": "low", "parent": "aaaaaaa", "labels": ["x"]}"#
         );
         let s = generate_summary(&graph_of(&text));
-        assert!(
-            s.contains("- [x] [#bbbbbbb Beta](items/bbbbbbb-b.md) [x]\n"),
-            "{s}"
-        );
+        assert!(s.contains("- [x] [#bbbbbbb Beta](items/bbbbbbb-b.md) [x]\n"), "{s}");
     }
 
     #[test]
     fn standalone_issues_sort_by_priority_then_id() {
-        let row = |id: &str, p: &str| {
-            format!(
-                r#"{{"id": "{id}", "slug": "s", "title": "T", "status": "backlog", "priority": "{p}"}}"#
-            )
-        };
-        let text = format!(
-            "{}\n{}\n{}\n",
-            row("ccccccc", "low"),
-            row("aaaaaaa", "urgent"),
-            row("bbbbbbb", "urgent")
-        );
+        let row = |id: &str, p: &str| format!(r#"{{"id": "{id}", "slug": "s", "title": "T", "status": "backlog", "priority": "{p}"}}"#);
+        let text = format!("{}\n{}\n{}\n", row("ccccccc", "low"), row("aaaaaaa", "urgent"), row("bbbbbbb", "urgent"));
         let s = generate_summary(&graph_of(&text));
         let at = |id: &str| s.find(id).unwrap_or(usize::MAX);
         assert!(at("aaaaaaa") < at("bbbbbbb"));
@@ -305,17 +251,11 @@ mod tests {
     /// with real epics, labels, review links, resolutions and unicode titles.
     #[test]
     fn the_repos_own_summary_regenerates_byte_for_byte() {
-        let root = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .and_then(Path::parent)
-            .expect("repo root");
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().and_then(Path::parent).expect("repo root");
         let mut checked = 0;
         for rel in ["issues", "examples/action-game"] {
             let dir = root.join(rel);
-            let (Ok(index), Ok(want)) = (
-                std::fs::read_to_string(dir.join("index.jsonl")),
-                std::fs::read_to_string(dir.join("SUMMARY.md")),
-            ) else {
+            let (Ok(index), Ok(want)) = (std::fs::read_to_string(dir.join("index.jsonl")), std::fs::read_to_string(dir.join("SUMMARY.md"))) else {
                 continue; // a consumer of this crate need not have the tracker
             };
             let got = generate_summary(&graph_of(&index));

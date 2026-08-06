@@ -50,9 +50,7 @@ pub(crate) fn now_utc() -> Result<String, String> {
 
 /// Seconds since the Unix epoch, rendered as the engine's canonical stamp.
 fn system_now() -> String {
-    let secs = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0, |d| d.as_secs());
+    let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_secs());
     format_epoch(i64::try_from(secs).unwrap_or(0))
 }
 
@@ -61,10 +59,7 @@ fn system_now() -> String {
 // The calendar arithmetic below is Howard Hinnant's days-from-civil algorithm, kept in
 // its published single-letter form. Renaming `y`/`m`/`d`/`doe`/`yoe` to something
 // "clearer" would make it unverifiable against the reference for no reader's benefit.
-#[allow(
-    clippy::many_single_char_names,
-    reason = "matches the published algorithm"
-)]
+#[allow(clippy::many_single_char_names, reason = "matches the published algorithm")]
 fn format_epoch(secs: i64) -> String {
     let days = secs.div_euclid(86_400);
     let rem = secs.rem_euclid(86_400);
@@ -85,24 +80,13 @@ fn format_epoch(secs: i64) -> String {
 /// Accept any ISO-8601 instant and normalise it to the one shape the engine writes.
 /// A day-only value is refused: those are a legacy form the engine no longer emits, and
 /// expanding one to midnight would reintroduce them through the back door.
-#[allow(
-    clippy::many_single_char_names,
-    reason = "matches the published algorithm"
-)]
+#[allow(clippy::many_single_char_names, reason = "matches the published algorithm")]
 fn parse_instant(v: &str) -> Result<String, String> {
-    let bad =
-        || format!("TRCK_NOW='{v}' is not an ISO-8601 instant (want e.g. 2026-01-01T00:00:00Z)");
+    let bad = || format!("TRCK_NOW='{v}' is not an ISO-8601 instant (want e.g. 2026-01-01T00:00:00Z)");
     let (date, rest) = v.split_once('T').ok_or_else(|| {
-        if v.len() == 10 && v.split('-').count() == 3 {
-            format!("TRCK_NOW='{v}' is a date, not an instant (want e.g. 2026-01-01T00:00:00Z)")
-        } else {
-            bad()
-        }
+        if v.len() == 10 && v.split('-').count() == 3 { format!("TRCK_NOW='{v}' is a date, not an instant (want e.g. 2026-01-01T00:00:00Z)") } else { bad() }
     })?;
-    let nums: Vec<i64> = date
-        .split('-')
-        .map(|p| p.parse().map_err(|_| bad()))
-        .collect::<Result<_, _>>()?;
+    let nums: Vec<i64> = date.split('-').map(|p| p.parse().map_err(|_| bad())).collect::<Result<_, _>>()?;
     let [y, m, d] = nums[..] else {
         return Err(bad());
     };
@@ -111,19 +95,14 @@ fn parse_instant(v: &str) -> Result<String, String> {
     }
     // Offset handling: strip it, then apply it in seconds.
     let (clock, offset) = split_offset(rest).ok_or_else(bad)?;
-    let hms: Vec<i64> = clock
-        .split(':')
-        .map(|p| p.split('.').next().unwrap_or(p).parse().map_err(|_| bad()))
-        .collect::<Result<_, _>>()?;
+    let hms: Vec<i64> = clock.split(':').map(|p| p.split('.').next().unwrap_or(p).parse().map_err(|_| bad())).collect::<Result<_, _>>()?;
     let [h, mi, s] = hms[..] else {
         return Err(bad());
     };
     if h > 23 || mi > 59 || s > 60 {
         return Err(bad());
     }
-    Ok(format_epoch(
-        days_from_civil(y, m, d) * 86_400 + h * 3600 + mi * 60 + s - offset,
-    ))
+    Ok(format_epoch(days_from_civil(y, m, d) * 86_400 + h * 3600 + mi * 60 + s - offset))
 }
 
 /// `(clock, offset_seconds)` from the part after `T`.
@@ -144,10 +123,7 @@ fn split_offset(rest: &str) -> Option<(&str, i64)> {
     Some((rest, 0)) // naive: treated as UTC
 }
 
-#[allow(
-    clippy::many_single_char_names,
-    reason = "matches the published algorithm"
-)]
+#[allow(clippy::many_single_char_names, reason = "matches the published algorithm")]
 fn days_from_civil(y: i64, m: i64, d: i64) -> i64 {
     let y = if m <= 2 { y - 1 } else { y };
     let era = y.div_euclid(400);
@@ -184,10 +160,7 @@ pub(crate) fn slugify(text: &str) -> String {
 /// Whether a slug is usable as a filename component.
 pub(crate) fn check_slug(slug: &str) -> bool {
     let mut chars = slug.chars();
-    chars
-        .next()
-        .is_some_and(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
-        && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+    chars.next().is_some_and(|c| c.is_ascii_lowercase() || c.is_ascii_digit()) && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
 }
 
 pub(crate) fn issue_path(ctx: &Ctx, row: &Issue) -> PathBuf {
@@ -274,12 +247,7 @@ fn postorder(g: &Graph) -> Vec<String> {
 pub(crate) fn finalize(ctx: &Ctx, rows: Vec<Issue>) -> Result<Vec<Issue>, String> {
     let mut g = Graph::new(rows);
 
-    let parent_ids: Vec<String> = g
-        .rows
-        .iter()
-        .map(|r| r.id.clone())
-        .filter(|id| !g.is_leaf(id))
-        .collect();
+    let parent_ids: Vec<String> = g.rows.iter().map(|r| r.id.clone()).filter(|id| !g.is_leaf(id)).collect();
     for r in &mut g.rows {
         if parent_ids.contains(&r.id) {
             r.points = DEFAULT_POINTS;
@@ -295,10 +263,7 @@ pub(crate) fn finalize(ctx: &Ctx, rows: Vec<Issue>) -> Result<Vec<Issue>, String
         if row.manual_status {
             continue;
         }
-        let statuses: Vec<String> = kids
-            .iter()
-            .filter_map(|k| g.get(k).map(|r| r.status.clone()))
-            .collect();
+        let statuses: Vec<String> = kids.iter().filter_map(|k| g.get(k).map(|r| r.status.clone())).collect();
         let desired = config::reconcile(&statuses);
         if g.get(&id).is_some_and(|r| r.status != desired) {
             let mut rows = std::mem::take(&mut g.rows);
@@ -344,22 +309,15 @@ pub(crate) fn resolve_ref(rows: &[Issue], token: &str) -> Result<String, String>
     if rows.iter().any(|r| r.id == token) {
         return Ok(token.to_string());
     }
-    let hits: Vec<&str> = rows
-        .iter()
-        .map(|r| r.id.as_str())
-        .filter(|id| id.starts_with(token))
-        .collect();
+    let hits: Vec<&str> = rows.iter().map(|r| r.id.as_str()).filter(|id| id.starts_with(token)).collect();
     match hits.len() {
         1 => Ok(hits[0].to_string()),
         0 => Err(format!("no issue matching '{token}'")),
         _ => {
             let mut cands = hits;
             cands.sort_unstable();
-            Err(format!(
-                "ambiguous id prefix '{token}' matches: {}",
-                cands.join(", ")
-            ))
-        }
+            Err(format!("ambiguous id prefix '{token}' matches: {}", cands.join(", ")))
+        },
     }
 }
 
@@ -402,10 +360,7 @@ pub(crate) fn cmd_new(ctx: &Ctx, opts: &NewOpts) -> Result<String, String> {
     if !check_slug(&slug) {
         return Err(format!("computed slug '{slug}' is invalid; pass --slug"));
     }
-    let priority = opts
-        .priority
-        .clone()
-        .unwrap_or_else(|| config::default_priority().to_string());
+    let priority = opts.priority.clone().unwrap_or_else(|| config::default_priority().to_string());
     if let Some(msg) = config::check_priority(&priority) {
         return Err(msg);
     }
@@ -418,16 +373,8 @@ pub(crate) fn cmd_new(ctx: &Ctx, opts: &NewOpts) -> Result<String, String> {
     {
         return Err(msg);
     }
-    let parent = opts
-        .parent
-        .as_ref()
-        .map(|p| resolve_ref(&rows, p))
-        .transpose()?;
-    let depends: Vec<String> = opts
-        .depends
-        .iter()
-        .map(|d| resolve_ref(&rows, d))
-        .collect::<Result<_, _>>()?;
+    let parent = opts.parent.as_ref().map(|p| resolve_ref(&rows, p)).transpose()?;
+    let depends: Vec<String> = opts.depends.iter().map(|d| resolve_ref(&rows, d)).collect::<Result<_, _>>()?;
 
     let row = Issue {
         id: iid.clone(),
@@ -486,13 +433,7 @@ fn taken_ids(ctx: &Ctx, rows: &[Issue]) -> std::collections::BTreeSet<String> {
     ids
 }
 
-pub(crate) fn cmd_mv(
-    ctx: &Ctx,
-    token: &str,
-    status: &str,
-    resolution: Option<&str>,
-    review_url: Option<&str>,
-) -> Result<String, String> {
+pub(crate) fn cmd_mv(ctx: &Ctx, token: &str, status: &str, resolution: Option<&str>, review_url: Option<&str>) -> Result<String, String> {
     let mut rows = load_rows(ctx)?;
     let iid = resolve_ref(&rows, token)?;
     if let Some(res) = resolution {
@@ -523,11 +464,7 @@ pub(crate) fn cmd_mv(
 
     let kid_statuses: Vec<String> = {
         let g = Graph::new(std::mem::take(&mut rows));
-        let ks = g
-            .children_of(&iid)
-            .iter()
-            .filter_map(|k| g.get(k).map(|r| r.status.clone()))
-            .collect();
+        let ks = g.children_of(&iid).iter().filter_map(|k| g.get(k).map(|r| r.status.clone())).collect();
         rows = g.rows;
         ks
     };
@@ -554,17 +491,14 @@ pub(crate) fn cmd_mv(
 /// `--unset`, so `--field assignee=` reads the way people expect.
 fn apply_field_edits(row: &mut Issue, fields: &[&str], unset: &[&str]) -> Result<(), String> {
     for spec in fields {
-        let (key, val) = spec
-            .split_once('=')
-            .ok_or_else(|| format!("--field expects key=value, got '{spec}'"))?;
+        let (key, val) = spec.split_once('=').ok_or_else(|| format!("--field expects key=value, got '{spec}'"))?;
         if let Some(msg) = check_field_key(key) {
             return Err(msg);
         }
         if val.is_empty() {
             row.extra.remove(key);
         } else {
-            row.extra
-                .insert(key.to_string(), crate::json::Json::String(val.to_string()));
+            row.extra.insert(key.to_string(), crate::json::Json::String(val.to_string()));
         }
     }
     for key in unset {
@@ -597,18 +531,10 @@ pub(crate) fn cmd_set(ctx: &Ctx, token: &str, opts: &SetOpts) -> Result<String, 
     let iid = resolve_ref(&rows, token)?;
     let g = Graph::new(std::mem::take(&mut rows));
     let is_leaf = g.is_leaf(&iid);
-    let parent = opts
-        .parent
-        .filter(|p| *p != "none")
-        .map(|p| resolve_ref(&g.rows, p))
-        .transpose()?;
+    let parent = opts.parent.filter(|p| *p != "none").map(|p| resolve_ref(&g.rows, p)).transpose()?;
     rows = g.rows;
 
-    let old_path = rows
-        .iter()
-        .find(|r| r.id == iid)
-        .map(|r| issue_path(ctx, r))
-        .ok_or_else(|| format!("no issue matching '{iid}'"))?;
+    let old_path = rows.iter().find(|r| r.id == iid).map(|r| issue_path(ctx, r)).ok_or_else(|| format!("no issue matching '{iid}'"))?;
 
     let Some(row) = rows.iter_mut().find(|r| r.id == iid) else {
         return Err(format!("no issue matching '{iid}'"));
@@ -627,9 +553,7 @@ pub(crate) fn cmd_set(ctx: &Ctx, token: &str, opts: &SetOpts) -> Result<String, 
             return Err(msg);
         }
         if !is_leaf {
-            return Err(format!(
-                "#{iid} has children; points is derived from them, not set"
-            ));
+            return Err(format!("#{iid} has children; points is derived from them, not set"));
         }
         row.points = points;
     }
@@ -657,10 +581,7 @@ pub(crate) fn cmd_set(ctx: &Ctx, token: &str, opts: &SetOpts) -> Result<String, 
     if let Some(title) = opts.title {
         row.title = title.to_string();
     }
-    let new_path = rows
-        .iter()
-        .find(|r| r.id == iid)
-        .map_or_else(|| old_path.clone(), |r| issue_path(ctx, r));
+    let new_path = rows.iter().find(|r| r.id == iid).map_or_else(|| old_path.clone(), |r| issue_path(ctx, r));
 
     // Re-parenting changes what is lifted, so it can introduce an effective cycle that
     // neither authored edge shows. Guard the candidate state before anything is written.
@@ -673,14 +594,7 @@ pub(crate) fn cmd_set(ctx: &Ctx, token: &str, opts: &SetOpts) -> Result<String, 
         // point at — which is exactly why it has to be spelled out. Same explanation
         // `check` gives: the authored edge, and the containment that lifts it.
         let refusal = parent_cycles.first().map_or_else(
-            || {
-                cycles.first().map(|cyc| {
-                    format!(
-                        "this change would create an effective dependency cycle: {}",
-                        crate::validate::describe_cycle(&g, cyc)
-                    )
-                })
-            },
+            || cycles.first().map(|cyc| format!("this change would create an effective dependency cycle: {}", crate::validate::describe_cycle(&g, cyc))),
             |cyc| Some(format!("parent cycle: {}", cyc.join(" -> "))),
         );
         rows = g.rows;
@@ -690,8 +604,7 @@ pub(crate) fn cmd_set(ctx: &Ctx, token: &str, opts: &SetOpts) -> Result<String, 
     }
 
     if old_path != new_path {
-        std::fs::rename(&old_path, &new_path)
-            .map_err(|e| format!("{} -> {}: {e}", old_path.display(), new_path.display()))?;
+        std::fs::rename(&old_path, &new_path).map_err(|e| format!("{} -> {}: {e}", old_path.display(), new_path.display()))?;
     }
     if let Some(title) = opts.title {
         retitle_body(&new_path, title)?;
@@ -706,17 +619,8 @@ fn retitle_body(path: &Path, title: &str) -> Result<(), String> {
     let Ok(text) = std::fs::read_to_string(path) else {
         return Ok(()); // a missing body is `check`'s business, not this verb's
     };
-    let rewritten: Vec<String> = text
-        .lines()
-        .enumerate()
-        .map(|(i, line)| {
-            if i == 0 && line.starts_with("# ") {
-                format!("# {title}")
-            } else {
-                line.to_string()
-            }
-        })
-        .collect();
+    let rewritten: Vec<String> =
+        text.lines().enumerate().map(|(i, line)| if i == 0 && line.starts_with("# ") { format!("# {title}") } else { line.to_string() }).collect();
     let mut body = rewritten.join("\n");
     if text.ends_with('\n') {
         body.push('\n');
@@ -724,12 +628,7 @@ fn retitle_body(path: &Path, title: &str) -> Result<(), String> {
     write_atomic(path, &body)
 }
 
-pub(crate) fn cmd_label(
-    ctx: &Ctx,
-    token: &str,
-    add: &[&str],
-    remove: &[&str],
-) -> Result<String, String> {
+pub(crate) fn cmd_label(ctx: &Ctx, token: &str, add: &[&str], remove: &[&str]) -> Result<String, String> {
     let mut rows = load_rows(ctx)?;
     let iid = resolve_ref(&rows, token)?;
     let Some(row) = rows.iter_mut().find(|r| r.id == iid) else {
@@ -747,12 +646,7 @@ pub(crate) fn cmd_label(
     Ok(format!("#{iid} labels={shown}"))
 }
 
-pub(crate) fn cmd_dep(
-    ctx: &Ctx,
-    token: &str,
-    add: Option<&str>,
-    remove: Option<&str>,
-) -> Result<String, String> {
+pub(crate) fn cmd_dep(ctx: &Ctx, token: &str, add: Option<&str>, remove: Option<&str>) -> Result<String, String> {
     let mut rows = load_rows(ctx)?;
     let iid = resolve_ref(&rows, token)?;
     let add = add.map(|a| resolve_ref(&rows, a)).transpose()?;
@@ -817,10 +711,7 @@ mod tests {
         };
         apply_status(&mut row, config::ONGOING).unwrap();
         assert_eq!(row.closed, None);
-        assert_eq!(
-            row.resolution, None,
-            "resolution must not outlive the closure"
-        );
+        assert_eq!(row.resolution, None, "resolution must not outlive the closure");
     }
 
     #[test]
@@ -841,25 +732,15 @@ mod tests {
 
     #[test]
     fn trck_now_accepts_any_iso_instant_and_normalises_to_utc() {
-        assert_eq!(
-            parse_instant("2026-01-01T00:00:00Z").expect("ok"),
-            "2026-01-01T00:00:00Z"
-        );
-        assert_eq!(
-            parse_instant("2026-01-01T09:00:00+03:00").expect("ok"),
-            "2026-01-01T06:00:00Z"
-        );
+        assert_eq!(parse_instant("2026-01-01T00:00:00Z").expect("ok"), "2026-01-01T00:00:00Z");
+        assert_eq!(parse_instant("2026-01-01T09:00:00+03:00").expect("ok"), "2026-01-01T06:00:00Z");
     }
 
     #[test]
     fn trck_now_refuses_a_day_only_or_malformed_value() {
         // Refused rather than ignored: falling back to the real clock would make a
         // fixture pass locally and fail elsewhere for no visible reason.
-        assert!(
-            parse_instant("2026-01-01")
-                .expect_err("refused")
-                .contains("not an instant")
-        );
+        assert!(parse_instant("2026-01-01").expect_err("refused").contains("not an instant"));
         for bad in ["yesterday", "1735689600", "2026-13-01T00:00:00Z", "x"] {
             assert!(parse_instant(bad).is_err(), "should reject {bad}");
         }
@@ -869,10 +750,7 @@ mod tests {
     fn resolve_ref_takes_an_exact_id_then_a_unique_prefix() {
         let mk = |id: &str| {
             crate::issue::Issue::from_json(
-                &crate::json::parse(&format!(
-                    r#"{{"id": "{id}", "slug": "s", "title": "T", "status": "backlog", "priority": "low"}}"#
-                ))
-                .expect("json"),
+                &crate::json::parse(&format!(r#"{{"id": "{id}", "slug": "s", "title": "T", "status": "backlog", "priority": "low"}}"#)).expect("json"),
             )
             .expect("issue")
         };
@@ -880,15 +758,7 @@ mod tests {
         assert_eq!(resolve_ref(&rows, "aaaaaaa").expect("exact"), "aaaaaaa");
         assert_eq!(resolve_ref(&rows, "#aaaaaaa").expect("hash"), "aaaaaaa");
         assert_eq!(resolve_ref(&rows, "aab").expect("prefix"), "aabbbbb");
-        assert!(
-            resolve_ref(&rows, "aa")
-                .expect_err("ambiguous")
-                .contains("ambiguous")
-        );
-        assert!(
-            resolve_ref(&rows, "zz")
-                .expect_err("none")
-                .contains("no issue")
-        );
+        assert!(resolve_ref(&rows, "aa").expect_err("ambiguous").contains("ambiguous"));
+        assert!(resolve_ref(&rows, "zz").expect_err("none").contains("no issue"));
     }
 }

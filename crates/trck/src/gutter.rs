@@ -53,9 +53,7 @@ fn glyph(dirs: &BTreeSet<char>) -> char {
 /// Every node reachable from each node, memoised. The placeholder written before
 /// recursing is what makes it terminate on a malformed cycle instead of blowing the
 /// stack.
-fn edge_reach(
-    edges: &BTreeMap<String, Vec<(String, EdgeKind)>>,
-) -> BTreeMap<String, BTreeSet<String>> {
+fn edge_reach(edges: &BTreeMap<String, Vec<(String, EdgeKind)>>) -> BTreeMap<String, BTreeSet<String>> {
     let mut reach: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     for start in edges.keys() {
         if reach.contains_key(start) {
@@ -93,21 +91,12 @@ fn edge_reach(
 /// Display-only: the authored edge stays in the index, and only `dep --remove` deletes
 /// one. On a DAG the result is unique and preserves reachability exactly, so nothing is
 /// lost — the path that justified the removal is still drawn.
-fn transitive_reduction(
-    edges: &BTreeMap<String, Vec<(String, EdgeKind)>>,
-) -> BTreeMap<String, Vec<(String, EdgeKind)>> {
+fn transitive_reduction(edges: &BTreeMap<String, Vec<(String, EdgeKind)>>) -> BTreeMap<String, Vec<(String, EdgeKind)>> {
     let reach = edge_reach(edges);
     let mut out = BTreeMap::new();
     for (u, targets) in edges {
-        let kept: Vec<(String, EdgeKind)> = targets
-            .iter()
-            .filter(|(v, _)| {
-                !targets
-                    .iter()
-                    .any(|(w, _)| w != v && reach.get(w).is_some_and(|r| r.contains(v)))
-            })
-            .cloned()
-            .collect();
+        let kept: Vec<(String, EdgeKind)> =
+            targets.iter().filter(|(v, _)| !targets.iter().any(|(w, _)| w != v && reach.get(w).is_some_and(|r| r.contains(v)))).cloned().collect();
         out.insert(u.clone(), kept);
     }
     out
@@ -121,20 +110,10 @@ fn transitive_reduction(
 /// parent-altitude edge with a fan of n, and reduction would then delete the parent's own
 /// edge as implied by its children — so suppressing the fan up front is what keeps a
 /// dependency at the altitude it was authored.
-pub(crate) fn drawn_edges(
-    g: &Graph,
-    ids: &BTreeSet<String>,
-    reduce: bool,
-    fanout: bool,
-) -> BTreeMap<String, Vec<(String, EdgeKind)>> {
+pub(crate) fn drawn_edges(g: &Graph, ids: &BTreeSet<String>, reduce: bool, fanout: bool) -> BTreeMap<String, Vec<(String, EdgeKind)>> {
     let mut edges: BTreeMap<String, Vec<(String, EdgeKind)>> = BTreeMap::new();
     for id in ids {
-        let mut out: Vec<(String, EdgeKind)> = g
-            .requires_of(id)
-            .into_iter()
-            .filter(|d| ids.contains(d))
-            .map(|d| (d, EdgeKind::Dep))
-            .collect();
+        let mut out: Vec<(String, EdgeKind)> = g.requires_of(id).into_iter().filter(|d| ids.contains(d)).map(|d| (d, EdgeKind::Dep)).collect();
         for kid in g.children_of(id) {
             if ids.contains(kid) {
                 out.push((kid.clone(), EdgeKind::Child));
@@ -156,11 +135,7 @@ pub(crate) fn drawn_edges(
         }
         edges.insert(id.clone(), out);
     }
-    if reduce {
-        transitive_reduction(&edges)
-    } else {
-        edges
-    }
+    if reduce { transitive_reduction(&edges) } else { edges }
 }
 
 /// Is a drawn row between `id` and `author` (inclusive) already saying it?
@@ -178,12 +153,8 @@ fn carried_above(g: &Graph, id: &str, author: &str, ids: &BTreeSet<String>) -> b
 
 /// Weakly-connected components over the drawn edges, each id-sorted, ordered by smallest
 /// member — so a node's cluster renders as one contiguous, separable block.
-pub(crate) fn components(
-    ids: &BTreeSet<String>,
-    edges: &BTreeMap<String, Vec<(String, EdgeKind)>>,
-) -> Vec<Vec<String>> {
-    let mut adj: BTreeMap<&str, BTreeSet<&str>> =
-        ids.iter().map(|i| (i.as_str(), BTreeSet::new())).collect();
+pub(crate) fn components(ids: &BTreeSet<String>, edges: &BTreeMap<String, Vec<(String, EdgeKind)>>) -> Vec<Vec<String>> {
+    let mut adj: BTreeMap<&str, BTreeSet<&str>> = ids.iter().map(|i| (i.as_str(), BTreeSet::new())).collect();
     for (u, targets) in edges {
         for (v, _) in targets {
             if ids.contains(u) && ids.contains(v) {
@@ -256,11 +227,7 @@ fn shorten_lanes(order: &mut Vec<String>, pairs: &[(String, String)]) {
 
     loop {
         let mut moved = false;
-        let mut at: BTreeMap<String, usize> = order
-            .iter()
-            .enumerate()
-            .map(|(k, v)| (v.clone(), k))
-            .collect();
+        let mut at: BTreeMap<String, usize> = order.iter().enumerate().map(|(k, v)| (v.clone(), k)).collect();
         let mut pref = prefix(order, &weight);
         // The scan continues from i+1 over the already-updated order rather than
         // restarting on every accepted move. Restarting reaches a different local
@@ -271,21 +238,8 @@ fn shorten_lanes(order: &mut Vec<String>, pairs: &[(String, String)]) {
             let w = weight.get(&u).copied().unwrap_or(0);
             // Between the last prerequisite and the first dependent: every slot in that
             // window keeps the order a linear extension, and no slot outside it does.
-            let lo = after
-                .get(&u)
-                .into_iter()
-                .flatten()
-                .filter_map(|p| at.get(p))
-                .max()
-                .map_or(0, |m| m + 1);
-            let hi = before
-                .get(&u)
-                .into_iter()
-                .flatten()
-                .filter_map(|d| at.get(d))
-                .min()
-                .map_or(n, |m| *m)
-                .saturating_sub(1);
+            let lo = after.get(&u).into_iter().flatten().filter_map(|p| at.get(p)).max().map_or(0, |m| m + 1);
+            let hi = before.get(&u).into_iter().flatten().filter_map(|d| at.get(d)).min().map_or(n, |m| *m).saturating_sub(1);
             for j in lo..=hi.min(n.saturating_sub(1)) {
                 if j == i {
                     continue;
@@ -293,19 +247,11 @@ fn shorten_lanes(order: &mut Vec<String>, pairs: &[(String, String)]) {
                 // `u` travels j - i rows; everything it steps over shifts one row the
                 // other way, and the prefix sum totals that block's weight at once.
                 let span = i64::try_from(j).unwrap_or(0) - i64::try_from(i).unwrap_or(0);
-                let delta = if j > i {
-                    w * span - (pref[j + 1] - pref[i + 1])
-                } else {
-                    w * span + (pref[i] - pref[j])
-                };
+                let delta = if j > i { w * span - (pref[j + 1] - pref[i + 1]) } else { w * span + (pref[i] - pref[j]) };
                 if delta < 0 {
                     let node = order.remove(i);
                     order.insert(j, node);
-                    at = order
-                        .iter()
-                        .enumerate()
-                        .map(|(k, v)| (v.clone(), k))
-                        .collect();
+                    at = order.iter().enumerate().map(|(k, v)| (v.clone(), k)).collect();
                     pref = prefix(order, &weight);
                     moved = true;
                     break;
@@ -329,8 +275,7 @@ fn topo(comp: &[String], edges: &Edges) -> Topo {
     let idset: BTreeSet<&str> = comp.iter().map(String::as_str).collect();
     let mut requires: BTreeMap<&str, Vec<String>> = BTreeMap::new();
     let mut kinds: BTreeMap<(String, String), EdgeKind> = BTreeMap::new();
-    let mut dependents: BTreeMap<String, Vec<String>> =
-        comp.iter().map(|i| (i.clone(), Vec::new())).collect();
+    let mut dependents: BTreeMap<String, Vec<String>> = comp.iter().map(|i| (i.clone(), Vec::new())).collect();
     for i in comp {
         let targets: Vec<String> = edges
             .get(i)
@@ -350,17 +295,10 @@ fn topo(comp: &[String], edges: &Edges) -> Topo {
     for v in dependents.values_mut() {
         v.sort();
     }
-    let mut indeg: BTreeMap<&str, usize> = comp
-        .iter()
-        .map(|i| (i.as_str(), requires.get(i.as_str()).map_or(0, Vec::len)))
-        .collect();
+    let mut indeg: BTreeMap<&str, usize> = comp.iter().map(|i| (i.as_str(), requires.get(i.as_str()).map_or(0, Vec::len))).collect();
     // A LIFO stack is the depth-first part; pushing newly-ready nodes highest-id-first
     // leaves the lowest on top, so a freshly-unblocked set is visited in ascending order.
-    let mut stack: Vec<String> = comp
-        .iter()
-        .filter(|i| indeg.get(i.as_str()) == Some(&0))
-        .cloned()
-        .collect();
+    let mut stack: Vec<String> = comp.iter().filter(|i| indeg.get(i.as_str()) == Some(&0)).cloned().collect();
     stack.reverse();
     let mut order: Vec<String> = Vec::new();
     while let Some(n) = stack.pop() {
@@ -378,16 +316,7 @@ fn topo(comp: &[String], edges: &Edges) -> Topo {
         newly.reverse();
         stack.extend(newly);
     }
-    let pairs: Vec<(String, String)> = comp
-        .iter()
-        .flat_map(|i| {
-            requires
-                .get(i.as_str())
-                .into_iter()
-                .flatten()
-                .map(move |d| (d.clone(), i.clone()))
-        })
-        .collect();
+    let pairs: Vec<(String, String)> = comp.iter().flat_map(|i| requires.get(i.as_str()).into_iter().flatten().map(move |d| (d.clone(), i.clone()))).collect();
     shorten_lanes(&mut order, &pairs);
     (order, dependents, kinds)
 }
@@ -402,11 +331,7 @@ pub(crate) type Row = (String, String, Vec<LaneOwner>);
 type Edges = BTreeMap<String, Vec<(String, EdgeKind)>>;
 
 /// A topological order plus what the renderer needs alongside it.
-type Topo = (
-    Vec<String>,
-    BTreeMap<String, Vec<String>>,
-    BTreeMap<(String, String), EdgeKind>,
-);
+type Topo = (Vec<String>, BTreeMap<String, Vec<String>>, BTreeMap<(String, String), EdgeKind>);
 
 /// Render one connected component, one row per node.
 fn component_rows(comp: &[String], edges: &Edges) -> Vec<Row> {
@@ -416,16 +341,8 @@ fn component_rows(comp: &[String], edges: &Edges) -> Vec<Row> {
 
     for n in &order {
         let top = lanes.clone();
-        let arriving: Vec<usize> = top
-            .iter()
-            .enumerate()
-            .filter(|(_, t)| t.as_ref().is_some_and(|(d, _)| d == n))
-            .map(|(c, _)| c)
-            .collect();
-        let pos = arriving
-            .first()
-            .copied()
-            .unwrap_or_else(|| top.iter().position(Option::is_none).unwrap_or(top.len()));
+        let arriving: Vec<usize> = top.iter().enumerate().filter(|(_, t)| t.as_ref().is_some_and(|(d, _)| d == n)).map(|(c, _)| c).collect();
+        let pos = arriving.first().copied().unwrap_or_else(|| top.iter().position(Option::is_none).unwrap_or(top.len()));
         let mut bottom = top.clone();
         while bottom.len() <= pos {
             bottom.push(None);
@@ -437,13 +354,7 @@ fn component_rows(comp: &[String], edges: &Edges) -> Vec<Row> {
 
         let mut started: Vec<usize> = Vec::new();
         for (k, d) in dependents.get(n).into_iter().flatten().enumerate() {
-            let lane = (
-                d.clone(),
-                kinds
-                    .get(&(d.clone(), n.clone()))
-                    .copied()
-                    .unwrap_or(EdgeKind::Dep),
-            );
+            let lane = (d.clone(), kinds.get(&(d.clone(), n.clone())).copied().unwrap_or(EdgeKind::Dep));
             if k == 0 {
                 bottom[pos] = Some(lane);
                 started.push(pos);
@@ -451,17 +362,8 @@ fn component_rows(comp: &[String], edges: &Edges) -> Vec<Row> {
                 // Reuse the free column *nearest* the node, not the leftmost gap: the
                 // same lane count, but a shorter horizontal bridge and fewer crossings.
                 // Ties go to the lower column.
-                let free: Vec<usize> = bottom
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, t)| t.is_none())
-                    .map(|(c, _)| c)
-                    .collect();
-                let c = free
-                    .iter()
-                    .min_by_key(|c| (c.abs_diff(pos), **c))
-                    .copied()
-                    .unwrap_or(bottom.len());
+                let free: Vec<usize> = bottom.iter().enumerate().filter(|(_, t)| t.is_none()).map(|(c, _)| c).collect();
+                let c = free.iter().min_by_key(|c| (c.abs_diff(pos), **c)).copied().unwrap_or(bottom.len());
                 if c == bottom.len() {
                     bottom.push(None);
                 }
@@ -480,14 +382,7 @@ fn component_rows(comp: &[String], edges: &Edges) -> Vec<Row> {
 }
 
 /// Turn one node's lane transition into characters.
-fn draw_row(
-    n: &str,
-    top: &[LaneOwner],
-    bottom: &[LaneOwner],
-    pos: usize,
-    arriving: &[usize],
-    started: &[usize],
-) -> Row {
+fn draw_row(n: &str, top: &[LaneOwner], bottom: &[LaneOwner], pos: usize, arriving: &[usize], started: &[usize]) -> Row {
     let width = top.len().max(bottom.len()).max(pos + 1);
     let mut dirs: Vec<BTreeSet<char>> = vec![BTreeSet::new(); width];
     let mut owner: Vec<LaneOwner> = vec![None; width];
@@ -496,13 +391,12 @@ fn draw_row(
     // borrowed mutably while iterating it, so the owner map cannot be touched inside.
     let mut bridges: Vec<(usize, LaneOwner)> = Vec::new();
 
-    let colour =
-        |owner: &mut Vec<LaneOwner>, opri: &mut Vec<i8>, c: usize, who: &LaneOwner, pri: i8| {
-            if who.is_some() && pri > opri[c] {
-                opri[c] = pri;
-                owner[c].clone_from(who);
-            }
-        };
+    let colour = |owner: &mut Vec<LaneOwner>, opri: &mut Vec<i8>, c: usize, who: &LaneOwner, pri: i8| {
+        if who.is_some() && pri > opri[c] {
+            opri[c] = pri;
+            owner[c].clone_from(who);
+        }
+    };
 
     for (c, cell) in top.iter().enumerate().take(width) {
         if cell.is_some() && !arriving.contains(&c) && c != pos {
@@ -520,12 +414,7 @@ fn draw_row(
         colour(&mut owner, &mut opri, *a, &lane, 2);
         dirs[pos].insert(if *a < pos { 'L' } else { 'R' });
         colour(&mut owner, &mut opri, pos, &lane, 1);
-        for (k, cell) in dirs
-            .iter_mut()
-            .enumerate()
-            .take(*a.max(&pos))
-            .skip(a.min(&pos) + 1)
-        {
+        for (k, cell) in dirs.iter_mut().enumerate().take(*a.max(&pos)).skip(a.min(&pos) + 1) {
             cell.extend(['L', 'R']);
             bridges.push((k, lane.clone()));
         }
@@ -540,12 +429,7 @@ fn draw_row(
         colour(&mut owner, &mut opri, *b, &lane, 2);
         dirs[pos].insert(if *b > pos { 'R' } else { 'L' });
         colour(&mut owner, &mut opri, pos, &lane, 1);
-        for (k, cell) in dirs
-            .iter_mut()
-            .enumerate()
-            .take(pos.max(*b))
-            .skip(pos.min(*b) + 1)
-        {
+        for (k, cell) in dirs.iter_mut().enumerate().take(pos.max(*b)).skip(pos.min(*b) + 1) {
             cell.extend(['L', 'R']);
             bridges.push((k, lane.clone()));
         }
@@ -610,10 +494,7 @@ pub(crate) fn overview_ids(g: &Graph) -> BTreeSet<String> {
     let mut keep = BTreeSet::new();
     for comp in components(&all, &edges) {
         let members: BTreeSet<&str> = comp.iter().map(String::as_str).collect();
-        let authored = comp.iter().any(|i| {
-            g.get(i)
-                .is_some_and(|r| r.depends_on.iter().any(|d| members.contains(d.as_str())))
-        });
+        let authored = comp.iter().any(|i| g.get(i).is_some_and(|r| r.depends_on.iter().any(|d| members.contains(d.as_str()))));
         if authored {
             keep.extend(comp);
         }
@@ -625,21 +506,12 @@ pub(crate) fn overview_ids(g: &Graph) -> BTreeSet<String> {
 /// whole-graph view; removing done nodes shrinks the id set, and the components are then
 /// recomputed over the remaining subgraph so no synthetic edges appear across omitted
 /// nodes.
-pub(crate) fn filter_done(
-    g: &Graph,
-    ids: &BTreeSet<String>,
-    omit_done: bool,
-    include_done_chains: bool,
-    hide_done_chains: bool,
-) -> BTreeSet<String> {
+pub(crate) fn filter_done(g: &Graph, ids: &BTreeSet<String>, omit_done: bool, include_done_chains: bool, hide_done_chains: bool) -> BTreeSet<String> {
     let mut kept = ids.clone();
     if hide_done_chains && !include_done_chains {
         let edges = drawn_edges(g, &kept, false, false);
         for comp in components(&kept, &edges) {
-            if comp
-                .iter()
-                .all(|i| g.get(i).is_some_and(|r| is_terminal(&r.status)))
-            {
+            if comp.iter().all(|i| g.get(i).is_some_and(|r| is_terminal(&r.status))) {
                 for i in comp {
                     kept.remove(&i);
                 }
@@ -679,35 +551,17 @@ mod tests {
         // `a` blocks only `d`; `b -> c -> d` is a chain. Prerequisites-first alone puts
         // `a` first (lowest id among the roots), leaving its lane open beside the whole
         // chain. Nothing forces that: it need only precede `d`.
-        let mut order: Vec<String> = ["a", "b", "c", "d"]
-            .iter()
-            .map(|s| (*s).to_string())
-            .collect();
-        let pairs: Vec<(String, String)> = [("a", "d"), ("b", "c"), ("c", "d")]
-            .iter()
-            .map(|(x, y)| ((*x).to_string(), (*y).to_string()))
-            .collect();
+        let mut order: Vec<String> = ["a", "b", "c", "d"].iter().map(|s| (*s).to_string()).collect();
+        let pairs: Vec<(String, String)> = [("a", "d"), ("b", "c"), ("c", "d")].iter().map(|(x, y)| ((*x).to_string(), (*y).to_string())).collect();
         shorten_lanes(&mut order, &pairs);
         assert_eq!(order, ["b", "c", "a", "d"]);
     }
 
     #[test]
     fn shortening_never_breaks_prerequisites_first() {
-        let mut order: Vec<String> = ["a", "b", "c", "d", "e", "f"]
-            .iter()
-            .map(|s| (*s).to_string())
-            .collect();
-        let pairs: Vec<(String, String)> = [
-            ("a", "d"),
-            ("b", "c"),
-            ("c", "d"),
-            ("a", "e"),
-            ("d", "f"),
-            ("e", "f"),
-        ]
-        .iter()
-        .map(|(x, y)| ((*x).to_string(), (*y).to_string()))
-        .collect();
+        let mut order: Vec<String> = ["a", "b", "c", "d", "e", "f"].iter().map(|s| (*s).to_string()).collect();
+        let pairs: Vec<(String, String)> =
+            [("a", "d"), ("b", "c"), ("c", "d"), ("a", "e"), ("d", "f"), ("e", "f")].iter().map(|(x, y)| ((*x).to_string(), (*y).to_string())).collect();
         shorten_lanes(&mut order, &pairs);
         for (a, b) in &pairs {
             let at = |x: &String| order.iter().position(|v| v == x).unwrap_or(usize::MAX);
@@ -719,18 +573,9 @@ mod tests {
     fn shortening_is_independent_of_the_input_order() {
         // The search runs off maps in places, so the guard that matters is that the
         // result does not depend on which order the ids arrived in.
-        let pairs: Vec<(String, String)> = [("a", "d"), ("b", "c"), ("c", "d")]
-            .iter()
-            .map(|(x, y)| ((*x).to_string(), (*y).to_string()))
-            .collect();
-        let mut first: Vec<String> = ["a", "b", "c", "d"]
-            .iter()
-            .map(|s| (*s).to_string())
-            .collect();
-        let mut second: Vec<String> = ["b", "a", "c", "d"]
-            .iter()
-            .map(|s| (*s).to_string())
-            .collect();
+        let pairs: Vec<(String, String)> = [("a", "d"), ("b", "c"), ("c", "d")].iter().map(|(x, y)| ((*x).to_string(), (*y).to_string())).collect();
+        let mut first: Vec<String> = ["a", "b", "c", "d"].iter().map(|s| (*s).to_string()).collect();
+        let mut second: Vec<String> = ["b", "a", "c", "d"].iter().map(|s| (*s).to_string()).collect();
         shorten_lanes(&mut first, &pairs);
         shorten_lanes(&mut second, &pairs);
         assert_eq!(first, second);
@@ -739,10 +584,7 @@ mod tests {
     #[test]
     fn a_reduced_edge_is_dropped_only_when_the_path_is_drawn() {
         let mut edges: BTreeMap<String, Vec<(String, EdgeKind)>> = BTreeMap::new();
-        edges.insert(
-            "c".into(),
-            vec![("b".into(), EdgeKind::Dep), ("a".into(), EdgeKind::Dep)],
-        );
+        edges.insert("c".into(), vec![("b".into(), EdgeKind::Dep), ("a".into(), EdgeKind::Dep)]);
         edges.insert("b".into(), vec![("a".into(), EdgeKind::Dep)]);
         edges.insert("a".into(), vec![]);
         let reduced = transitive_reduction(&edges);

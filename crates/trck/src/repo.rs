@@ -17,17 +17,9 @@ use std::path::Path;
 
 /// Run a git command in the tracker directory, returning its trimmed stdout.
 fn git(ctx: &Ctx, args: &[&str]) -> Result<String, String> {
-    let out = std::process::Command::new("git")
-        .args(args)
-        .current_dir(&ctx.dir)
-        .output()
-        .map_err(|e| format!("running git: {e}"))?;
+    let out = std::process::Command::new("git").args(args).current_dir(&ctx.dir).output().map_err(|e| format!("running git: {e}"))?;
     if !out.status.success() {
-        return Err(format!(
-            "git {}: {}",
-            args.join(" "),
-            String::from_utf8_lossy(&out.stderr).trim()
-        ));
+        return Err(format!("git {}: {}", args.join(" "), String::from_utf8_lossy(&out.stderr).trim()));
     }
     Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
 }
@@ -50,19 +42,12 @@ fn engine_invocation() -> Result<String, String> {
 // Matched as a prefix so a header written by an older version is recognised as ours and
 // refreshed in place, rather than accumulating one comment per release.
 const GITATTRIBUTES_HEADER_PREFIX: &str = "# Managed by `trck repo setup-git`";
-const GITATTRIBUTES_HEADER: &str = concat!(
-    "# Managed by `trck repo setup-git`",
-    " — trck's merge drivers, and the line endings its formats require."
-);
+const GITATTRIBUTES_HEADER: &str = concat!("# Managed by `trck repo setup-git`", " — trck's merge drivers, and the line endings its formats require.");
 // `text eol=lf` is not a style preference. `index.jsonl` and `SUMMARY.md` are rendered with
 // `\n` and compared byte for byte, and the bodies are rewritten by `edit --title`. Checked
 // out as CRLF, the working tree disagrees with the engine from the first verb onwards and
 // every commit shows the whole file as changed.
-const GITATTRIBUTES_LINES: &[&str] = &[
-    "index.jsonl merge=trck-index text eol=lf",
-    "SUMMARY.md merge=trck-summary text eol=lf",
-    "items/*.md text eol=lf",
-];
+const GITATTRIBUTES_LINES: &[&str] = &["index.jsonl merge=trck-index text eol=lf", "SUMMARY.md merge=trck-summary text eol=lf", "items/*.md text eol=lf"];
 
 /// The lines to write, or `None` when the file already says all of this.
 ///
@@ -96,9 +81,7 @@ fn gitattributes_update(existing: &[&str]) -> Option<Vec<String>> {
         }
     }
 
-    let header_at = out
-        .iter()
-        .position(|l| l.starts_with(GITATTRIBUTES_HEADER_PREFIX));
+    let header_at = out.iter().position(|l| l.starts_with(GITATTRIBUTES_HEADER_PREFIX));
     if let Some(i) = header_at {
         if out[i] != GITATTRIBUTES_HEADER {
             out[i] = GITATTRIBUTES_HEADER.to_string();
@@ -147,25 +130,14 @@ pub(crate) fn cmd_setup_git(ctx: &Ctx) -> Result<String, String> {
         write_atomic(&path, &(lines.join("\n") + "\n"))?;
         out.push(format!("wrote {}", path.display()));
     } else {
-        out.push(format!(
-            "{} already declares the trck drivers",
-            path.display()
-        ));
+        out.push(format!("{} already declares the trck drivers", path.display()));
     }
 
     // --- per-clone half: define what they run ---
     let engine = engine_invocation()?;
     let drivers = [
-        (
-            "trck-index",
-            format!("{engine} repo merge-index %O %A %B"),
-            "trck index.jsonl row-wise 3-way merge",
-        ),
-        (
-            "trck-summary",
-            format!("{engine} repo merge-summary %A"),
-            "trck SUMMARY.md regeneration",
-        ),
+        ("trck-index", format!("{engine} repo merge-index %O %A %B"), "trck index.jsonl row-wise 3-way merge"),
+        ("trck-summary", format!("{engine} repo merge-summary %A"), "trck SUMMARY.md regeneration"),
     ];
     for (name, cmd, label) in &drivers {
         git(ctx, &["config", &format!("merge.{name}.driver"), cmd])?;
@@ -182,29 +154,12 @@ pub(crate) fn cmd_setup_git(ctx: &Ctx) -> Result<String, String> {
 
 /// `repo install-hook` — a pre-commit hook that runs `trck check` when the tracker changes.
 pub(crate) fn cmd_install_hook(ctx: &Ctx) -> Result<String, String> {
-    let common = git(ctx, &["rev-parse", "--git-common-dir"])
-        .map_err(|_| "not a git repository".to_string())?;
-    let toplevel = git(ctx, &["rev-parse", "--show-toplevel"])
-        .map_err(|_| "not a git repository".to_string())?;
-    let root = std::path::Path::new(&toplevel)
-        .canonicalize()
-        .map_err(|e| format!("{toplevel}: {e}"))?;
-    let dir = ctx
-        .dir
-        .canonicalize()
-        .map_err(|e| format!("{}: {e}", ctx.dir.display()))?;
-    let rel = dir.strip_prefix(&root).map_err(|_| {
-        format!(
-            "tracker dir {} is not inside the git repo at {}",
-            ctx.dir.display(),
-            root.display()
-        )
-    })?;
-    let rel = if rel.as_os_str().is_empty() {
-        ".".to_string()
-    } else {
-        rel.to_string_lossy().replace('\\', "/")
-    };
+    let common = git(ctx, &["rev-parse", "--git-common-dir"]).map_err(|_| "not a git repository".to_string())?;
+    let toplevel = git(ctx, &["rev-parse", "--show-toplevel"]).map_err(|_| "not a git repository".to_string())?;
+    let root = std::path::Path::new(&toplevel).canonicalize().map_err(|e| format!("{toplevel}: {e}"))?;
+    let dir = ctx.dir.canonicalize().map_err(|e| format!("{}: {e}", ctx.dir.display()))?;
+    let rel = dir.strip_prefix(&root).map_err(|_| format!("tracker dir {} is not inside the git repo at {}", ctx.dir.display(), root.display()))?;
+    let rel = if rel.as_os_str().is_empty() { ".".to_string() } else { rel.to_string_lossy().replace('\\', "/") };
 
     let hooks = ctx.dir.join(&common);
     let hooks = hooks.canonicalize().unwrap_or(hooks).join("hooks");
@@ -215,18 +170,9 @@ pub(crate) fn cmd_install_hook(ctx: &Ctx) -> Result<String, String> {
     // match git's repo-relative staged paths — the hook would silently never run. There the
     // whole repo is the tracker, so fire on any staged change.
     let (guard, edir) = if rel == "." {
-        (
-            "if [ -n \"$staged\" ]; then".to_string(),
-            "$root".to_string(),
-        )
+        ("if [ -n \"$staged\" ]; then".to_string(), "$root".to_string())
     } else {
-        (
-            format!(
-                "if printf '%s\\n' \"$staged\" | grep -qE '(^|/){}/'; then",
-                rel.replace('.', "\\.")
-            ),
-            format!("$root/{rel}"),
-        )
+        (format!("if printf '%s\\n' \"$staged\" | grep -qE '(^|/){}/'; then", rel.replace('.', "\\.")), format!("$root/{rel}"))
     };
     let engine = engine_invocation()?;
     let body = format!(
@@ -251,8 +197,7 @@ pub(crate) fn cmd_install_hook(ctx: &Ctx) -> Result<String, String> {
 #[cfg(unix)]
 fn make_executable(path: &Path) -> Result<(), String> {
     use std::os::unix::fs::PermissionsExt;
-    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755))
-        .map_err(|e| format!("{}: {e}", path.display()))
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755)).map_err(|e| format!("{}: {e}", path.display()))
 }
 
 // The `Result` is unnecessary on this platform, and deliberately kept: the two `cfg`
@@ -272,10 +217,7 @@ pub(crate) fn cmd_normalize(ctx: &Ctx) -> Result<String, String> {
     let rows = parse_index(&text, "index.jsonl")?;
     let n = rows.len();
     crate::verbs::finalize(ctx, rows)?;
-    Ok(format!(
-        "normalized {} ({n} issues)",
-        ctx.index_path().display()
-    ))
+    Ok(format!("normalized {} ({n} issues)", ctx.index_path().display()))
 }
 
 /// `repo migrate-layout [--dry-run]` — move issue bodies out of per-status folders.
@@ -287,10 +229,7 @@ pub(crate) fn cmd_normalize(ctx: &Ctx) -> Result<String, String> {
 pub(crate) fn cmd_migrate_layout(ctx: &Ctx, dry_run: bool) -> Result<String, String> {
     let stale = crate::discovery::legacy_layout_files(&ctx.dir);
     if stale.is_empty() {
-        return Ok(format!(
-            "migrate-layout: nothing to migrate (already flat in {}/)",
-            crate::discovery::ITEMS_DIR
-        ));
+        return Ok(format!("migrate-layout: nothing to migrate (already flat in {}/)", crate::discovery::ITEMS_DIR));
     }
     let text = std::fs::read_to_string(ctx.index_path()).unwrap_or_default();
     let rows = parse_index(&text, "index.jsonl")?;
@@ -298,25 +237,13 @@ pub(crate) fn cmd_migrate_layout(ctx: &Ctx, dry_run: bool) -> Result<String, Str
 
     let (mut drift, mut collisions, mut moves) = (Vec::new(), Vec::new(), Vec::new());
     for p in &stale {
-        let name = p
-            .file_name()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .to_string();
+        let name = p.file_name().unwrap_or_default().to_string_lossy().to_string();
         let iid = name.split('-').next().unwrap_or_default().to_string();
-        let folder = p
-            .parent()
-            .and_then(|d| d.file_name())
-            .unwrap_or_default()
-            .to_string_lossy()
-            .to_string();
+        let folder = p.parent().and_then(|d| d.file_name()).unwrap_or_default().to_string_lossy().to_string();
         if let Some(row) = rows.iter().find(|r| r.id == iid)
             && row.status != folder
         {
-            drift.push(format!(
-                "#{iid}: index says '{}', file sits in '{folder}/'",
-                row.status
-            ));
+            drift.push(format!("#{iid}: index says '{}', file sits in '{folder}/'", row.status));
             continue;
         }
         let dest = dest_dir.join(&name);
@@ -336,32 +263,20 @@ pub(crate) fn cmd_migrate_layout(ctx: &Ctx, dry_run: bool) -> Result<String, Str
         ));
     }
     if !collisions.is_empty() {
-        return Err(format!(
-            "destination already occupied for {} file(s):\n  {}",
-            collisions.len(),
-            collisions.join("\n  ")
-        ));
+        return Err(format!("destination already occupied for {} file(s):\n  {}", collisions.len(), collisions.join("\n  ")));
     }
 
     if dry_run {
-        let mut out = vec![format!(
-            "migrate-layout: would move {} file(s) into {}/",
-            moves.len(),
-            crate::discovery::ITEMS_DIR
-        )];
+        let mut out = vec![format!("migrate-layout: would move {} file(s) into {}/", moves.len(), crate::discovery::ITEMS_DIR)];
         for (_, _, folder, name) in &moves {
-            out.push(format!(
-                "  {folder}/{name} -> {}/{name}",
-                crate::discovery::ITEMS_DIR
-            ));
+            out.push(format!("  {folder}/{name} -> {}/{name}", crate::discovery::ITEMS_DIR));
         }
         return Ok(out.join("\n"));
     }
 
     std::fs::create_dir_all(&dest_dir).map_err(|e| format!("{}: {e}", dest_dir.display()))?;
     for (src, dest, _, _) in &moves {
-        std::fs::rename(src, dest)
-            .map_err(|e| format!("{} -> {}: {e}", src.display(), dest.display()))?;
+        std::fs::rename(src, dest).map_err(|e| format!("{} -> {}: {e}", src.display(), dest.display()))?;
     }
     // Drop the status folders that are now empty. One holding anything else — a README, a
     // scratch note — is left alone, which `remove_dir` gives for free by refusing.
@@ -371,11 +286,7 @@ pub(crate) fn cmd_migrate_layout(ctx: &Ctx, dry_run: bool) -> Result<String, Str
     for folder in folders {
         let _ = std::fs::remove_dir(folder);
     }
-    Ok(format!(
-        "migrate-layout: moved {} file(s) into {}/",
-        moves.len(),
-        crate::discovery::ITEMS_DIR
-    ))
+    Ok(format!("migrate-layout: moved {} file(s) into {}/", moves.len(), crate::discovery::ITEMS_DIR))
 }
 
 /// Read an index file into raw JSON rows.
@@ -410,12 +321,7 @@ fn read_rows(path: &str) -> Result<Vec<Json>, String> {
 /// On a conflict it writes marker blocks and leaves `SUMMARY.md` alone. A rollup regenerated
 /// from a half-merged index would launder the conflict into a plausible-looking file; a
 /// stale rollup is obvious, a fabricated one is not.
-pub(crate) fn cmd_merge_index(
-    ctx: Option<&Ctx>,
-    base: &str,
-    current: &str,
-    other: &str,
-) -> Result<String, String> {
+pub(crate) fn cmd_merge_index(ctx: Option<&Ctx>, base: &str, current: &str, other: &str) -> Result<String, String> {
     let (base_rows, a_rows, b_rows) = (read_rows(base)?, read_rows(current)?, read_rows(other)?);
     let (rows, conflicts) = merge_rows(&base_rows, &a_rows, &b_rows)?;
     let dest = Path::new(current);
@@ -433,16 +339,8 @@ pub(crate) fn cmd_merge_index(
     // be parsed — and therefore cannot be `git add`ed unread — until a human resolves it.
     // Sides are labelled by position, never by ownership.
     let bad = conflict_ids(&conflicts);
-    let by = |rows: &[Json], id: &str| -> Option<Json> {
-        rows.iter()
-            .find(|r| r.get("id").and_then(Json::as_str) == Some(id))
-            .cloned()
-    };
-    let mut out: Vec<String> = rows
-        .iter()
-        .filter(|r| !bad.contains(&r.id))
-        .map(|r| r.to_canonical().to_json())
-        .collect();
+    let by = |rows: &[Json], id: &str| -> Option<Json> { rows.iter().find(|r| r.get("id").and_then(Json::as_str) == Some(id)).cloned() };
+    let mut out: Vec<String> = rows.iter().filter(|r| !bad.contains(&r.id)).map(|r| r.to_canonical().to_json()).collect();
     for iid in &bad {
         out.push(format!("<<<<<<< one side ({iid})"));
         if let Some(r) = by(&a_rows, iid) {
@@ -458,10 +356,7 @@ pub(crate) fn cmd_merge_index(
 
     // Self-labelled, so `main` prints it verbatim: git shows a driver's stderr to the user
     // as-is, and this is a whole report — headline, the conflicts, then what to do next.
-    let mut lines = vec![format!(
-        "trck: index.jsonl has {} unresolved conflict(s):",
-        conflicts.len()
-    )];
+    let mut lines = vec![format!("trck: index.jsonl has {} unresolved conflict(s):", conflicts.len())];
     lines.extend(conflicts.iter().map(|c| format!("  {c}")));
     lines.push("resolve the marked rows, then `git add` and re-run `trck check`.".into());
     Err(lines.join("\n"))
@@ -499,10 +394,7 @@ mod tests {
     }
 
     fn line_for<'a>(lines: &'a [String], pattern: &str) -> Vec<&'a String> {
-        lines
-            .iter()
-            .filter(|l| l.split_whitespace().next() == Some(pattern))
-            .collect()
+        lines.iter().filter(|l| l.split_whitespace().next() == Some(pattern)).collect()
     }
 
     /// A CRLF checkout would put the working tree at odds with the engine.
@@ -525,10 +417,7 @@ mod tests {
 
     #[test]
     fn a_file_that_already_says_all_of_it_is_left_alone() {
-        let text = format!(
-            "{GITATTRIBUTES_HEADER}\n{}\n",
-            GITATTRIBUTES_LINES.join("\n")
-        );
+        let text = format!("{GITATTRIBUTES_HEADER}\n{}\n", GITATTRIBUTES_LINES.join("\n"));
         assert!(update(&text).is_none(), "rewrote an up-to-date file");
     }
 
@@ -548,10 +437,7 @@ mod tests {
         assert_eq!(found.len(), 1, "{out:?}");
         assert!(found[0].contains("eol=lf"), "{}", found[0]);
         // One header, refreshed rather than duplicated, and the block stays contiguous.
-        let headers: Vec<&String> = out
-            .iter()
-            .filter(|l| l.starts_with(GITATTRIBUTES_HEADER_PREFIX))
-            .collect();
+        let headers: Vec<&String> = out.iter().filter(|l| l.starts_with(GITATTRIBUTES_HEADER_PREFIX)).collect();
         assert_eq!(headers, vec![&GITATTRIBUTES_HEADER.to_string()], "{out:?}");
     }
 
@@ -561,28 +447,19 @@ mod tests {
     fn a_users_own_rule_for_our_path_is_not_overwritten() {
         let out = update("index.jsonl -diff\n").expect("ours is still missing");
         assert!(out.iter().any(|l| l == "index.jsonl -diff"), "{out:?}");
-        assert!(
-            out.iter().any(|l| l.contains("merge=trck-index")),
-            "{out:?}"
-        );
+        assert!(out.iter().any(|l| l.contains("merge=trck-index")), "{out:?}");
     }
 
     #[test]
     fn unrelated_content_survives() {
         let out = update("*.png binary\n").expect("ours is missing");
         assert!(out.iter().any(|l| l == "*.png binary"), "{out:?}");
-        assert!(
-            out.iter().any(|l| l.contains("merge=trck-index")),
-            "{out:?}"
-        );
+        assert!(out.iter().any(|l| l.contains("merge=trck-index")), "{out:?}");
     }
 
     #[test]
     fn applying_twice_changes_nothing_the_second_time() {
         let once = update("*.png binary\n").expect("ours is missing");
-        assert!(
-            gitattributes_update(&once.iter().map(String::as_str).collect::<Vec<_>>()).is_none(),
-            "not idempotent: {once:?}"
-        );
+        assert!(gitattributes_update(&once.iter().map(String::as_str).collect::<Vec<_>>()).is_none(), "not idempotent: {once:?}");
     }
 }

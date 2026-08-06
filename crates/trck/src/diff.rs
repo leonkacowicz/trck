@@ -25,11 +25,7 @@ const SET_FIELDS: &[&str] = &["labels", "depends_on"];
 /// Everything comparable as a scalar: the canonical fields minus the id, the timestamps
 /// and the set-valued ones.
 fn scalar_fields() -> Vec<&'static str> {
-    CANON_KEYS
-        .iter()
-        .copied()
-        .filter(|k| *k != "id" && !TIMESTAMP_FIELDS.contains(k) && !SET_FIELDS.contains(k))
-        .collect()
+    CANON_KEYS.iter().copied().filter(|k| *k != "id" && !TIMESTAMP_FIELDS.contains(k) && !SET_FIELDS.contains(k)).collect()
 }
 
 /// A tracker state, and a label naming where it came from.
@@ -40,10 +36,7 @@ pub(crate) struct Snapshot {
 
 impl Snapshot {
     fn from_text(text: &str, label: &str) -> Result<Snapshot, String> {
-        Ok(Snapshot {
-            label: label.to_string(),
-            rows: parse_index(text, label)?,
-        })
+        Ok(Snapshot { label: label.to_string(), rows: parse_index(text, label)? })
     }
 }
 
@@ -93,10 +86,7 @@ pub(crate) fn status_direction(old: &str, new: &str) -> Option<&'static str> {
 
 /// Every comparable scalar of a row, built-in and custom alike.
 fn values(row: &Issue) -> BTreeMap<String, String> {
-    let mut out: BTreeMap<String, String> = scalar_fields()
-        .into_iter()
-        .filter_map(|k| field_value(row, k).map(|v| (k.to_string(), v)))
-        .collect();
+    let mut out: BTreeMap<String, String> = scalar_fields().into_iter().filter_map(|k| field_value(row, k).map(|v| (k.to_string(), v))).collect();
     for (k, v) in &row.extra {
         if let Some(s) = v.as_str() {
             out.insert(k.clone(), s.to_string());
@@ -114,29 +104,16 @@ fn compare(old: &Issue, new: &Issue) -> Option<Change> {
     let fields: Vec<FieldDelta> = keys
         .into_iter()
         .filter(|k| ov.get(*k) != nv.get(*k))
-        .map(|k| FieldDelta {
-            name: k.clone(),
-            old: ov.get(k).cloned(),
-            new: nv.get(k).cloned(),
-        })
+        .map(|k| FieldDelta { name: k.clone(), old: ov.get(k).cloned(), new: nv.get(k).cloned() })
         .collect();
 
     let mut sets = Vec::new();
     for name in SET_FIELDS {
-        let pick = |r: &Issue| -> BTreeSet<String> {
-            if *name == "labels" {
-                r.labels.iter().cloned().collect()
-            } else {
-                r.depends_on.iter().cloned().collect()
-            }
-        };
+        let pick =
+            |r: &Issue| -> BTreeSet<String> { if *name == "labels" { r.labels.iter().cloned().collect() } else { r.depends_on.iter().cloned().collect() } };
         let (a, b) = (pick(old), pick(new));
         if a != b {
-            sets.push(SetDelta {
-                name: (*name).to_string(),
-                added: b.difference(&a).cloned().collect(),
-                removed: a.difference(&b).cloned().collect(),
-            });
+            sets.push(SetDelta { name: (*name).to_string(), added: b.difference(&a).cloned().collect(), removed: a.difference(&b).cloned().collect() });
         }
     }
 
@@ -145,11 +122,8 @@ fn compare(old: &Issue, new: &Issue) -> Option<Change> {
         "started" => r.started.clone(),
         _ => r.closed.clone(),
     };
-    let timestamps: BTreeMap<String, (Option<String>, Option<String>)> = TIMESTAMP_FIELDS
-        .iter()
-        .filter(|k| stamp(old, k) != stamp(new, k))
-        .map(|k| ((*k).to_string(), (stamp(old, k), stamp(new, k))))
-        .collect();
+    let timestamps: BTreeMap<String, (Option<String>, Option<String>)> =
+        TIMESTAMP_FIELDS.iter().filter(|k| stamp(old, k) != stamp(new, k)).map(|k| ((*k).to_string(), (stamp(old, k), stamp(new, k)))).collect();
 
     if fields.is_empty() && sets.is_empty() && timestamps.is_empty() {
         return None;
@@ -196,8 +170,8 @@ pub(crate) fn diff_snapshots(old: &Snapshot, new: &Snapshot) -> Vec<Change> {
                 if let Some(c) = compare(o, n) {
                     changes.push(c);
                 }
-            }
-            (None, None) => {}
+            },
+            (None, None) => {},
         }
     }
     changes
@@ -206,27 +180,14 @@ pub(crate) fn diff_snapshots(old: &Snapshot, new: &Snapshot) -> Vec<Change> {
 /// A compact, plain-text account of what moved on one issue.
 pub(crate) fn change_summary(c: &Change) -> String {
     let show = |v: &Option<String>| v.clone().unwrap_or_else(|| "None".to_string());
-    let mut bits: Vec<String> = c
-        .fields
-        .iter()
-        .map(|f| format!("{} {} → {}", f.name, show(&f.old), show(&f.new)))
-        .collect();
+    let mut bits: Vec<String> = c.fields.iter().map(|f| format!("{} {} → {}", f.name, show(&f.old), show(&f.new))).collect();
     for s in &c.sets {
-        let members: Vec<String> = s
-            .added
-            .iter()
-            .map(|v| format!("+{v}"))
-            .chain(s.removed.iter().map(|v| format!("-{v}")))
-            .collect();
+        let members: Vec<String> = s.added.iter().map(|v| format!("+{v}")).chain(s.removed.iter().map(|v| format!("-{v}"))).collect();
         bits.push(format!("{} {}", s.name, members.join(" ")));
     }
     if bits.is_empty() {
         // A timestamp-only edit still changed something; say what.
-        bits = c
-            .timestamps
-            .iter()
-            .map(|(k, (a, b))| format!("{k} {} → {}", show(a), show(b)))
-            .collect();
+        bits = c.timestamps.iter().map(|(k, (a, b))| format!("{k} {} → {}", show(a), show(b))).collect();
     }
     bits.join(", ")
 }
@@ -250,26 +211,14 @@ fn git_run(args: &[&str], cwd: &Path) -> Result<std::process::Output, String> {
 fn git_tracker_prefix(ctx: &Ctx) -> Result<String, String> {
     let out = git_run(&["rev-parse", "--show-toplevel"], &ctx.dir)?;
     if !out.status.success() {
-        return Err(format!(
-            "not a git repository, so revision specs are unavailable; {USE_FROM}"
-        ));
+        return Err(format!("not a git repository, so revision specs are unavailable; {USE_FROM}"));
     }
     let root = Path::new(String::from_utf8_lossy(&out.stdout).trim()).to_path_buf();
     let dir = ctx.dir.canonicalize().unwrap_or_else(|_| ctx.dir.clone());
     let root = root.canonicalize().unwrap_or(root);
-    let rel = dir.strip_prefix(&root).map_err(|_| {
-        format!(
-            "tracker dir {} is not inside the git repo at {}",
-            ctx.dir.display(),
-            root.display()
-        )
-    })?;
+    let rel = dir.strip_prefix(&root).map_err(|_| format!("tracker dir {} is not inside the git repo at {}", ctx.dir.display(), root.display()))?;
     let rel = rel.to_string_lossy().replace('\\', "/");
-    Ok(if rel.is_empty() || rel == "." {
-        String::new()
-    } else {
-        format!("{rel}/")
-    })
+    Ok(if rel.is_empty() || rel == "." { String::new() } else { format!("{rel}/") })
 }
 
 /// The tracker as of `rev`.
@@ -279,26 +228,14 @@ fn git_tracker_prefix(ctx: &Ctx) -> Result<String, String> {
 /// issue is new". An unresolvable revision *is* an error, reported separately, so "you
 /// typo'd the branch" stays distinguishable from "the tracker did not exist yet".
 pub(crate) fn git_snapshot(ctx: &Ctx, rev: &str) -> Result<Snapshot, String> {
-    let verify = git_run(
-        &[
-            "rev-parse",
-            "--verify",
-            "--quiet",
-            &format!("{rev}^{{commit}}"),
-        ],
-        &ctx.dir,
-    )?;
+    let verify = git_run(&["rev-parse", "--verify", "--quiet", &format!("{rev}^{{commit}}")], &ctx.dir)?;
     if !verify.status.success() {
         return Err(format!("unknown revision '{rev}'"));
     }
     let prefix = git_tracker_prefix(ctx)?;
     let path = format!("{prefix}index.jsonl");
     let out = git_run(&["show", &format!("{rev}:{path}")], &ctx.dir)?;
-    let text = if out.status.success() {
-        String::from_utf8_lossy(&out.stdout).into_owned()
-    } else {
-        String::new()
-    };
+    let text = if out.status.success() { String::from_utf8_lossy(&out.stdout).into_owned() } else { String::new() };
     Snapshot::from_text(&text, rev)
 }
 
@@ -313,9 +250,7 @@ pub(crate) fn parse_rev_spec(spec: &str) -> Result<(String, Option<String>), Str
         return Ok((spec.to_string(), None));
     };
     if old.is_empty() || new.is_empty() {
-        return Err(format!(
-            "incomplete revision range '{spec}'; both sides of `..` are required"
-        ));
+        return Err(format!("incomplete revision range '{spec}'; both sides of `..` are required"));
     }
     Ok((old.to_string(), Some(new.to_string())))
 }
@@ -330,17 +265,13 @@ pub(crate) fn resolve_source(spec: Option<&str>, ctx: &Ctx) -> Result<Snapshot, 
     if spec == "-" {
         use std::io::Read as _;
         let mut text = String::new();
-        std::io::stdin()
-            .read_to_string(&mut text)
-            .map_err(|e| format!("stdin: {e}"))?;
+        std::io::stdin().read_to_string(&mut text).map_err(|e| format!("stdin: {e}"))?;
         return Snapshot::from_text(&text, "stdin");
     }
     let path = Path::new(spec);
     // The label is the file's own name, not the spec that named it: a long relative path
     // buries the one word that identifies the side being compared.
-    let label = path
-        .file_name()
-        .map_or_else(|| spec.to_string(), |n| n.to_string_lossy().into_owned());
+    let label = path.file_name().map_or_else(|| spec.to_string(), |n| n.to_string_lossy().into_owned());
     if path.is_dir() {
         // A tracker dir with no index is an empty snapshot, not an error: the tracker
         // not existing on one side is a legitimate comparison, and everything on the
@@ -358,33 +289,14 @@ pub(crate) fn resolve_source(spec: Option<&str>, ctx: &Ctx) -> Result<Snapshot, 
 
 /// Validate a `--since` cutoff: a bare date or a full UTC timestamp.
 pub(crate) fn parse_since(value: &str) -> Result<String, String> {
-    let date_ok = value.len() >= 10
-        && value.as_bytes()[..10].iter().enumerate().all(|(i, b)| {
-            if i == 4 || i == 7 {
-                *b == b'-'
-            } else {
-                b.is_ascii_digit()
-            }
-        });
+    let date_ok = value.len() >= 10 && value.as_bytes()[..10].iter().enumerate().all(|(i, b)| if i == 4 || i == 7 { *b == b'-' } else { b.is_ascii_digit() });
     let ok = date_ok
         && (value.len() == 10
             || (value.len() == 20
                 && value.as_bytes()[10] == b'T'
                 && value.ends_with('Z')
-                && value[11..19].bytes().enumerate().all(|(i, b)| {
-                    if i == 2 || i == 5 {
-                        b == b':'
-                    } else {
-                        b.is_ascii_digit()
-                    }
-                })));
-    if ok {
-        Ok(value.to_string())
-    } else {
-        Err(format!(
-            "--since must be a date (YYYY-MM-DD) or timestamp (YYYY-MM-DDTHH:MM:SSZ), got '{value}'"
-        ))
-    }
+                && value[11..19].bytes().enumerate().all(|(i, b)| if i == 2 || i == 5 { b == b':' } else { b.is_ascii_digit() })));
+    if ok { Ok(value.to_string()) } else { Err(format!("--since must be a date (YYYY-MM-DD) or timestamp (YYYY-MM-DDTHH:MM:SSZ), got '{value}'")) }
 }
 
 /// Issues that *shipped* on or after `since`.
@@ -404,17 +316,8 @@ pub(crate) fn select_shipped(rows: &[Issue], since: &str) -> Vec<Issue> {
 
 fn walk(g: &Graph, out: &mut Vec<String>, id: &str, depth: usize, seen: &BTreeSet<String>) {
     let Some(node) = g.get(id) else { return };
-    let tag = node
-        .extra
-        .get("component")
-        .and_then(|v| v.as_str())
-        .map_or_else(String::new, |c| format!(" ({c})"));
-    out.push(format!(
-        "{}- #{} {}{tag}",
-        "  ".repeat(depth),
-        node.id,
-        node.title
-    ));
+    let tag = node.extra.get("component").and_then(|v| v.as_str()).map_or_else(String::new, |c| format!(" ({c})"));
+    out.push(format!("{}- #{} {}{tag}", "  ".repeat(depth), node.id, node.title));
     if seen.contains(id) {
         return;
     }
@@ -434,10 +337,7 @@ fn walk(g: &Graph, out: &mut Vec<String>, id: &str, depth: usize, seen: &BTreeSe
 /// Render the changelog: shipped issues nested under shipped parents, newest first.
 pub(crate) fn render_changelog(shipped: &[Issue], since: &str) -> String {
     let n = shipped.len();
-    let header = format!(
-        "## Shipped since {since} — {n} issue{}",
-        if n == 1 { "" } else { "s" }
-    );
+    let header = format!("## Shipped since {since} — {n} issue{}", if n == 1 { "" } else { "s" });
     if shipped.is_empty() {
         return format!("{header}\n\n_none_\n");
     }
@@ -454,12 +354,7 @@ pub(crate) fn render_changelog(shipped: &[Issue], since: &str) -> String {
         ids
     };
 
-    let roots: Vec<String> = g
-        .rows
-        .iter()
-        .filter(|r| r.parent.as_ref().is_none_or(|p| g.get(p).is_none()))
-        .map(|r| r.id.clone())
-        .collect();
+    let roots: Vec<String> = g.rows.iter().filter(|r| r.parent.as_ref().is_none_or(|p| g.get(p).is_none())).map(|r| r.id.clone()).collect();
     for root in sib_sorted(roots) {
         walk(&g, &mut out, &root, 0, &BTreeSet::new());
     }
@@ -517,14 +412,8 @@ mod tests {
 
     #[test]
     fn a_set_field_reports_what_it_gained_and_lost() {
-        let a = issue(&BASE.replace(
-            r#""priority": "medium""#,
-            r#""priority": "medium", "labels": ["x", "y"]"#,
-        ));
-        let b = issue(&BASE.replace(
-            r#""priority": "medium""#,
-            r#""priority": "medium", "labels": ["y", "z"]"#,
-        ));
+        let a = issue(&BASE.replace(r#""priority": "medium""#, r#""priority": "medium", "labels": ["x", "y"]"#));
+        let b = issue(&BASE.replace(r#""priority": "medium""#, r#""priority": "medium", "labels": ["y", "z"]"#));
         let c = compare(&a, &b).expect("changed");
         assert_eq!(c.sets.len(), 1);
         assert_eq!(c.sets[0].added, ["z"]);
@@ -534,10 +423,7 @@ mod tests {
     #[test]
     fn a_timestamp_only_edit_still_says_what_moved() {
         let a = issue(BASE);
-        let b = issue(&BASE.replace(
-            r#""priority": "medium""#,
-            r#""priority": "medium", "started": "2026-01-01T00:00:00Z""#,
-        ));
+        let b = issue(&BASE.replace(r#""priority": "medium""#, r#""priority": "medium", "started": "2026-01-01T00:00:00Z""#));
         let c = compare(&a, &b).expect("changed");
         assert!(c.fields.is_empty() && c.sets.is_empty());
         assert!(change_summary(&c).contains("started"));
@@ -545,28 +431,16 @@ mod tests {
 
     #[test]
     fn a_custom_field_is_compared_like_any_other_scalar() {
-        let a = issue(&BASE.replace(
-            r#""priority": "medium""#,
-            r#""priority": "medium", "assignee": "alice""#,
-        ));
-        let b = issue(&BASE.replace(
-            r#""priority": "medium""#,
-            r#""priority": "medium", "assignee": "bo""#,
-        ));
+        let a = issue(&BASE.replace(r#""priority": "medium""#, r#""priority": "medium", "assignee": "alice""#));
+        let b = issue(&BASE.replace(r#""priority": "medium""#, r#""priority": "medium", "assignee": "bo""#));
         let c = compare(&a, &b).expect("changed");
         assert_eq!(c.fields[0].name, "assignee");
     }
 
     #[test]
     fn added_and_removed_are_joined_by_id() {
-        let old = Snapshot {
-            label: "old".into(),
-            rows: vec![issue(BASE)],
-        };
-        let new = Snapshot {
-            label: "new".into(),
-            rows: vec![issue(&BASE.replace("aaaaaaa", "bbbbbbb"))],
-        };
+        let old = Snapshot { label: "old".into(), rows: vec![issue(BASE)] };
+        let new = Snapshot { label: "new".into(), rows: vec![issue(&BASE.replace("aaaaaaa", "bbbbbbb"))] };
         let changes = diff_snapshots(&old, &new);
         // Joined by id, and reported in id order: aaaaaaa (gone) before bbbbbbb (new).
         let seen: Vec<(&str, &str)> = changes.iter().map(|c| (c.id.as_str(), c.kind)).collect();
@@ -576,14 +450,8 @@ mod tests {
     #[test]
     fn a_revision_range_names_both_sides() {
         assert_eq!(parse_rev_spec("HEAD").expect("ok"), ("HEAD".into(), None));
-        assert_eq!(
-            parse_rev_spec("a..b").expect("ok"),
-            ("a".to_string(), Some("b".to_string()))
-        );
-        assert!(
-            parse_rev_spec("a...b").is_err(),
-            "merge-base specs are refused"
-        );
+        assert_eq!(parse_rev_spec("a..b").expect("ok"), ("a".to_string(), Some("b".to_string())));
+        assert!(parse_rev_spec("a...b").is_err(), "merge-base specs are refused");
         assert!(parse_rev_spec("a..").is_err());
         assert!(parse_rev_spec("..b").is_err());
     }
@@ -604,19 +472,12 @@ mod tests {
         let mk = |id: &str, res: &str| {
             issue(&format!(
                 r#"{{"id": "{id}", "slug": "s", "title": "T", "status": "done", "priority": "low", "closed": "2026-06-11T00:00:00Z"{}}}"#,
-                if res.is_empty() {
-                    String::new()
-                } else {
-                    format!(r#", "resolution": "{res}""#)
-                }
+                if res.is_empty() { String::new() } else { format!(r#", "resolution": "{res}""#) }
             ))
         };
         let rows = vec![mk("aaaaaaa", ""), mk("bbbbbbb", "wontfix"), issue(BASE)];
         let shipped = select_shipped(&rows, "2026-06-01");
-        assert_eq!(
-            shipped.iter().map(|r| r.id.as_str()).collect::<Vec<_>>(),
-            ["aaaaaaa"]
-        );
+        assert_eq!(shipped.iter().map(|r| r.id.as_str()).collect::<Vec<_>>(), ["aaaaaaa"]);
     }
 
     #[test]

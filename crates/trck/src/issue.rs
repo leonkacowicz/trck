@@ -38,10 +38,8 @@ pub(crate) const DEFAULT_POINTS: i64 = 1;
 
 /// Index keys this engine rewrites on read. A custom field may not take one of these
 /// names: it would be silently absorbed by the migration on the next load.
-pub(crate) const LEGACY_KEYS: &[(&str, &str)] = &[
-    ("milestone", "it migrates to a label; use `trck label`"),
-    ("pr", "it migrates to `review_url`; use --review-url"),
-];
+pub(crate) const LEGACY_KEYS: &[(&str, &str)] =
+    &[("milestone", "it migrates to a label; use `trck label`"), ("pr", "it migrates to `review_url`; use --review-url")];
 
 /// A single issue.
 ///
@@ -76,19 +74,13 @@ pub(crate) struct Issue {
 /// swallowed the next time the index was loaded.
 pub(crate) fn check_field_key(key: &str) -> Option<String> {
     if CANON_KEYS.contains(&key) {
-        return Some(format!(
-            "'{key}' is a built-in field; use its flag/verb, not --field/--unset"
-        ));
+        return Some(format!("'{key}' is a built-in field; use its flag/verb, not --field/--unset"));
     }
     if let Some((_, why)) = LEGACY_KEYS.iter().find(|(k, _)| *k == key) {
-        return Some(format!(
-            "'{key}' is a legacy field name ({why}), not a custom field"
-        ));
+        return Some(format!("'{key}' is a legacy field name ({why}), not a custom field"));
     }
     if !is_field_key(key) {
-        return Some(format!(
-            "invalid field key '{key}' (must match [a-z][a-z0-9_-]*)"
-        ));
+        return Some(format!("invalid field key '{key}' (must match [a-z][a-z0-9_-]*)"));
     }
     None
 }
@@ -96,7 +88,7 @@ pub(crate) fn check_field_key(key: &str) -> Option<String> {
 fn is_field_key(key: &str) -> bool {
     let mut chars = key.chars();
     match chars.next() {
-        Some(c) if c.is_ascii_lowercase() => {}
+        Some(c) if c.is_ascii_lowercase() => {},
         _ => return false,
     }
     chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_' || c == '-')
@@ -114,14 +106,11 @@ fn py_repr(v: &Json) -> String {
         Json::Array(items) => {
             let inner: Vec<String> = items.iter().map(py_repr).collect();
             format!("[{}]", inner.join(", "))
-        }
+        },
         Json::Object(pairs) => {
-            let inner: Vec<String> = pairs
-                .iter()
-                .map(|(k, v)| format!("'{k}': {}", py_repr(v)))
-                .collect();
+            let inner: Vec<String> = pairs.iter().map(|(k, v)| format!("'{k}': {}", py_repr(v))).collect();
             format!("{{{}}}", inner.join(", "))
-        }
+        },
     }
 }
 
@@ -160,10 +149,7 @@ impl Row {
     }
 
     fn take(&mut self, key: &str) -> Option<Json> {
-        self.0
-            .iter()
-            .position(|(k, _)| k == key)
-            .map(|i| self.0.remove(i).1)
+        self.0.iter().position(|(k, _)| k == key).map(|i| self.0.remove(i).1)
     }
 
     fn set(&mut self, key: &str, value: Json) {
@@ -171,10 +157,7 @@ impl Row {
     }
 
     fn into_extra(self) -> BTreeMap<String, Json> {
-        self.0
-            .into_iter()
-            .filter(|(k, _)| !CANON_KEYS.contains(&k.as_str()))
-            .collect()
+        self.0.into_iter().filter(|(k, _)| !CANON_KEYS.contains(&k.as_str())).collect()
     }
 }
 
@@ -182,17 +165,12 @@ fn want_id(key: &str, v: &Json) -> Result<String, String> {
     match v {
         Json::String(s) if s.is_empty() => Err(bad(key, "must not be empty")),
         Json::String(s) => Ok(s.clone()),
-        other => Err(bad(
-            key,
-            &format!("must be a string id, got {}", py_repr(other)),
-        )),
+        other => Err(bad(key, &format!("must be a string id, got {}", py_repr(other)))),
     }
 }
 
 fn want_str(key: &str, v: &Json) -> Result<String, String> {
-    v.as_str()
-        .map(str::to_string)
-        .ok_or_else(|| bad(key, &format!("must be a string, got {}", py_repr(v))))
+    v.as_str().map(str::to_string).ok_or_else(|| bad(key, &format!("must be a string, got {}", py_repr(v))))
 }
 
 fn opt_str(row: &Row, key: &str) -> Result<Option<String>, String> {
@@ -200,11 +178,7 @@ fn opt_str(row: &Row, key: &str) -> Result<Option<String>, String> {
 }
 
 /// A list field, with each element checked by `element`. Absent or null is empty.
-fn list_of(
-    row: &Row,
-    key: &str,
-    element: fn(&str, &Json) -> Result<String, String>,
-) -> Result<Vec<String>, String> {
+fn list_of(row: &Row, key: &str, element: fn(&str, &Json) -> Result<String, String>) -> Result<Vec<String>, String> {
     match row.present(key) {
         None => Ok(Vec::new()),
         Some(Json::Array(items)) => items.iter().map(|v| element(key, v)).collect(),
@@ -213,12 +187,7 @@ fn list_of(
 }
 
 fn want_label(key: &str, v: &Json) -> Result<String, String> {
-    v.as_str().map(str::to_string).ok_or_else(|| {
-        bad(
-            key,
-            &format!("must contain only strings, got {}", py_repr(v)),
-        )
-    })
+    v.as_str().map(str::to_string).ok_or_else(|| bad(key, &format!("must contain only strings, got {}", py_repr(v))))
 }
 
 /// Rewrite the shapes an older engine wrote. Returns labels the migration adds.
@@ -277,14 +246,9 @@ impl Issue {
 
         let points = match row.get("points") {
             None => DEFAULT_POINTS,
-            Some(v) => v
-                .as_i64()
-                .ok_or_else(|| bad("points", &format!("must be an integer, got {}", py_repr(v))))?,
+            Some(v) => v.as_i64().ok_or_else(|| bad("points", &format!("must be an integer, got {}", py_repr(v))))?,
         };
-        let parent = row
-            .present("parent")
-            .map(|v| want_id("parent", v))
-            .transpose()?;
+        let parent = row.present("parent").map(|v| want_id("parent", v)).transpose()?;
 
         let mut labels = list_of(&row, "labels", want_label)?;
         for name in migrated_labels {
@@ -298,11 +262,8 @@ impl Issue {
             None => false,
             Some(Json::Bool(b)) => *b,
             Some(other) => {
-                return Err(bad(
-                    "manual_status",
-                    &format!("must be a boolean, got {}", py_repr(other)),
-                ));
-            }
+                return Err(bad("manual_status", &format!("must be a boolean, got {}", py_repr(other))));
+            },
         };
 
         Ok(Issue {
@@ -455,19 +416,10 @@ mod tests {
     #[test]
     fn wrongly_typed_fields_name_the_field_and_the_value() {
         let cases = [
-            (
-                r#""points": "lots""#,
-                "field 'points' must be an integer, got 'lots'",
-            ),
+            (r#""points": "lots""#, "field 'points' must be an integer, got 'lots'"),
             (r#""labels": "x""#, "field 'labels' must be a list, got 'x'"),
-            (
-                r#""labels": [1]"#,
-                "field 'labels' must contain only strings, got 1",
-            ),
-            (
-                r#""manual_status": "yes""#,
-                "field 'manual_status' must be a boolean, got 'yes'",
-            ),
+            (r#""labels": [1]"#, "field 'labels' must contain only strings, got 1"),
+            (r#""manual_status": "yes""#, "field 'manual_status' must be a boolean, got 'yes'"),
             (r#""slug": 3"#, "field 'slug' must be a string, got 3"),
         ];
         for (fragment, want) in cases {
@@ -475,14 +427,7 @@ mod tests {
                 r#"{{"id": "k3m9x2a", "slug": "s", "title": "T", "status": "backlog",
                      "priority": "high", {fragment}}}"#
             );
-            let raw = raw.replace(
-                r#""slug": "s", "#,
-                if fragment.starts_with(r#""slug""#) {
-                    ""
-                } else {
-                    r#""slug": "s", "#
-                },
-            );
+            let raw = raw.replace(r#""slug": "s", "#, if fragment.starts_with(r#""slug""#) { "" } else { r#""slug": "s", "# });
             assert_eq!(issue(&raw).expect_err("should reject"), want);
         }
     }
@@ -490,10 +435,7 @@ mod tests {
     #[test]
     fn an_empty_id_is_rejected() {
         let raw = MINIMAL.replace("k3m9x2a", "");
-        assert_eq!(
-            issue(&raw).expect_err("should reject"),
-            "field 'id' must not be empty"
-        );
+        assert_eq!(issue(&raw).expect_err("should reject"), "field 'id' must not be empty");
     }
 
     #[test]
@@ -502,15 +444,8 @@ mod tests {
         let raw = r#"{"id": "k3m9x2a", "slug": "s", "title": "T", "status": "backlog",
                      "priority": "high", "zeta": {"nested": [1, "two"]}}"#;
         let r = issue(raw).expect("parses");
-        assert_eq!(
-            r.extra.get("zeta").expect("kept").to_json(),
-            r#"{"nested": [1, "two"]}"#
-        );
-        assert!(
-            r.to_canonical()
-                .to_json()
-                .ends_with(r#""zeta": {"nested": [1, "two"]}}"#)
-        );
+        assert_eq!(r.extra.get("zeta").expect("kept").to_json(), r#"{"nested": [1, "two"]}"#);
+        assert!(r.to_canonical().to_json().ends_with(r#""zeta": {"nested": [1, "two"]}}"#));
     }
 
     #[test]
@@ -518,10 +453,7 @@ mod tests {
         let raw = r#"{"zeta": 1, "alpha": 2, "priority": "high", "status": "backlog",
                      "title": "T", "slug": "s", "id": "k3m9x2a"}"#;
         let out = issue(raw).expect("parses").to_canonical().to_json();
-        assert_eq!(
-            out,
-            r#"{"id": "k3m9x2a", "slug": "s", "title": "T", "status": "backlog", "priority": "high", "alpha": 2, "zeta": 1}"#
-        );
+        assert_eq!(out, r#"{"id": "k3m9x2a", "slug": "s", "title": "T", "status": "backlog", "priority": "high", "alpha": 2, "zeta": 1}"#);
     }
 
     #[test]
@@ -538,25 +470,13 @@ mod tests {
     #[test]
     fn a_non_default_value_is_kept() {
         // The test is equals-the-default, not falsiness: points 0 is meaningful.
-        let raw = MINIMAL.replace(
-            r#""priority": "high""#,
-            r#""priority": "high", "points": 0"#,
-        );
-        assert!(
-            issue(&raw)
-                .expect("parses")
-                .to_canonical()
-                .to_json()
-                .contains(r#""points": 0"#)
-        );
+        let raw = MINIMAL.replace(r#""priority": "high""#, r#""priority": "high", "points": 0"#);
+        assert!(issue(&raw).expect("parses").to_canonical().to_json().contains(r#""points": 0"#));
     }
 
     #[test]
     fn milestone_migrates_to_a_label() {
-        let raw = MINIMAL.replace(
-            r#""priority": "high""#,
-            r#""priority": "high", "milestone": "v1.0""#,
-        );
+        let raw = MINIMAL.replace(r#""priority": "high""#, r#""priority": "high", "milestone": "v1.0""#);
         let r = issue(&raw).expect("parses");
         assert_eq!(r.labels, ["v1.0"]);
         assert!(!r.extra.contains_key("milestone"));
@@ -564,10 +484,7 @@ mod tests {
 
     #[test]
     fn pr_migrates_to_review_url() {
-        let raw = MINIMAL.replace(
-            r#""priority": "high""#,
-            r#""priority": "high", "pr": "https://example.test/pull/1""#,
-        );
+        let raw = MINIMAL.replace(r#""priority": "high""#, r#""priority": "high", "pr": "https://example.test/pull/1""#);
         let r = issue(&raw).expect("parses");
         assert_eq!(r.review_url.as_deref(), Some("https://example.test/pull/1"));
         assert!(!r.extra.contains_key("pr"));
@@ -576,14 +493,8 @@ mod tests {
 
     #[test]
     fn an_explicit_review_url_beats_a_stale_pr() {
-        let raw = MINIMAL.replace(
-            r#""priority": "high""#,
-            r#""priority": "high", "pr": "https://old", "review_url": "https://new""#,
-        );
-        assert_eq!(
-            issue(&raw).expect("parses").review_url.as_deref(),
-            Some("https://new")
-        );
+        let raw = MINIMAL.replace(r#""priority": "high""#, r#""priority": "high", "pr": "https://old", "review_url": "https://new""#);
+        assert_eq!(issue(&raw).expect("parses").review_url.as_deref(), Some("https://new"));
     }
 
     #[test]
@@ -597,20 +508,13 @@ mod tests {
 
     #[test]
     fn built_in_names_are_not_available_as_custom_fields() {
-        assert!(
-            check_field_key("status")
-                .expect("rejected")
-                .contains("built-in")
-        );
+        assert!(check_field_key("status").expect("rejected").contains("built-in"));
         assert!(check_field_key("Assignee").is_some());
         assert_eq!(check_field_key("assignee"), None);
     }
 
     #[test]
     fn a_non_object_row_is_an_error() {
-        assert_eq!(
-            Issue::from_json(&parse("[1]").expect("valid")).expect_err("rejected"),
-            "expected a JSON object, got list"
-        );
+        assert_eq!(Issue::from_json(&parse("[1]").expect("valid")).expect_err("rejected"), "expected a JSON object, got list");
     }
 }

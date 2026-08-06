@@ -21,14 +21,10 @@ pub(crate) const LEN: usize = 7;
 /// against every longer one sharing its start.
 pub(crate) fn check(value: &str) -> Option<String> {
     if value.is_empty() || !value.chars().all(|c| ALPHABET.contains(c)) {
-        return Some(format!(
-            "bad id '{value}' (must use the alphabet {ALPHABET})"
-        ));
+        return Some(format!("bad id '{value}' (must use the alphabet {ALPHABET})"));
     }
     if value.chars().count() != LEN {
-        return Some(format!(
-            "bad id '{value}' (must be exactly {LEN} characters)"
-        ));
+        return Some(format!("bad id '{value}' (must be exactly {LEN} characters)"));
     }
     None
 }
@@ -83,15 +79,7 @@ mod tests {
 
     #[test]
     fn rejects_look_alikes_wrong_length_and_case() {
-        for bad in [
-            "short",
-            "waytoolongid",
-            "aaaaaa0",
-            "aaaaaa1",
-            "aaaaaao",
-            "AAAAAAA",
-            "",
-        ] {
+        for bad in ["short", "waytoolongid", "aaaaaa0", "aaaaaa1", "aaaaaao", "AAAAAAA", ""] {
             assert!(check(bad).is_some(), "should reject {bad:?}");
         }
     }

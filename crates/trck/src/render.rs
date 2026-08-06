@@ -49,11 +49,7 @@ fn ansi(code: &str) -> &'static str {
 /// (its companion convention). Otherwise, colour only when stdout is a real terminal —
 /// `is_terminal()` is `isatty(1)` from std, so no dependency and no `unsafe` are needed.
 pub(crate) fn use_colour() -> bool {
-    colour_decision(
-        std::env::var_os("NO_COLOR").is_some(),
-        std::env::var_os("FORCE_COLOR").as_deref(),
-        std::io::stdout().is_terminal(),
-    )
+    colour_decision(std::env::var_os("NO_COLOR").is_some(), std::env::var_os("FORCE_COLOR").as_deref(), std::io::stdout().is_terminal())
 }
 
 /// The colour gate with its three inputs passed in rather than read from the environment,
@@ -111,10 +107,7 @@ pub(crate) fn status_codes(status: &str) -> Vec<&'static str> {
 /// Rotating palette used to colour graph lanes; each lane keeps one colour for its whole
 /// descent so it can be traced through crossings (`deps`). Distinguishing lanes *from each
 /// other* is the point, so this is a spread of hues rather than the status trichrome.
-pub(crate) const LANE_PALETTE: [&str; 11] = [
-    "red", "green", "yellow", "blue", "magenta", "cyan", "bgreen", "byellow", "bblue", "bmagenta",
-    "bcyan",
-];
+pub(crate) const LANE_PALETTE: [&str; 11] = ["red", "green", "yellow", "blue", "magenta", "cyan", "bgreen", "byellow", "bblue", "bmagenta", "bcyan"];
 
 /// The palette slot a lane's owning id lands in. An id is read as one big integer — decimal
 /// if it is all digits, otherwise its bytes big-endian — then taken mod the palette length,
@@ -125,11 +118,9 @@ pub(crate) fn lane_palette_index(id: &str) -> usize {
     // Fold in `usize`: every intermediate is a remainder < n plus one base-256/base-10 digit,
     // so it stays far below `usize::MAX` and never truncates.
     if !id.is_empty() && id.bytes().all(|b| b.is_ascii_digit()) {
-        id.bytes()
-            .fold(0usize, |acc, b| (acc * 10 + usize::from(b - b'0')) % n)
+        id.bytes().fold(0usize, |acc, b| (acc * 10 + usize::from(b - b'0')) % n)
     } else {
-        id.bytes()
-            .fold(0usize, |acc, b| (acc * 256 + usize::from(b)) % n)
+        id.bytes().fold(0usize, |acc, b| (acc * 256 + usize::from(b)) % n)
     }
 }
 
@@ -137,9 +128,7 @@ pub(crate) fn lane_palette_index(id: &str) -> usize {
 /// git-short-hash style, the fewest characters you would have to type. When an id is
 /// itself a prefix of another, no shorter unique prefix exists, so its full length is
 /// used.
-pub(crate) fn unique_prefix_lens<'a>(
-    ids: impl IntoIterator<Item = &'a str>,
-) -> BTreeMap<String, usize> {
+pub(crate) fn unique_prefix_lens<'a>(ids: impl IntoIterator<Item = &'a str>) -> BTreeMap<String, usize> {
     let mut uniq: Vec<&str> = ids.into_iter().collect();
     uniq.sort_unstable();
     uniq.dedup();
@@ -218,21 +207,10 @@ pub(crate) fn block_annotations(g: &Graph, id: &str, on_screen: &[String]) -> St
     if !g.get(id).is_some_and(|r| is_terminal(&r.status)) {
         let blocks = g.dependents_of(id);
         if !blocks.is_empty() {
-            parts.push(format!(
-                "blocks {}",
-                blocks
-                    .iter()
-                    .map(|d| format!("#{d}"))
-                    .collect::<Vec<_>>()
-                    .join(" ")
-            ));
+            parts.push(format!("blocks {}", blocks.iter().map(|d| format!("#{d}")).collect::<Vec<_>>().join(" ")));
         }
     }
-    if parts.is_empty() {
-        String::new()
-    } else {
-        paint(&format!(" {}", parts.join("  ")), &["dim"])
-    }
+    if parts.is_empty() { String::new() } else { paint(&format!(" {}", parts.join("  ")), &["dim"]) }
 }
 
 /// The ` ↑<priority>(#id)` suffix naming why a row outranks its own priority: the
@@ -242,25 +220,14 @@ pub(crate) fn block_annotations(g: &Graph, id: &str, on_screen: &[String]) -> St
 /// `ready` sorts by the demand cone, so without this a `medium` row sits above a `high`
 /// one with nothing on screen to explain it. It rides the same trailing slot `list` uses
 /// for its `needs`/`blocks` notes rather than widening the priority column.
-pub(crate) fn demand_annotation(
-    g: &Graph,
-    id: &str,
-    abbrev: Option<&BTreeMap<String, usize>>,
-) -> String {
+pub(crate) fn demand_annotation(g: &Graph, id: &str, abbrev: Option<&BTreeMap<String, usize>>) -> String {
     let Some(src) = g.demand_source(id) else {
         return String::new();
     };
     let Some(row) = g.get(&src) else {
         return String::new();
     };
-    format!(
-        "  {}({})",
-        paint(
-            &format!("↑{}", row.priority),
-            &priority_codes(&row.priority)
-        ),
-        hl_id(&src, abbrev, true)
-    )
+    format!("  {}({})", paint(&format!("↑{}", row.priority), &priority_codes(&row.priority)), hl_id(&src, abbrev, true))
 }
 
 /// The trailing note a view attaches to each row. `list` explains what a row is waiting
@@ -287,29 +254,12 @@ pub(crate) struct RowOpts<'a> {
 
 /// Render issues as aligned one-line summaries, shared by `list` and `ready`.
 pub(crate) fn render_rows(g: &Graph, rows: &[&Issue], opts: &RowOpts) -> Vec<String> {
-    let sw = rows
-        .iter()
-        .map(|r| r.status.chars().count())
-        .max()
-        .unwrap_or(0);
-    let pw = rows
-        .iter()
-        .map(|r| r.priority.chars().count())
-        .max()
-        .unwrap_or(0);
+    let sw = rows.iter().map(|r| r.status.chars().count()).max().unwrap_or(0);
+    let pw = rows.iter().map(|r| r.priority.chars().count()).max().unwrap_or(0);
     let mut out = Vec::new();
     for r in rows {
-        let pre = opts
-            .prefix
-            .and_then(|p| p.get(&r.id))
-            .cloned()
-            .unwrap_or_default();
-        let prog = if opts.progress {
-            g.progress_pct(&r.id)
-                .map_or_else(String::new, |p| format!(" {p}%"))
-        } else {
-            String::new()
-        };
+        let pre = opts.prefix.and_then(|p| p.get(&r.id)).cloned().unwrap_or_default();
+        let prog = if opts.progress { g.progress_pct(&r.id).map_or_else(String::new, |p| format!(" {p}%")) } else { String::new() };
         let mut tags: Vec<String> = Vec::new();
         // Derived, not declared: an issue with children *is* an epic. As a stored kind
         // the two drifted, and nothing ever stopped them.
@@ -322,11 +272,7 @@ pub(crate) fn render_rows(g: &Graph, rows: &[&Issue], opts: &RowOpts) -> Vec<Str
             tags.push(format!("↳{parent}")); // the connector shows it when nested
         }
         tags.extend(r.labels.iter().cloned());
-        let plain_tags = if tags.is_empty() {
-            String::new()
-        } else {
-            format!(" [{}]", tags.join(" "))
-        };
+        let plain_tags = if tags.is_empty() { String::new() } else { format!(" [{}]", tags.join(" ")) };
         let ann = match opts.annotate {
             Annotation::None => String::new(),
             Annotation::Blocking => block_annotations(g, &r.id, &opts.on_screen),
@@ -336,14 +282,7 @@ pub(crate) fn render_rows(g: &Graph, rows: &[&Issue], opts: &RowOpts) -> Vec<Str
 
         if opts.dim.contains(&r.id) {
             // Ancestor context: the whole line dims, with no per-field colour.
-            let body = format!(
-                "{} #{} {:<sw$}  {:<pw$}  {pre}{}{prog}{plain_tags}",
-                status_icon(&r.status),
-                r.id,
-                r.status,
-                r.priority,
-                r.title,
-            );
+            let body = format!("{} #{} {:<sw$}  {:<pw$}  {pre}{}{prog}{plain_tags}", status_icon(&r.status), r.id, r.status, r.priority, r.title,);
             out.push(format!("{}{ann}{fsuf}", paint(&body, &["dim"])));
             continue;
         }
@@ -353,10 +292,7 @@ pub(crate) fn render_rows(g: &Graph, rows: &[&Issue], opts: &RowOpts) -> Vec<Str
             paint(status_icon(&r.status), &codes),
             hl_id(&r.id, opts.abbrev.as_ref(), true),
             paint(&format!("{:<sw$}", r.status), &codes),
-            paint(
-                &format!("{:<pw$}", r.priority),
-                &priority_codes(&r.priority)
-            ),
+            paint(&format!("{:<pw$}", r.priority), &priority_codes(&r.priority)),
             r.title,
             paint(&prog, &["dim"]),
             paint(&plain_tags, &["dim"]),
@@ -371,29 +307,15 @@ fn field_suffix(r: &Issue, show_fields: &[String]) -> String {
     if show_fields.is_empty() {
         return String::new();
     }
-    let segs: Vec<String> = show_fields
-        .iter()
-        .filter_map(|name| field_value(r, name).map(|v| format!("{name}={v}")))
-        .collect();
-    if segs.is_empty() {
-        String::new()
-    } else {
-        format!("  {}", paint(&segs.join(" "), &["dim"]))
-    }
+    let segs: Vec<String> = show_fields.iter().filter_map(|name| field_value(r, name).map(|v| format!("{name}={v}"))).collect();
+    if segs.is_empty() { String::new() } else { format!("  {}", paint(&segs.join(" "), &["dim"])) }
 }
 
 /// A Python list literal. `label` and `dep` echo one back and `show` prints one, and the
 /// conformance suite compares stdout literally — so the bracket-and-quote style is a
 /// contract, not an accident of the first implementation.
 pub(crate) fn python_list(items: &[String]) -> String {
-    format!(
-        "[{}]",
-        items
-            .iter()
-            .map(|s| format!("'{s}'"))
-            .collect::<Vec<_>>()
-            .join(", ")
-    )
+    format!("[{}]", items.iter().map(|s| format!("'{s}'")).collect::<Vec<_>>().join(", "))
 }
 
 /// One field value, built-in or custom, or `None` when the field is genuinely absent.

@@ -18,20 +18,12 @@ use std::path::Path;
 use std::process::Command;
 
 fn git(dir: &Path, args: &[&str]) -> String {
-    let out = Command::new("git")
-        .args(args)
-        .current_dir(dir)
-        .output()
-        .unwrap_or_else(|e| panic!("git {args:?}: {e}"));
+    let out = Command::new("git").args(args).current_dir(dir).output().unwrap_or_else(|e| panic!("git {args:?}: {e}"));
     String::from_utf8_lossy(&out.stdout).to_string()
 }
 
 fn git_ok(dir: &Path, args: &[&str]) -> bool {
-    Command::new("git")
-        .args(args)
-        .current_dir(dir)
-        .output()
-        .is_ok_and(|o| o.status.success())
+    Command::new("git").args(args).current_dir(dir).output().is_ok_and(|o| o.status.success())
 }
 
 fn trck(dir: &Path, args: &[&str]) -> std::process::Output {
@@ -55,23 +47,12 @@ fn setup(root: &Path) {
     assert!(git_ok(root, &["init", "-q"]), "git init");
     git(root, &["config", "user.email", "t@example.test"]);
     git(root, &["config", "user.name", "trck test"]);
-    let r = trck(
-        root,
-        &["--dir", "issues", "new", "Shared", "--id", "aaaaaaa"],
-    );
-    assert!(
-        r.status.success(),
-        "seed: {}",
-        String::from_utf8_lossy(&r.stderr)
-    );
+    let r = trck(root, &["--dir", "issues", "new", "Shared", "--id", "aaaaaaa"]);
+    assert!(r.status.success(), "seed: {}", String::from_utf8_lossy(&r.stderr));
     git(root, &["add", "-A"]);
     git(root, &["commit", "-qm", "init"]);
     let r = trck(root, &["--dir", "issues", "repo", "setup-git"]);
-    assert!(
-        r.status.success(),
-        "setup-git: {}",
-        String::from_utf8_lossy(&r.stderr)
-    );
+    assert!(r.status.success(), "setup-git: {}", String::from_utf8_lossy(&r.stderr));
     git(root, &["add", "-A"]);
     git(root, &["commit", "-qm", "setup"]);
 }
@@ -85,9 +66,7 @@ fn on_branch(root: &Path, name: &str, base: &str, f: impl Fn()) {
 }
 
 fn current_branch(root: &Path) -> String {
-    git(root, &["rev-parse", "--abbrev-ref", "HEAD"])
-        .trim()
-        .to_string()
+    git(root, &["rev-parse", "--abbrev-ref", "HEAD"]).trim().to_string()
 }
 
 #[test]
@@ -102,45 +81,27 @@ fn git_auto_resolves_disjoint_creations_through_the_driver() {
     let main = current_branch(&tmp);
 
     on_branch(&tmp, "feature", &main, || {
-        trck(
-            &tmp,
-            &["--dir", "issues", "new", "From feature", "--id", "bbbbbbb"],
-        );
+        trck(&tmp, &["--dir", "issues", "new", "From feature", "--id", "bbbbbbb"]);
     });
     git(&tmp, &["checkout", "-q", &main]);
-    trck(
-        &tmp,
-        &["--dir", "issues", "new", "From main", "--id", "ccccccc"],
-    );
+    trck(&tmp, &["--dir", "issues", "new", "From main", "--id", "ccccccc"]);
     git(&tmp, &["add", "-A"]);
     git(&tmp, &["commit", "-qm", "main"]);
 
-    assert!(
-        git_ok(&tmp, &["merge", "feature", "-m", "merged"]),
-        "git could not merge; the driver should have resolved this"
-    );
+    assert!(git_ok(&tmp, &["merge", "feature", "-m", "merged"]), "git could not merge; the driver should have resolved this");
 
     // Both sides' rows survive, and the file is still a clean index.
     let index = std::fs::read_to_string(tmp.join("issues/index.jsonl")).expect("index");
     for id in ["aaaaaaa", "bbbbbbb", "ccccccc"] {
-        assert!(
-            index.contains(id),
-            "{id} missing from merged index:\n{index}"
-        );
+        assert!(index.contains(id), "{id} missing from merged index:\n{index}");
     }
-    assert!(
-        !index.contains("<<<<<<<"),
-        "clean merge left markers:\n{index}"
-    );
+    assert!(!index.contains("<<<<<<<"), "clean merge left markers:\n{index}");
 
     // And the rollup was regenerated from the merged rows, not left stale. During the merge
     // the working-tree index was not yet the merged result, so a driver that re-read it
     // would have produced a summary missing one side.
     let summary = std::fs::read_to_string(tmp.join("issues/SUMMARY.md")).expect("summary");
-    assert!(
-        summary.contains("From feature"),
-        "summary stale:\n{summary}"
-    );
+    assert!(summary.contains("From feature"), "summary stale:\n{summary}");
     assert!(summary.contains("From main"), "summary stale:\n{summary}");
 
     let _ = std::fs::remove_dir_all(&tmp);
@@ -172,20 +133,14 @@ fn git_reports_a_lifecycle_conflict_and_leaves_the_summary_alone() {
     // rather than the driver.
     let before = std::fs::read_to_string(tmp.join("issues/SUMMARY.md")).expect("summary");
 
-    assert!(
-        !git_ok(&tmp, &["merge", "feature", "-m", "merged"]),
-        "git reported success on a lifecycle conflict"
-    );
+    assert!(!git_ok(&tmp, &["merge", "feature", "-m", "merged"]), "git reported success on a lifecycle conflict");
 
     // The file carries markers, so it cannot be `git add`ed unread: any trck verb fails on it.
     let index = std::fs::read_to_string(tmp.join("issues/index.jsonl")).expect("index");
     assert!(index.contains("<<<<<<<"), "no conflict markers:\n{index}");
     assert!(index.contains("one side"), "markers not labelled:\n{index}");
     for word in ["ours", "theirs", "yours"] {
-        assert!(
-            !index.to_lowercase().contains(word),
-            "markers name a side ({word}), which reverses between merge and rebase:\n{index}"
-        );
+        assert!(!index.to_lowercase().contains(word), "markers name a side ({word}), which reverses between merge and rebase:\n{index}");
     }
 
     // The rollup is untouched: regenerating from a half-merged index would launder the

@@ -86,11 +86,7 @@ const VALUED: &[&str] = &[
 ];
 
 fn parse_args(argv: &[String]) -> Args {
-    let mut out = Args {
-        verb: String::new(),
-        positional: Vec::new(),
-        options: Vec::new(),
-    };
+    let mut out = Args { verb: String::new(), positional: Vec::new(), options: Vec::new() };
     let mut i = 0;
     while i < argv.len() {
         let a = &argv[i];
@@ -120,19 +116,11 @@ fn parse_args(argv: &[String]) -> Args {
 
 impl Args {
     fn opt(&self, name: &str) -> Option<&str> {
-        self.options
-            .iter()
-            .rev()
-            .find(|(n, _)| n == name)
-            .and_then(|(_, v)| v.as_deref())
+        self.options.iter().rev().find(|(n, _)| n == name).and_then(|(_, v)| v.as_deref())
     }
 
     fn all(&self, name: &str) -> Vec<&str> {
-        self.options
-            .iter()
-            .filter(|(n, _)| n == name)
-            .filter_map(|(_, v)| v.as_deref())
-            .collect()
+        self.options.iter().filter(|(n, _)| n == name).filter_map(|(_, v)| v.as_deref()).collect()
     }
 
     fn has(&self, name: &str) -> bool {
@@ -151,42 +139,12 @@ impl Args {
 /// argparse rejects it; so does this, though the message differs — argparse prints its
 /// own usage block, and reproducing that is pinning argparse rather than trck.
 const KNOWN_FLAGS: &[(&str, usize, &[&str])] = &[
-    (
-        "new",
-        0,
-        &[
-            "--dir",
-            "--id",
-            "--slug",
-            "--priority",
-            "--points",
-            "--parent",
-            "--depends",
-            "--spec",
-            "--review-url",
-        ],
-    ),
+    ("new", 0, &["--dir", "--id", "--slug", "--priority", "--points", "--parent", "--depends", "--spec", "--review-url"]),
     ("mv", 0, &["--dir", "--resolution", "--review-url"]),
     ("start", 0, &["--dir"]),
     ("review", 0, &["--dir", "--review-url"]),
     ("done", 0, &["--dir", "--resolution"]),
-    (
-        "set",
-        0,
-        &[
-            "--dir",
-            "--auto",
-            "--priority",
-            "--points",
-            "--parent",
-            "--spec",
-            "--review-url",
-            "--title",
-            "--slug",
-            "--field",
-            "--unset",
-        ],
-    ),
+    ("set", 0, &["--dir", "--auto", "--priority", "--points", "--parent", "--spec", "--review-url", "--title", "--slug", "--field", "--unset"]),
     ("dep", 0, &["--dir", "--add", "--remove"]),
     ("label", 0, &["--dir", "--add", "--remove"]),
     (
@@ -238,20 +196,7 @@ const KNOWN_FLAGS: &[(&str, usize, &[&str])] = &[
     ("changelog", 0, &["--dir", "--since"]),
     ("summary", 0, &["--dir"]),
     ("ready", 0, &["--dir", "--next", "--json"]),
-    (
-        "deps",
-        0,
-        &[
-            "--dir",
-            "--requires",
-            "--blocks",
-            "--full",
-            "--omit-done",
-            "--include-done-chains",
-            "--fanout",
-            "--json",
-        ],
-    ),
+    ("deps", 0, &["--dir", "--requires", "--blocks", "--full", "--omit-done", "--include-done-chains", "--fanout", "--json"]),
     ("next", 0, &["--dir", "--json"]),
     // `--no-vendor` is accepted and does nothing. It asked for the only behaviour there is
     // now, so refusing it would mean erroring on a request already satisfied; every README
@@ -305,17 +250,10 @@ fn usage_error(args: &Args) -> Option<String> {
     // accepted and ignored returns human text with exit 0, and a caller piping into `jq` finds
     // out far from the cause. Drop this once the read verbs emit JSON.
     if args.has("--json") && !JSON_VERBS.contains(&args.verb.as_str()) {
-        return Some(format!(
-            "{}: --json is not implemented in this engine yet",
-            args.verb
-        ));
+        return Some(format!("{}: --json is not implemented in this engine yet", args.verb));
     }
     if let Some((_, _, flags)) = KNOWN_FLAGS.iter().find(|(verb, ..)| *verb == args.verb)
-        && let Some(n) = args
-            .options
-            .iter()
-            .map(|(n, _)| n.as_str())
-            .find(|n| !flags.contains(n))
+        && let Some(n) = args.options.iter().map(|(n, _)| n.as_str()).find(|n| !flags.contains(n))
     {
         return Some(format!("{}: unrecognized argument {n}", args.verb));
     }
@@ -327,10 +265,7 @@ fn usage_error(args: &Args) -> Option<String> {
     if let Some((_, opt)) = REQUIRED_OPTS.iter().find(|(verb, _)| *verb == args.verb)
         && args.opt(opt).is_none()
     {
-        return Some(format!(
-            "{}: the following arguments are required: {opt}",
-            args.verb
-        ));
+        return Some(format!("{}: the following arguments are required: {opt}", args.verb));
     }
     None
 }
@@ -353,8 +288,7 @@ fn usage() -> String {
 /// Where the tracker is, without loading it. Split out for `migrate-layout`, which must
 /// reach a tracker the guards in `Ctx::load` would refuse.
 fn tracker_dir(args: &Args) -> Result<std::path::PathBuf, String> {
-    let cwd =
-        std::env::current_dir().map_err(|e| format!("cannot read the working directory: {e}"))?;
+    let cwd = std::env::current_dir().map_err(|e| format!("cannot read the working directory: {e}"))?;
     let env_dir = std::env::var("TRCK_DIR").ok().filter(|v| !v.is_empty());
     crate::discovery::resolve_tracker_dir(args.opt("--dir"), env_dir.as_deref(), &cwd)
 }
@@ -369,42 +303,24 @@ fn context(args: &Args) -> Result<Ctx, String> {
 /// can fall through to the read side — the split is by what they do to the tracker, which
 /// is also the split in how much can go wrong.
 fn dispatch_mutating(args: &Args) -> Option<Result<String, String>> {
-    let id_of = |n: usize| -> Result<&str, String> {
-        args.positional_at(n)
-            .ok_or_else(|| format!("{}: missing an issue id", args.verb))
-    };
+    let id_of = |n: usize| -> Result<&str, String> { args.positional_at(n).ok_or_else(|| format!("{}: missing an issue id", args.verb)) };
     let ctx = || context(args);
     Some(match args.verb.as_str() {
         "new" => ctx().and_then(|c| new_opts(args).and_then(|o| verbs::cmd_new(&c, &o))),
         "mv" => ctx().and_then(|c| {
-            let status = args
-                .positional_at(1)
-                .ok_or_else(|| "mv: missing a target status".to_string())?;
-            verbs::cmd_mv(
-                &c,
-                id_of(0)?,
-                status,
-                args.opt("--resolution"),
-                args.opt("--review-url"),
-            )
+            let status = args.positional_at(1).ok_or_else(|| "mv: missing a target status".to_string())?;
+            verbs::cmd_mv(&c, id_of(0)?, status, args.opt("--resolution"), args.opt("--review-url"))
         }),
         verb @ ("start" | "review" | "done") => ctx().and_then(|c| {
             let status = config::resolve_alias(verb).unwrap_or(config::BACKLOG);
             // `review` takes the URL positionally: the moment a review exists is the
             // moment both facts are known.
-            let url = if verb == "review" {
-                args.positional_at(1).or_else(|| args.opt("--review-url"))
-            } else {
-                args.opt("--review-url")
-            };
+            let url = if verb == "review" { args.positional_at(1).or_else(|| args.opt("--review-url")) } else { args.opt("--review-url") };
             verbs::cmd_mv(&c, id_of(0)?, status, args.opt("--resolution"), url)
         }),
         "set" => ctx().and_then(|c| set_opts(args).and_then(|o| verbs::cmd_set(&c, id_of(0)?, &o))),
-        "label" => ctx().and_then(|c| {
-            verbs::cmd_label(&c, id_of(0)?, &args.all("--add"), &args.all("--remove"))
-        }),
-        "dep" => ctx()
-            .and_then(|c| verbs::cmd_dep(&c, id_of(0)?, args.opt("--add"), args.opt("--remove"))),
+        "label" => ctx().and_then(|c| verbs::cmd_label(&c, id_of(0)?, &args.all("--add"), &args.all("--remove"))),
+        "dep" => ctx().and_then(|c| verbs::cmd_dep(&c, id_of(0)?, args.opt("--add"), args.opt("--remove"))),
         "summary" => ctx().and_then(|c| {
             let rows = verbs::load_rows(&c)?;
             let g = crate::graph::Graph::new(rows);
@@ -423,23 +339,16 @@ fn dispatch(raw: &[String]) -> Result<String, String> {
     if let Some(result) = dispatch_mutating(&args) {
         return result;
     }
-    let id_of = |n: usize| -> Result<&str, String> {
-        args.positional_at(n)
-            .ok_or_else(|| format!("{}: missing an issue id", args.verb))
-    };
+    let id_of = |n: usize| -> Result<&str, String> { args.positional_at(n).ok_or_else(|| format!("{}: missing an issue id", args.verb)) };
     match args.verb.as_str() {
         "list" | "tree" => {
             let ctx = context(&args)?;
             query::cmd_list(&ctx, &list_opts(&args))
-        }
+        },
         "show" => {
             let ctx = context(&args)?;
-            if args.has("--json") {
-                query::cmd_show_json(&ctx, id_of(0)?)
-            } else {
-                query::cmd_show(&ctx, id_of(0)?)
-            }
-        }
+            if args.has("--json") { query::cmd_show_json(&ctx, id_of(0)?) } else { query::cmd_show(&ctx, id_of(0)?) }
+        },
         verb @ ("ready" | "next") => {
             let ctx = context(&args)?;
             let only_next = verb == "next" || args.has("--next");
@@ -448,7 +357,7 @@ fn dispatch(raw: &[String]) -> Result<String, String> {
             } else {
                 query::cmd_ready(&ctx, args.positional_at(0), only_next)
             }
-        }
+        },
         "deps" => {
             let ctx = context(&args)?;
             let opts = DepsOpts {
@@ -460,30 +369,21 @@ fn dispatch(raw: &[String]) -> Result<String, String> {
                 include_done_chains: args.has("--include-done-chains"),
                 fanout: args.has("--fanout"),
             };
-            if args.has("--json") {
-                query::cmd_deps_json(&ctx, &opts)
-            } else {
-                query::cmd_deps(&ctx, &opts)
-            }
-        }
+            if args.has("--json") { query::cmd_deps_json(&ctx, &opts) } else { query::cmd_deps(&ctx, &opts) }
+        },
         "html" => {
             let ctx = context(&args)?;
             crate::html::cmd_html(&ctx, args.opt("--out"), args.opt("--cmd"))
-        }
+        },
         "repo" => {
             // The drivers must work outside a tracker: git may invoke them from anywhere in
             // the worktree, and a merge with no reachable trck.json still has to merge the
             // rows it was handed. So the context is optional here, unlike every other verb.
             let ctx = context(&args).ok();
             let sub = args.positional_at(0).unwrap_or("");
-            let operand = |n: usize| -> Result<&str, String> {
-                args.positional_at(n)
-                    .ok_or_else(|| format!("repo {sub}: missing operand {n}"))
-            };
+            let operand = |n: usize| -> Result<&str, String> { args.positional_at(n).ok_or_else(|| format!("repo {sub}: missing operand {n}")) };
             match sub {
-                "merge-index" => {
-                    repo::cmd_merge_index(ctx.as_ref(), operand(1)?, operand(2)?, operand(3)?)
-                }
+                "merge-index" => repo::cmd_merge_index(ctx.as_ref(), operand(1)?, operand(2)?, operand(3)?),
                 "merge-summary" => repo::cmd_merge_summary(ctx.as_ref(), operand(1)?),
                 // These need a real tracker, unlike the drivers.
                 "setup-git" => repo::cmd_setup_git(&context(&args)?),
@@ -495,13 +395,11 @@ fn dispatch(raw: &[String]) -> Result<String, String> {
                     let dir = tracker_dir(&args)?;
                     let ctx = Ctx::load(dir, false)?;
                     repo::cmd_migrate_layout(&ctx, args.has("--dry-run"))
-                }
+                },
                 "" => Err("repo: missing a subcommand".into()),
-                other => Err(format!(
-                    "repo: `{other}` is not implemented yet in the Rust engine"
-                )),
+                other => Err(format!("repo: `{other}` is not implemented yet in the Rust engine")),
             }
-        }
+        },
         "diff" => cmd_diff(&context(&args)?, &args),
         "changelog" => cmd_changelog(&context(&args)?, &args),
         "check" => cmd_check(&context(&args)?),
@@ -513,14 +411,12 @@ fn dispatch(raw: &[String]) -> Result<String, String> {
                 eprintln!("tracker: {}", dir.display());
             }
             Ok(env!("CARGO_PKG_VERSION").to_string())
-        }
+        },
         // The one verb that runs without a tracker: it takes its target rather than
         // discovering one, so it never goes through `context`.
         "init" => init_from_args(&args),
         "" => Err("no verb given".to_string()),
-        other if VERBS.contains(&other) => Err(format!(
-            "`{other}` is not implemented yet in the Rust engine"
-        )),
+        other if VERBS.contains(&other) => Err(format!("`{other}` is not implemented yet in the Rust engine")),
         other => Err(format!("unknown verb `{other}`")),
     }
 }
@@ -536,11 +432,7 @@ fn init_from_args(args: &Args) -> Result<String, String> {
     if positional.is_some() && flag.is_some() {
         return Err("cannot combine a positional dir with --dir".to_string());
     }
-    init::cmd_init(&init::InitOpts {
-        target: positional.or(flag),
-        force: args.has("--force"),
-        hook: args.has("--hook"),
-    })
+    init::cmd_init(&init::InitOpts { target: positional.or(flag), force: args.has("--force"), hook: args.has("--hook") })
 }
 
 /// What shipped since a cutoff.
@@ -549,9 +441,7 @@ fn cmd_changelog(ctx: &Ctx, args: &Args) -> Result<String, String> {
     let since = crate::diff::parse_since(args.opt("--since").unwrap_or_default())?;
     let rows = verbs::load_rows(ctx)?;
     let shipped = crate::diff::select_shipped(&rows, &since);
-    Ok(crate::diff::render_changelog(&shipped, &since)
-        .trim_end_matches('\n')
-        .to_string())
+    Ok(crate::diff::render_changelog(&shipped, &since).trim_end_matches('\n').to_string())
 }
 
 /// Compare the tracker at two points and report what changed.
@@ -572,15 +462,9 @@ fn cmd_diff(ctx: &Ctx, args: &Args) -> Result<String, String> {
         };
         (old, new)
     } else if let Some(from) = args.opt("--from") {
-        (
-            crate::diff::resolve_source(Some(from), ctx)?,
-            crate::diff::resolve_source(args.opt("--to"), ctx)?,
-        )
+        (crate::diff::resolve_source(Some(from), ctx)?, crate::diff::resolve_source(args.opt("--to"), ctx)?)
     } else {
-        (
-            crate::diff::git_snapshot(ctx, "HEAD")?,
-            crate::diff::resolve_source(args.opt("--to"), ctx)?,
-        )
+        (crate::diff::git_snapshot(ctx, "HEAD")?, crate::diff::resolve_source(args.opt("--to"), ctx)?)
     };
     let changes = crate::diff::diff_snapshots(&old, &new);
     let mut out = vec![format!("{} → {}", old.label, new.label)];
@@ -609,26 +493,14 @@ fn cmd_diff(ctx: &Ctx, args: &Args) -> Result<String, String> {
 fn cmd_check(ctx: &Ctx) -> Result<String, String> {
     let rows = verbs::load_rows(ctx)?;
     let report = crate::validate::validate(ctx, &rows)?;
-    let mut out: Vec<String> = report
-        .warnings
-        .iter()
-        .map(|w| format!("warning: {w}"))
-        .collect();
+    let mut out: Vec<String> = report.warnings.iter().map(|w| format!("warning: {w}")).collect();
     out.extend(report.errors.iter().map(|e| format!("error: {e}")));
     if report.errors.is_empty() {
-        out.push(format!(
-            "OK — {} issues, 0 errors, {} warning(s)",
-            rows.len(),
-            report.warnings.len()
-        ));
+        out.push(format!("OK — {} issues, 0 errors, {} warning(s)", rows.len(), report.warnings.len()));
         return Ok(out.join("\n"));
     }
     out.push(String::new());
-    out.push(format!(
-        "{} error(s), {} warning(s) — FAIL",
-        report.errors.len(),
-        report.warnings.len()
-    ));
+    out.push(format!("{} error(s), {} warning(s) — FAIL", report.errors.len(), report.warnings.len()));
     // Printed here rather than returned because this path exits non-zero with its report on
     // *stdout*, which the `Err` arm of `main` cannot express. A reader that has gone away
     // still must not turn a failed check into a panic.
@@ -645,10 +517,7 @@ fn set_opts(args: &Args) -> Result<SetOpts<'_>, String> {
     Ok(SetOpts {
         auto: args.has("--auto"),
         priority: args.opt("--priority"),
-        points: args
-            .opt("--points")
-            .map(|v| v.parse().map_err(|_| format!("bad points '{v}'")))
-            .transpose()?,
+        points: args.opt("--points").map(|v| v.parse().map_err(|_| format!("bad points '{v}'"))).transpose()?,
         parent: args.opt("--parent"),
         spec: args.opt("--spec"),
         review_url: args.opt("--review-url"),
@@ -682,29 +551,15 @@ fn list_opts(args: &Args) -> ListOpts<'_> {
 
 /// `new`'s options.
 fn new_opts(args: &Args) -> Result<NewOpts, String> {
-    let title = args
-        .positional_at(0)
-        .ok_or_else(|| "new: missing a title".to_string())?;
+    let title = args.positional_at(0).ok_or_else(|| "new: missing a title".to_string())?;
     Ok(NewOpts {
         title: title.to_string(),
         id: args.opt("--id").map(str::to_string),
         slug: args.opt("--slug").map(str::to_string),
         priority: args.opt("--priority").map(str::to_string),
-        points: args
-            .opt("--points")
-            .map(|v| v.parse().map_err(|_| format!("bad points '{v}'")))
-            .transpose()?,
+        points: args.opt("--points").map(|v| v.parse().map_err(|_| format!("bad points '{v}'"))).transpose()?,
         parent: args.opt("--parent").map(str::to_string),
-        depends: args
-            .opt("--depends")
-            .map(|v| {
-                v.split(',')
-                    .map(str::trim)
-                    .filter(|s| !s.is_empty())
-                    .map(str::to_string)
-                    .collect()
-            })
-            .unwrap_or_default(),
+        depends: args.opt("--depends").map(|v| v.split(',').map(str::trim).filter(|s| !s.is_empty()).map(str::to_string).collect()).unwrap_or_default(),
         spec: args.opt("--spec").map(str::to_string),
         review_url: args.opt("--review-url").map(str::to_string),
     })
@@ -744,7 +599,7 @@ fn emit_or_status(text: &str, ok: std::process::ExitCode) -> std::process::ExitC
         Err(e) => {
             eprintln!("error: writing output: {e}");
             std::process::ExitCode::FAILURE
-        }
+        },
     }
 }
 
@@ -771,11 +626,11 @@ pub(crate) fn main() -> std::process::ExitCode {
         Err(msg) if msg.starts_with("trck: ") => {
             eprintln!("{msg}");
             std::process::ExitCode::FAILURE
-        }
+        },
         Err(msg) => {
             eprintln!("error: {msg}");
             std::process::ExitCode::FAILURE
-        }
+        },
     }
 }
 
@@ -795,18 +650,8 @@ mod tests {
     #[test]
     fn the_help_does_not_narrate_the_state_of_the_port() {
         let text = usage();
-        for stale in [
-            "in progress",
-            "do not yet",
-            "not yet",
-            "so far",
-            "for now",
-            "currently",
-        ] {
-            assert!(
-                !text.to_lowercase().contains(stale),
-                "help claims a state that will go stale ({stale:?}): {text}"
-            );
+        for stale in ["in progress", "do not yet", "not yet", "so far", "for now", "currently"] {
+            assert!(!text.to_lowercase().contains(stale), "help claims a state that will go stale ({stale:?}): {text}");
         }
         assert!(text.contains(env!("CARGO_PKG_VERSION")), "{text}");
         for verb in ["new", "list", "check", "html"] {
@@ -820,14 +665,7 @@ mod tests {
 
     #[test]
     fn a_verb_with_positionals_and_options() {
-        let a = args(&[
-            "new",
-            "Fix the parser",
-            "--priority",
-            "high",
-            "--id",
-            "aaaaaaa",
-        ]);
+        let a = args(&["new", "Fix the parser", "--priority", "high", "--id", "aaaaaaa"]);
         assert_eq!(a.verb, "new");
         assert_eq!(a.positional_at(0), Some("Fix the parser"));
         assert_eq!(a.opt("--priority"), Some("high"));
@@ -860,14 +698,8 @@ mod tests {
     #[test]
     fn the_global_dir_flag_is_read_wherever_it_sits() {
         // The Python CLI takes it before the verb; a fixture may write it either way.
-        assert_eq!(
-            args(&["--dir", "issues", "new", "T"]).opt("--dir"),
-            Some("issues")
-        );
-        assert_eq!(
-            args(&["new", "T", "--dir", "issues"]).opt("--dir"),
-            Some("issues")
-        );
+        assert_eq!(args(&["--dir", "issues", "new", "T"]).opt("--dir"), Some("issues"));
+        assert_eq!(args(&["new", "T", "--dir", "issues"]).opt("--dir"), Some("issues"));
         assert_eq!(args(&["--dir", "issues", "new", "T"]).verb, "new");
     }
 
@@ -875,15 +707,9 @@ mod tests {
     fn an_unrecognised_flag_is_refused_rather_than_ignored() {
         // `list --stauts done` would otherwise list everything and read as a filter.
         let bad = parse_args(&["list".into(), "--stauts".into(), "done".into()]);
-        assert!(
-            usage_error(&bad).is_some_and(|m| m.contains("unrecognized argument --stauts")),
-            "a typo'd flag must be refused, not dropped"
-        );
+        assert!(usage_error(&bad).is_some_and(|m| m.contains("unrecognized argument --stauts")), "a typo'd flag must be refused, not dropped");
         // A flag the verb does accept passes.
-        assert_eq!(
-            usage_error(&parse_args(&["list".into(), "--all".into()])),
-            None
-        );
+        assert_eq!(usage_error(&parse_args(&["list".into(), "--all".into()])), None);
     }
 
     #[test]
@@ -894,45 +720,24 @@ mod tests {
         for argv in [
             vec!["list".to_string(), "--json".to_string()],
             vec!["tree".to_string(), "--json".to_string()],
-            vec![
-                "show".to_string(),
-                "aaaaaaa".to_string(),
-                "--json".to_string(),
-            ],
+            vec!["show".to_string(), "aaaaaaa".to_string(), "--json".to_string()],
             vec!["ready".to_string(), "--json".to_string()],
             vec!["next".to_string(), "--json".to_string()],
             vec!["deps".to_string(), "--json".to_string()],
         ] {
             let verb = argv[0].clone();
-            assert_eq!(
-                usage_error(&parse_args(&argv)),
-                None,
-                "{verb} --json is implemented and must parse"
-            );
+            assert_eq!(usage_error(&parse_args(&argv)), None, "{verb} --json is implemented and must parse");
         }
         // A verb with no --json still refuses it rather than ignoring it.
         let msg = usage_error(&parse_args(&["summary".to_string(), "--json".to_string()]));
-        assert!(
-            msg.as_ref().is_some_and(|m| m.contains("--json")),
-            "summary --json must be refused, got {msg:?}"
-        );
+        assert!(msg.as_ref().is_some_and(|m| m.contains("--json")), "summary --json must be refused, got {msg:?}");
         assert_eq!(usage_error(&parse_args(&["list".into()])), None);
     }
 
     #[test]
     fn a_missing_required_option_is_a_usage_error() {
-        assert!(
-            usage_error(&parse_args(&["changelog".into()]))
-                .is_some_and(|m| m.contains("required: --since"))
-        );
-        assert_eq!(
-            usage_error(&parse_args(&[
-                "changelog".into(),
-                "--since".into(),
-                "2026-01-01".into()
-            ])),
-            None
-        );
+        assert!(usage_error(&parse_args(&["changelog".into()])).is_some_and(|m| m.contains("required: --since")));
+        assert_eq!(usage_error(&parse_args(&["changelog".into(), "--since".into(), "2026-01-01".into()])), None);
     }
 
     #[test]
@@ -940,10 +745,7 @@ mod tests {
         // It exits 2, like argparse: a script can tell "you called me wrong" from
         // "what you asked for failed".
         assert!(usage_error(&parse_args(&["show".into()])).is_some_and(|m| m.contains("missing")));
-        assert!(
-            usage_error(&parse_args(&["mv".into(), "abc".into()]))
-                .is_some_and(|m| m.contains("missing"))
-        );
+        assert!(usage_error(&parse_args(&["mv".into(), "abc".into()])).is_some_and(|m| m.contains("missing")));
     }
 
     #[test]
@@ -953,8 +755,7 @@ mod tests {
         // `deps`, then `changelog`, then `init` as each landed — the churn was the point,
         // it tracked the frontier. `init` was the last of them, so what it guards now is
         // `repo`, whose subcommand list is the one that can still grow.
-        let err =
-            dispatch(&["repo".to_string(), "nonesuch".to_string()]).expect_err("not implemented");
+        let err = dispatch(&["repo".to_string(), "nonesuch".to_string()]).expect_err("not implemented");
         assert!(err.contains("not implemented"), "{err}");
         let unknown = usage_error(&parse_args(&["nonesuch".to_string()]));
         assert!(unknown.is_some_and(|m| m.contains("unknown verb")));
@@ -969,10 +770,7 @@ mod tests {
             // Dispatching would run them; the frontier is a property of the match arms, so
             // read it off the message the catch-all would produce instead.
             let orphan = format!("`{verb}` is not implemented yet in the Rust engine");
-            assert!(
-                !usage().contains(&orphan),
-                "the help advertises an unported verb: {verb}"
-            );
+            assert!(!usage().contains(&orphan), "the help advertises an unported verb: {verb}");
         }
         assert!(VERBS.contains(&"init"), "init dropped out of the verb list");
     }

@@ -16,8 +16,8 @@ use crate::gutter;
 use crate::issue::{CANON_KEYS, Issue, check_field_key};
 use crate::json::Json;
 use crate::render::{
-    Annotation, LANE_PALETTE, RowOpts, field_value, field_value_raw, hl_id, lane_palette_index,
-    paint, render_rows, status_codes, status_icon, unique_prefix_lens,
+    Annotation, LANE_PALETTE, RowOpts, field_value, field_value_raw, hl_id, lane_palette_index, paint, render_rows, status_codes, status_icon,
+    unique_prefix_lens,
 };
 use crate::verbs::{issue_path, load_rows, resolve_ref};
 use std::collections::{BTreeMap, BTreeSet};
@@ -27,10 +27,7 @@ use std::collections::{BTreeMap, BTreeSet};
 /// Five booleans, which clippy dislikes and which is right anyway: they mirror the CLI
 /// flags one-to-one, and folding them into an enum would hide that `--flat --paths` is a
 /// combination the caller can express and this code has to answer for.
-#[allow(
-    clippy::struct_excessive_bools,
-    reason = "mirrors the CLI flags one-to-one"
-)]
+#[allow(clippy::struct_excessive_bools, reason = "mirrors the CLI flags one-to-one")]
 #[derive(Default)]
 pub(crate) struct ListOpts<'a> {
     pub(crate) root: Option<&'a str>,
@@ -80,15 +77,12 @@ fn sort_key(g: &Graph, r: &Issue, sort: &str) -> (usize, String, String) {
         _ if sort.starts_with("field:") => {
             let name = &sort["field:".len()..];
             // Rows carrying the field sort by value; rows without it sort last.
-            field_value(r, name).map_or_else(
-                || (1, String::new(), r.id.clone()),
-                |v| (0, v, r.id.clone()),
-            )
-        }
+            field_value(r, name).map_or_else(|| (1, String::new(), r.id.clone()), |v| (0, v, r.id.clone()))
+        },
         _ => {
             let _ = g;
             (0, r.created.clone().unwrap_or_default(), r.id.clone())
-        }
+        },
     }
 }
 
@@ -97,9 +91,7 @@ fn sort_key(g: &Graph, r: &Issue, sort: &str) -> (usize, String, String) {
 fn check_list_opts(opts: &ListOpts) -> Result<Vec<(String, String)>, String> {
     let mut field_filters = Vec::new();
     for spec in &opts.fields {
-        let (k, v) = spec
-            .split_once('=')
-            .ok_or_else(|| format!("--field expects key=value, got '{spec}'"))?;
+        let (k, v) = spec.split_once('=').ok_or_else(|| format!("--field expects key=value, got '{spec}'"))?;
         // The same key rule the write side enforces. Without it a filter on a built-in —
         // `--field status=backlog` — would look up a custom field that can never exist and
         // quietly match nothing, or worse, appear to work.
@@ -112,9 +104,7 @@ fn check_list_opts(opts: &ListOpts) -> Result<Vec<(String, String)>, String> {
         && !["priority", "points", "created", "id"].contains(&s)
         && !s.starts_with("field:")
     {
-        return Err(format!(
-            "unknown --sort '{s}' (choices: id, priority, points, created, field:NAME)"
-        ));
+        return Err(format!("unknown --sort '{s}' (choices: id, priority, points, created, field:NAME)"));
     }
     Ok(field_filters)
 }
@@ -125,27 +115,10 @@ fn check_list_opts(opts: &ListOpts) -> Result<Vec<(String, String)>, String> {
 /// the hierarchy need not rebuild it from `parent` pointers, and `context`, marking a row
 /// present only to keep a match attached to its ancestors — what the human view dims.
 /// `seen` guards a hand-edited parent cycle the same way the human forest walk does.
-fn json_node(
-    g: &Graph,
-    sel: &Selection,
-    id: &str,
-    sorted: &mut impl FnMut(&mut Vec<String>),
-    seen: &mut BTreeSet<String>,
-) -> Json {
-    let mut kids: Vec<String> = g
-        .children_of(id)
-        .iter()
-        .filter(|c| sel.shown.contains(*c))
-        .cloned()
-        .collect();
+fn json_node(g: &Graph, sel: &Selection, id: &str, sorted: &mut impl FnMut(&mut Vec<String>), seen: &mut BTreeSet<String>) -> Json {
+    let mut kids: Vec<String> = g.children_of(id).iter().filter(|c| sel.shown.contains(*c)).cloned().collect();
     sorted(&mut kids);
-    let children: Vec<Json> = if seen.insert(id.to_string()) {
-        kids.iter()
-            .map(|c| json_node(g, sel, c, sorted, seen))
-            .collect()
-    } else {
-        Vec::new()
-    };
+    let children: Vec<Json> = if seen.insert(id.to_string()) { kids.iter().map(|c| json_node(g, sel, c, sorted, seen)).collect() } else { Vec::new() };
     let mut obj = match g.get(id).map(Issue::to_full) {
         Some(Json::Object(pairs)) => pairs,
         _ => Vec::new(),
@@ -171,10 +144,7 @@ pub(crate) fn cmd_list(ctx: &Ctx, opts: &ListOpts) -> Result<String, String> {
         if !is_terminal(&r.status) {
             return false;
         }
-        r.parent
-            .as_ref()
-            .and_then(|p| g.get(p))
-            .is_none_or(|p| is_terminal(&p.status))
+        r.parent.as_ref().and_then(|p| g.get(p)).is_none_or(|p| is_terminal(&p.status))
     };
 
     let keep = |r: &Issue| {
@@ -182,36 +152,24 @@ pub(crate) fn cmd_list(ctx: &Ctx, opts: &ListOpts) -> Result<String, String> {
             && !drop_st.contains(&r.status)
             && opts.priority.is_none_or(|p| r.priority == p)
             && opts.label.is_none_or(|l| r.labels.iter().any(|x| x == l))
-            && parent_filter
-                .as_ref()
-                .is_none_or(|p| r.parent.as_ref() == Some(p))
+            && parent_filter.as_ref().is_none_or(|p| r.parent.as_ref() == Some(p))
             && (want.is_empty() || r.title.to_lowercase().contains(&want))
             && (!opts.blocked || g.is_blocked(&r.id))
             && (!opts.orphan || r.parent.is_none())
             && (!prune_settled || !settled(r))
-            && field_filters
-                .iter()
-                .all(|(k, v)| field_value_raw(r, k).as_ref() == Some(v))
+            && field_filters.iter().all(|(k, v)| field_value_raw(r, k).as_ref() == Some(v))
     };
 
     let sort = opts.sort.unwrap_or("created");
     let mut sorted = |ids: &mut Vec<String>| {
-        ids.sort_by_cached_key(|id| {
-            g.get(id)
-                .map_or_else(|| (0, String::new(), id.clone()), |r| sort_key(&g, r, sort))
-        });
+        ids.sort_by_cached_key(|id| g.get(id).map_or_else(|| (0, String::new(), id.clone()), |r| sort_key(&g, r, sort)));
     };
 
     if opts.paths {
         if opts.json {
             return Err("--paths and --json are different output modes; pick one".into());
         }
-        let mut ids: Vec<String> = g
-            .rows
-            .iter()
-            .filter(|r| keep(r))
-            .map(|r| r.id.clone())
-            .collect();
+        let mut ids: Vec<String> = g.rows.iter().filter(|r| keep(r)).map(|r| r.id.clone()).collect();
         sorted(&mut ids);
         return Ok(paths_of(ctx, &g, &ids));
     }
@@ -224,34 +182,14 @@ pub(crate) fn cmd_list(ctx: &Ctx, opts: &ListOpts) -> Result<String, String> {
     let show_fields: Vec<String> = opts.show_fields.iter().map(|s| (*s).to_string()).collect();
 
     if opts.flat {
-        let mut ids: Vec<String> = g
-            .rows
-            .iter()
-            .filter(|r| keep(r))
-            .map(|r| r.id.clone())
-            .collect();
+        let mut ids: Vec<String> = g.rows.iter().filter(|r| keep(r)).map(|r| r.id.clone()).collect();
         sorted(&mut ids);
         let rows: Vec<&Issue> = ids.iter().filter_map(|id| g.get(id)).collect();
-        let row_opts = RowOpts {
-            prefix: None,
-            dim: &[],
-            on_screen: ids.clone(),
-            annotate: Annotation::Blocking,
-            progress: true,
-            show_fields,
-            abbrev: Some(abbrev),
-        };
+        let row_opts =
+            RowOpts { prefix: None, dim: &[], on_screen: ids.clone(), annotate: Annotation::Blocking, progress: true, show_fields, abbrev: Some(abbrev) };
         return Ok(render_rows(&g, &rows, &row_opts).join("\n"));
     }
-    Ok(forest(
-        &g,
-        opts,
-        &keep,
-        &mut sorted,
-        show_fields,
-        abbrev,
-        root.as_deref(),
-    ))
+    Ok(forest(&g, opts, &keep, &mut sorted, show_fields, abbrev, root.as_deref()))
 }
 
 /// Which rows the nested view covers: the matches, everything shown (matches plus the
@@ -264,43 +202,19 @@ struct Selection {
 
 /// The nested view's row selection, shared by the human forest and the `--json` one so the
 /// two can never disagree about what a filter selected — only about how it is rendered.
-fn select_forest(
-    g: &Graph,
-    keep: &impl Fn(&Issue) -> bool,
-    sorted: &mut impl FnMut(&mut Vec<String>),
-    root: Option<&str>,
-) -> Selection {
-    let matched: BTreeSet<String> = g
-        .rows
-        .iter()
-        .filter(|r| keep(r))
-        .map(|r| r.id.clone())
-        .collect();
+fn select_forest(g: &Graph, keep: &impl Fn(&Issue) -> bool, sorted: &mut impl FnMut(&mut Vec<String>), root: Option<&str>) -> Selection {
+    let matched: BTreeSet<String> = g.rows.iter().filter(|r| keep(r)).map(|r| r.id.clone()).collect();
     let mut shown = matched.clone();
     for id in &matched {
         shown.extend(g.ancestors_of(id));
     }
     let mut roots: Vec<String> = if let Some(id) = root {
-        if shown.contains(id) {
-            vec![id.to_string()]
-        } else {
-            Vec::new()
-        }
+        if shown.contains(id) { vec![id.to_string()] } else { Vec::new() }
     } else {
-        g.rows
-            .iter()
-            .filter(|r| {
-                shown.contains(&r.id) && r.parent.as_ref().is_none_or(|p| g.get(p).is_none())
-            })
-            .map(|r| r.id.clone())
-            .collect()
+        g.rows.iter().filter(|r| shown.contains(&r.id) && r.parent.as_ref().is_none_or(|p| g.get(p).is_none())).map(|r| r.id.clone()).collect()
     };
     sorted(&mut roots);
-    Selection {
-        matched,
-        shown,
-        roots,
-    }
+    Selection { matched, shown, roots }
 }
 
 /// `list --json`: the rows the human view would print, as one document.
@@ -310,34 +224,15 @@ fn select_forest(
 /// under `--flat`, mirroring the human view: a consumer wanting the hierarchy should not
 /// have to rebuild it from `parent` pointers. Rows are [`Issue::to_full`], so every
 /// canonical key is present even where unset.
-fn list_json(
-    g: &Graph,
-    opts: &ListOpts,
-    keep: &impl Fn(&Issue) -> bool,
-    sorted: &mut impl FnMut(&mut Vec<String>),
-    root: Option<&str>,
-) -> String {
+fn list_json(g: &Graph, opts: &ListOpts, keep: &impl Fn(&Issue) -> bool, sorted: &mut impl FnMut(&mut Vec<String>), root: Option<&str>) -> String {
     if opts.flat {
-        let mut ids: Vec<String> = g
-            .rows
-            .iter()
-            .filter(|r| keep(r))
-            .map(|r| r.id.clone())
-            .collect();
+        let mut ids: Vec<String> = g.rows.iter().filter(|r| keep(r)).map(|r| r.id.clone()).collect();
         sorted(&mut ids);
-        let rows: Vec<Json> = ids
-            .iter()
-            .filter_map(|id| g.get(id))
-            .map(Issue::to_full)
-            .collect();
+        let rows: Vec<Json> = ids.iter().filter_map(|id| g.get(id)).map(Issue::to_full).collect();
         return Json::Array(rows).to_json_pretty();
     }
     let sel = select_forest(g, keep, sorted, root);
-    let nodes: Vec<Json> = sel
-        .roots
-        .iter()
-        .map(|id| json_node(g, &sel, id, sorted, &mut BTreeSet::new()))
-        .collect();
+    let nodes: Vec<Json> = sel.roots.iter().map(|id| json_node(g, &sel, id, sorted, &mut BTreeSet::new())).collect();
     Json::Array(nodes).to_json_pretty()
 }
 
@@ -354,19 +249,10 @@ fn forest(
 ) -> String {
     let _ = opts;
 
-    let Selection {
-        matched,
-        shown,
-        roots,
-    } = select_forest(g, keep, sorted, root);
+    let Selection { matched, shown, roots } = select_forest(g, keep, sorted, root);
     let dim: Vec<String> = shown.difference(&matched).cloned().collect();
 
-    let mut f = Forest {
-        shown: &shown,
-        ordered: Vec::new(),
-        prefixes: BTreeMap::new(),
-        seen: BTreeSet::new(),
-    };
+    let mut f = Forest { shown: &shown, ordered: Vec::new(), prefixes: BTreeMap::new(), seen: BTreeSet::new() };
     for r in &roots {
         f.ordered.push(r.clone());
         f.prefixes.insert(r.clone(), String::new());
@@ -410,21 +296,13 @@ struct Forest<'a> {
 
 /// Depth-first walk building the connector prefixes, cycle-guarded.
 fn walk(g: &Graph, f: &mut Forest, id: &str, pfx: &str, sorted: &mut impl FnMut(&mut Vec<String>)) {
-    let mut kids: Vec<String> = g
-        .children_of(id)
-        .iter()
-        .filter(|k| f.shown.contains(*k))
-        .cloned()
-        .collect();
+    let mut kids: Vec<String> = g.children_of(id).iter().filter(|k| f.shown.contains(*k)).cloned().collect();
     sorted(&mut kids);
     let last_index = kids.len().saturating_sub(1);
     for (i, kid) in kids.iter().enumerate() {
         let last = i == last_index;
         f.ordered.push(kid.clone());
-        f.prefixes.insert(
-            kid.clone(),
-            format!("{pfx}{}", if last { "└─ " } else { "├─ " }),
-        );
+        f.prefixes.insert(kid.clone(), format!("{pfx}{}", if last { "└─ " } else { "├─ " }));
         if f.seen.insert(kid.clone()) {
             let ext = format!("{pfx}{}", if last { "   " } else { "│  " });
             walk(g, f, kid, &ext, sorted);
@@ -443,11 +321,7 @@ fn walk(g: &Graph, f: &mut Forest, id: &str, pfx: &str, sorted: &mut impl FnMut(
 /// Flat and unnested, unlike `list --json`: readiness is a property of leaves, so there is
 /// no hierarchy to carry. The order is the ranking — the whole point of the verb — and no
 /// `↑demand` marker appears, because the caller can compute it from the rows.
-pub(crate) fn cmd_ready_json(
-    ctx: &Ctx,
-    root: Option<&str>,
-    only_next: bool,
-) -> Result<String, String> {
+pub(crate) fn cmd_ready_json(ctx: &Ctx, root: Option<&str>, only_next: bool) -> Result<String, String> {
     let ids = ready_ids(ctx, root, only_next)?;
     let rows = load_rows(ctx)?;
     let g = Graph::new(rows);
@@ -521,10 +395,7 @@ pub(crate) fn cmd_ready(ctx: &Ctx, root: Option<&str>, only_next: bool) -> Resul
 }
 
 /// Options `deps` accepts.
-#[allow(
-    clippy::struct_excessive_bools,
-    reason = "mirrors the CLI flags one-to-one"
-)]
+#[allow(clippy::struct_excessive_bools, reason = "mirrors the CLI flags one-to-one")]
 #[derive(Default)]
 pub(crate) struct DepsOpts<'a> {
     pub(crate) root: Option<&'a str>,
@@ -547,27 +418,17 @@ pub(crate) struct DepsOpts<'a> {
 pub(crate) fn cmd_deps_json(ctx: &Ctx, opts: &DepsOpts) -> Result<String, String> {
     let rows = load_rows(ctx)?;
     let Some(token) = opts.root else {
-        return Err(
-            "deps --json needs an issue id (the whole-graph view is an edge \
+        return Err("deps --json needs an issue id (the whole-graph view is an edge \
                     list, a different shape from one issue's cones)"
-                .into(),
-        );
+            .into());
     };
     let iid = resolve_ref(&rows, token)?;
     let g = Graph::new(rows);
     let cone = |up: bool, down: bool| -> Vec<Json> {
         let line = g.dependency_line(&iid, up, down);
-        g.rows
-            .iter()
-            .filter(|r| r.id != iid && line.contains(&r.id))
-            .map(Issue::to_full)
-            .collect()
+        g.rows.iter().filter(|r| r.id != iid && line.contains(&r.id)).map(Issue::to_full).collect()
     };
-    Ok(Json::Object(vec![
-        ("requires".into(), Json::Array(cone(true, false))),
-        ("blocks".into(), Json::Array(cone(false, true))),
-    ])
-    .to_json_pretty())
+    Ok(Json::Object(vec![("requires".into(), Json::Array(cone(true, false))), ("blocks".into(), Json::Array(cone(false, true)))]).to_json_pretty())
 }
 
 pub(crate) fn cmd_deps(ctx: &Ctx, opts: &DepsOpts) -> Result<String, String> {
@@ -595,10 +456,7 @@ pub(crate) fn cmd_deps(ctx: &Ctx, opts: &DepsOpts) -> Result<String, String> {
             let Some(row) = g.get(id) else {
                 return Err(format!("no issue matching '{id}'"));
             };
-            return Ok(format!(
-                "{}  (no dependencies)",
-                node_label(&g, row, true, Some(&abbrev))
-            ));
+            return Ok(format!("{}  (no dependencies)", node_label(&g, row, true, Some(&abbrev))));
         }
         if opts.full {
             // The focal node's whole component, computed over *every* issue — not over
@@ -606,12 +464,7 @@ pub(crate) fn cmd_deps(ctx: &Ctx, opts: &DepsOpts) -> Result<String, String> {
             // could therefore lose the focal node itself.
             let all: BTreeSet<String> = g.rows.iter().map(|r| r.id.clone()).collect();
             let edges = gutter::drawn_edges(&g, &all, false, false);
-            gutter::components(&all, &edges)
-                .into_iter()
-                .find(|c| c.contains(id))
-                .unwrap_or_default()
-                .into_iter()
-                .collect()
+            gutter::components(&all, &edges).into_iter().find(|c| c.contains(id)).unwrap_or_default().into_iter().collect()
         } else {
             g.dependency_line(id, up, down)
         }
@@ -622,21 +475,10 @@ pub(crate) fn cmd_deps(ctx: &Ctx, opts: &DepsOpts) -> Result<String, String> {
         }
         ids
     };
-    let ids = gutter::filter_done(
-        &g,
-        &ids,
-        opts.omit_done,
-        opts.include_done_chains,
-        root.is_none(),
-    );
+    let ids = gutter::filter_done(&g, &ids, opts.omit_done, opts.include_done_chains, root.is_none());
 
     let rendered = gutter::render_graph(&g, &ids, opts.fanout);
-    let width = rendered
-        .iter()
-        .flatten()
-        .map(|(_, gut, _)| gut.chars().count())
-        .max()
-        .unwrap_or(0);
+    let width = rendered.iter().flatten().map(|(_, gut, _)| gut.chars().count()).max().unwrap_or(0);
     let mut out: Vec<String> = Vec::new();
     for row in &rendered {
         let Some((iid, gut, owners)) = row else {
@@ -653,11 +495,7 @@ pub(crate) fn cmd_deps(ctx: &Ctx, opts: &DepsOpts) -> Result<String, String> {
         };
         let painted = paint_lanes(gut, owners);
         let Some(row) = g.get(iid) else { continue };
-        out.push(format!(
-            "{marker}{painted}{}  {}",
-            " ".repeat(width - gut.chars().count()),
-            node_label(&g, row, focal, Some(&abbrev))
-        ));
+        out.push(format!("{marker}{painted}{}  {}", " ".repeat(width - gut.chars().count()), node_label(&g, row, focal, Some(&abbrev))));
     }
     Ok(out.join("\n"))
 }
@@ -682,7 +520,7 @@ fn paint_lanes(gut: &str, owners: &[gutter::LaneOwner]) -> String {
                         codes.insert(0, "dim");
                     }
                     paint(&ch.to_string(), &codes)
-                }
+                },
             }
         })
         .collect()
@@ -692,29 +530,11 @@ fn paint_lanes(gut: &str, owners: &[gutter::LaneOwner]) -> String {
 ///
 /// `·epic·` comes from the hierarchy, not from a stored kind — an issue with children
 /// *is* an epic, and a declared marker only drifts from that.
-fn node_label(
-    g: &Graph,
-    r: &Issue,
-    focal: bool,
-    abbrev: Option<&BTreeMap<String, usize>>,
-) -> String {
-    let tag = if g.children_of(&r.id).is_empty() {
-        String::new()
-    } else {
-        " ·epic·".to_string()
-    };
-    let labels = if r.labels.is_empty() {
-        String::new()
-    } else {
-        paint(&format!(" [{}]", r.labels.join(" ")), &["dim"])
-    };
+fn node_label(g: &Graph, r: &Issue, focal: bool, abbrev: Option<&BTreeMap<String, usize>>) -> String {
+    let tag = if g.children_of(&r.id).is_empty() { String::new() } else { " ·epic·".to_string() };
+    let labels = if r.labels.is_empty() { String::new() } else { paint(&format!(" [{}]", r.labels.join(" ")), &["dim"]) };
     let emph: &[&str] = if focal { &["bold"] } else { &[] };
-    format!(
-        "{} {} {}{tag}{labels}",
-        hl_id(&r.id, abbrev, true),
-        paint(status_icon(&r.status), &status_codes(&r.status)),
-        paint(&r.title, emph)
-    )
+    format!("{} {} {}{tag}{labels}", hl_id(&r.id, abbrev, true), paint(status_icon(&r.status), &status_codes(&r.status)), paint(&r.title, emph))
 }
 
 /// `show --json`: one document with the body folded in.
@@ -742,10 +562,7 @@ fn show_parts(ctx: &Ctx, token: &str) -> Result<(Issue, String, bool), String> {
     let rows = load_rows(ctx)?;
     let iid = resolve_ref(&rows, token)?;
     let g = Graph::new(rows);
-    let row = g
-        .get(&iid)
-        .ok_or_else(|| format!("no issue matching '{iid}'"))?
-        .clone();
+    let row = g.get(&iid).ok_or_else(|| format!("no issue matching '{iid}'"))?.clone();
     let path = issue_path(ctx, &row);
     if !path.exists() {
         return Err(format!("file missing for #{}: {}", row.id, path.display()));
@@ -759,9 +576,7 @@ pub(crate) fn cmd_show(ctx: &Ctx, token: &str) -> Result<String, String> {
     let iid = resolve_ref(&rows, token)?;
     let abbrev = unique_prefix_lens(rows.iter().map(|r| r.id.as_str()));
     let g = Graph::new(rows);
-    let row = g
-        .get(&iid)
-        .ok_or_else(|| format!("no issue matching '{iid}'"))?;
+    let row = g.get(&iid).ok_or_else(|| format!("no issue matching '{iid}'"))?;
 
     let mut keys: Vec<String> = CANON_KEYS.iter().map(|k| (*k).to_string()).collect();
     if !g.is_leaf(&iid) {
@@ -774,10 +589,7 @@ pub(crate) fn cmd_show(ctx: &Ctx, token: &str) -> Result<String, String> {
     // value. An issue that happens to carry no `manual_status` still aligns with one
     // that does, so two `show` outputs sit in the same column.
     let width = keys.iter().map(|k| k.chars().count()).max().unwrap_or(0);
-    let shown: Vec<(String, String)> = keys
-        .iter()
-        .filter_map(|k| field_value_raw(row, k).map(|v| (k.clone(), v)))
-        .collect();
+    let shown: Vec<(String, String)> = keys.iter().filter_map(|k| field_value_raw(row, k).map(|v| (k.clone(), v))).collect();
     let mut out: Vec<String> = Vec::new();
     for (k, v) in &shown {
         let v = match k.as_str() {

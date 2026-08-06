@@ -106,7 +106,7 @@ impl Json {
                 out.push('\n');
                 pad(depth, out);
                 out.push(']');
-            }
+            },
             Json::Object(pairs) if !pairs.is_empty() => {
                 out.push_str("{\n");
                 for (i, (k, v)) in pairs.iter().enumerate() {
@@ -121,7 +121,7 @@ impl Json {
                 out.push('\n');
                 pad(depth, out);
                 out.push('}');
-            }
+            },
             // Scalars, and the empty containers, render the same either way.
             other => other.write(out),
         }
@@ -143,7 +143,7 @@ impl Json {
                     item.write(out);
                 }
                 out.push(']');
-            }
+            },
             Json::Object(pairs) => {
                 out.push('{');
                 for (i, (k, v)) in pairs.iter().enumerate() {
@@ -155,7 +155,7 @@ impl Json {
                     v.write(out);
                 }
                 out.push('}');
-            }
+            },
         }
     }
 }
@@ -177,7 +177,7 @@ fn write_string(s: &str, out: &mut String) {
             '\u{c}' => out.push_str("\\f"),
             c if (c as u32) < 0x20 => {
                 let _ = write!(out, "\\u{:04x}", c as u32);
-            }
+            },
             c => out.push(c),
         }
     }
@@ -186,10 +186,7 @@ fn write_string(s: &str, out: &mut String) {
 
 /// Parse one JSON document. Trailing content is an error, as it is in Python.
 pub(crate) fn parse(text: &str) -> Result<Json, String> {
-    let mut p = Parser {
-        chars: text.chars().collect(),
-        pos: 0,
-    };
+    let mut p = Parser { chars: text.chars().collect(), pos: 0 };
     p.skip_ws();
     let value = p.value()?;
     p.skip_ws();
@@ -226,10 +223,7 @@ impl Parser {
     fn expect(&mut self, want: char) -> Result<(), String> {
         match self.bump() {
             Some(c) if c == want => Ok(()),
-            Some(c) => Err(format!(
-                "expected '{want}' at position {}, got '{c}'",
-                self.pos - 1
-            )),
+            Some(c) => Err(format!("expected '{want}' at position {}, got '{c}'", self.pos - 1)),
             None => Err(format!("expected '{want}', got end of input")),
         }
     }
@@ -272,7 +266,7 @@ impl Parser {
             pairs.push((key, self.value()?));
             self.skip_ws();
             match self.bump() {
-                Some(',') => {}
+                Some(',') => {},
                 Some('}') => return Ok(Json::Object(pairs)),
                 Some(c) => return Err(format!("expected ',' or '}}', got '{c}'")),
                 None => return Err("unterminated object".to_string()),
@@ -293,7 +287,7 @@ impl Parser {
             items.push(self.value()?);
             self.skip_ws();
             match self.bump() {
-                Some(',') => {}
+                Some(',') => {},
                 Some(']') => return Ok(Json::Array(items)),
                 Some(c) => return Err(format!("expected ',' or ']', got '{c}'")),
                 None => return Err("unterminated array".to_string()),
@@ -353,9 +347,7 @@ impl Parser {
         let mut n = 0u32;
         for _ in 0..4 {
             let c = self.bump().ok_or("truncated \\u escape")?;
-            let d = c
-                .to_digit(16)
-                .ok_or_else(|| format!("bad hex digit '{c}'"))?;
+            let d = c.to_digit(16).ok_or_else(|| format!("bad hex digit '{c}'"))?;
             n = n * 16 + d;
         }
         Ok(n)
@@ -381,10 +373,10 @@ impl Parser {
                 if matches!(self.peek(), Some(c) if c.is_ascii_digit()) {
                     return Err(format!("leading zero at position {start}"));
                 }
-            }
+            },
             Some(c) if c.is_ascii_digit() => {
                 digits(self);
-            }
+            },
             _ => return Err(format!("expected a digit at position {}", self.pos)),
         }
         if self.peek() == Some('.') {
@@ -444,10 +436,7 @@ mod tests {
 
     #[test]
     fn writes_python_separators() {
-        assert_eq!(
-            roundtrip(r#"{"a":1,"b":[1,2]}"#),
-            r#"{"a": 1, "b": [1, 2]}"#
-        );
+        assert_eq!(roundtrip(r#"{"a":1,"b":[1,2]}"#), r#"{"a": 1, "b": [1, 2]}"#);
     }
 
     #[test]
@@ -478,10 +467,7 @@ mod tests {
 
     #[test]
     fn reads_escapes_and_surrogate_pairs() {
-        assert_eq!(
-            parse(r#""A😀\t""#).expect("parses"),
-            Json::String("A\u{1F600}\t".to_string())
-        );
+        assert_eq!(parse(r#""A😀\t""#).expect("parses"), Json::String("A\u{1F600}\t".to_string()));
     }
 
     #[test]

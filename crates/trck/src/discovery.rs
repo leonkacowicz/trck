@@ -45,14 +45,11 @@ pub(crate) fn find_tracker(start: &Path) -> Result<PathBuf, String> {
             1 => {
                 let hit = hits.remove(0);
                 return Ok(hit.canonicalize().unwrap_or(hit));
-            }
-            0 => {}
+            },
+            0 => {},
             n => {
-                return Err(format!(
-                    "ambiguous tracker under {} ({n} found); pass --dir",
-                    cur.display()
-                ));
-            }
+                return Err(format!("ambiguous tracker under {} ({n} found); pass --dir", cur.display()));
+            },
         }
         match cur.parent() {
             Some(parent) if parent != cur => cur = parent.to_path_buf(),
@@ -71,19 +68,12 @@ pub(crate) fn find_tracker(start: &Path) -> Result<PathBuf, String> {
 /// tracker with an engine committed beside it. That made sense while the engine was a file
 /// a repository could vendor. It is a binary now — installed on the machine, never in the
 /// repo it serves — so its own location says nothing about which tracker anyone means.
-pub(crate) fn resolve_tracker_dir(
-    dir_opt: Option<&str>,
-    env_dir: Option<&str>,
-    cwd: &Path,
-) -> Result<PathBuf, String> {
+pub(crate) fn resolve_tracker_dir(dir_opt: Option<&str>, env_dir: Option<&str>, cwd: &Path) -> Result<PathBuf, String> {
     if let Some(explicit) = dir_opt.or(env_dir) {
         let p = Path::new(explicit);
         let p = p.canonicalize().unwrap_or_else(|_| p.to_path_buf());
         if !is_tracker(&p) {
-            return Err(format!(
-                "{} is not a tracker (no {CONFIG_NAME})",
-                p.display()
-            ));
+            return Err(format!("{} is not a tracker (no {CONFIG_NAME})", p.display()));
         }
         return Ok(p);
     }
@@ -109,12 +99,7 @@ pub(crate) fn legacy_layout_files(dir: &Path) -> Vec<PathBuf> {
         let Ok(entries) = std::fs::read_dir(&folder) else {
             continue;
         };
-        out.extend(
-            entries
-                .flatten()
-                .map(|e| e.path())
-                .filter(|p| p.extension().is_some_and(|x| x == "md")),
-        );
+        out.extend(entries.flatten().map(|e| e.path()).filter(|p| p.extension().is_some_and(|x| x == "md")));
     }
     out.sort();
     out
@@ -126,11 +111,7 @@ fn check_layout(dir: &Path) -> Option<String> {
     if stale.is_empty() {
         return None;
     }
-    let mut folders: Vec<String> = stale
-        .iter()
-        .filter_map(|p| p.parent()?.file_name())
-        .map(|f| format!("{}/", f.to_string_lossy()))
-        .collect();
+    let mut folders: Vec<String> = stale.iter().filter_map(|p| p.parent()?.file_name()).map(|f| format!("{}/", f.to_string_lossy())).collect();
     folders.sort();
     folders.dedup();
     Some(format!(
@@ -192,8 +173,7 @@ pub(crate) mod tests {
             use std::sync::atomic::{AtomicUsize, Ordering};
             static N: AtomicUsize = AtomicUsize::new(0);
             let n = N.fetch_add(1, Ordering::Relaxed);
-            let p =
-                std::env::temp_dir().join(format!("trck-test-{tag}-{}-{n}", std::process::id()));
+            let p = std::env::temp_dir().join(format!("trck-test-{tag}-{}-{n}", std::process::id()));
             let _ = std::fs::remove_dir_all(&p);
             std::fs::create_dir_all(&p).expect("temp dir");
             Tmp(p)
@@ -258,12 +238,7 @@ pub(crate) mod tests {
         let tmp = Tmp::new("order");
         let a = tmp.tracker("a");
         let b = tmp.tracker("b");
-        let got = resolve_tracker_dir(
-            Some(&a.display().to_string()),
-            Some(&b.display().to_string()),
-            &tmp.0,
-        )
-        .expect("resolved");
+        let got = resolve_tracker_dir(Some(&a.display().to_string()), Some(&b.display().to_string()), &tmp.0).expect("resolved");
         assert_eq!(got, a);
     }
 
@@ -271,8 +246,7 @@ pub(crate) mod tests {
     fn env_wins_over_discovery() {
         let tmp = Tmp::new("env");
         let b = tmp.tracker("b");
-        let got =
-            resolve_tracker_dir(None, Some(&b.display().to_string()), &tmp.0).expect("resolved");
+        let got = resolve_tracker_dir(None, Some(&b.display().to_string()), &tmp.0).expect("resolved");
         assert_eq!(got, b);
     }
 
@@ -282,8 +256,7 @@ pub(crate) mod tests {
         // wrong repo.
         let tmp = Tmp::new("bogus");
         tmp.tracker("issues");
-        let err = resolve_tracker_dir(Some(&tmp.0.display().to_string()), None, &tmp.0)
-            .expect_err("refused");
+        let err = resolve_tracker_dir(Some(&tmp.0.display().to_string()), None, &tmp.0).expect_err("refused");
         assert!(err.contains("is not a tracker"), "{err}");
     }
 
@@ -321,11 +294,7 @@ pub(crate) mod tests {
     /// ones actually in use, and would catch a guard that rejects a real tracker.
     #[test]
     fn the_repos_own_configs_load_and_pass_the_guard() {
-        let root = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .and_then(Path::parent)
-            .expect("crates/trck is two levels below the repo root")
-            .to_path_buf();
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().and_then(Path::parent).expect("crates/trck is two levels below the repo root").to_path_buf();
         let mut checked = 0;
         for rel in ["issues", "examples/action-game"] {
             let dir = root.join(rel);
@@ -334,10 +303,7 @@ pub(crate) mod tests {
             }
             let ctx = Ctx::load(dir, true).unwrap_or_else(|e| panic!("{rel}: {e}"));
             assert_eq!(ctx.config.format, Some(SUPPORTED_FORMAT), "{rel}");
-            assert!(
-                crate::config::vestigial_warnings(&ctx.config).is_empty(),
-                "{rel} still carries a vocabulary key"
-            );
+            assert!(crate::config::vestigial_warnings(&ctx.config).is_empty(), "{rel} still carries a vocabulary key");
             checked += 1;
         }
         assert!(checked > 0, "no committed tracker found to check");

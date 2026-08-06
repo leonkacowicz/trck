@@ -35,10 +35,7 @@ fn scan_files(ctx: &Ctx) -> Result<BTreeMap<String, (String, String)>, String> {
     let Ok(entries) = std::fs::read_dir(ctx.items_dir()) else {
         return Ok(found);
     };
-    let mut names: Vec<String> = entries
-        .flatten()
-        .map(|e| e.file_name().to_string_lossy().into_owned())
-        .collect();
+    let mut names: Vec<String> = entries.flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect();
     names.sort();
     for name in names {
         let Some(stem) = name.strip_suffix(".md") else {
@@ -50,20 +47,14 @@ fn scan_files(ctx: &Ctx) -> Result<BTreeMap<String, (String, String)>, String> {
         // Only well-formed issue filenames count. A README or a scratch note parked in
         // `items/` must not be mistaken for an issue and reported as one missing its
         // index row — the id is lowercase alphanumeric, the slug is slug-shaped.
-        if id.is_empty()
-            || !id
-                .chars()
-                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
-        {
+        if id.is_empty() || !id.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit()) {
             continue;
         }
         if !is_slug(slug) {
             continue;
         }
         if let Some((_, other)) = found.get(id) {
-            return Err(format!(
-                "duplicate issue id {id} on disk: {other} and {name}"
-            ));
+            return Err(format!("duplicate issue id {id} on disk: {other} and {name}"));
         }
         found.insert(id.to_string(), (slug.to_string(), name.clone()));
     }
@@ -73,20 +64,13 @@ fn scan_files(ctx: &Ctx) -> Result<BTreeMap<String, (String, String)>, String> {
 /// A human-readable reason for an effective cycle: the node loop plus the authored edges
 /// and parent links that induce it. The loop itself is implied and was never typed, so
 /// naming only it would leave nothing to go and fix.
-#[allow(
-    clippy::many_single_char_names,
-    reason = "u/v are the loop edge, a/b the witness"
-)]
+#[allow(clippy::many_single_char_names, reason = "u/v are the loop edge, a/b the witness")]
 pub(crate) fn describe_cycle(g: &Graph, cyc: &[String]) -> String {
     let mut seq: Vec<&String> = cyc.iter().collect();
     if let Some(first) = cyc.first() {
         seq.push(first);
     }
-    let chain = seq
-        .iter()
-        .map(|c| format!("#{c}"))
-        .collect::<Vec<_>>()
-        .join(" -> ");
+    let chain = seq.iter().map(|c| format!("#{c}")).collect::<Vec<_>>().join(" -> ");
     let mut authored: Vec<String> = Vec::new();
     let mut notes: Vec<String> = Vec::new();
     for pair in seq.windows(2) {
@@ -121,31 +105,19 @@ pub(crate) fn describe_cycle(g: &Graph, cyc: &[String]) -> String {
     if !notes.is_empty() {
         let mut seen = BTreeSet::new();
         let unique: Vec<&String> = notes.iter().filter(|n| seen.insert((*n).clone())).collect();
-        let _ = write!(
-            reason,
-            "; {}",
-            unique
-                .iter()
-                .map(|s| s.as_str())
-                .collect::<Vec<_>>()
-                .join(", ")
-        );
+        let _ = write!(reason, "; {}", unique.iter().map(|s| s.as_str()).collect::<Vec<_>>().join(", "));
     }
     reason
 }
 
 fn is_slug(s: &str) -> bool {
     let mut chars = s.chars();
-    chars
-        .next()
-        .is_some_and(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
-        && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+    chars.next().is_some_and(|c| c.is_ascii_lowercase() || c.is_ascii_digit()) && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
 }
 
 fn is_field_key(k: &str) -> bool {
     let mut chars = k.chars();
-    chars.next().is_some_and(|c| c.is_ascii_lowercase())
-        && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_' || c == '-')
+    chars.next().is_some_and(|c| c.is_ascii_lowercase()) && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_' || c == '-')
 }
 
 /// Python's `repr` of a custom-field value, so the two engines word the same complaint
@@ -157,45 +129,24 @@ fn repr(v: &Json) -> String {
         Json::Bool(false) => "False".into(),
         Json::Number(raw) => raw.clone(),
         Json::String(s) => format!("'{s}'"),
-        Json::Array(items) => format!(
-            "[{}]",
-            items.iter().map(repr).collect::<Vec<_>>().join(", ")
-        ),
-        Json::Object(pairs) => format!(
-            "{{{}}}",
-            pairs
-                .iter()
-                .map(|(k, v)| format!("'{k}': {}", repr(v)))
-                .collect::<Vec<_>>()
-                .join(", ")
-        ),
+        Json::Array(items) => format!("[{}]", items.iter().map(repr).collect::<Vec<_>>().join(", ")),
+        Json::Object(pairs) => format!("{{{}}}", pairs.iter().map(|(k, v)| format!("'{k}': {}", repr(v))).collect::<Vec<_>>().join(", ")),
     }
 }
 
 /// Per-row checks: the file it should have, the values it may carry, and the invariants
 /// no verb would break.
-fn check_row(
-    g: &Graph,
-    r: &Issue,
-    files: &BTreeMap<String, (String, String)>,
-    errors: &mut Vec<String>,
-) {
+fn check_row(g: &Graph, r: &Issue, files: &BTreeMap<String, (String, String)>, errors: &mut Vec<String>) {
     let iid = &r.id;
     let Some((slug, fname)) = files.get(iid) else {
         errors.push(format!("#{iid} in index but no markdown file on disk"));
         return;
     };
     if r.slug != *slug {
-        errors.push(format!(
-            "#{iid} index slug '{}' != filename slug '{slug}'",
-            r.slug
-        ));
+        errors.push(format!("#{iid} index slug '{}' != filename slug '{slug}'", r.slug));
     }
     if *fname != filename(r) {
-        errors.push(format!(
-            "#{iid} filename '{fname}' != expected '{}'",
-            filename(r)
-        ));
+        errors.push(format!("#{iid} filename '{fname}' != expected '{}'", filename(r)));
     }
     if r.slug.is_empty() || !is_slug(&r.slug) {
         errors.push(format!("#{iid} bad slug '{}'", r.slug));
@@ -211,10 +162,7 @@ fn check_row(
             errors.push(format!("#{iid} {m}"));
         }
     } else if r.points != DEFAULT_POINTS {
-        errors.push(format!(
-            "#{iid} has children but carries points {} (derived from leaves, must be unset)",
-            r.points
-        ));
+        errors.push(format!("#{iid} has children but carries points {} (derived from leaves, must be unset)", r.points));
     }
     if let Some(res) = &r.resolution
         && let Some(m) = config::check_resolution(res)
@@ -231,16 +179,10 @@ fn check_row(
     // the review record for the change that resolved it.
     if !is_terminal(&r.status) {
         if let Some(res) = &r.resolution {
-            errors.push(format!(
-                "#{iid} is '{}' (not terminal) but carries resolution '{res}'",
-                r.status
-            ));
+            errors.push(format!("#{iid} is '{}' (not terminal) but carries resolution '{res}'", r.status));
         }
         if let Some(closed) = &r.closed {
-            errors.push(format!(
-                "#{iid} is '{}' (not terminal) but carries closed '{closed}'",
-                r.status
-            ));
+            errors.push(format!("#{iid} is '{}' (not terminal) but carries closed '{closed}'", r.status));
         }
     }
     if let Some(url) = &r.review_url
@@ -251,10 +193,7 @@ fn check_row(
     for (k, v) in &r.extra {
         if is_field_key(k) {
             if !matches!(v, Json::String(_)) {
-                errors.push(format!(
-                    "#{iid} custom field '{k}' must be a string, got {}",
-                    repr(v)
-                ));
+                errors.push(format!("#{iid} custom field '{k}' must be a string, got {}", repr(v)));
             }
         } else {
             errors.push(format!("#{iid} bad custom field key '{k}'"));
@@ -302,10 +241,7 @@ pub(crate) fn validate(ctx: &Ctx, rows: &[Issue]) -> Result<Report, String> {
     // Effective cycles are a superset of the authored ones, and surface inherited
     // deadlocks that arrived by hand-edit, import or `mv`.
     for cyc in g.effective_cycles() {
-        errors.push(format!(
-            "effective dependency cycle: {}",
-            describe_cycle(&g, &cyc)
-        ));
+        errors.push(format!("effective dependency cycle: {}", describe_cycle(&g, &cyc)));
     }
 
     // A non-pinned parent's status must equal the rollup of its children. `finalize`
@@ -315,10 +251,7 @@ pub(crate) fn validate(ctx: &Ctx, rows: &[Issue]) -> Result<Report, String> {
         if kids.is_empty() || r.manual_status {
             continue;
         }
-        let statuses: Vec<String> = kids
-            .iter()
-            .filter_map(|k| g.get(k).map(|c| c.status.clone()))
-            .collect();
+        let statuses: Vec<String> = kids.iter().filter_map(|k| g.get(k).map(|c| c.status.clone())).collect();
         let desired = config::reconcile(&statuses);
         if r.status != desired {
             errors.push(format!(
@@ -332,10 +265,7 @@ pub(crate) fn validate(ctx: &Ctx, rows: &[Issue]) -> Result<Report, String> {
         if is_terminal(&r.status) {
             for dep in &r.depends_on {
                 if g.get(dep).is_some_and(|d| !is_terminal(&d.status)) {
-                    warnings.push(format!(
-                        "#{} is terminal but depends on non-terminal #{dep}",
-                        r.id
-                    ));
+                    warnings.push(format!("#{} is terminal but depends on non-terminal #{dep}", r.id));
                 }
             }
         }
@@ -377,9 +307,6 @@ mod tests {
         assert_eq!(repr(&Json::Null), "None");
         assert_eq!(repr(&Json::Number("3".into())), "3");
         assert_eq!(repr(&Json::String("x".into())), "'x'");
-        assert_eq!(
-            repr(&Json::Array(vec![Json::Number("1".into()), Json::Null])),
-            "[1, None]"
-        );
+        assert_eq!(repr(&Json::Array(vec![Json::Number("1".into()), Json::Null])), "[1, None]");
     }
 }

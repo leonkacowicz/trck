@@ -21,10 +21,7 @@ use std::process::{Command, Stdio};
 
 /// This repository's own tracker: a real one, and big enough that the verb has plenty to say.
 fn repo_tracker() -> Option<PathBuf> {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()?
-        .parent()?
-        .to_path_buf();
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).parent()?.parent()?.to_path_buf();
     let dir = root.join("issues");
     dir.join("index.jsonl").exists().then_some(dir)
 }
@@ -58,23 +55,10 @@ fn stderr_after_closing_stdout(args: &[&str]) -> String {
 
 #[test]
 fn a_closed_stdout_does_not_panic() {
-    for verb in [
-        ["list", "--all"],
-        ["tree", "--all"],
-        ["deps", "--full"],
-        ["ready", "--next"],
-    ] {
+    for verb in [["list", "--all"], ["tree", "--all"], ["deps", "--full"], ["ready", "--next"]] {
         let err = stderr_after_closing_stdout(&verb);
-        assert!(
-            !err.contains("panicked"),
-            "`trck {}` panicked on a closed pipe:\n{err}",
-            verb.join(" ")
-        );
-        assert!(
-            !err.contains("RUST_BACKTRACE"),
-            "`trck {}` offered a backtrace to a user who closed a pipe:\n{err}",
-            verb.join(" ")
-        );
+        assert!(!err.contains("panicked"), "`trck {}` panicked on a closed pipe:\n{err}", verb.join(" "));
+        assert!(!err.contains("RUST_BACKTRACE"), "`trck {}` offered a backtrace to a user who closed a pipe:\n{err}", verb.join(" "));
     }
 }
 

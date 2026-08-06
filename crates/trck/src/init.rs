@@ -35,17 +35,11 @@ pub(crate) struct InitOpts {
 /// `trck.json` as a fresh tracker gets it: the format version, and where updates come from.
 fn default_config() -> Json {
     Json::Object(vec![
-        (
-            "format".to_string(),
-            Json::Number(SUPPORTED_FORMAT.to_string()),
-        ),
+        ("format".to_string(), Json::Number(SUPPORTED_FORMAT.to_string())),
         (
             "update".to_string(),
             Json::Object(vec![
-                (
-                    "repo".to_string(),
-                    Json::String(DEFAULT_UPDATE_REPO.to_string()),
-                ),
+                ("repo".to_string(), Json::String(DEFAULT_UPDATE_REPO.to_string())),
                 ("channel".to_string(), Json::String("stable".to_string())),
             ]),
         ),
@@ -67,8 +61,7 @@ fn scaffold_doc(dir: &Path, name: &str, body: &str, force: bool) -> Result<(), S
 
 /// `init [dir] [--force] [--hook]` — create a tracker and its scaffolded docs.
 pub(crate) fn cmd_init(opts: &InitOpts) -> Result<String, String> {
-    let cwd =
-        std::env::current_dir().map_err(|e| format!("cannot read the working directory: {e}"))?;
+    let cwd = std::env::current_dir().map_err(|e| format!("cannot read the working directory: {e}"))?;
     let target = match &opts.target {
         Some(t) if t.is_absolute() => t.clone(),
         Some(t) => cwd.join(t),
@@ -77,10 +70,7 @@ pub(crate) fn cmd_init(opts: &InitOpts) -> Result<String, String> {
 
     let cfgfile = target.join("trck.json");
     if cfgfile.exists() && !opts.force {
-        return Err(format!(
-            "{} is already a tracker (pass --force to overwrite config)",
-            target.display()
-        ));
+        return Err(format!("{} is already a tracker (pass --force to overwrite config)", target.display()));
     }
     std::fs::create_dir_all(&target).map_err(|e| format!("{}: {e}", target.display()))?;
 
@@ -110,11 +100,7 @@ mod tests {
     use crate::discovery::tests::Tmp;
 
     fn init_at(dir: &Path, force: bool) -> Result<String, String> {
-        cmd_init(&InitOpts {
-            target: Some(dir.to_path_buf()),
-            force,
-            hook: false,
-        })
+        cmd_init(&InitOpts { target: Some(dir.to_path_buf()), force, hook: false })
     }
 
     #[test]
@@ -133,15 +119,9 @@ mod tests {
         let dir = tmp.path().join("issues");
         init_at(&dir, false).expect("initialises");
         let text = std::fs::read_to_string(dir.join("trck.json")).expect("readable");
-        assert!(
-            text.contains(&format!("\"format\": {SUPPORTED_FORMAT}")),
-            "{text}"
-        );
+        assert!(text.contains(&format!("\"format\": {SUPPORTED_FORMAT}")), "{text}");
         assert!(text.contains(DEFAULT_UPDATE_REPO), "{text}");
-        assert!(
-            text.ends_with('\n'),
-            "config not newline-terminated: {text:?}"
-        );
+        assert!(text.ends_with('\n'), "config not newline-terminated: {text:?}");
     }
 
     /// The whole point of the verb changing hands. A copy of a binary is one platform's
@@ -184,11 +164,7 @@ mod tests {
         init_at(&dir, false).expect("initialises");
         std::fs::write(dir.join("CLAUDE.md"), "mine\n").expect("writable");
         init_at(&dir, true).expect("forces config");
-        assert_eq!(
-            std::fs::read_to_string(dir.join("CLAUDE.md")).expect("readable"),
-            SCAFFOLD_CLAUDE_MD,
-            "--force should refresh the docs too"
-        );
+        assert_eq!(std::fs::read_to_string(dir.join("CLAUDE.md")).expect("readable"), SCAFFOLD_CLAUDE_MD, "--force should refresh the docs too");
 
         let other = tmp.path().join("second");
         init_at(&other, false).expect("initialises");
@@ -196,10 +172,7 @@ mod tests {
         // Not forced: the edit stands.
         let err = init_at(&other, false).expect_err("refuses without force");
         assert!(err.contains("already a tracker"), "{err}");
-        assert_eq!(
-            std::fs::read_to_string(other.join("CLAUDE.md")).expect("readable"),
-            "mine\n"
-        );
+        assert_eq!(std::fs::read_to_string(other.join("CLAUDE.md")).expect("readable"), "mine\n");
     }
 
     #[test]
@@ -207,9 +180,6 @@ mod tests {
         assert!(SCAFFOLD_CLAUDE_MD.contains("trck"), "CLAUDE.md scaffold");
         assert!(SCAFFOLD_README_MD.contains("trck"), "README scaffold");
         // The binary is not copyable, so the scaffold must not tell anyone to run a local one.
-        assert!(
-            !SCAFFOLD_README_MD.contains("vendored"),
-            "README still mentions vendoring"
-        );
+        assert!(!SCAFFOLD_README_MD.contains("vendored"), "README still mentions vendoring");
     }
 }

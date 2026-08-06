@@ -22,10 +22,7 @@ use std::process::Command;
 const APP_JS: &str = include_str!("../assets/app.js");
 
 fn have_node() -> bool {
-    Command::new("node")
-        .arg("--version")
-        .output()
-        .is_ok_and(|o| o.status.success())
+    Command::new("node").arg("--version").output().is_ok_and(|o| o.status.success())
 }
 
 /// Lift top-level `const` and `function` declarations out of the script by name.
@@ -38,15 +35,9 @@ fn lift(names: &[&str]) -> String {
     let lines: Vec<&str> = APP_JS.lines().collect();
     let mut out = Vec::new();
     for name in names {
-        let opener = |l: &str| {
-            l.starts_with(&format!("const {name} "))
-                || l.starts_with(&format!("const {name}="))
-                || l.starts_with(&format!("function {name}("))
-        };
-        let start = lines
-            .iter()
-            .position(|l| opener(l))
-            .unwrap_or_else(|| panic!("could not lift `{name}` out of the app script"));
+        let opener =
+            |l: &str| l.starts_with(&format!("const {name} ")) || l.starts_with(&format!("const {name}=")) || l.starts_with(&format!("function {name}("));
+        let start = lines.iter().position(|l| opener(l)).unwrap_or_else(|| panic!("could not lift `{name}` out of the app script"));
         // Balanced on the first line? Then it is a one-liner and stands alone.
         let one_line = lines[start].ends_with(';') || lines[start].ends_with(',');
         if one_line {
@@ -71,21 +62,13 @@ fn run_node(script: &str) -> String {
     // means one snippet silently executes another's code.
     use std::sync::atomic::{AtomicUsize, Ordering};
     static N: AtomicUsize = AtomicUsize::new(0);
-    let dir = std::env::temp_dir().join(format!(
-        "trck-js-{}-{}",
-        std::process::id(),
-        N.fetch_add(1, Ordering::Relaxed)
-    ));
+    let dir = std::env::temp_dir().join(format!("trck-js-{}-{}", std::process::id(), N.fetch_add(1, Ordering::Relaxed)));
     std::fs::create_dir_all(&dir).expect("temp dir");
     let path = dir.join("snippet.mjs");
     std::fs::write(&path, script).expect("write snippet");
     let out = Command::new("node").arg(&path).output().expect("run node");
     let _ = std::fs::remove_dir_all(&dir);
-    assert!(
-        out.status.success(),
-        "node failed: {}",
-        String::from_utf8_lossy(&out.stderr)
-    );
+    assert!(out.status.success(), "node failed: {}", String::from_utf8_lossy(&out.stderr));
     String::from_utf8_lossy(&out.stdout).into_owned()
 }
 
@@ -100,17 +83,9 @@ fn the_script_parses() {
     std::fs::create_dir_all(&dir).expect("temp dir");
     let path = dir.join("app.js");
     std::fs::write(&path, APP_JS).expect("write");
-    let out = Command::new("node")
-        .args(["--check"])
-        .arg(&path)
-        .output()
-        .expect("run node");
+    let out = Command::new("node").args(["--check"]).arg(&path).output().expect("run node");
     let _ = std::fs::remove_dir_all(&dir);
-    assert!(
-        out.status.success(),
-        "app.js does not parse: {}",
-        String::from_utf8_lossy(&out.stderr)
-    );
+    assert!(out.status.success(), "app.js does not parse: {}", String::from_utf8_lossy(&out.stderr));
 }
 
 #[test]
@@ -121,22 +96,11 @@ fn the_isotonic_fit_keeps_rows_ordered_and_apart() {
     // The graph view's row placement: substituting `y = x - offset` turns "keep the
     // order, stay a gap apart" into "y is non-decreasing", so the closest legal
     // placement is the isotonic fit. Cheap to get subtly wrong, invisible on screen.
-    let script = format!(
-        "{}\nconst out = isotonic([5, 1, 3]);\nconsole.log(JSON.stringify(out));\n",
-        lift(&["isotonic"])
-    );
+    let script = format!("{}\nconst out = isotonic([5, 1, 3]);\nconsole.log(JSON.stringify(out));\n", lift(&["isotonic"]));
     let out = run_node(&script);
-    let vals: Vec<f64> = out
-        .trim()
-        .trim_matches(|c| c == '[' || c == ']')
-        .split(',')
-        .filter_map(|v| v.trim().parse().ok())
-        .collect();
+    let vals: Vec<f64> = out.trim().trim_matches(|c| c == '[' || c == ']').split(',').filter_map(|v| v.trim().parse().ok()).collect();
     assert_eq!(vals.len(), 3, "{out}");
-    assert!(
-        vals.windows(2).all(|w| w[0] <= w[1]),
-        "the fit must be non-decreasing: {vals:?}"
-    );
+    assert!(vals.windows(2).all(|w| w[0] <= w[1]), "the fit must be non-decreasing: {vals:?}");
 }
 
 #[test]

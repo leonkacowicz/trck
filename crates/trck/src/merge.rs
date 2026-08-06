@@ -50,11 +50,7 @@ type Row = BTreeMap<String, Json>;
 
 fn row_of(v: &Json) -> Row {
     match v {
-        Json::Object(pairs) => pairs
-            .iter()
-            .filter(|(_, v)| !matches!(v, Json::Null))
-            .map(|(k, v)| (k.clone(), v.clone()))
-            .collect(),
+        Json::Object(pairs) => pairs.iter().filter(|(_, v)| !matches!(v, Json::Null)).map(|(k, v)| (k.clone(), v.clone())).collect(),
         _ => Row::new(),
     }
 }
@@ -71,10 +67,7 @@ fn by_id(rows: &[Json]) -> BTreeMap<String, Row> {
 
 fn strings(v: Option<&Json>) -> BTreeSet<String> {
     match v {
-        Some(Json::Array(items)) => items
-            .iter()
-            .filter_map(|i| i.as_str().map(str::to_string))
-            .collect(),
+        Some(Json::Array(items)) => items.iter().filter_map(|i| i.as_str().map(str::to_string)).collect(),
         _ => BTreeSet::new(),
     }
 }
@@ -84,12 +77,7 @@ fn set_merge(base: Option<&Json>, a: Option<&Json>, b: Option<&Json>) -> Json {
     let mut out = base_s.clone();
     out.extend(a_s.difference(&base_s).cloned());
     out.extend(b_s.difference(&base_s).cloned());
-    for gone in base_s
-        .difference(&a_s)
-        .chain(base_s.difference(&b_s))
-        .cloned()
-        .collect::<Vec<_>>()
-    {
+    for gone in base_s.difference(&a_s).chain(base_s.difference(&b_s)).cloned().collect::<Vec<_>>() {
         out.remove(&gone);
     }
     Json::Array(out.into_iter().map(Json::String).collect())
@@ -131,14 +119,7 @@ fn repr(v: Option<&Json>) -> String {
 /// Standard 3-way: one side changed → take it; both changed alike → fine; both changed
 /// differently → conflict, and keep the base so the result stays symmetric (picking a side
 /// would make the output depend on operand order).
-fn scalar_merge(
-    iid: &str,
-    field: &str,
-    base: Option<&Json>,
-    a: Option<&Json>,
-    b: Option<&Json>,
-    conflicts: &mut Vec<String>,
-) -> Option<Json> {
+fn scalar_merge(iid: &str, field: &str, base: Option<&Json>, a: Option<&Json>, b: Option<&Json>, conflicts: &mut Vec<String>) -> Option<Json> {
     if a == b {
         return a.cloned();
     }
@@ -163,11 +144,7 @@ fn tuple_of(row: &Row) -> Vec<Option<Json>> {
 /// conflicted) so a caller can show context, but the merge has failed. Messages never say
 /// ours/theirs: those words mean opposite things depending on the integration direction, so
 /// they would be wrong half the time.
-pub(crate) fn merge_rows(
-    base_rows: &[Json],
-    a_rows: &[Json],
-    b_rows: &[Json],
-) -> Result<(Vec<Issue>, Vec<String>), String> {
+pub(crate) fn merge_rows(base_rows: &[Json], a_rows: &[Json], b_rows: &[Json]) -> Result<(Vec<Issue>, Vec<String>), String> {
     let (base, a, b) = (by_id(base_rows), by_id(a_rows), by_id(b_rows));
     let mut conflicts: Vec<String> = Vec::new();
     let mut merged: BTreeMap<String, Row> = BTreeMap::new();
@@ -181,9 +158,7 @@ pub(crate) fn merge_rows(
         if ra.is_none() || rb.is_none() {
             let Some(present) = ra.or(rb) else { continue };
             if in_base && base.get(iid) != Some(present) {
-                conflicts.push(format!(
-                    "#{iid}: removed on one side and modified on the other"
-                ));
+                conflicts.push(format!("#{iid}: removed on one side and modified on the other"));
                 merged.insert(iid.clone(), present.clone());
             } else if in_base {
                 continue; // unchanged on the surviving side -> the deletion wins
@@ -214,19 +189,12 @@ pub(crate) fn merge_rows(
 /// disagreeing — it is two sides having recomputed from different child sets. Drop those
 /// conflicts; the caller re-derives. Leaves keep the real rule.
 fn drop_derived_parent_conflicts(merged: &BTreeMap<String, Row>, conflicts: &mut Vec<String>) {
-    let parents: BTreeSet<String> = merged
-        .values()
-        .filter_map(|r| r.get("parent").and_then(Json::as_str).map(str::to_string))
-        .collect();
+    let parents: BTreeSet<String> = merged.values().filter_map(|r| r.get("parent").and_then(Json::as_str).map(str::to_string)).collect();
     if parents.is_empty() {
         return;
     }
-    conflicts.retain(|c| {
-        !parents.iter().any(|p| {
-            c.starts_with(&format!("#{p}:"))
-                && (c.contains(" status ") || c.contains(" points ") || c.contains("lifecycle"))
-        })
-    });
+    conflicts
+        .retain(|c| !parents.iter().any(|p| c.starts_with(&format!("#{p}:")) && (c.contains(" status ") || c.contains(" points ") || c.contains("lifecycle"))));
 }
 
 /// Merge one row present on both sides, field by field, using `base` to tell which side
@@ -246,10 +214,7 @@ fn merge_one(iid: &str, base: &Row, a: &Row, b: &Row, conflicts: &mut Vec<String
     } else {
         // Named by content, not by side: "one side"/"the other" reads correctly whichever
         // direction produced the merge.
-        conflicts.push(format!(
-            "#{iid}: lifecycle status is {} (status/closed/resolution merge as a unit)",
-            pair(ta[0].as_ref(), tb[0].as_ref())
-        ));
+        conflicts.push(format!("#{iid}: lifecycle status is {} (status/closed/resolution merge as a unit)", pair(ta[0].as_ref(), tb[0].as_ref())));
         tbase
     };
     for (field, value) in TUPLE_FIELDS.iter().zip(chosen) {
@@ -277,21 +242,9 @@ fn merge_one(iid: &str, base: &Row, a: &Row, b: &Row, conflicts: &mut Vec<String
 
     // Custom fields merge per key with the same scalar rule, so a branch adding `assignee`
     // and another adding `component` keeps both.
-    let extra: BTreeSet<&String> = a
-        .keys()
-        .chain(b.keys())
-        .chain(base.keys())
-        .filter(|k| !CANON_KEYS.contains(&k.as_str()))
-        .collect();
+    let extra: BTreeSet<&String> = a.keys().chain(b.keys()).chain(base.keys()).filter(|k| !CANON_KEYS.contains(&k.as_str())).collect();
     for key in extra {
-        let merged = scalar_merge(
-            iid,
-            &format!("field {key}"),
-            base.get(key),
-            a.get(key),
-            b.get(key),
-            conflicts,
-        );
+        let merged = scalar_merge(iid, &format!("field {key}"), base.get(key), a.get(key), b.get(key), conflicts);
         if let Some(v) = merged {
             out.insert(key.clone(), v);
         }
@@ -309,11 +262,7 @@ mod tests {
     use super::*;
 
     fn row(id: &str, extra: &str) -> Json {
-        let body = if extra.is_empty() {
-            String::new()
-        } else {
-            format!(", {extra}")
-        };
+        let body = if extra.is_empty() { String::new() } else { format!(", {extra}") };
         crate::json::parse(&format!(
             r#"{{"id": "{id}", "slug": "s", "title": "T", "status": "backlog",
                 "priority": "medium"{body}}}"#
@@ -331,16 +280,8 @@ mod tests {
     fn assert_symmetric(base: &[Json], a: &[Json], b: &[Json]) {
         let (rows_ab, conf_ab) = merge(base, a, b);
         let (rows_ba, conf_ba) = merge(base, b, a);
-        let canon = |rows: &[Issue]| {
-            rows.iter()
-                .map(|r| r.to_canonical().to_json())
-                .collect::<Vec<_>>()
-        };
-        assert_eq!(
-            canon(&rows_ab),
-            canon(&rows_ba),
-            "rows differ by operand order"
-        );
+        let canon = |rows: &[Issue]| rows.iter().map(|r| r.to_canonical().to_json()).collect::<Vec<_>>();
+        assert_eq!(canon(&rows_ab), canon(&rows_ba), "rows differ by operand order");
         assert_eq!(conf_ab, conf_ba, "conflicts differ by operand order");
     }
 
@@ -348,10 +289,7 @@ mod tests {
     fn disjoint_creations_keep_both_rows() {
         let (rows, conflicts) = merge(&[], &[row("aaaaaaa", "")], &[row("bbbbbbb", "")]);
         assert!(conflicts.is_empty(), "{conflicts:?}");
-        assert_eq!(
-            rows.iter().map(|r| r.id.as_str()).collect::<Vec<_>>(),
-            ["aaaaaaa", "bbbbbbb"]
-        );
+        assert_eq!(rows.iter().map(|r| r.id.as_str()).collect::<Vec<_>>(), ["aaaaaaa", "bbbbbbb"]);
         assert_symmetric(&[], &[row("aaaaaaa", "")], &[row("bbbbbbb", "")]);
     }
 
@@ -359,10 +297,7 @@ mod tests {
     fn a_lifecycle_divergence_conflicts_as_one_unit() {
         let base = [row("aaaaaaa", "")];
         let a = [row("aaaaaaa", r#""status": "ongoing""#)];
-        let b = [row(
-            "aaaaaaa",
-            r#""status": "done", "closed": "2026-01-01T00:00:00Z""#,
-        )];
+        let b = [row("aaaaaaa", r#""status": "done", "closed": "2026-01-01T00:00:00Z""#)];
         let (_, conflicts) = merge(&base, &a, &b);
         assert_eq!(conflicts.len(), 1, "{conflicts:?}");
         assert!(conflicts[0].contains("lifecycle status"), "{conflicts:?}");
@@ -400,10 +335,7 @@ mod tests {
         let b = [row("aaaaaaa", ""), row("bbbbbbb", r#""priority": "high""#)];
         let (_, conflicts) = merge(&base, &a, &b);
         assert_eq!(conflicts.len(), 1, "{conflicts:?}");
-        assert!(
-            conflicts[0].contains("removed on one side"),
-            "{conflicts:?}"
-        );
+        assert!(conflicts[0].contains("removed on one side"), "{conflicts:?}");
         assert_symmetric(&base, &a, &b);
     }
 
@@ -436,14 +368,8 @@ mod tests {
         let b = [row("aaaaaaa", r#""component": "core""#)];
         let (rows, conflicts) = merge(&base, &a, &b);
         assert!(conflicts.is_empty(), "{conflicts:?}");
-        assert_eq!(
-            rows[0].extra.get("assignee").and_then(Json::as_str),
-            Some("ada")
-        );
-        assert_eq!(
-            rows[0].extra.get("component").and_then(Json::as_str),
-            Some("core")
-        );
+        assert_eq!(rows[0].extra.get("assignee").and_then(Json::as_str), Some("ada"));
+        assert_eq!(rows[0].extra.get("component").and_then(Json::as_str), Some("core"));
         assert_symmetric(&base, &a, &b);
     }
 
@@ -452,40 +378,19 @@ mod tests {
         // Both sides recomputed the epic's status from different child sets. That is not two
         // people disagreeing, so it must not surface as a conflict the user has to resolve.
         let base = [row("aaaaaaa", ""), row("bbbbbbb", r#""parent": "aaaaaaa""#)];
-        let a = [
-            row("aaaaaaa", r#""status": "ongoing""#),
-            row("bbbbbbb", r#""parent": "aaaaaaa", "status": "ongoing""#),
-        ];
+        let a = [row("aaaaaaa", r#""status": "ongoing""#), row("bbbbbbb", r#""parent": "aaaaaaa", "status": "ongoing""#)];
         let b = [
-            row(
-                "aaaaaaa",
-                r#""status": "done", "closed": "2026-01-01T00:00:00Z""#,
-            ),
-            row(
-                "bbbbbbb",
-                r#""parent": "aaaaaaa", "status": "done", "closed": "2026-01-01T00:00:00Z""#,
-            ),
+            row("aaaaaaa", r#""status": "done", "closed": "2026-01-01T00:00:00Z""#),
+            row("bbbbbbb", r#""parent": "aaaaaaa", "status": "done", "closed": "2026-01-01T00:00:00Z""#),
         ];
         let (_, conflicts) = merge(&base, &a, &b);
-        let on_parent: Vec<&String> = conflicts
-            .iter()
-            .filter(|c| c.starts_with("#aaaaaaa:"))
-            .collect();
-        assert!(
-            on_parent.is_empty(),
-            "derived parent conflict surfaced: {on_parent:?}"
-        );
+        let on_parent: Vec<&String> = conflicts.iter().filter(|c| c.starts_with("#aaaaaaa:")).collect();
+        assert!(on_parent.is_empty(), "derived parent conflict surfaced: {on_parent:?}");
     }
 
     #[test]
     fn conflict_ids_reads_the_ids_back_out_of_the_messages() {
-        let conflicts = vec![
-            "#aaaaaaa: lifecycle status is 'a' on one side and 'b' on the other".to_string(),
-            "not a row message".to_string(),
-        ];
-        assert_eq!(
-            conflict_ids(&conflicts),
-            BTreeSet::from(["aaaaaaa".to_string()])
-        );
+        let conflicts = vec!["#aaaaaaa: lifecycle status is 'a' on one side and 'b' on the other".to_string(), "not a row message".to_string()];
+        assert_eq!(conflict_ids(&conflicts), BTreeSet::from(["aaaaaaa".to_string()]));
     }
 }

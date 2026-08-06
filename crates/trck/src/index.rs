@@ -49,21 +49,12 @@ fn check_unique_ids(rows: &[Issue], origin: &str) -> Result<(), String> {
     let dupes: Vec<String> = seen
         .into_iter()
         .filter(|&(_, (n, _))| n > 1)
-        .map(|(id, (n, statuses))| {
-            format!(
-                "  #{id} appears {n} times (statuses: {})",
-                statuses.into_iter().collect::<Vec<_>>().join(", ")
-            )
-        })
+        .map(|(id, (n, statuses))| format!("  #{id} appears {n} times (statuses: {})", statuses.into_iter().collect::<Vec<_>>().join(", ")))
         .collect();
     if dupes.is_empty() {
         return Ok(());
     }
-    Err(format!(
-        "{origin}: ids must be unique, but {} id(s) are repeated:\n{}",
-        dupes.len(),
-        dupes.join("\n")
-    ))
+    Err(format!("{origin}: ids must be unique, but {} id(s) are repeated:\n{}", dupes.len(), dupes.join("\n")))
 }
 
 /// Serialise rows to index text: sorted by id, canonical form, trailing newline when
@@ -88,19 +79,14 @@ mod tests {
 
     use super::*;
 
-    const A: &str =
-        r#"{"id": "bbbbbbb", "slug": "b", "title": "B", "status": "backlog", "priority": "high"}"#;
-    const B: &str =
-        r#"{"id": "aaaaaaa", "slug": "a", "title": "A", "status": "backlog", "priority": "low"}"#;
+    const A: &str = r#"{"id": "bbbbbbb", "slug": "b", "title": "B", "status": "backlog", "priority": "high"}"#;
+    const B: &str = r#"{"id": "aaaaaaa", "slug": "a", "title": "A", "status": "backlog", "priority": "low"}"#;
 
     #[test]
     fn duplicate_ids_are_reported_with_their_statuses() {
         // A duplicate usually arrives from a bad merge, so the statuses of the colliding
         // rows are the useful part: they say which two versions of the row survived.
-        let text = format!(
-            "{A}\n{}\n",
-            r#"{"id": "bbbbbbb", "slug": "b", "title": "B", "status": "done", "priority": "high"}"#
-        );
+        let text = format!("{A}\n{}\n", r#"{"id": "bbbbbbb", "slug": "b", "title": "B", "status": "done", "priority": "high"}"#);
         let err = parse_index(&text, "index.jsonl").expect_err("duplicate must fail");
         assert_eq!(
             err,
@@ -144,10 +130,7 @@ mod tests {
     fn a_wrongly_typed_row_names_the_file_line_and_field() {
         let bad = r#"{"id": "ccccccc", "slug": "c", "title": "C", "status": "backlog", "priority": "high", "points": "lots"}"#;
         let err = parse_index(&format!("{A}\n{bad}\n"), "somewhere.jsonl").expect_err("rejects");
-        assert_eq!(
-            err,
-            "somewhere.jsonl line 2: field 'points' must be an integer, got 'lots'"
-        );
+        assert_eq!(err, "somewhere.jsonl line 2: field 'points' must be an integer, got 'lots'");
     }
 
     /// Round-trip every index committed in this repo and require the bytes back.
@@ -159,11 +142,7 @@ mod tests {
     /// normalize` and committed.
     #[test]
     fn real_indexes_round_trip_byte_for_byte() {
-        let root = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .and_then(Path::parent)
-            .expect("crates/trck is two levels below the repo root")
-            .to_path_buf();
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().and_then(Path::parent).expect("crates/trck is two levels below the repo root").to_path_buf();
         let mut checked = 0;
         for rel in ["issues/index.jsonl", "examples/action-game/index.jsonl"] {
             let path = root.join(rel);

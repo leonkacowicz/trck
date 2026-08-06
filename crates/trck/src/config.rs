@@ -29,8 +29,7 @@ pub(crate) const DONE: &str = "done";
 pub(crate) const STATUSES: &[&str] = &[BACKLOG, ONGOING, IN_REVIEW, DONE];
 
 /// verb -> status, for the `start` / `review` / `done` aliases.
-pub(crate) const VERB_STATUS: &[(&str, &str)] =
-    &[("start", ONGOING), ("review", IN_REVIEW), ("done", DONE)];
+pub(crate) const VERB_STATUS: &[(&str, &str)] = &[("start", ONGOING), ("review", IN_REVIEW), ("done", DONE)];
 
 /// Five priorities, ordered by precedence. Fixing the count also fixes the shape of the
 /// demand vector, which is one slot per priority.
@@ -85,10 +84,7 @@ pub(crate) fn reconcile(children: &[String]) -> &'static str {
 }
 
 pub(crate) fn resolve_alias(verb: &str) -> Option<&'static str> {
-    VERB_STATUS
-        .iter()
-        .find(|(v, _)| *v == verb)
-        .map(|(_, s)| *s)
+    VERB_STATUS.iter().find(|(v, _)| *v == verb).map(|(_, s)| *s)
 }
 
 // --------------------------------------------------------------------------- //
@@ -101,30 +97,21 @@ pub(crate) fn check_status(value: &str) -> Option<String> {
     if STATUSES.contains(&value) {
         return None;
     }
-    Some(format!(
-        "unknown status '{value}' (expected one of: {})",
-        STATUSES.join(", ")
-    ))
+    Some(format!("unknown status '{value}' (expected one of: {})", STATUSES.join(", ")))
 }
 
 pub(crate) fn check_priority(value: &str) -> Option<String> {
     if PRIORITIES.contains(&value) {
         return None;
     }
-    Some(format!(
-        "bad priority '{value}' (expected one of: {})",
-        PRIORITIES.join(", ")
-    ))
+    Some(format!("bad priority '{value}' (expected one of: {})", PRIORITIES.join(", ")))
 }
 
 pub(crate) fn check_resolution(value: &str) -> Option<String> {
     if RESOLUTIONS.contains(&value) {
         return None;
     }
-    Some(format!(
-        "bad resolution '{value}' (expected one of: {})",
-        RESOLUTIONS.join(", ")
-    ))
+    Some(format!("bad resolution '{value}' (expected one of: {})", RESOLUTIONS.join(", ")))
 }
 
 /// Forge-agnostic: any absolute http(s) link. The engine never talks to a forge, so the
@@ -135,18 +122,14 @@ pub(crate) fn check_review_url(value: &str) -> Option<String> {
     if absolute && !rest.is_empty() && !value.chars().any(char::is_whitespace) {
         return None;
     }
-    Some(format!(
-        "bad review_url '{value}' (must be an absolute http(s) URL)"
-    ))
+    Some(format!("bad review_url '{value}' (must be an absolute http(s) URL)"))
 }
 
 pub(crate) fn check_points(value: i64) -> Option<String> {
     if value >= 0 {
         return None;
     }
-    Some(format!(
-        "bad points {value} (must be a non-negative integer)"
-    ))
+    Some(format!("bad points {value} (must be a non-negative integer)"))
 }
 
 // --------------------------------------------------------------------------- //
@@ -188,11 +171,7 @@ fn vestigial_reason(key: &str) -> Option<String> {
 pub(crate) fn vestigial_warnings(cfg: &Config) -> Vec<String> {
     cfg.vestigial
         .iter()
-        .filter_map(|k| {
-            vestigial_reason(k).map(|why| {
-                format!("config: '{k}' is no longer configurable and is being ignored ({why})")
-            })
-        })
+        .filter_map(|k| vestigial_reason(k).map(|why| format!("config: '{k}' is no longer configurable and is being ignored ({why})")))
         .collect()
 }
 
@@ -203,32 +182,18 @@ impl Config {
     /// which shape everything else is in.
     pub(crate) fn parse(text: &str, path: &str) -> Result<Config, String> {
         let trimmed = text.trim();
-        let raw = if trimmed.is_empty() {
-            Json::Object(Vec::new())
-        } else {
-            parse(trimmed).map_err(|e| format!("{path}: invalid JSON ({e})"))?
-        };
+        let raw = if trimmed.is_empty() { Json::Object(Vec::new()) } else { parse(trimmed).map_err(|e| format!("{path}: invalid JSON ({e})"))? };
         let Json::Object(pairs) = &raw else {
             return Err(format!("{path}: expected a JSON object"));
         };
         let mut cfg = Config {
             format: raw.get("format").and_then(Json::as_i64),
-            vestigial: pairs
-                .iter()
-                .map(|(k, _)| k.clone())
-                .filter(|k| vestigial_reason(k).is_some())
-                .collect(),
+            vestigial: pairs.iter().map(|(k, _)| k.clone()).filter(|k| vestigial_reason(k).is_some()).collect(),
             ..Config::default()
         };
         if let Some(update) = raw.get("update") {
-            cfg.update_repo = update
-                .get("repo")
-                .and_then(Json::as_str)
-                .map(str::to_string);
-            cfg.update_channel = update
-                .get("channel")
-                .and_then(Json::as_str)
-                .map(str::to_string);
+            cfg.update_repo = update.get("repo").and_then(Json::as_str).map(str::to_string);
+            cfg.update_channel = update.get("channel").and_then(Json::as_str).map(str::to_string);
         }
         cfg.raw = Some(raw);
         Ok(cfg)
@@ -246,14 +211,11 @@ impl Config {
     pub(crate) fn check_format(&self) -> Option<String> {
         let Some(raw) = &self.raw else { return None };
         match raw.get("format") {
-            None | Some(Json::Null) => {}
-            Some(Json::Number(n)) if n.parse::<i64>().is_ok() => {}
+            None | Some(Json::Null) => {},
+            Some(Json::Number(n)) if n.parse::<i64>().is_ok() => {},
             Some(other) => {
-                return Some(format!(
-                    "bad 'format' {} in trck.json (must be an integer)",
-                    py_repr_shallow(other)
-                ));
-            }
+                return Some(format!("bad 'format' {} in trck.json (must be an integer)", py_repr_shallow(other)));
+            },
         }
         if let Some(fmt) = self.format
             && fmt > SUPPORTED_FORMAT
@@ -266,24 +228,14 @@ impl Config {
         match raw.get("extensions") {
             None | Some(Json::Null) => None,
             Some(Json::Object(pairs)) => {
-                let mut unknown: Vec<&str> = pairs
-                    .iter()
-                    .map(|(k, _)| k.as_str())
-                    .filter(|k| !KNOWN_EXTENSIONS.contains(k))
-                    .collect();
+                let mut unknown: Vec<&str> = pairs.iter().map(|(k, _)| k.as_str()).filter(|k| !KNOWN_EXTENSIONS.contains(k)).collect();
                 unknown.sort_unstable();
                 if unknown.is_empty() {
                     return None;
                 }
-                Some(format!(
-                    "tracker uses unknown extension(s): {} — upgrade trck",
-                    unknown.join(", ")
-                ))
-            }
-            Some(other) => Some(format!(
-                "bad 'extensions' {} in trck.json (must be an object)",
-                py_repr_shallow(other)
-            )),
+                Some(format!("tracker uses unknown extension(s): {} — upgrade trck", unknown.join(", ")))
+            },
+            Some(other) => Some(format!("bad 'extensions' {} in trck.json (must be an object)", py_repr_shallow(other))),
         }
     }
 }
@@ -297,22 +249,8 @@ fn py_repr_shallow(v: &Json) -> String {
         Json::Bool(false) => "False".into(),
         Json::Number(raw) => raw.clone(),
         Json::String(s) => format!("'{s}'"),
-        Json::Array(items) => format!(
-            "[{}]",
-            items
-                .iter()
-                .map(py_repr_shallow)
-                .collect::<Vec<_>>()
-                .join(", ")
-        ),
-        Json::Object(pairs) => format!(
-            "{{{}}}",
-            pairs
-                .iter()
-                .map(|(k, v)| format!("'{k}': {}", py_repr_shallow(v)))
-                .collect::<Vec<_>>()
-                .join(", ")
-        ),
+        Json::Array(items) => format!("[{}]", items.iter().map(py_repr_shallow).collect::<Vec<_>>().join(", ")),
+        Json::Object(pairs) => format!("{{{}}}", pairs.iter().map(|(k, v)| format!("'{k}': {}", py_repr_shallow(v))).collect::<Vec<_>>().join(", ")),
     }
 }
 
@@ -364,13 +302,7 @@ mod tests {
     fn review_urls_must_be_absolute_http() {
         assert_eq!(check_review_url("https://example.test/pull/1"), None);
         assert_eq!(check_review_url("http://e.test/1"), None);
-        for bad in [
-            "",
-            "not a url",
-            "example.com/pr/1",
-            "ftp://x/y",
-            "https://has space/x",
-        ] {
+        for bad in ["", "not a url", "example.com/pr/1", "ftp://x/y", "https://has space/x"] {
             assert!(check_review_url(bad).is_some(), "should reject {bad:?}");
         }
     }
@@ -410,11 +342,7 @@ mod tests {
 
     #[test]
     fn a_malformed_format_is_a_clean_error() {
-        for bad in [
-            r#"{"format": "1"}"#,
-            r#"{"format": 1.5}"#,
-            r#"{"format": true}"#,
-        ] {
+        for bad in [r#"{"format": "1"}"#, r#"{"format": 1.5}"#, r#"{"format": true}"#] {
             let cfg = Config::parse(bad, "trck.json").expect("parses");
             let msg = cfg.check_format().expect("refused");
             assert!(msg.contains("must be an integer"), "{bad}: {msg}");
@@ -423,8 +351,7 @@ mod tests {
 
     #[test]
     fn an_unknown_extension_is_refused_and_every_one_is_named() {
-        let cfg = Config::parse(r#"{"extensions": {"zeta": {}, "alpha": {}}}"#, "trck.json")
-            .expect("parses");
+        let cfg = Config::parse(r#"{"extensions": {"zeta": {}, "alpha": {}}}"#, "trck.json").expect("parses");
         let msg = cfg.check_format().expect("refused");
         assert!(msg.contains("alpha"), "{msg}");
         assert!(msg.contains("zeta"), "{msg}");
@@ -433,26 +360,15 @@ mod tests {
     #[test]
     fn a_malformed_extensions_block_is_a_clean_error() {
         let cfg = Config::parse(r#"{"extensions": ["a"]}"#, "trck.json").expect("parses");
-        assert!(
-            cfg.check_format()
-                .expect("refused")
-                .contains("must be an object")
-        );
+        assert!(cfg.check_format().expect("refused").contains("must be an object"));
     }
 
     #[test]
     fn leftover_vocabulary_keys_warn_rather_than_break() {
-        let cfg = Config::parse(
-            r#"{"statuses": [], "priorities": [], "kinds": [], "update": {"repo": "a/b"}}"#,
-            "trck.json",
-        )
-        .expect("parses");
+        let cfg = Config::parse(r#"{"statuses": [], "priorities": [], "kinds": [], "update": {"repo": "a/b"}}"#, "trck.json").expect("parses");
         let warns = vestigial_warnings(&cfg);
         assert_eq!(warns.len(), 3);
-        assert!(
-            warns.iter().all(|w| w.contains("no longer configurable")),
-            "{warns:?}"
-        );
+        assert!(warns.iter().all(|w| w.contains("no longer configurable")), "{warns:?}");
         assert_eq!(cfg.check_format(), None); // ignored, not fatal
         assert_eq!(cfg.update_repo(), "a/b");
     }

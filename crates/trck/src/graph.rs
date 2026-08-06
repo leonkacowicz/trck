@@ -26,10 +26,7 @@ use std::collections::{BTreeMap, BTreeSet};
 /// Sort key: 0 is the highest priority. Anything unrecognised sorts last — a hand-edited
 /// row can still carry junk, and it should sink rather than blow up.
 pub(crate) fn priority_rank(priority: &str) -> usize {
-    config::PRIORITIES
-        .iter()
-        .position(|p| *p == priority)
-        .unwrap_or(config::PRIORITIES.len())
+    config::PRIORITIES.iter().position(|p| *p == priority).unwrap_or(config::PRIORITIES.len())
 }
 
 /// A loaded index plus its derived structure.
@@ -45,11 +42,7 @@ pub(crate) struct Graph {
 
 impl Graph {
     pub(crate) fn new(rows: Vec<Issue>) -> Graph {
-        let index: BTreeMap<String, usize> = rows
-            .iter()
-            .enumerate()
-            .map(|(i, r)| (r.id.clone(), i))
-            .collect();
+        let index: BTreeMap<String, usize> = rows.iter().enumerate().map(|(i, r)| (r.id.clone(), i)).collect();
         let mut children: BTreeMap<String, Vec<String>> = BTreeMap::new();
         let mut dependents: BTreeMap<String, Vec<String>> = BTreeMap::new();
         for r in &rows {
@@ -64,12 +57,7 @@ impl Graph {
             v.sort();
             v.dedup();
         }
-        Graph {
-            rows,
-            index,
-            children,
-            dependents,
-        }
+        Graph { rows, index, children, dependents }
     }
 
     pub(crate) fn get(&self, id: &str) -> Option<&Issue> {
@@ -132,13 +120,7 @@ impl Graph {
 
     /// The authored targets `id` depends on, id-sorted, skipping dangling ids.
     pub(crate) fn requires_of(&self, id: &str) -> Vec<String> {
-        let mut out: Vec<String> = self.get(id).map_or_else(Vec::new, |r| {
-            r.depends_on
-                .iter()
-                .filter(|d| self.get(d).is_some())
-                .cloned()
-                .collect()
-        });
+        let mut out: Vec<String> = self.get(id).map_or_else(Vec::new, |r| r.depends_on.iter().filter(|d| self.get(d).is_some()).cloned().collect());
         out.sort();
         out.dedup();
         out
@@ -186,10 +168,7 @@ impl Graph {
     /// waits on it.
     pub(crate) fn is_ready(&self, id: &str) -> bool {
         let Some(r) = self.get(id) else { return false };
-        !is_terminal(&r.status)
-            && config::is_actionable(&r.status)
-            && self.is_leaf(id)
-            && !self.is_blocked(id)
+        !is_terminal(&r.status) && config::is_actionable(&r.status) && self.is_leaf(id) && !self.is_blocked(id)
     }
 
     // --- demand: effective blocking, reversed -------------------------------- //
@@ -218,11 +197,7 @@ impl Graph {
             }
         }
         for a in &self.rows {
-            let srcs: BTreeSet<String> = self
-                .subtree(&a.id)
-                .into_iter()
-                .filter(|n| !self.is_terminal_id(n))
-                .collect();
+            let srcs: BTreeSet<String> = self.subtree(&a.id).into_iter().filter(|n| !self.is_terminal_id(n)).collect();
             if srcs.is_empty() {
                 continue;
             }
@@ -302,11 +277,7 @@ impl Graph {
         let rev = self.demand_edges();
         let mut out: Vec<&Issue> = self.rows.iter().filter(|r| self.is_ready(&r.id)).collect();
         out.sort_by(|a, b| {
-            self.demand_vector_with(&rev, &a.id)
-                .cmp(&self.demand_vector_with(&rev, &b.id))
-                .reverse()
-                .then(b.points.cmp(&a.points))
-                .then(a.id.cmp(&b.id))
+            self.demand_vector_with(&rev, &a.id).cmp(&self.demand_vector_with(&rev, &b.id)).reverse().then(b.points.cmp(&a.points)).then(a.id.cmp(&b.id))
         });
         out.into_iter().map(|r| r.id.clone()).collect()
     }
@@ -408,14 +379,14 @@ impl Graph {
                     "#{src} is a descendant of #{dep}; a node can't depend on its own \
                      ancestor (their subtrees overlap)"
                 ));
-            }
+            },
             Some("ancestor") => {
                 return Some(format!(
                     "#{src} is an ancestor of #{dep}; a node can't depend on its own \
                      descendant (their subtrees overlap)"
                 ));
-            }
-            _ => {}
+            },
+            _ => {},
         }
         if self.would_cycle(src, dep) {
             return Some(format!(
@@ -496,12 +467,7 @@ impl Graph {
                 return (0, 0, 0, 0);
             };
             let done = is_terminal(&r.status);
-            return (
-                if done { r.points } else { 0 },
-                r.points,
-                usize::from(done),
-                1,
-            );
+            return (if done { r.points } else { 0 }, r.points, usize::from(done), 1);
         }
         let kids: Vec<String> = kids.to_vec();
         let mut acc = (0, 0, 0, 0);
@@ -543,12 +509,7 @@ fn find_cycles(succ: &BTreeMap<String, BTreeSet<String>>) -> Vec<Vec<String>> {
         if colour.get(start.as_str()).copied().unwrap_or(0) != 0 {
             continue;
         }
-        let mut stack: Vec<(&str, Vec<String>)> = vec![(
-            start.as_str(),
-            succ.get(start)
-                .map(|s| s.iter().cloned().collect())
-                .unwrap_or_default(),
-        )];
+        let mut stack: Vec<(&str, Vec<String>)> = vec![(start.as_str(), succ.get(start).map(|s| s.iter().cloned().collect()).unwrap_or_default())];
         colour.insert(start.as_str(), 1);
         path.push(start.clone());
         while let Some((node, kids)) = stack.last_mut() {
@@ -569,20 +530,17 @@ fn find_cycles(succ: &BTreeMap<String, BTreeSet<String>>) -> Vec<Vec<String>> {
                             cycles.push(cycle);
                         }
                     }
-                }
+                },
                 0 => {
                     let Some((k, _)) = succ.get_key_value(&next) else {
                         continue;
                     };
                     colour.insert(k.as_str(), 1);
                     path.push(next.clone());
-                    let kids = succ
-                        .get(&next)
-                        .map(|s| s.iter().cloned().collect())
-                        .unwrap_or_default();
+                    let kids = succ.get(&next).map(|s| s.iter().cloned().collect()).unwrap_or_default();
                     stack.push((k.as_str(), kids));
-                }
-                _ => {}
+                },
+                _ => {},
             }
         }
     }
@@ -615,7 +573,7 @@ mod tests {
                 Some('@') => status = part[1..].to_string(),
                 Some('!') => priority = part[1..].to_string(),
                 Some('#') => points = part[1..].parse().unwrap_or(1),
-                _ => {}
+                _ => {},
             }
         }
         let mut id = spec.split_whitespace().next().unwrap_or("x").to_string();
@@ -626,21 +584,11 @@ mod tests {
         let json = format!(
             r#"{{"id": "{id}", "slug": "{id}", "title": "{id}", "status": "{status}",
                  "priority": "{priority}", "points": {points}{}{}}}"#,
-            if parent.is_empty() {
-                String::new()
-            } else {
-                format!(r#", "parent": "{parent}""#)
-            },
+            if parent.is_empty() { String::new() } else { format!(r#", "parent": "{parent}""#) },
             if deps.is_empty() {
                 String::new()
             } else {
-                format!(
-                    r#", "depends_on": [{}]"#,
-                    deps.iter()
-                        .map(|d| format!("\"{d}\""))
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )
+                format!(r#", "depends_on": [{}]"#, deps.iter().map(|d| format!("\"{d}\"")).collect::<Vec<_>>().join(", "))
             }
         );
         Issue::from_json(&parse(&json).expect("valid json")).expect("valid issue")
@@ -693,21 +641,11 @@ mod tests {
 
     #[test]
     fn readiness_is_leaf_only_unblocked_and_actionable() {
-        let g = graph(&[
-            "epic",
-            "kid:epic",
-            "blocked ->kid",
-            "reviewing @in-review",
-            "finished @done",
-            "free",
-        ]);
+        let g = graph(&["epic", "kid:epic", "blocked ->kid", "reviewing @in-review", "finished @done", "free"]);
         assert!(g.is_ready("kid"));
         assert!(!g.is_ready("epic"), "a parent is not something you pick up");
         assert!(!g.is_ready("blocked"));
-        assert!(
-            !g.is_ready("reviewing"),
-            "in flight, but its output is pending someone else's judgement"
-        );
+        assert!(!g.is_ready("reviewing"), "in flight, but its output is pending someone else's judgement");
         assert!(!g.is_ready("finished"));
         assert!(g.is_ready("free"));
     }
@@ -731,47 +669,24 @@ mod tests {
 
     #[test]
     fn within_a_priority_blocking_more_wins() {
-        let g = graph(&[
-            "one !low",
-            "two !low",
-            "h1 ->two !high",
-            "h2 ->two !high",
-            "h3 ->one !high",
-        ]);
+        let g = graph(&["one !low", "two !low", "h1 ->two !high", "h2 ->two !high", "h3 ->one !high"]);
         let ranked = g.ranked_ready();
-        assert!(
-            ranked.iter().position(|x| x == "two") < ranked.iter().position(|x| x == "one"),
-            "{ranked:?}"
-        );
+        assert!(ranked.iter().position(|x| x == "two") < ranked.iter().position(|x| x == "one"), "{ranked:?}");
     }
 
     #[test]
     fn levels_never_trade() {
         // No pile of mediums adds up to a high.
-        let g = graph(&[
-            "few !lowest",
-            "many !lowest",
-            "h ->few !high",
-            "m1 ->many !medium",
-            "m2 ->many !medium",
-            "m3 ->many !medium",
-        ]);
+        let g = graph(&["few !lowest", "many !lowest", "h ->few !high", "m1 ->many !medium", "m2 ->many !medium", "m3 ->many !medium"]);
         let ranked = g.ranked_ready();
-        assert!(
-            ranked.iter().position(|x| x == "few") < ranked.iter().position(|x| x == "many"),
-            "{ranked:?}"
-        );
+        assert!(ranked.iter().position(|x| x == "few") < ranked.iter().position(|x| x == "many"), "{ranked:?}");
     }
 
     #[test]
     fn a_terminal_dependent_neither_counts_nor_conducts() {
         // An urgent issue closed as wontfix stops making its blockers urgent, exactly as
         // it stops blocking them.
-        let g = graph(&[
-            "blocker !low",
-            "urgent ->blocker !urgent @done",
-            "other !medium",
-        ]);
+        let g = graph(&["blocker !low", "urgent ->blocker !urgent @done", "other !medium"]);
         assert_eq!(g.demand_source("blocker"), None);
         assert_eq!(g.ranked_ready(), ["other", "blocker"]);
     }
@@ -800,10 +715,7 @@ mod tests {
     fn a_direct_cycle_is_refused() {
         let g = graph(&["a", "b ->a"]);
         assert!(g.would_cycle("a", "b"));
-        assert!(
-            g.check_dep_edge("a", "b")
-                .is_some_and(|m| m.contains("cycle"))
-        );
+        assert!(g.check_dep_edge("a", "b").is_some_and(|m| m.contains("cycle")));
     }
 
     #[test]
@@ -812,30 +724,18 @@ mod tests {
         // anywhere, `would_cycle` has nothing to reach through and says the edge is
         // fine. Overlapping subtrees are a separate invariant.
         let g = graph(&["epic", "kid:epic"]);
-        assert!(
-            !g.would_cycle("kid", "epic"),
-            "reachability cannot see this"
-        );
+        assert!(!g.would_cycle("kid", "epic"), "reachability cannot see this");
         assert_eq!(g.containment("kid", "epic"), Some("descendant"));
         assert_eq!(g.containment("epic", "kid"), Some("ancestor"));
-        assert!(
-            g.check_dep_edge("kid", "epic")
-                .is_some_and(|m| m.contains("ancestor"))
-        );
-        assert!(
-            g.check_dep_edge("epic", "kid")
-                .is_some_and(|m| m.contains("descendant"))
-        );
+        assert!(g.check_dep_edge("kid", "epic").is_some_and(|m| m.contains("ancestor")));
+        assert!(g.check_dep_edge("epic", "kid").is_some_and(|m| m.contains("descendant")));
     }
 
     #[test]
     fn an_issue_cannot_depend_on_itself() {
         let g = graph(&["a"]);
         assert_eq!(g.containment("a", "a"), Some("same"));
-        assert_eq!(
-            g.check_dep_edge("a", "a").as_deref(),
-            Some("#a cannot depend on itself")
-        );
+        assert_eq!(g.check_dep_edge("a", "a").as_deref(), Some("#a cannot depend on itself"));
     }
 
     #[test]
@@ -852,10 +752,7 @@ mod tests {
         // authored edge shows on its own.
         let g = graph(&["epic ->other", "kid:epic", "other"]);
         assert!(g.would_cycle("other", "kid"));
-        assert!(
-            g.check_dep_edge("other", "kid")
-                .is_some_and(|m| m.contains("inherited"))
-        );
+        assert!(g.check_dep_edge("other", "kid").is_some_and(|m| m.contains("inherited")));
         assert!(!g.would_cycle("other", "unrelated"));
     }
 
@@ -908,19 +805,14 @@ mod tests {
         let Ok(want) = std::env::var("TRCK_DUMP_GRAPH") else {
             return; // opt-in: this is a comparison harness, not an assertion
         };
-        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .and_then(std::path::Path::parent)
-            .expect("repo root");
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).parent().and_then(std::path::Path::parent).expect("repo root");
         let text = std::fs::read_to_string(root.join("issues/index.jsonl")).expect("index");
         let g = Graph::new(crate::index::parse_index(&text, "index.jsonl").expect("parses"));
         let mut out = String::new();
         let mut ids: Vec<&str> = g.rows.iter().map(|r| r.id.as_str()).collect();
         ids.sort_unstable();
         for id in &ids {
-            let pct = g
-                .progress_pct(id)
-                .map_or(String::from("-"), |p| p.to_string());
+            let pct = g.progress_pct(id).map_or(String::from("-"), |p| p.to_string());
             let _ = writeln!(
                 out,
                 "{id} leaf={} blocked={} ready={} pct={pct} lifted={} cone={} src={}",
