@@ -7,10 +7,14 @@ Windows artifact, which a stock Windows does not have, so it downloaded and veri
 file it could not then unpack.
 
 These build a fake release on disk and point the installer at it, so nothing here touches
-the network. What they cannot do is prove the Windows path: extracting a zip with `tar`
-needs bsdtar, and the `tar` on a Linux runner is GNU tar, which cannot. That claim is made
-by the `installer (windows)` job in CI, which runs this same script under Git Bash on a
-real Windows machine.
+the network. They build the artifact for *this* machine's target, because the installer
+resolves that itself and then asks for exactly one filename — a fixture built for another
+one fails at the download, saying nothing useful about the thing under test.
+
+On a Linux runner they cannot prove the claim that matters, since extracting a zip with
+`tar` needs bsdtar and Linux has GNU tar. That is why the `installer (windows)` job in CI
+runs this same file under Git Bash: there the target *is* Windows, so the ordinary install
+test unpacks a real zip with whatever that machine has.
 """
 import os
 import shutil
@@ -67,41 +71,60 @@ def run_install(base: Path, bindir: Path, env_extra=None, path=None):
 @unittest.skipUnless(INSTALL_SH.is_file(), "installer not present")
 class TestInstaller(unittest.TestCase):
     def target(self):
-        """Whatever this machine's installer will ask for, so the fixture matches."""
-        machine = subprocess.run(["uname", "-m"], capture_output=True, text=True).stdout.strip()
+        """Whatever this machine's installer will ask for, so the fixture matches.
+
+        Mirrors `detect_target` in the script. It has to: the installer resolves the target
+        itself and then asks for exactly one filename, so a fixture built for a different
+        one fails at the download with nothing useful to say. That is precisely how this
+        first ran on Windows — the fixture was a Linux tarball and the installer wanted a
+        Windows zip.
+        """
+        uname = lambda flag: subprocess.run(
+            ["uname", flag], capture_output=True, text=True).stdout.strip()
+        machine, system = uname("-m"), uname("-s")
         arch = "x86_64" if machine in ("x86_64", "amd64") else "aarch64"
+        if system.startswith(("MINGW", "MSYS", "CYGWIN")):
+            return "x86_64-pc-windows-msvc"
+        if system == "Darwin":
+            return f"{arch}-apple-darwin"
         return f"{arch}-unknown-linux-musl"
 
-    def test_installs_from_a_tarball(self):
+    def ext_for(self, target):
+        return "zip" if "windows" in target else "tar.gz"
+
+    def test_installs_this_machines_artifact(self):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
-            base = make_release(root, self.target(), "tar.gz")
+            target = self.target()
+            base = make_release(root, target, self.ext_for(target))
             bindir = root / "bin"
             r = run_install(base, bindir)
             self.assertEqual(r.returncode, 0, r.stderr)
-            self.assertTrue((bindir / "trck").is_file(), r.stdout + r.stderr)
-            self.assertTrue(os.access(bindir / "trck", os.X_OK))
+            binary = "trck.exe" if "windows" in target else "trck"
+            self.assertTrue((bindir / binary).is_file(), r.stdout + r.stderr)
+            self.assertTrue(os.access(bindir / binary, os.X_OK))
 
     def test_a_bad_checksum_aborts_without_installing(self):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             target = self.target()
-            base = make_release(root, target, "tar.gz")
-            sums = base / TAG / f"trck-{TAG}-{target}.tar.gz.sha256"
-            sums.write_text("0" * 64 + f"  trck-{TAG}-{target}.tar.gz\n")
+            ext = self.ext_for(target)
+            base = make_release(root, target, ext)
+            sums = base / TAG / f"trck-{TAG}-{target}.{ext}.sha256"
+            sums.write_text("0" * 64 + f"  trck-{TAG}-{target}.{ext}\n")
             bindir = root / "bin"
             r = run_install(base, bindir)
             self.assertNotEqual(r.returncode, 0)
             self.assertIn("checksum", (r.stderr + r.stdout).lower())
-            self.assertFalse((bindir / "trck").exists(), "installed despite a bad checksum")
+            self.assertFalse(any(bindir.glob("trck*")), "installed despite a bad checksum")
 
 
 @unittest.skipUnless(INSTALL_SH.is_file(), "installer not present")
 class TestZipUnpacking(unittest.TestCase):
     """The Windows artifact is a zip, and the installer must open it with what is there.
 
-    Forced through the code path by faking a windows target directly, since `uname` on the
-    machine running these will never report one.
+    Forced through the code path with a fake `uname`, so the zip branch is exercised on any
+    machine rather than only on Windows — where it is reached for real.
     """
 
     TARGET = "x86_64-pc-windows-msvc"
