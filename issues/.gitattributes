@@ -1,3 +1,4 @@
-# Managed by `trck repo setup-git` — trck merge drivers.
-index.jsonl merge=trck-index
-SUMMARY.md merge=trck-summary
+# Managed by `trck repo setup-git` — trck's merge drivers, and the line endings its formats require.
+index.jsonl merge=trck-index text eol=lf
+SUMMARY.md merge=trck-summary text eol=lf
+items/*.md text eol=lf

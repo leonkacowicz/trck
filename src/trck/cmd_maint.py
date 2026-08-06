@@ -463,11 +463,67 @@ def cmd_merge_summary(args) -> None:
         pass  # index mid-merge / unparseable — leave whatever is there
 
 
-GITATTRIBUTES_HEADER = "# Managed by `trck repo setup-git` — trck merge drivers."
+# Matched as a prefix so a header written by an older version is recognised as ours
+# and refreshed in place, rather than accumulating one comment per release.
+GITATTRIBUTES_HEADER_PREFIX = "# Managed by `trck repo setup-git`"
+GITATTRIBUTES_HEADER = (
+    GITATTRIBUTES_HEADER_PREFIX
+    + " — trck's merge drivers, and the line endings its formats require."
+)
+# `text eol=lf` is not a style preference. `index.jsonl` and `SUMMARY.md` are
+# rendered with `\n` and compared byte for byte, and the bodies are rewritten by
+# `edit --title`. Checked out as CRLF, the working tree disagrees with the engine
+# from the first verb onwards and every commit shows the whole file as changed.
 GITATTRIBUTES_LINES = [
-    "index.jsonl merge=trck-index",
-    "SUMMARY.md merge=trck-summary",
+    "index.jsonl merge=trck-index text eol=lf",
+    "SUMMARY.md merge=trck-summary text eol=lf",
+    "items/*.md text eol=lf",
 ]
+
+
+def _gitattributes_update(existing: list[str]) -> list[str] | None:
+    """The lines to write, or None when the file already says all of this.
+
+    A line is *ours to replace* when it names one of our paths and carries
+    nothing beyond the attributes we manage — which is how a tracker set up
+    before an attribute was added gets upgraded in place instead of growing a
+    second, stale rule for the same path. A rule carrying anything else is
+    somebody's decision, so ours goes beside it and git resolves the pair."""
+    out = list(existing)
+    changed = False
+    missing, last = [], None
+    for want in GITATTRIBUTES_LINES:
+        pattern, *attrs = want.split()
+        ours = set(attrs)
+        for i, line in enumerate(out):
+            got = line.split()
+            if got and got[0] == pattern and set(got[1:]) <= ours:
+                if line != want:
+                    out[i] = want
+                    changed = True
+                last = i
+                break
+        else:
+            missing.append(want)
+
+    header_at = next((i for i, ln in enumerate(out)
+                      if ln.startswith(GITATTRIBUTES_HEADER_PREFIX)), None)
+    if header_at is not None and out[header_at] != GITATTRIBUTES_HEADER:
+        out[header_at] = GITATTRIBUTES_HEADER
+        changed = True
+
+    if missing:
+        changed = True
+        if last is not None:
+            # Keep the managed block contiguous under the header it already has.
+            out[last + 1:last + 1] = missing
+        else:
+            if out and out[-1].strip():
+                out.append("")
+            if header_at is None:
+                out.append(GITATTRIBUTES_HEADER)
+            out.extend(missing)
+    return out if changed else None
 
 
 def _engine_invocation(ctx) -> str:
@@ -506,14 +562,9 @@ def cmd_setup_git(args) -> None:
     # --- shared half: name the drivers ---
     path = ctx.dir / ".gitattributes"
     existing = path.read_text().splitlines() if path.exists() else []
-    missing = [ln for ln in GITATTRIBUTES_LINES if ln not in existing]
-    if missing:
-        out = list(existing)
-        if out and out[-1].strip():
-            out.append("")
-        out.append(GITATTRIBUTES_HEADER)
-        out.extend(missing)
-        path.write_text("\n".join(out) + "\n")
+    updated = _gitattributes_update(existing)
+    if updated is not None:
+        path.write_text("\n".join(updated) + "\n")
         print(f"wrote {path}")
     else:
         print(f"{path} already declares the trck drivers")

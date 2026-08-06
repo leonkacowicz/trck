@@ -47,11 +47,84 @@ fn engine_invocation() -> Result<String, String> {
     Ok(format!("\"{}\"", exe.display()))
 }
 
-const GITATTRIBUTES_HEADER: &str = "# Managed by `trck repo setup-git` — trck merge drivers.";
+// Matched as a prefix so a header written by an older version is recognised as ours and
+// refreshed in place, rather than accumulating one comment per release.
+const GITATTRIBUTES_HEADER_PREFIX: &str = "# Managed by `trck repo setup-git`";
+const GITATTRIBUTES_HEADER: &str = concat!(
+    "# Managed by `trck repo setup-git`",
+    " — trck's merge drivers, and the line endings its formats require."
+);
+// `text eol=lf` is not a style preference. `index.jsonl` and `SUMMARY.md` are rendered with
+// `\n` and compared byte for byte, and the bodies are rewritten by `edit --title`. Checked
+// out as CRLF, the working tree disagrees with the engine from the first verb onwards and
+// every commit shows the whole file as changed.
 const GITATTRIBUTES_LINES: &[&str] = &[
-    "index.jsonl merge=trck-index",
-    "SUMMARY.md merge=trck-summary",
+    "index.jsonl merge=trck-index text eol=lf",
+    "SUMMARY.md merge=trck-summary text eol=lf",
+    "items/*.md text eol=lf",
 ];
+
+/// The lines to write, or `None` when the file already says all of this.
+///
+/// A line is *ours to replace* when it names one of our paths and carries nothing beyond
+/// the attributes we manage — which is how a tracker set up before an attribute was added
+/// gets upgraded in place instead of growing a second, stale rule for the same path. A
+/// rule carrying anything else is somebody's decision, so ours goes beside it and git
+/// resolves the pair.
+fn gitattributes_update(existing: &[&str]) -> Option<Vec<String>> {
+    let mut out: Vec<String> = existing.iter().map(|s| (*s).to_string()).collect();
+    let mut changed = false;
+    let mut missing: Vec<String> = Vec::new();
+    let mut last: Option<usize> = None;
+
+    for want in GITATTRIBUTES_LINES {
+        let mut fields = want.split_whitespace();
+        let pattern = fields.next().unwrap_or(want);
+        let ours: Vec<&str> = fields.collect();
+        let found = out.iter().position(|line| {
+            let mut got = line.split_whitespace();
+            got.next() == Some(pattern) && got.all(|a| ours.contains(&a))
+        });
+        if let Some(i) = found {
+            if out[i] != *want {
+                out[i] = (*want).to_string();
+                changed = true;
+            }
+            last = Some(i);
+        } else {
+            missing.push((*want).to_string());
+        }
+    }
+
+    let header_at = out
+        .iter()
+        .position(|l| l.starts_with(GITATTRIBUTES_HEADER_PREFIX));
+    if let Some(i) = header_at {
+        if out[i] != GITATTRIBUTES_HEADER {
+            out[i] = GITATTRIBUTES_HEADER.to_string();
+            changed = true;
+        }
+    }
+
+    if !missing.is_empty() {
+        changed = true;
+        if let Some(i) = last {
+            // Keep the managed block contiguous under the header it already has.
+            for (k, line) in missing.into_iter().enumerate() {
+                out.insert(i + 1 + k, line);
+            }
+        } else {
+            if out.last().is_some_and(|l| !l.trim().is_empty()) {
+                out.push(String::new());
+            }
+            if header_at.is_none() {
+                out.push(GITATTRIBUTES_HEADER.to_string());
+            }
+            out.extend(missing);
+        }
+    }
+    changed.then_some(out)
+}
 
 /// `repo setup-git` — declare trck's merge drivers and register them in this clone.
 ///
@@ -70,25 +143,14 @@ pub(crate) fn cmd_setup_git(ctx: &Ctx) -> Result<String, String> {
     let path = ctx.dir.join(".gitattributes");
     let existing = std::fs::read_to_string(&path).unwrap_or_default();
     let have: Vec<&str> = existing.lines().collect();
-    let missing: Vec<&str> = GITATTRIBUTES_LINES
-        .iter()
-        .filter(|l| !have.contains(l))
-        .copied()
-        .collect();
-    if missing.is_empty() {
+    if let Some(lines) = gitattributes_update(&have) {
+        write_atomic(&path, &(lines.join("\n") + "\n"))?;
+        out.push(format!("wrote {}", path.display()));
+    } else {
         out.push(format!(
             "{} already declares the trck drivers",
             path.display()
         ));
-    } else {
-        let mut lines: Vec<String> = have.iter().map(|s| (*s).to_string()).collect();
-        if lines.last().is_some_and(|l| !l.trim().is_empty()) {
-            lines.push(String::new());
-        }
-        lines.push(GITATTRIBUTES_HEADER.to_string());
-        lines.extend(missing.iter().map(|s| (*s).to_string()));
-        write_atomic(&path, &(lines.join("\n") + "\n"))?;
-        out.push(format!("wrote {}", path.display()));
     }
 
     // --- per-clone half: define what they run ---
@@ -421,4 +483,106 @@ pub(crate) fn cmd_merge_summary(ctx: Option<&Ctx>, current: &str) -> Result<Stri
     let g = Graph::new(rows);
     write_atomic(Path::new(current), &generate_summary(&g))?;
     Ok(String::new())
+}
+
+#[cfg(test)]
+mod tests {
+    // Tests assert; that is their job. The crate denies unwrap/expect/panic because a
+    // malformed tracker must produce a diagnostic rather than a stack trace, but a test
+    // that cannot panic cannot fail.
+    #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
+    use super::*;
+
+    fn update(existing: &str) -> Option<Vec<String>> {
+        gitattributes_update(&existing.lines().collect::<Vec<_>>())
+    }
+
+    fn line_for<'a>(lines: &'a [String], pattern: &str) -> Vec<&'a String> {
+        lines
+            .iter()
+            .filter(|l| l.split_whitespace().next() == Some(pattern))
+            .collect()
+    }
+
+    /// A CRLF checkout would put the working tree at odds with the engine.
+    ///
+    /// `index.jsonl` and `SUMMARY.md` are rendered with `\n` and compared byte for byte,
+    /// and the bodies are rewritten by `edit --title`. Clone any of them onto a machine
+    /// with `core.autocrlf=true` and the next verb rewrites the whole file back, so every
+    /// commit shows it as wholly changed.
+    #[test]
+    fn everything_the_engine_writes_is_pinned_to_lf() {
+        let out = update("").expect("an absent file is written");
+        for pattern in ["index.jsonl", "SUMMARY.md", "items/*.md"] {
+            let found = line_for(&out, pattern);
+            assert_eq!(found.len(), 1, "{pattern} in {out:?}");
+            let attrs: Vec<&str> = found[0].split_whitespace().skip(1).collect();
+            assert!(attrs.contains(&"text"), "{}", found[0]);
+            assert!(attrs.contains(&"eol=lf"), "{}", found[0]);
+        }
+    }
+
+    #[test]
+    fn a_file_that_already_says_all_of_it_is_left_alone() {
+        let text = format!(
+            "{GITATTRIBUTES_HEADER}\n{}\n",
+            GITATTRIBUTES_LINES.join("\n")
+        );
+        assert!(update(&text).is_none(), "rewrote an up-to-date file");
+    }
+
+    /// The old line is replaced, not joined by a second one for the same path. Two lines
+    /// naming `index.jsonl` would in fact work — git applies the last value for each
+    /// attribute — but a managed block that grows a stale copy of itself on every upgrade
+    /// is one nobody can read.
+    #[test]
+    fn a_tracker_set_up_before_the_pin_is_upgraded_in_place() {
+        let out = update(
+            "# Managed by `trck repo setup-git` — trck merge drivers.\n\
+             index.jsonl merge=trck-index\n\
+             SUMMARY.md merge=trck-summary\n",
+        )
+        .expect("an out-of-date file is rewritten");
+        let found = line_for(&out, "index.jsonl");
+        assert_eq!(found.len(), 1, "{out:?}");
+        assert!(found[0].contains("eol=lf"), "{}", found[0]);
+        // One header, refreshed rather than duplicated, and the block stays contiguous.
+        let headers: Vec<&String> = out
+            .iter()
+            .filter(|l| l.starts_with(GITATTRIBUTES_HEADER_PREFIX))
+            .collect();
+        assert_eq!(headers, vec![&GITATTRIBUTES_HEADER.to_string()], "{out:?}");
+    }
+
+    /// Replacing in place is for *our* stale lines. A rule carrying anything we do not
+    /// manage is someone's decision, so ours is added beside it and git resolves the two.
+    #[test]
+    fn a_users_own_rule_for_our_path_is_not_overwritten() {
+        let out = update("index.jsonl -diff\n").expect("ours is still missing");
+        assert!(out.iter().any(|l| l == "index.jsonl -diff"), "{out:?}");
+        assert!(
+            out.iter().any(|l| l.contains("merge=trck-index")),
+            "{out:?}"
+        );
+    }
+
+    #[test]
+    fn unrelated_content_survives() {
+        let out = update("*.png binary\n").expect("ours is missing");
+        assert!(out.iter().any(|l| l == "*.png binary"), "{out:?}");
+        assert!(
+            out.iter().any(|l| l.contains("merge=trck-index")),
+            "{out:?}"
+        );
+    }
+
+    #[test]
+    fn applying_twice_changes_nothing_the_second_time() {
+        let once = update("*.png binary\n").expect("ours is missing");
+        assert!(
+            gitattributes_update(&once.iter().map(String::as_str).collect::<Vec<_>>()).is_none(),
+            "not idempotent: {once:?}"
+        );
+    }
 }

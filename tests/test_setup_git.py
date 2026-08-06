@@ -66,6 +66,56 @@ class TestSetupGit(unittest.TestCase):
             self.assertIn("*.png binary", text)
             self.assertIn("merge=trck-index", text)
 
+    # --- the line ending is part of the format --------------------------------- #
+
+    def test_everything_the_engine_writes_is_pinned_to_lf(self):
+        """A CRLF checkout would put the working tree at odds with the engine.
+
+        `index.jsonl` and `SUMMARY.md` are compared byte for byte and rendered
+        with `\\n`; the bodies are rewritten by `edit --title`. Clone any of them
+        onto a machine with `core.autocrlf=true` and the next verb rewrites the
+        whole file back, so every commit shows it as wholly changed."""
+        with TemporaryDirectory() as tmp:
+            root = self.repo(tmp)
+            self.run_setup(root)
+            text = (root / "issues" / ".gitattributes").read_text()
+            for pattern in ("index.jsonl", "SUMMARY.md", "items/*.md"):
+                line = next(ln for ln in text.splitlines()
+                            if ln.split() and ln.split()[0] == pattern)
+                self.assertIn("text", line.split(), line)
+                self.assertIn("eol=lf", line.split(), line)
+
+    def test_a_tracker_set_up_before_the_pin_is_upgraded_in_place(self):
+        """The old line is replaced, not joined by a second one for the same path.
+
+        Two lines naming `index.jsonl` would in fact work — git applies the last
+        value for each attribute — but a managed block that grows a stale copy of
+        itself on every upgrade is one nobody can read."""
+        with TemporaryDirectory() as tmp:
+            root = self.repo(tmp)
+            (root / "issues" / ".gitattributes").write_text(
+                f"{self.t.GITATTRIBUTES_HEADER}\n"
+                "index.jsonl merge=trck-index\n"
+                "SUMMARY.md merge=trck-summary\n")
+            self.run_setup(root)
+            lines = (root / "issues" / ".gitattributes").read_text().splitlines()
+            naming_index = [ln for ln in lines
+                            if ln.split() and ln.split()[0] == "index.jsonl"]
+            self.assertEqual(len(naming_index), 1, lines)
+            self.assertIn("eol=lf", naming_index[0].split())
+
+    def test_a_users_own_rule_for_our_path_is_not_overwritten(self):
+        """Replacing in place is for *our* stale lines. A rule carrying anything
+        we do not manage is someone's decision, so ours is added beside it and
+        git resolves the two."""
+        with TemporaryDirectory() as tmp:
+            root = self.repo(tmp)
+            (root / "issues" / ".gitattributes").write_text("index.jsonl -diff\n")
+            self.run_setup(root)
+            lines = (root / "issues" / ".gitattributes").read_text().splitlines()
+            self.assertIn("index.jsonl -diff", lines)
+            self.assertTrue(any("merge=trck-index" in ln for ln in lines), lines)
+
     # --- the per-clone half: .git/config -------------------------------------- #
 
     def test_registers_both_drivers_in_git_config(self):
