@@ -8,8 +8,8 @@
 | backlog | 50 |
 | ongoing | 3 |
 | in-review | 0 |
-| done | 173 |
-| **total** | **226** |
+| done | 175 |
+| **total** | **228** |
 
 ## Hierarchies
 
@@ -281,11 +281,13 @@ _none_
 - [#rd6rk5e Allow any issue to be a parent (rollup for any parent)](items/rd6rk5e-allow-any-issue-to-be-a-parent-rollup-for-any-parent.md) — _medium_ (closed 2026-06-05)
 - [#tazdgkg deps --graph: lazygit-style dependency DAG renderer](items/tazdgkg-deps-graph-lazygit-style-dependency-dag-renderer.md) — _medium_ (closed 2026-06-10)
 - [#u8jt8rm extract the pure status transition out of move_issue](items/u8jt8rm-extract-the-pure-status-transition-out-of-move-issue.md) — _medium_ (closed 2026-07-30)
+- [#ukw95za pay down verbs.rs: the fattest file and cmd_set](items/ukw95za-pay-down-verbs-rs-the-fattest-file-and-cmd-set.md) — _medium_ (closed 2026-08-06)
 - [#uydwa9h Convert the #002 'richer tracker features' epic into a label](items/uydwa9h-convert-the-002-richer-tracker-features-epic-into-a-label.md) — _medium_ (closed 2026-06-23)
 - [#w8a87ky deps --graph <id>: scope to the focal issue's directed dependency line](items/w8a87ky-deps-graph-id-scope-to-the-focal-issue-s-directed-dependency-line.md) — _medium_ (closed 2026-06-10)
 - [#wwpsa3f Extract config-vocabulary validation helpers](items/wwpsa3f-extract-config-vocabulary-validation-helpers.md) — _medium_ (closed 2026-06-10)
 - [#x5dcpmw Eliminate unnecessary index double-reads](items/x5dcpmw-eliminate-unnecessary-index-double-reads.md) — _medium_ (closed 2026-06-10)
 - [#x8ps68f docs: refresh the shipped trck docs — flat layout, repo setup-git/migrate-layout](items/x8ps68f-docs-refresh-the-claude-md-scaffold-template-flat-layout-repo-setup-git-migrate-layout.md) — _medium_ (closed 2026-07-30)
+- [#y5a9jwj pay down draw_row and validate](items/y5a9jwj-pay-down-draw-row-and-validate.md) — _medium_ (closed 2026-08-06)
 - [#yvbgt53 Consolidate parent-to-children map building onto Graph](items/yvbgt53-consolidate-parent-to-children-map-building-onto-graph.md) — _medium_ (closed 2026-06-10)
 - [#3qsk26v version/update: suppress no-tracker stderr noise when run outside a tracker](items/3qsk26v-version-update-suppress-no-tracker-stderr-noise-when-run-outside-a-tracker.md) — _low_ (closed 2026-06-05)
 - [#6ddksge Reconcile id collisions when branches concurrently create issues](items/6ddksge-reconcile-id-collisions-when-branches-concurrently-create-issues.md) — _low_ [conflict-resolution tracker-features] · _superseded_ (closed 2026-07-31)
