@@ -20,7 +20,7 @@ rather than assumed:
 
 The pattern is the same in all three: what is missing is exactly what needs a **real git
 repository** to test, which is what made those tests awkward to express as conformance fixtures
-in the first place. `crates/trck/tests/git_merge.rs` already shows the way — it builds a
+in the first place. `tests/git_merge.rs` already shows the way — it builds a
 repository, branches it, and merges — so this is a matter of extending an established pattern
 rather than inventing one.
 

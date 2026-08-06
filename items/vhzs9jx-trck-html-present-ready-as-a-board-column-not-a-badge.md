@@ -1,7 +1,7 @@
 # trck-html: present ready as a board column, not a badge
 
 ## Summary
-The board (`renderBoard`, `crates/trck/assets/app.js`) lays out one column per status and is the
+The board (`renderBoard`, `assets/app.js`) lays out one column per status and is the
 one view that drops the `ready` badge the tree renders. Rather than add the badge there, give
 `ready` a column: it is the view organised *by* status, and after #gccs68j `ready` is a strict
 subset of `backlog`, so a column steals from exactly one place and every card still sits in

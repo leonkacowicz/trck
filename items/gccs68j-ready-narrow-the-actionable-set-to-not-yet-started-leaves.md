@@ -20,7 +20,7 @@ Depends on #esvgb7f so no release ships the narrowing without the in-flight line
 it takes away.
 
 ## Acceptance criteria
-- [ ] `is_actionable` excludes `ongoing`, in `src/trck/config.py` and `crates/trck/src/config.rs`,
+- [ ] `is_actionable` excludes `ongoing`, in `src/trck/config.py` and `src/config.rs`,
       with a docstring giving the claim rationale in both.
 - [ ] `trck ready` / `trck next` omit unblocked `ongoing` leaves; `ready --json` and `next --json`
       likewise.
@@ -36,6 +36,6 @@ This supersedes the reasoning in #6pvt7fy, which added the actionable flag back 
 configured its own statuses. Worth a line in the release notes: it is a behaviour change a
 downstream script could notice.
 
-The `ready` field in `crates/trck/src/html.rs` follows automatically — it calls `g.is_ready`. The
+The `ready` field in `src/html.rs` follows automatically — it calls `g.is_ready`. The
 tree badge in `assets/app.js` is titled "nothing blocks this", which stays true; #vhzs9jx decides
 what the HTML does with the badge once the board has a column.

@@ -28,7 +28,7 @@ delta proofs. Not worth it for an exact tertiary key when the primary objective 
 first-improvement heuristic.
 
 ## Acceptance criteria
-- [ ] `_graph_topo` (Python `src/trck/render.py:360`) and `topo` (Rust `crates/trck/src/gutter.rs`)
+- [ ] `_graph_topo` (Python `src/trck/render.py:360`) and `topo` (Rust `src/gutter.rs`)
       break the freed-set / roots tie by `(-demand, id)` instead of `id`; `shorten_lanes` untouched.
 - [ ] **Gutter must not regress.** DFS-locality was chosen as a good *seed* for `shorten_lanes`;
       perturbing the sibling order could steer first-improvement into a worse local minimum.
