@@ -282,7 +282,7 @@ pub(crate) fn render_rows(g: &Graph, rows: &[&Issue], opts: &RowOpts) -> Vec<Str
 
         if opts.dim.contains(&r.id) {
             // Ancestor context: the whole line dims, with no per-field colour.
-            let body = format!("{} #{} {:<sw$}  {:<pw$}  {pre}{}{prog}{plain_tags}", status_icon(&r.status), r.id, r.status, r.priority, r.title,);
+            let body = format!("{} #{} {:<sw$}  {:<pw$}  {pre}{}{prog}{plain_tags}", status_icon(&r.status), r.id, r.status, r.priority, r.title);
             out.push(format!("{}{ann}{fsuf}", paint(&body, &["dim"])));
             continue;
         }

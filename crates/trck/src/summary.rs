@@ -144,7 +144,7 @@ fn status_sections(g: &Graph) -> Vec<String> {
             {
                 let _ = write!(extra, " (closed {})", date_slice(closed));
             }
-            out.push(format!("- [#{} {}]({}) — _{}_{}{}{}", r.id, r.title, rel_link(r), r.priority, label_tag(r), extra, review_tag(r),));
+            out.push(format!("- [#{} {}]({}) — _{}_{}{}{}", r.id, r.title, rel_link(r), r.priority, label_tag(r), extra, review_tag(r)));
         }
         out.push(String::new());
     }
