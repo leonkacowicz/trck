@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 43 |
+| backlog | 48 |
 | ongoing | 4 |
 | in-review | 0 |
 | done | 161 |
-| **total** | **208** |
+| **total** | **213** |
 
 ## Hierarchies
 
@@ -23,6 +23,13 @@ Spec: [`docs/plans/2026-07-30-flat-items-layout.md`](../docs/plans/2026-07-30-fl
 - [x] [#v7zzefd layout: point issue_path/rel_link/scan_files at items/](items/v7zzefd-layout-point-issue-path-rel-link-scan-files-at-items.md)
 - [x] [#x2exfdf add the migrate-layout verb](items/x2exfdf-add-the-migrate-layout-verb.md)
 - [x] [#zk5k59n move_issue: drop the now-unreachable file move](items/zk5k59n-move-issue-drop-the-now-unreachable-file-move.md)
+
+### [#6ezbd38 ready: only offer work nobody has started](items/6ezbd38-ready-only-offer-work-nobody-has-started.md) — 0% (0/5 pts · 0/4 done) · _medium_ · backlog
+
+- [ ] [#esvgb7f next: name in-flight work before the pick](items/esvgb7f-next-name-in-flight-work-before-the-pick.md) _(backlog)_
+- [ ] [#gccs68j ready: narrow the actionable set to not-yet-started leaves](items/gccs68j-ready-narrow-the-actionable-set-to-not-yet-started-leaves.md) _(backlog)_
+- [ ] [#vhzs9jx trck-html: present ready as a board column, not a badge](items/vhzs9jx-trck-html-present-ready-as-a-board-column-not-a-badge.md) _(backlog)_
+- [ ] [#vqtt8dt list: a distinct gutter glyph for ready rows](items/vqtt8dt-list-a-distinct-gutter-glyph-for-ready-rows.md) _(backlog)_
 
 ### [#922fmtw dates: derived durations and staleness in ad-hoc views](items/922fmtw-dates-derived-durations-and-staleness-in-ad-hoc-views.md) — 0% (0/5 pts · 0/2 done) · _medium_ · backlog
 
