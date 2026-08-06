@@ -17,6 +17,9 @@
 
 use crate::config::is_terminal;
 use crate::graph::Graph;
+mod canvas;
+
+use canvas::Canvas;
 use std::collections::{BTreeMap, BTreeSet};
 
 /// The kind of a drawn edge. Authored dependencies and inferred containment are drawn
@@ -381,82 +384,17 @@ fn component_rows(comp: &[String], edges: &Edges) -> Vec<Row> {
     rows
 }
 
-/// Turn one node's lane transition into characters.
 fn draw_row(n: &str, top: &[LaneOwner], bottom: &[LaneOwner], pos: usize, arriving: &[usize], started: &[usize]) -> Row {
     let width = top.len().max(bottom.len()).max(pos + 1);
-    let mut dirs: Vec<BTreeSet<char>> = vec![BTreeSet::new(); width];
-    let mut owner: Vec<LaneOwner> = vec![None; width];
-    let mut opri: Vec<i8> = vec![-1; width];
-    // Horizontal bridge cells are collected and coloured after the walks: `dirs` is
-    // borrowed mutably while iterating it, so the owner map cannot be touched inside.
-    let mut bridges: Vec<(usize, LaneOwner)> = Vec::new();
-
-    let colour = |owner: &mut Vec<LaneOwner>, opri: &mut Vec<i8>, c: usize, who: &LaneOwner, pri: i8| {
-        if who.is_some() && pri > opri[c] {
-            opri[c] = pri;
-            owner[c].clone_from(who);
-        }
-    };
-
-    for (c, cell) in top.iter().enumerate().take(width) {
-        if cell.is_some() && !arriving.contains(&c) && c != pos {
-            dirs[c].extend(['U', 'D']);
-            colour(&mut owner, &mut opri, c, cell, 2);
-        }
-    }
+    let mut canvas = Canvas::new(width, pos);
+    canvas.through(top, arriving);
     for a in arriving {
-        dirs[*a].insert('U');
-        if *a == pos {
-            continue;
-        }
-        let lane = top.get(*a).cloned().flatten();
-        dirs[*a].insert(if *a < pos { 'R' } else { 'L' });
-        colour(&mut owner, &mut opri, *a, &lane, 2);
-        dirs[pos].insert(if *a < pos { 'L' } else { 'R' });
-        colour(&mut owner, &mut opri, pos, &lane, 1);
-        for (k, cell) in dirs.iter_mut().enumerate().take(*a.max(&pos)).skip(a.min(&pos) + 1) {
-            cell.extend(['L', 'R']);
-            bridges.push((k, lane.clone()));
-        }
+        canvas.connect(*a, &top.get(*a).cloned().flatten(), 'U');
     }
     for b in started {
-        let lane = bottom.get(*b).cloned().flatten();
-        dirs[*b].insert('D');
-        if *b == pos {
-            continue;
-        }
-        dirs[*b].insert(if *b > pos { 'L' } else { 'R' });
-        colour(&mut owner, &mut opri, *b, &lane, 2);
-        dirs[pos].insert(if *b > pos { 'R' } else { 'L' });
-        colour(&mut owner, &mut opri, pos, &lane, 1);
-        for (k, cell) in dirs.iter_mut().enumerate().take(pos.max(*b)).skip(pos.min(*b) + 1) {
-            cell.extend(['L', 'R']);
-            bridges.push((k, lane.clone()));
-        }
+        canvas.connect(*b, &bottom.get(*b).cloned().flatten(), 'D');
     }
-
-    for (k, lane) in &bridges {
-        colour(&mut owner, &mut opri, *k, lane, 1);
-    }
-
-    let mut chars: Vec<char> = Vec::new();
-    let mut owners: Vec<LaneOwner> = Vec::new();
-    for c in 0..width {
-        if c == pos {
-            chars.push('●');
-            owners.push(Some((n.to_string(), EdgeKind::Dep))); // the node's own bullet
-        } else {
-            chars.push(glyph(&dirs[c]));
-            owners.push(owner[c].clone());
-        }
-        chars.push(if dirs[c].contains(&'R') { '─' } else { ' ' });
-        owners.push(owner[c].clone());
-    }
-    while chars.last() == Some(&' ') {
-        chars.pop();
-        owners.pop();
-    }
-    (n.to_string(), chars.into_iter().collect(), owners)
+    canvas.render(n)
 }
 
 /// Render the DAG over `ids`, grouped by component with a `None` separator between

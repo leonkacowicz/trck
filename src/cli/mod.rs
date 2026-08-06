@@ -11,6 +11,8 @@
 //! subcommand list can still grow.
 
 mod dispatch;
+mod opts;
+mod reports;
 use dispatch::dispatch;
 
 use crate::discovery::Ctx;
@@ -144,6 +146,25 @@ impl Args {
     }
 }
 
+/// `list` and its `tree` alias take exactly the same options, named once.
+const LIST_FLAGS: &[&str] = &[
+    "--dir",
+    "--status",
+    "--priority",
+    "--label",
+    "--parent",
+    "--match",
+    "--field",
+    "--show-field",
+    "--sort",
+    "--blocked",
+    "--orphan",
+    "--all",
+    "--flat",
+    "--paths",
+    "--json",
+];
+
 /// The flags each verb accepts, so a typo is refused rather than ignored.
 ///
 /// Silently dropping an unrecognised option is the worst of both worlds: `list
@@ -159,49 +180,13 @@ pub(crate) const KNOWN_FLAGS: &[(&str, usize, &[&str])] = &[
     ("set", 0, &["--dir", "--auto", "--priority", "--points", "--parent", "--spec", "--review-url", "--title", "--slug", "--field", "--unset"]),
     ("dep", 0, &["--dir", "--add", "--remove"]),
     ("label", 0, &["--dir", "--add", "--remove"]),
-    (
-        "list",
-        0,
-        &[
-            "--dir",
-            "--status",
-            "--priority",
-            "--label",
-            "--parent",
-            "--match",
-            "--field",
-            "--show-field",
-            "--sort",
-            "--blocked",
-            "--orphan",
-            "--all",
-            "--flat",
-            "--paths",
-            "--json",
-        ],
-    ),
-    (
-        "tree",
-        0,
-        &[
-            "--dir",
-            "--status",
-            "--priority",
-            "--label",
-            "--parent",
-            "--match",
-            "--field",
-            "--show-field",
-            "--sort",
-            "--blocked",
-            "--orphan",
-            "--all",
-            "--flat",
-            "--paths",
-            "--json",
-        ],
-    ),
+    ("list", 0, LIST_FLAGS),
+    // Named once rather than repeated: `tree` is an alias, so a flag either verb accepted
+    // alone would be a flag the other silently refused.
+    ("tree", 0, LIST_FLAGS),
     ("show", 0, &["--dir", "--json"]),
+    ("path", 0, &["--dir"]),
+    ("which", 0, &["--dir", "--ids"]),
     ("check", 0, &["--dir"]),
     ("html", 0, &["--dir", "--out", "--cmd"]),
     ("diff", 0, &["--dir", "--from", "--to"]),
@@ -227,6 +212,7 @@ const MIN_POSITIONAL: &[(&str, usize, &str)] = &[
     ("dep", 1, "an issue id"),
     ("label", 1, "an issue id"),
     ("show", 1, "an issue id"),
+    ("path", 1, "an issue id"),
 ];
 
 /// Options a verb cannot run without.

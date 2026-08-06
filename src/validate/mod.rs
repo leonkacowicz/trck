@@ -10,6 +10,10 @@
 //! is odd — it happens when work is closed out of order, and saying so is more useful
 //! than refusing to proceed.
 
+mod checks;
+
+use checks::{check_cycles, check_references, check_rollups, warn_unfinished_dependencies};
+
 use crate::config::{self, is_terminal};
 use crate::discovery::Ctx;
 use crate::graph::Graph;
@@ -212,64 +216,10 @@ pub(crate) fn validate(ctx: &Ctx, rows: &[Issue]) -> Result<Report, String> {
     for r in &g.rows {
         check_row(&g, r, &files, &mut errors);
     }
-    for id in files.keys() {
-        if !by_id.contains(id.as_str()) {
-            errors.push(format!("#{id} markdown file on disk but no index row"));
-        }
-    }
-    for r in &g.rows {
-        if let Some(p) = &r.parent
-            && !by_id.contains(p.as_str())
-        {
-            errors.push(format!("#{} parent #{p} does not exist", r.id));
-        }
-        for dep in &r.depends_on {
-            if !by_id.contains(dep.as_str()) {
-                errors.push(format!("#{} depends_on #{dep} which does not exist", r.id));
-            }
-        }
-    }
-
-    // One error per cycle, not one per node.
-    for cyc in g.parent_cycles() {
-        let mut chain: Vec<String> = cyc.iter().map(|c| format!("#{c}")).collect();
-        if let Some(first) = cyc.first() {
-            chain.push(format!("#{first}"));
-        }
-        errors.push(format!("parent cycle: {}", chain.join(" -> ")));
-    }
-    // Effective cycles are a superset of the authored ones, and surface inherited
-    // deadlocks that arrived by hand-edit, import or `mv`.
-    for cyc in g.effective_cycles() {
-        errors.push(format!("effective dependency cycle: {}", describe_cycle(&g, &cyc)));
-    }
-
-    // A non-pinned parent's status must equal the rollup of its children. `finalize`
-    // maintains this after every verb, so a violation means a hand-edited index.
-    for r in &g.rows {
-        let kids = g.children_of(&r.id);
-        if kids.is_empty() || r.manual_status {
-            continue;
-        }
-        let statuses: Vec<String> = kids.iter().filter_map(|k| g.get(k).map(|c| c.status.clone())).collect();
-        let desired = config::reconcile(&statuses);
-        if r.status != desired {
-            errors.push(format!(
-                "#{} status '{}' should be '{desired}' (derived from its children; \
-                 pin it with a manual `mv` to override)",
-                r.id, r.status
-            ));
-        }
-    }
-    for r in &g.rows {
-        if is_terminal(&r.status) {
-            for dep in &r.depends_on {
-                if g.get(dep).is_some_and(|d| !is_terminal(&d.status)) {
-                    warnings.push(format!("#{} is terminal but depends on non-terminal #{dep}", r.id));
-                }
-            }
-        }
-    }
+    check_references(&g, &by_id, &files, &mut errors);
+    check_cycles(&g, &mut errors);
+    check_rollups(&g, &mut errors);
+    warn_unfinished_dependencies(&g, &mut warnings);
     Ok(Report { errors, warnings })
 }
 
