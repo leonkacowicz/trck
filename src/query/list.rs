@@ -1,0 +1,346 @@
+//! `list` and `tree`: selecting rows and rendering them as a forest, a flat list, JSON, or
+//! paths.
+//!
+//! Separated from the other read verbs because it is the only one that filters. What to
+//! *keep* and how to *show* it are different questions, and the filtering half — ten
+//! conditions, all the same shape — is most of the weight.
+
+use super::ListOpts;
+use crate::config::is_terminal;
+use crate::discovery::Ctx;
+use crate::graph::{Graph, priority_rank};
+use crate::issue::{Issue, check_field_key};
+use crate::json::Json;
+use crate::render::{Annotation, RowOpts, field_value, field_value_raw, render_rows, unique_prefix_lens};
+use crate::verbs::{issue_path, load_rows, resolve_ref};
+use std::collections::{BTreeMap, BTreeSet};
+
+/// `--status a,b` keeps those; `--status '!done'` drops them. Returns `(keep, drop)`.
+fn parse_status_filter(spec: Option<&str>) -> (BTreeSet<String>, BTreeSet<String>) {
+    let (mut keep, mut drop) = (BTreeSet::new(), BTreeSet::new());
+    for part in spec.unwrap_or("").split(',').map(str::trim) {
+        if part.is_empty() {
+            continue;
+        }
+        if let Some(name) = part.strip_prefix('!') {
+            drop.insert(name.to_string());
+        } else {
+            keep.insert(part.to_string());
+        }
+    }
+    (keep, drop)
+}
+
+/// The sort key for a row, as a tuple that compares in the right order.
+fn sort_key(g: &Graph, r: &Issue, sort: &str) -> (usize, String, String) {
+    match sort {
+        "priority" => (priority_rank(&r.priority), String::new(), r.id.clone()),
+        "points" => (
+            // Descending, so a bigger weight sorts first.
+            usize::MAX - usize::try_from(r.points.max(0)).unwrap_or(0),
+            String::new(),
+            r.id.clone(),
+        ),
+        "id" => (0, r.id.clone(), r.id.clone()),
+        _ if sort.starts_with("field:") => {
+            let name = &sort["field:".len()..];
+            // Rows carrying the field sort by value; rows without it sort last.
+            field_value(r, name).map_or_else(|| (1, String::new(), r.id.clone()), |v| (0, v, r.id.clone()))
+        },
+        _ => {
+            let _ = g;
+            (0, r.created.clone().unwrap_or_default(), r.id.clone())
+        },
+    }
+}
+
+/// Validate the option combination before any work: an unknown `--sort` or a malformed
+/// `--field` should be reported as such, not silently ignored.
+fn check_list_opts(opts: &ListOpts) -> Result<Vec<(String, String)>, String> {
+    let mut field_filters = Vec::new();
+    for spec in &opts.fields {
+        let (k, v) = spec.split_once('=').ok_or_else(|| format!("--field expects key=value, got '{spec}'"))?;
+        // The same key rule the write side enforces. Without it a filter on a built-in —
+        // `--field status=backlog` — would look up a custom field that can never exist and
+        // quietly match nothing, or worse, appear to work.
+        if let Some(msg) = check_field_key(k) {
+            return Err(msg);
+        }
+        field_filters.push((k.to_string(), v.to_string()));
+    }
+    if let Some(s) = opts.sort
+        && !["priority", "points", "created", "id"].contains(&s)
+        && !s.starts_with("field:")
+    {
+        return Err(format!("unknown --sort '{s}' (choices: id, priority, points, created, field:NAME)"));
+    }
+    Ok(field_filters)
+}
+
+/// One nested node of `list --json`, recursing into the children that are on screen.
+///
+/// A node carries two keys the flat form has no use for: `children`, so a consumer wanting
+/// the hierarchy need not rebuild it from `parent` pointers, and `context`, marking a row
+/// present only to keep a match attached to its ancestors — what the human view dims.
+/// `seen` guards a hand-edited parent cycle the same way the human forest walk does.
+fn json_node(g: &Graph, sel: &Selection, id: &str, sorted: &mut impl FnMut(&mut Vec<String>), seen: &mut BTreeSet<String>) -> Json {
+    let mut kids: Vec<String> = g.children_of(id).iter().filter(|c| sel.shown.contains(*c)).cloned().collect();
+    sorted(&mut kids);
+    let children: Vec<Json> = if seen.insert(id.to_string()) { kids.iter().map(|c| json_node(g, sel, c, sorted, seen)).collect() } else { Vec::new() };
+    let mut obj = match g.get(id).map(Issue::to_full) {
+        Some(Json::Object(pairs)) => pairs,
+        _ => Vec::new(),
+    };
+    obj.push(("context".into(), Json::Bool(!sel.matched.contains(id))));
+    obj.push(("children".into(), Json::Array(children)));
+    Json::Object(obj)
+}
+
+/// Settled work: terminal, under a parent that is also terminal (or none at all).
+///
+/// The default view hides it, which is what keeps `trck list` about what is left rather
+/// than about everything that ever happened.
+fn is_settled(g: &Graph, r: &Issue) -> bool {
+    is_terminal(&r.status) && r.parent.as_ref().and_then(|p| g.get(p)).is_none_or(|p| is_terminal(&p.status))
+}
+
+/// Everything `list` selects on, resolved once from the options and the graph.
+///
+/// Gathered into a type rather than left as a closure with ten captures: the conditions are
+/// the bulk of what `cmd_list` used to be, they are all the same shape, and none of them has
+/// anything to do with choosing an output format — which is all that is left there now.
+struct RowFilter<'a> {
+    keep_status: BTreeSet<String>,
+    drop_status: BTreeSet<String>,
+    priority: Option<&'a str>,
+    label: Option<&'a str>,
+    parent: Option<String>,
+    title_match: String,
+    fields: Vec<(String, String)>,
+    blocked_only: bool,
+    orphans_only: bool,
+    hide_settled: bool,
+}
+
+impl RowFilter<'_> {
+    fn build<'b>(opts: &'b ListOpts, parent: Option<String>) -> Result<RowFilter<'b>, String> {
+        let (keep_status, drop_status) = parse_status_filter(opts.status);
+        Ok(RowFilter {
+            keep_status,
+            drop_status,
+            priority: opts.priority,
+            label: opts.label,
+            parent,
+            title_match: opts.match_title.unwrap_or("").to_lowercase(),
+            fields: check_list_opts(opts)?,
+            blocked_only: opts.blocked,
+            orphans_only: opts.orphan,
+            // An explicit --status or --all bypasses the default hiding.
+            hide_settled: opts.status.is_none() && !opts.all,
+        })
+    }
+
+    fn keeps(&self, g: &Graph, r: &Issue) -> bool {
+        (self.keep_status.is_empty() || self.keep_status.contains(&r.status))
+            && !self.drop_status.contains(&r.status)
+            && self.priority.is_none_or(|p| r.priority == p)
+            && self.label.is_none_or(|l| r.labels.iter().any(|x| x == l))
+            && self.parent.as_ref().is_none_or(|p| r.parent.as_ref() == Some(p))
+            && (self.title_match.is_empty() || r.title.to_lowercase().contains(&self.title_match))
+            && (!self.blocked_only || g.is_blocked(&r.id))
+            && (!self.orphans_only || r.parent.is_none())
+            && (!self.hide_settled || !is_settled(g, r))
+            && self.fields.iter().all(|(k, v)| field_value_raw(r, k).as_ref() == Some(v))
+    }
+}
+
+pub(crate) fn cmd_list(ctx: &Ctx, opts: &ListOpts) -> Result<String, String> {
+    let rows = load_rows(ctx)?;
+    let root = opts.root.map(|t| resolve_ref(&rows, t)).transpose()?;
+    let parent_filter = opts.parent.map(|t| resolve_ref(&rows, t)).transpose()?;
+    let g = Graph::new(rows);
+
+    let filter = RowFilter::build(opts, parent_filter)?;
+    let keep = |r: &Issue| filter.keeps(&g, r);
+
+    let sort = opts.sort.unwrap_or("created");
+    let mut sorted = |ids: &mut Vec<String>| {
+        ids.sort_by_cached_key(|id| g.get(id).map_or_else(|| (0, String::new(), id.clone()), |r| sort_key(&g, r, sort)));
+    };
+
+    if opts.paths {
+        if opts.json {
+            return Err("--paths and --json are different output modes; pick one".into());
+        }
+        return Ok(paths_of(ctx, &g, &selected(&g, &keep, &mut sorted)));
+    }
+    if opts.json {
+        return Ok(list_json(&g, opts, &keep, &mut sorted, root.as_deref()));
+    }
+
+    let abbrev = unique_prefix_lens(g.rows.iter().map(|r| r.id.as_str()));
+    let show_fields: Vec<String> = opts.show_fields.iter().map(|s| (*s).to_string()).collect();
+    if opts.flat {
+        return Ok(flat_rows(&g, &selected(&g, &keep, &mut sorted), show_fields, abbrev));
+    }
+    Ok(forest(&g, opts, &keep, &mut sorted, show_fields, abbrev, root.as_deref()))
+}
+
+/// The kept ids, in the requested order — the input to both flat output modes.
+fn selected(g: &Graph, keep: &impl Fn(&Issue) -> bool, sorted: &mut impl FnMut(&mut Vec<String>)) -> Vec<String> {
+    let mut ids: Vec<String> = g.rows.iter().filter(|r| keep(r)).map(|r| r.id.clone()).collect();
+    sorted(&mut ids);
+    ids
+}
+
+/// `--flat`: one row per issue, globally sorted, with no tree structure to carry.
+fn flat_rows(g: &Graph, ids: &[String], show_fields: Vec<String>, abbrev: BTreeMap<String, usize>) -> String {
+    let rows: Vec<&Issue> = ids.iter().filter_map(|id| g.get(id)).collect();
+    let row_opts =
+        RowOpts { prefix: None, dim: &[], on_screen: ids.to_vec(), annotate: Annotation::Blocking, progress: true, show_fields, abbrev: Some(abbrev) };
+    render_rows(g, &rows, &row_opts).join("\n")
+}
+
+/// Which rows the nested view covers: the matches, everything shown (matches plus the
+/// ancestor spine that keeps them attached), and the roots to walk from.
+struct Selection {
+    matched: BTreeSet<String>,
+    shown: BTreeSet<String>,
+    roots: Vec<String>,
+}
+
+/// The nested view's row selection, shared by the human forest and the `--json` one so the
+/// two can never disagree about what a filter selected — only about how it is rendered.
+fn select_forest(g: &Graph, keep: &impl Fn(&Issue) -> bool, sorted: &mut impl FnMut(&mut Vec<String>), root: Option<&str>) -> Selection {
+    let matched: BTreeSet<String> = g.rows.iter().filter(|r| keep(r)).map(|r| r.id.clone()).collect();
+    let mut shown = matched.clone();
+    for id in &matched {
+        shown.extend(g.ancestors_of(id));
+    }
+    let mut roots: Vec<String> = if let Some(id) = root {
+        if shown.contains(id) { vec![id.to_string()] } else { Vec::new() }
+    } else {
+        g.rows.iter().filter(|r| shown.contains(&r.id) && r.parent.as_ref().is_none_or(|p| g.get(p).is_none())).map(|r| r.id.clone()).collect()
+    };
+    sorted(&mut roots);
+    Selection { matched, shown, roots }
+}
+
+/// `list --json`: the rows the human view would print, as one document.
+///
+/// Takes the *same* `keep` and `sorted` the human path built, so the two renderings cannot
+/// drift on what a filter selected — only on how it is shown. Nested by default and flat
+/// under `--flat`, mirroring the human view: a consumer wanting the hierarchy should not
+/// have to rebuild it from `parent` pointers. Rows are [`Issue::to_full`], so every
+/// canonical key is present even where unset.
+fn list_json(g: &Graph, opts: &ListOpts, keep: &impl Fn(&Issue) -> bool, sorted: &mut impl FnMut(&mut Vec<String>), root: Option<&str>) -> String {
+    if opts.flat {
+        let mut ids: Vec<String> = g.rows.iter().filter(|r| keep(r)).map(|r| r.id.clone()).collect();
+        sorted(&mut ids);
+        let rows: Vec<Json> = ids.iter().filter_map(|id| g.get(id)).map(Issue::to_full).collect();
+        return Json::Array(rows).to_json_pretty();
+    }
+    let sel = select_forest(g, keep, sorted, root);
+    let nodes: Vec<Json> = sel.roots.iter().map(|id| json_node(g, &sel, id, sorted, &mut BTreeSet::new())).collect();
+    Json::Array(nodes).to_json_pretty()
+}
+
+/// The nested view: show a node iff it matches or has a matching descendant, with the
+/// non-matching ancestors kept as dimmed context so a matched child never floats free.
+fn forest(
+    g: &Graph,
+    opts: &ListOpts,
+    keep: &impl Fn(&Issue) -> bool,
+    sorted: &mut impl FnMut(&mut Vec<String>),
+    show_fields: Vec<String>,
+    abbrev: BTreeMap<String, usize>,
+    root: Option<&str>,
+) -> String {
+    let _ = opts;
+
+    let Selection { matched, shown, roots } = select_forest(g, keep, sorted, root);
+    let dim: Vec<String> = shown.difference(&matched).cloned().collect();
+
+    let mut f = Forest { shown: &shown, ordered: Vec::new(), prefixes: BTreeMap::new(), seen: BTreeSet::new() };
+    for r in &roots {
+        f.ordered.push(r.clone());
+        f.prefixes.insert(r.clone(), String::new());
+        f.seen = BTreeSet::from([r.clone()]);
+        walk(g, &mut f, r, "", sorted);
+    }
+
+    let rows: Vec<&Issue> = f.ordered.iter().filter_map(|id| g.get(id)).collect();
+    let row_opts = RowOpts {
+        prefix: Some(&f.prefixes),
+        dim: &dim,
+        on_screen: f.ordered.clone(),
+        annotate: Annotation::Blocking,
+        progress: true,
+        show_fields,
+        abbrev: Some(abbrev),
+    };
+    render_rows(g, &rows, &row_opts).join("\n")
+}
+
+/// Absolute body paths, one per line — what `--paths` prints for piping into an editor.
+fn paths_of(ctx: &Ctx, g: &Graph, ids: &[String]) -> String {
+    ids.iter()
+        .filter_map(|id| g.get(id))
+        .map(|r| {
+            let p = issue_path(ctx, r);
+            p.canonicalize().unwrap_or(p).display().to_string()
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+/// What the forest walk accumulates. A struct rather than eight parameters, which is
+/// also the honest shape: these five move together.
+struct Forest<'a> {
+    shown: &'a BTreeSet<String>,
+    ordered: Vec<String>,
+    prefixes: BTreeMap<String, String>,
+    seen: BTreeSet<String>,
+}
+
+/// Depth-first walk building the connector prefixes, cycle-guarded.
+fn walk(g: &Graph, f: &mut Forest, id: &str, pfx: &str, sorted: &mut impl FnMut(&mut Vec<String>)) {
+    let mut kids: Vec<String> = g.children_of(id).iter().filter(|k| f.shown.contains(*k)).cloned().collect();
+    sorted(&mut kids);
+    let last_index = kids.len().saturating_sub(1);
+    for (i, kid) in kids.iter().enumerate() {
+        let last = i == last_index;
+        f.ordered.push(kid.clone());
+        f.prefixes.insert(kid.clone(), format!("{pfx}{}", if last { "└─ " } else { "├─ " }));
+        if f.seen.insert(kid.clone()) {
+            let ext = format!("{pfx}{}", if last { "   " } else { "│  " });
+            walk(g, f, kid, &ext, sorted);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // Tests assert; that is their job. The crate denies unwrap/expect/panic because a
+    // malformed tracker must produce a diagnostic rather than a stack trace, but a test
+    // that cannot panic cannot fail.
+    #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
+    use super::*;
+
+    #[test]
+    fn a_status_filter_separates_keeps_from_drops() {
+        let (keep, drop) = parse_status_filter(Some("backlog,ongoing"));
+        assert_eq!(keep.len(), 2);
+        assert!(drop.is_empty());
+        let (keep, drop) = parse_status_filter(Some("!done"));
+        assert!(keep.is_empty());
+        assert!(drop.contains("done"));
+    }
+
+    #[test]
+    fn an_absent_filter_keeps_everything() {
+        let (keep, drop) = parse_status_filter(None);
+        assert!(keep.is_empty() && drop.is_empty());
+    }
+}

@@ -10,17 +10,18 @@
     "module_files": 20
   },
   "totals": {
-    "file_functions": 390,
-    "file_lines": 2065,
+    "file_functions": 362,
+    "file_lines": 1554,
     "function_args": 15,
-    "function_cognitive": 300,
-    "function_cyclomatic": 467,
-    "function_lines": 233,
-    "module_files": 1
+    "function_cognitive": 294,
+    "function_cyclomatic": 421,
+    "function_lines": 184,
+    "module_files": 0
   },
   "violations": {
     "file_functions": {
-      "src/cli.rs": 45,
+      "src/cli/dispatch.rs": 26,
+      "src/cli/mod.rs": 9,
       "src/config.rs": 11,
       "src/diff.rs": 40,
       "src/discovery.rs": 12,
@@ -30,13 +31,14 @@
       "src/issue.rs": 21,
       "src/json.rs": 8,
       "src/merge.rs": 7,
-      "src/query.rs": 69,
+      "src/query/list.rs": 32,
+      "src/query/mod.rs": 19,
       "src/render.rs": 26,
       "src/repo.rs": 18,
       "src/verbs.rs": 60
     },
     "file_lines": {
-      "src/cli.rs": 364,
+      "src/cli/mod.rs": 94,
       "src/diff.rs": 64,
       "src/discovery.rs": 20,
       "src/graph.rs": 250,
@@ -44,7 +46,8 @@
       "src/help.rs": 132,
       "src/issue.rs": 68,
       "src/json.rs": 100,
-      "src/query.rs": 316,
+      "src/query/list.rs": 21,
+      "src/query/mod.rs": 54,
       "src/render.rs": 65,
       "src/repo.rs": 82,
       "src/verbs.rs": 378
@@ -56,16 +59,16 @@
       "src/gutter.rs::filter_done": 1,
       "src/merge.rs::merge_one": 1,
       "src/merge.rs::scalar_merge": 2,
-      "src/query.rs::forest": 3,
-      "src/query.rs::json_node": 1,
-      "src/query.rs::list_json": 1,
-      "src/query.rs::walk": 1,
+      "src/query/list.rs::forest": 3,
+      "src/query/list.rs::json_node": 1,
+      "src/query/list.rs::list_json": 1,
+      "src/query/list.rs::walk": 1,
       "src/verbs.rs::cmd_mv": 1
     },
     "function_cognitive": {
-      "src/cli.rs::cmd_diff": 1,
-      "src/cli.rs::dispatch": 6,
-      "src/cli.rs::parse_args": 4,
+      "src/cli/dispatch.rs::cmd_diff": 1,
+      "src/cli/dispatch.rs::dispatch_query": 4,
+      "src/cli/mod.rs::parse_args": 4,
       "src/diff.rs::compare": 1,
       "src/diff.rs::parse_since": 2,
       "src/graph.rs::demand_edges": 7,
@@ -84,8 +87,7 @@
       "src/json.rs::write_pretty": 1,
       "src/merge.rs::merge_one": 10,
       "src/merge.rs::merge_rows": 3,
-      "src/query.rs::cmd_deps": 15,
-      "src/query.rs::cmd_list": 4,
+      "src/query/mod.rs::cmd_deps": 15,
       "src/render.rs::block_annotations": 17,
       "src/render.rs::render_rows": 5,
       "src/repo.rs::cmd_migrate_layout": 3,
@@ -103,11 +105,13 @@
       "src/verbs.rs::postorder": 2
     },
     "function_cyclomatic": {
-      "src/cli.rs::cmd_diff": 11,
-      "src/cli.rs::dispatch": 43,
-      "src/cli.rs::dispatch_mutating": 22,
-      "src/cli.rs::main": 6,
-      "src/cli.rs::usage_error": 8,
+      "src/cli/dispatch.rs::cmd_diff": 11,
+      "src/cli/dispatch.rs::dispatch": 1,
+      "src/cli/dispatch.rs::dispatch_mutating": 22,
+      "src/cli/dispatch.rs::dispatch_query": 15,
+      "src/cli/dispatch.rs::dispatch_repo": 10,
+      "src/cli/mod.rs::main": 6,
+      "src/cli/mod.rs::usage_error": 8,
       "src/config.rs::check_format": 3,
       "src/diff.rs::compare": 6,
       "src/diff.rs::parse_since": 4,
@@ -137,10 +141,10 @@
       "src/json.rs::write_string": 2,
       "src/merge.rs::merge_one": 5,
       "src/merge.rs::merge_rows": 1,
-      "src/query.rs::<anonymous>": 10,
-      "src/query.rs::cmd_deps": 19,
-      "src/query.rs::cmd_list": 37,
-      "src/query.rs::cmd_show": 9,
+      "src/query/list.rs::cmd_list": 8,
+      "src/query/list.rs::keeps": 10,
+      "src/query/mod.rs::cmd_deps": 19,
+      "src/query/mod.rs::cmd_show": 9,
       "src/render.rs::ansi": 6,
       "src/render.rs::block_annotations": 8,
       "src/render.rs::field_value": 17,
@@ -162,13 +166,11 @@
       "src/verbs.rs::parse_instant": 8
     },
     "function_lines": {
-      "src/cli.rs::dispatch": 36,
       "src/gutter.rs::draw_row": 26,
       "src/gutter.rs::shorten_lanes": 11,
       "src/issue.rs::from_json": 17,
       "src/merge.rs::merge_one": 1,
-      "src/query.rs::cmd_deps": 18,
-      "src/query.rs::cmd_list": 13,
+      "src/query/mod.rs::cmd_deps": 18,
       "src/repo.rs::cmd_migrate_layout": 12,
       "src/repo.rs::gitattributes_update": 2,
       "src/validate.rs::check_row": 14,
@@ -177,8 +179,6 @@
       "src/verbs.rs::cmd_new": 24,
       "src/verbs.rs::cmd_set": 36
     },
-    "module_files": {
-      "src": 1
-    }
+    "module_files": {}
   }
 }
