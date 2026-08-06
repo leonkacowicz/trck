@@ -47,7 +47,9 @@ holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
   registers trck's merge drivers in *your* `.git/config`. Git shares `.gitattributes` but never
   the driver commands (that would make cloning remote code execution), so until a clone runs
   this, `index.jsonl` and `SUMMARY.md` conflict like ordinary text. `trck repo merge-index` /
-  `merge-summary` are those drivers — git invokes them; you don't call them by hand.
+  `merge-summary` are those drivers — git invokes them; you don't call them by hand. The same
+  file pins these formats to LF, which the engine writes and compares byte for byte: checked
+  out as CRLF, they would be rewritten whole by the first verb that ran.
 - `trck repo migrate-layout` — one-shot upgrade of a pre-0.23 tracker whose issue files still sit
   in per-status folders, into the flat `items/` layout. Such a tracker is **refused by every
   verb** (`legacy status-folder layout: …`) until this runs; `--dry-run` previews the moves.
