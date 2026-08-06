@@ -10,10 +10,10 @@ python3 conformance/run.py -k gutter              # a subset
 python3 conformance/run.py --update               # accept new output as correct
 ```
 
-**The runner never imports trck.** It execs whatever `TRCK_BIN` points at. That is the
-whole reason this exists — a runner that imported the Python engine would silently
-become Python-only the moment a second implementation arrived, and nothing would fail to
-tell you.
+**The runner never imports trck.** It execs whatever `TRCK_BIN` points at. That is the whole
+reason this exists: a runner that imported an engine would be describing that engine rather
+than the behaviour, and would silently become specific to it the moment a second
+implementation arrived — with nothing failing to tell you.
 
 ## A fixture
 
@@ -61,8 +61,8 @@ appearance renames them to match and the fixture passes.
 
 **The clock is fixed.** Every invocation runs with `TRCK_NOW=2026-01-01T00:00:00Z`, so
 `created`/`started`/`closed` are the same on every run and `expected.index.jsonl` can be
-compared byte for byte. The engine's own clock override is part of the contract, not a
-Python-side hook.
+compared byte for byte. The clock override is part of the specification every engine
+implements, not a hook bolted onto one of them.
 
 Output is also run with `NO_COLOR=1`, and the tracker's temp path is replaced with
 `<TRACKER>` before comparison.

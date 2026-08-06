@@ -1,11 +1,10 @@
 ---
 name: trck
 description: >-
-  Use trck, the single-file in-repo issue tracker, for ALL task and issue
-  bookkeeping — and err toward using it. If ANYTHING suggests the repo tracks
-  work with trck — an `issues/index.jsonl`, a `trck.json`, a `trck` executable, a
-  vendored `issues/trck`, or an `issues/` dir with a generated `SUMMARY.md` —
-  treat this skill as in-scope. Trigger it whenever you create, close,
+  Use trck, the in-repo issue tracker, for ALL task and issue bookkeeping — and
+  err toward using it. If ANYTHING suggests the repo tracks work with trck — an
+  `issues/index.jsonl`, a `trck.json`, or an `issues/` dir with a generated
+  `SUMMARY.md` — treat this skill as in-scope. Trigger it whenever you create, close,
   re-prioritize, or relate issues; decide what to work on next; break work into
   sub-tasks; or realize during any other task that follow-up work is needed —
   even when the user never says "trck", "issue", or "ticket". Also trigger on
@@ -19,9 +18,9 @@ description: >-
 
 # trck — in-repo issue tracker
 
-`trck` is a single-file, standard-library-only issue tracker whose entire state lives in the
-repo: one markdown file per issue plus a generated `index.jsonl` and `SUMMARY.md` under a
-tracker dir (usually `issues/`). It is driven entirely by the `trck` CLI. This skill covers
+`trck` is an issue tracker whose entire state lives in the repo: one markdown file per issue
+plus a generated `index.jsonl` and `SUMMARY.md` under a tracker dir (usually `issues/`). It is
+driven entirely by the `trck` CLI. This skill covers
 how to invoke it, the mental model, the command surface, and — most importantly — the working
 discipline that keeps the tracker trustworthy.
 
@@ -50,59 +49,33 @@ find it with `command -v trck >/dev/null; ls issues/index.jsonl trck.json issues
   silently pick defaults; ask a few questions first, because these choices are hard to change
   later and shape how everyone uses the tracker:
   1. **Tracker directory** — default `issues/`. Accept unless they want another name.
-  2. **Vendor the engine, or use a global install?** Default: **vendor** (`trck init` commits a
-     copy at `issues/trck`) — it pins the engine version to the repo so it can't drift and works
-     in CI with no install. Choose `--no-vendor` only if they'll rely on a `trck` already on
-     `PATH`. (This is the same vendored-vs-global choice you resolve at §1 on every later run.)
-  3. **Install the pre-commit consistency hook?** (`--hook`) — recommended; it runs `trck check`
-     so an inconsistent tracker can't be committed.
-  4. **Custom status vocabulary?** Default is `backlog → ongoing → in-review → done`. Most repos keep it;
-     if they want different statuses/priorities/kinds, note it — those live in `trck.json` and
-     can be edited right after init.
+  2. **Install the pre-commit consistency hook?** (`--hook`) — worth offering; it runs
+     `trck check` whenever a commit touches the tracker. Say what it is: a convenience, not a
+     gate — `--no-verify` skips it and it does nothing on a machine without `trck`. The check
+     that actually binds belongs in CI.
 
-  Then run it from an available engine (a global `trck`, or `./trck` if you're in the trck repo
-  itself): `trck init [<dir>] [--no-vendor] [--hook]`. Running `trck init` **requires an existing
-  trck engine** — if none is on `PATH` and there's no local copy, tell the user they need to
-  obtain the single-file `trck` first (there's nothing to bootstrap from otherwise). After init,
-  seed the backlog: create the first issues for the work already known (see §4), and run
-  `trck check`.
+  There is no vocabulary question: statuses, priorities and resolutions are fixed (see §2), so
+  every tracker means the same thing and there is nothing to choose.
 
-## 1. Which engine to run (vendored vs. global)
+  Then: `trck init [<dir>] [--hook]`. It writes `trck.json` and the docs that explain the
+  tracker, and copies no engine — `trck` is installed on the machine, not committed to the
+  repo. If none is installed, point the user at the project's install script; there is nothing
+  to bootstrap from otherwise. After init, seed the backlog: create the first issues for the
+  work already known (see §4), and run `trck check`.
 
-There can be more than one `trck` available. Resolve which to use **once**, at the start, and
-reuse it. Prefer a copy committed inside the repo over a global install — the committed copy is
-pinned to the version the repo's tracker data expects, so it can't drift.
+## 1. Running it
 
-Resolution order:
+`trck` is a binary on the machine, not a file in the repo, so there is nothing to resolve per
+project — use whatever `command -v trck` finds. If nothing does, say so rather than improvising
+a substitute; the project's README has the install script.
 
-1. **Vendored engine next to the tracker config.** `trck init` drops a committed copy at
-   `<tracker-dir>/trck` (typically `issues/trck`, sitting beside `issues/trck.json`). If it
-   exists, use it: `./issues/trck …` (or `python3 ./issues/trck …` if it isn't executable).
-2. **The trck project itself.** If the repo root holds the engine as `./trck` (the canonical
-   trck repo, set up with `--no-vendor`), use `./trck …`.
-3. **Global install.** Otherwise, if `command -v trck` finds one on `PATH`, use plain `trck`.
+The one exception is a repo that *builds* trck: work there against the binary you just built
+(`target/release/trck`), because that is the code under change, and a stale installed copy
+would quietly answer for it.
 
-A quick resolver you can run at session start:
-
-```bash
-# Walk up for a committed engine; fall back to the global one on PATH.
-TRCK=""
-d="$PWD"
-while [ "$d" != / ]; do
-  for c in "$d/issues/trck" "$d/trck"; do
-    if [ -f "$c" ] && { [ -f "$d/issues/trck.json" ] || [ -f "$d/trck.json" ]; }; then TRCK="$c"; break; fi
-  done
-  [ -n "$TRCK" ] && break
-  d="$(dirname "$d")"
-done
-TRCK="${TRCK:-$(command -v trck)}"
-# If $TRCK isn't executable (vendored copies sometimes lack +x), run it as: python3 "$TRCK"
-echo "using: ${TRCK:-<none found>}"
-```
-
-Throughout this skill commands are written as `trck …`; substitute the path you resolved. The
-tracker **dir** is discovered separately by the engine itself (it walks up for `trck.json`), so
-you can run from anywhere in the repo; override with `--dir PATH` or `$TRCK_DIR` if needed.
+The tracker **dir** is found by the engine itself — it walks up from the working directory
+looking for `trck.json` — so you can run from anywhere in the repo. Override with `--dir PATH`
+or `$TRCK_DIR` when you need to name a specific tracker.
 
 ## 2. The model — four ways to relate issues
 
@@ -267,6 +240,8 @@ edge that's still true.
 - **`trck check` before committing**, always. Keep tracker commits separate from code commits
   where reasonable (`index.jsonl` + `SUMMARY.md` — plus the body file when you wrote prose or the
   slug changed — are one tracker change and belong together).
-- The **vocabulary is per-repo** — statuses, priorities, kinds, resolutions, and aliases come
-  from `trck.json`. Read it (or `trck --help`) rather than assuming names like `backlog`/`done`;
-  another repo may configure different ones.
+- The **vocabulary is fixed in code**, not configured: `backlog → ongoing → in-review → done`,
+  five priorities, three resolutions, the same in every tracker. `trck.json` holds the format
+  version, not a vocabulary. A tracker still carrying the old vocabulary keys is not broken —
+  they are ignored, and `check` names each one. Anything finer than the four statuses is a
+  label or a custom field.

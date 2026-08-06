@@ -47,6 +47,25 @@ jobs:
       - name: Tracker consistency
         run: python3 ./trck check
 
+  # The installer, on the platform it was broken on.
+  #
+  # It unpacks the Windows artifact with `tar`, because Windows 10 1803+ ships bsdtar and a
+  # stock Windows has no unzip — a claim no Linux runner can check, since its `tar` is GNU
+  # tar and cannot read a zip at all. So the assertion is made here, under Git Bash, against
+  # a release built on disk and served over `file://`. If the fallback chain ever stops
+  # finding something that can open a zip, this is the job that says so.
+  installer:
+    name: installer (windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Install from a local release
+        shell: bash
+        run: python -m unittest scripts.tests.test_install -v
+
   # The port, measured rather than described. It began with an empty binary reporting a
   # pass rate of 0; --min-pass is a floor that only moves up, so the port could never
   # regress and every raise is a visible commit. It now sits at the full suite.

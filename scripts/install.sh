@@ -100,7 +100,19 @@ main() {
 
   case "$ext" in
     tar.gz) tar -xzf "$tmp/pkg.tar.gz" -C "$tmp" ;;
-    zip) command -v unzip >/dev/null 2>&1 || die "need unzip"; unzip -q "$tmp/pkg.zip" -d "$tmp" ;;
+    # Zip is the Windows artifact, and Windows is where the fewest tools can be assumed.
+    # Windows 10 1803 and later ship bsdtar as tar.exe, which reads zip perfectly well; a
+    # stock Windows has no unzip, and Git for Windows does not add one — so requiring unzip
+    # meant the installer downloaded and verified a file it then could not open.
+    #
+    # tar is tried first for that reason, and its failure is not fatal, because the `tar` on
+    # PATH is not necessarily that one: under Git Bash it is GNU tar, which cannot read a zip
+    # at all. Try, then fall back, and only complain once nothing has worked.
+    zip)
+      ( cd "$tmp" && tar -xf pkg.zip ) 2>/dev/null \
+        || ( command -v unzip >/dev/null 2>&1 && unzip -q "$tmp/pkg.zip" -d "$tmp" ) \
+        || die "could not unpack the archive: need a tar that reads zip (Windows 10 1803+) or unzip"
+      ;;
   esac
 
   bin="$(find "$tmp" -type f -name 'trck' -o -type f -name 'trck.exe' | head -n 1)"

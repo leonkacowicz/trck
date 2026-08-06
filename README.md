@@ -1,14 +1,14 @@
 # trck
 
-A deterministic, single-file, **standard-library-only** issue tracker that lives *inside*
-your repo. Every issue is a markdown file in `items/`; all metadata — status included — lives in
-`index.jsonl`; `SUMMARY.md` is generated; only issue *bodies* are hand-authored — so the
-tracker can't drift. `trck` is the generalized successor to the original `track` script.
+A deterministic issue tracker that lives *inside* your repo. Every issue is a markdown file
+in `items/`; all metadata — status included — lives in `index.jsonl`; `SUMMARY.md` is
+generated; only issue *bodies* are hand-authored — so the tracker can't drift.
 
-- **One file, zero dependencies.** Just Python 3. Vendor it into a repo and commit it, or
-  install it once on your `PATH`.
+- **One binary, zero dependencies.** Nothing to install alongside it, no runtime, no
+  package tree — a single executable your repo can depend on for years.
 - **Git-friendly & agent-friendly.** Plain text, line-oriented `index.jsonl`, generated
-  `SUMMARY.md`, and a hand-edited markdown body per issue.
+  `SUMMARY.md`, and a hand-edited markdown body per issue. Merge drivers resolve concurrent
+  edits row by row instead of leaving conflict markers in your metadata.
 - **Zero configuration.** The vocabulary is fixed — four statuses, five priorities, three
   resolutions — so every tracker means the same thing. Anything finer is a label or a
   custom field.
@@ -18,18 +18,29 @@ tracker can't drift. `trck` is the generalized successor to the original `track`
   <sub><code>trck ready</code> against the bundled <a href="examples/">example tracker</a></sub>
 </p>
 
-## Install (global)
+## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/leonkacowicz/trck/main/trck \
-  -o ~/.local/bin/trck && chmod +x ~/.local/bin/trck
+curl -fsSL https://raw.githubusercontent.com/leonkacowicz/trck/main/scripts/install.sh | sh
 ```
+
+The script picks the right build from `uname`, verifies the published checksum, and installs
+to the first writable directory it finds (`~/.local/bin`, `/usr/local/bin`, `~/bin`).
+`TRCK_BIN_DIR` overrides where it lands and `TRCK_VERSION` pins which release to fetch.
+
+Prebuilt for Linux (glibc and musl), macOS and Windows, on x86-64 and arm64 — every release
+attaches the archives and their `.sha256` files, so downloading one by hand and putting it on
+your `PATH` works just as well. There is a Homebrew formula under `packaging/homebrew/`.
+
+On Windows, run the script from Git Bash, or download the `.zip` from the
+[latest release](https://github.com/leonkacowicz/trck/releases/latest), extract `trck.exe`,
+and add its folder to `PATH`.
 
 Then, in any repo:
 
 ```bash
-trck init                       # scaffold ./issues (config + a vendored copy of trck)
-                                # `trck init <dir>` for a custom dir; `--no-vendor` skips the engine copy
+trck init                       # scaffold ./issues (config + the docs that explain it)
+                                # `trck init <dir>` puts it somewhere else
 trck new "Fix login bug" --priority high   # prints the new id, e.g. k3m9x2a
 trck start k3m                  # any unambiguous prefix works (git-style)
 trck review k3m https://github.com/you/repo/pull/12   # -> in-review, and links the PR
@@ -43,26 +54,27 @@ trck tree k3m                   # alias for `list k3m`: root the forest at one i
 `trck` finds its tracker by walking up from your current directory to the folder containing
 `trck.json`, so it works from anywhere in the repo. Override with `--dir PATH` or `$TRCK_DIR`.
 
-## Vendored / CI use
-
-`trck init` drops a committed copy at `issues/trck`. CI and auditing use that copy with no
-global install:
+## Keeping a tracker honest
 
 ```bash
-./issues/trck check          # nonzero exit if the tracker is inconsistent
+trck check          # nonzero exit if the tracker is inconsistent
 ```
 
-## Self-update
+That is the command worth wiring into CI: it catches an index row with no body file, a
+dangling parent, a dependency cycle — anything that would make the tracker disagree with
+itself. Install a step that runs it on every push, pinned to a version so your build does
+not change behaviour because a release happened overnight.
 
-```bash
-trck update            # pull the latest stable release and atomically replace the running file
-trck update --check    # report what's available, write nothing
-trck update --ref v0.3.0   # update to a specific tag/branch
-```
+Locally, `trck repo install-hook` adds a pre-commit hook that runs the same check whenever a
+commit touches the tracker. Treat it as a convenience rather than a guarantee: a hook is one
+`--no-verify` away from silent, and it does nothing at all on a machine that has no `trck`.
 
-The download is validated (`compile()` + a sanity check) before the file is atomically
-replaced; a failed update leaves your current `trck` untouched. Commit the resulting change to
-the vendored copy like any other diff.
+## Upgrading
+
+Whatever installed `trck` owns the file: re-run the install script, or use your package
+manager. There is deliberately no self-update — a binary that rewrites itself while a package
+manager believes it owns that path is a worse problem than the one it solves. `trck version`
+reports what you have.
 
 ## Vocabulary
 
@@ -172,8 +184,8 @@ The version means "you may meet extension keys — refuse any you do not know", 
 repos that opted in are affected. No extensions are defined yet.
 
 One honest limit: this protects engines from the release that introduced it onward. An engine
-older than that ignores both keys and can still be fooled — which is exactly why the vendored
-copy stays until an installed engine is guaranteed to be newer.
+predating it ignores both keys and can still be fooled, so the guard is a floor rather than a
+guarantee — keep everyone reading a shared tracker on a version that has it.
 
 ### Pinning the clock
 
@@ -186,8 +198,8 @@ TRCK_NOW=2026-01-01T00:00:00Z trck new "Reproducible"
 It's read per invocation, so a script can advance it between commands. Any ISO-8601
 instant is accepted and normalised to UTC; a malformed or day-only value is an error
 rather than a silent fall back to the real clock. This exists so the conformance suite
-can compare `index.jsonl` byte for byte — it's part of the contract both engines
-implement, not a Python-side test hook.
+can compare `index.jsonl` byte for byte — it is part of the specification, not a test hook
+bolted onto one implementation.
 
 ### Machine-readable output (`--json`)
 
@@ -242,7 +254,8 @@ Integer ids were trck's first iteration, replaced because two branches running `
 minted the same number. They are **no longer supported** — not read, not written, not
 resolved — and a tracker that still has them is refused with a message pointing here.
 
-Converting is a one-shot job, so it lives outside the engine:
+Converting is a one-shot job that no tracker needs twice, so it lives outside the engine as
+`scripts/renumber.py` in this repository rather than as a verb:
 
 ```bash
 python3 scripts/renumber.py issues --dry-run   # show the mapping, write nothing
@@ -499,20 +512,31 @@ urgent by hand only flattens the ordering you were trying to express.
 ## Develop
 
 ```bash
-python3 -m unittest discover -s tests -v
+cargo build --release
+cargo test --all
+python3 conformance/run.py --bin target/release/trck
 ```
 
-`trck` **ships** as the single executable file `./trck`, but that file is **generated** — the
-source lives in the `src/trck/` package and is amalgamated into `./trck` by `python3 build.py`.
-Edit `src/trck/*.py` (never `./trck` directly), then rebuild; the test command above regenerates
-`./trck` from `src/` first, and `python3 build.py --check` verifies the two are in sync. Keep it
-standard-library only. Enable the sync + tracker pre-commit guard once with
-`git config core.hooksPath scripts/hooks`. This repo **self-hosts** its own issues under
-`./issues/` — browse them to see `trck` tracking its own roadmap.
+The engine is `crates/trck/`, and it takes **no dependencies** — the binary is a single
+artifact a repository depends on for years, and every dependency is a future reason it stops
+building. The lints deny `unsafe`, `unwrap`, `expect` and `panic`: a malformed tracker must
+produce a diagnostic, never a stack trace. `cargo fmt --all --check` and
+`cargo clippy --all-targets -- -D warnings` both gate CI.
 
-The README screenshots are regenerated (also standard-library only) from the bundled example
-tracker with `python3 docs/gen-screenshots.py`, which writes the SVGs under `docs/img/`.
+`conformance/` is the executable specification, and it is the one worth understanding first.
+It **execs** a binary rather than importing anything, so it describes behaviour instead of
+implementation: a fixture is a starting tracker, one command, and what that command should
+print. Anything a user or a downstream tool would notice belongs there; internals stay in
+unit tests. The release workflow installs the built artifact and runs the suite against it,
+so a build that cannot pass its own spec never becomes a download.
 
-Releasing: bump `__version__` in `src/trck/constants.py`, run `python3 build.py`, commit `./trck`
-with the source, tag `vX.Y.Z`, and create a GitHub Release — that release is the stable channel
-`trck update` consumes.
+Enable the pre-commit guard once with `git config core.hooksPath scripts/hooks`. This repo
+**self-hosts** its own issues under `./issues/` — browse them to see `trck` tracking its own
+roadmap.
+
+The README screenshots are regenerated from the bundled example tracker with
+`python3 docs/gen-screenshots.py`, which writes the SVGs under `docs/img/`.
+
+Releasing: bump `version` in the workspace `Cargo.toml` and in `packaging/homebrew/trck.rb`
+in one commit, then tag `vX.Y.Z`. The release workflow cross-builds every target, verifies
+the artifact against `conformance/`, and only then publishes.
