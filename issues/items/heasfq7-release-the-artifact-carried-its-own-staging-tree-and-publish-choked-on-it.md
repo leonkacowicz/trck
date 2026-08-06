@@ -31,4 +31,5 @@ never contained. It happened to be the same binary here. It did not have to be.
       next glob to discover it.
 - [x] `verify` unpacks into its own directory and installs the binary by an exact path, so
       it cannot certify a file that was not inside the tarball.
-- [ ] Observed end to end on a real tag: six targets, assets attached, checksums present.
+- [x] Observed end to end on a real tag: v0.26.0 re-cut on the fix — six targets, twelve
+      assets, checksums present, and `install.sh` verified the checksum on the way in.
