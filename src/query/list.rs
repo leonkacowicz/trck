@@ -12,7 +12,7 @@ use crate::graph::{Graph, priority_rank};
 use crate::issue::{Issue, check_field_key};
 use crate::json::Json;
 use crate::render::{Annotation, RowOpts, field_value, field_value_raw, render_rows, unique_prefix_lens};
-use crate::verbs::{issue_path, load_rows, resolve_ref};
+use crate::verbs::{load_rows, resolve_ref};
 use std::collections::{BTreeMap, BTreeSet};
 
 /// `--status a,b` keeps those; `--status '!done'` drops them. Returns `(keep, drop)`.
@@ -172,7 +172,7 @@ pub(crate) fn cmd_list(ctx: &Ctx, opts: &ListOpts) -> Result<String, String> {
         if opts.json {
             return Err("--paths and --json are different output modes; pick one".into());
         }
-        return Ok(paths_of(ctx, &g, &selected(&g, &keep, &mut sorted)));
+        return Ok(super::paths::paths_of(ctx, &g, &selected(&g, &keep, &mut sorted)));
     }
     if opts.json {
         return Ok(list_json(&g, opts, &keep, &mut sorted, root.as_deref()));
@@ -280,18 +280,6 @@ fn forest(
         abbrev: Some(abbrev),
     };
     render_rows(g, &rows, &row_opts).join("\n")
-}
-
-/// Absolute body paths, one per line — what `--paths` prints for piping into an editor.
-fn paths_of(ctx: &Ctx, g: &Graph, ids: &[String]) -> String {
-    ids.iter()
-        .filter_map(|id| g.get(id))
-        .map(|r| {
-            let p = issue_path(ctx, r);
-            p.canonicalize().unwrap_or(p).display().to_string()
-        })
-        .collect::<Vec<_>>()
-        .join("\n")
 }
 
 /// What the forest walk accumulates. A struct rather than eight parameters, which is

@@ -1,0 +1,4 @@
+# `which` is the reverse of `list --paths`: hand it issue body paths, get issues back.
+new "Alpha" --id aaaaaaa
+new "Beta" --id bbbbbbb
+new "Gamma" --id ccccccc

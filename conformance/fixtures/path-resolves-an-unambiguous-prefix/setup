@@ -1,0 +1,3 @@
+# Ids abbreviate here like they do everywhere else.
+new "Alpha" --id aaaaaaa
+new "Beta" --id bbbbbbb

@@ -1,4 +1,4 @@
-//! The read verbs: `list` (and its `tree` alias) and `show`.
+//! The read verbs: `list` (and its `tree` alias), `show`, and the path verbs beside them.
 //!
 //! `list`'s default is a nested forest that **hides settled work**: a done issue shows
 //! only while it is still open or sits directly under a non-terminal parent, so an open
@@ -10,18 +10,20 @@
 //! as dimmed context. Without that a matched child floats free of the epic it belongs to.
 
 mod list;
+mod paths;
+mod show;
 pub(crate) use list::cmd_list;
+pub(crate) use paths::{cmd_path, cmd_which, which_operands};
+pub(crate) use show::{cmd_show, cmd_show_json};
 
 use crate::config::is_terminal;
 use crate::discovery::Ctx;
 use crate::graph::Graph;
 use crate::gutter;
-use crate::issue::{CANON_KEYS, Issue};
+use crate::issue::Issue;
 use crate::json::Json;
-use crate::render::{
-    Annotation, LANE_PALETTE, RowOpts, field_value_raw, hl_id, lane_palette_index, paint, render_rows, status_codes, status_icon, unique_prefix_lens,
-};
-use crate::verbs::{issue_path, load_rows, resolve_ref};
+use crate::render::{Annotation, LANE_PALETTE, RowOpts, hl_id, lane_palette_index, paint, render_rows, status_codes, status_icon, unique_prefix_lens};
+use crate::verbs::{load_rows, resolve_ref};
 use std::collections::{BTreeMap, BTreeSet};
 
 /// Everything `list` accepts.
@@ -274,81 +276,4 @@ fn node_label(g: &Graph, r: &Issue, focal: bool, abbrev: Option<&BTreeMap<String
     let labels = if r.labels.is_empty() { String::new() } else { paint(&format!(" [{}]", r.labels.join(" ")), &["dim"]) };
     let emph: &[&str] = if focal { &["bold"] } else { &[] };
     format!("{} {} {}{tag}{labels}", hl_id(&r.id, abbrev, true), paint(status_icon(&r.status), &status_codes(&r.status)), paint(&r.title, emph))
-}
-
-/// `show --json`: one document with the body folded in.
-///
-/// Metadata *and* body together, rather than the human view's metadata-then-separator: the
-/// obvious way to consume this is `json.loads(stdout)`, and a trailing `--- body ---` block
-/// would break it. `points` is dropped on a parent for the same reason the human view drops
-/// it — there it is derived, not an input.
-pub(crate) fn cmd_show_json(ctx: &Ctx, token: &str) -> Result<String, String> {
-    let (row, body, is_leaf) = show_parts(ctx, token)?;
-    let mut obj = match row.to_full() {
-        Json::Object(pairs) => pairs,
-        _ => Vec::new(),
-    };
-    if !is_leaf {
-        obj.retain(|(k, _)| k != "points");
-    }
-    obj.push(("body".into(), Json::String(body)));
-    Ok(Json::Object(obj).to_json_pretty())
-}
-
-/// The row, its body text and whether it is a leaf — everything both `show` renderings need,
-/// resolved and guarded once so the two cannot disagree about which issue they are showing.
-fn show_parts(ctx: &Ctx, token: &str) -> Result<(Issue, String, bool), String> {
-    let rows = load_rows(ctx)?;
-    let iid = resolve_ref(&rows, token)?;
-    let g = Graph::new(rows);
-    let row = g.get(&iid).ok_or_else(|| format!("no issue matching '{iid}'"))?.clone();
-    let path = issue_path(ctx, &row);
-    if !path.exists() {
-        return Err(format!("file missing for #{}: {}", row.id, path.display()));
-    }
-    let body = std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
-    Ok((row, body, g.is_leaf(&iid)))
-}
-
-pub(crate) fn cmd_show(ctx: &Ctx, token: &str) -> Result<String, String> {
-    let rows = load_rows(ctx)?;
-    let iid = resolve_ref(&rows, token)?;
-    let abbrev = unique_prefix_lens(rows.iter().map(|r| r.id.as_str()));
-    let g = Graph::new(rows);
-    let row = g.get(&iid).ok_or_else(|| format!("no issue matching '{iid}'"))?;
-
-    let mut keys: Vec<String> = CANON_KEYS.iter().map(|k| (*k).to_string()).collect();
-    if !g.is_leaf(&iid) {
-        // Points roll up from leaves, so on a parent the stored value is not an input.
-        keys.retain(|k| k != "points");
-    }
-    keys.extend(row.extra.keys().cloned());
-
-    // The column width comes from *every* candidate key, not only the ones with a
-    // value. An issue that happens to carry no `manual_status` still aligns with one
-    // that does, so two `show` outputs sit in the same column.
-    let width = keys.iter().map(|k| k.chars().count()).max().unwrap_or(0);
-    let shown: Vec<(String, String)> = keys.iter().filter_map(|k| field_value_raw(row, k).map(|v| (k.clone(), v))).collect();
-    let mut out: Vec<String> = Vec::new();
-    for (k, v) in &shown {
-        let v = match k.as_str() {
-            "created" | "started" | "closed" => v.get(..10).unwrap_or(v).to_string(),
-            "id" => hl_id(v, Some(&abbrev), false),
-            _ => v.clone(),
-        };
-        out.push(format!("{}  {v}", paint(&format!("{k:>width$}"), &["dim"])));
-    }
-    out.push(String::new());
-    out.push("--- body ---".into());
-    out.push(String::new());
-    // Same wording as the mutating verbs' guard: a row whose body has gone missing is one
-    // inconsistency, and it should read the same whichever verb runs into it. Passing the
-    // raw io error through instead would name the file but not the issue.
-    let path = issue_path(ctx, row);
-    if !path.exists() {
-        return Err(format!("file missing for #{}: {}", row.id, path.display()));
-    }
-    let body = std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
-    out.push(body);
-    Ok(out.join("\n"))
 }

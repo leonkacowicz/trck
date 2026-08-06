@@ -41,7 +41,7 @@ Then, in any repo:
 ```bash
 trck init                       # scaffold ./issues (config + the docs that explain it)
                                 # `trck init <dir>` puts it somewhere else
-trck new "Fix login bug" --priority high   # prints the new id, e.g. k3m9x2a
+trck new "Fix login bug" --priority high   # prints the new issue's file path
 trck start k3m                  # any unambiguous prefix works (git-style)
 trck review k3m https://github.com/you/repo/pull/12   # -> in-review, and links the PR
 trck done k3m9x2a --resolution wontfix
@@ -74,7 +74,8 @@ commit touches the tracker. Treat it as a convenience rather than a guarantee: a
 Whatever installed `trck` owns the file: re-run the install script, or use your package
 manager. There is deliberately no self-update — a binary that rewrites itself while a package
 manager believes it owns that path is a worse problem than the one it solves. `trck version`
-reports what you have.
+reports what you have, and there is no `update` verb: typing one gets an error naming the
+upgrade path instead.
 
 ## Vocabulary
 
@@ -149,6 +150,9 @@ exists mainly to mark the tracker's root:
 }
 ```
 
+The `update` block only records where the binary came from — no verb acts on it, since
+upgrading is the job of whatever installed the file.
+
 A tracker still carrying the old vocabulary keys is not broken: they're ignored, and `check`
 names each one.
 
@@ -158,9 +162,8 @@ names each one.
 it understands** — every verb goes through one guard, so there is no path that reads or writes
 a layout it can only half-parse. It never refuses an *older* one; that is what the migration
 verbs are for. Omitting the key means "the current shape", so every tracker written before this
-existed keeps working.
-
-`trck update` is deliberately exempt, since it is the remedy the refusal tells you to run.
+existed keeps working. The refusal names the remedy — upgrade the binary — since the engine
+has no way to migrate a shape it was written before.
 
 Bumps are rare, because the test is whether an older engine would be **wrong**, not merely
 ignorant:
@@ -251,9 +254,10 @@ There's no equivalent on `set`: changing an existing issue's id would have to re
 ## Common verbs
 
 `new` · `mv` · `start` · `review` · `done` · `set` · `dep` · `label` · `show` · `list` · `ready` ·
-`next` · `tree` · `deps` · `path` · `which` · `check` · `summary` · `init` · `update` ·
-`version`, plus `repo normalize` · `repo install-hook` for tracker
-maintenance. Run `trck --help` (or `trck <verb> --help`) for details.
+`next` · `tree` · `deps` · `path` · `which` · `changelog` · `diff` · `check` · `summary` ·
+`html` · `init` · `version`, plus `repo normalize` · `repo install-hook` · `repo setup-git` ·
+`repo migrate-layout` for tracker maintenance. Run `trck --help` (or `trck <verb> --help`)
+for details.
 
 `list` is the structure-aware browse verb. By default it prints a **nested forest** — each
 issue, with children nested under their parent and siblings ordered by `--sort` (default `created`).
@@ -273,9 +277,9 @@ away from its parent. `tree` is an alias for `list` (`trck tree 4` == `trck list
 </p>
 
 `ready` lists issues whose dependencies are all satisfied (add `--next` for just the top
-pick); `next` prints the single best issue to work on next; `normalize` rewrites
-`index.jsonl` in canonical slim form. Both take an optional issue id — `trck ready NNN`
-scopes to that issue's subtree, answering "what can I pick up on this epic right now".
+pick); `next` prints the single best issue to work on next. Both take an optional issue id —
+`trck ready NNN` scopes to that issue's subtree, answering "what can I pick up on this epic
+right now".
 Scoping narrows the answer, never the constraints: a leaf waiting on something outside the
 subtree, directly or through an edge authored on an ancestor, stays out of the list — and
 never the ranking either: rows are ranked over the whole graph, then filtered.
@@ -356,6 +360,10 @@ render:
     rg -l 'race condition' $(trck list --paths --status '!done')   # paths, scoped by metadata
     rg -l 'race condition' $(trck list --paths) | trck which       # ...rendered back as issues
     trck path 25                                                   # one issue's file, e.g. to $EDITOR
+
+`which` answers in the tracker's own order, not the order the paths arrived in — the ordering
+of a grep's output is the grep's business — and silently skips any path that is not a body
+file here, since that input is whatever a search printed.
 
 Output is colorized when stdout is a terminal (disable with `NO_COLOR=1`, force with
 `FORCE_COLOR=1`); piped/redirected output stays plain for scripts and agents. `trck show`
@@ -491,15 +499,17 @@ urgent by hand only flattens the ordering you were trying to express.
 
 ```bash
 cargo build --release
-cargo test --all
-python3 conformance/run.py --bin target/release/trck
+cargo test --all                                          # the engine's own tests
+python3 conformance/run.py --bin target/release/trck      # the executable specification
+python3 -m unittest discover -s scripts/tests             # the helper scripts
 ```
 
-The engine is `src/`, and it takes **no dependencies** — the binary is a single
-artifact a repository depends on for years, and every dependency is a future reason it stops
-building. The lints deny `unsafe`, `unwrap`, `expect` and `panic`: a malformed tracker must
-produce a diagnostic, never a stack trace. `cargo fmt --all --check` and
-`cargo clippy --all-targets -- -D warnings` both gate CI.
+The engine is `src/` — one package at the repo root, no workspace — and it takes **no
+dependencies**: the binary is a single artifact a repository depends on for years, and every
+dependency is a future reason it stops building. The lints deny `unsafe`, `unwrap`, `expect`
+and `panic`: a malformed tracker must produce a diagnostic, never a stack trace.
+`cargo fmt --all --check` and `cargo clippy --all-targets --all-features -- -D warnings` both
+gate CI, and all three suites above run there.
 
 `conformance/` is the executable specification, and it is the one worth understanding first.
 It **execs** a binary rather than importing anything, so it describes behaviour instead of
@@ -508,6 +518,13 @@ print. Anything a user or a downstream tool would notice belongs there; internal
 unit tests. The release workflow installs the built artifact and runs the suite against it,
 so a build that cannot pass its own spec never becomes a download.
 
+`quality-report.json` is a committed snapshot of structural metrics — function length,
+cognitive and cyclomatic complexity, argument counts, file size. CI runs
+[ratchet](https://github.com/leonkacowicz/ratchet) over it twice: `check` fails if the report
+no longer describes the code, and `compare` fails if any metric got worse than the baseline.
+Existing debt is grandfathered and may only shrink, so a change under `src/` needs
+`ratchet generate` and the regenerated report staged with it.
+
 Enable the pre-commit guard once with `git config core.hooksPath scripts/hooks`. This repo
 **self-hosts** its own issues under `./issues/` — browse them to see `trck` tracking its own
 roadmap.
@@ -515,6 +532,6 @@ roadmap.
 The README screenshots are regenerated from the bundled example tracker with
 `python3 docs/gen-screenshots.py`, which writes the SVGs under `docs/img/`.
 
-Releasing: bump `version` in the workspace `Cargo.toml` and in `packaging/homebrew/trck.rb`
+Releasing: bump `version` in `Cargo.toml` and in `packaging/homebrew/trck.rb`
 in one commit, then tag `vX.Y.Z`. The release workflow cross-builds every target, verifies
 the artifact against `conformance/`, and only then publishes.
