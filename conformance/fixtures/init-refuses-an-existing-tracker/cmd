@@ -1,0 +1,2 @@
+# A second init over a live tracker would overwrite its config. Refuse, and name the way through.
+init --dir {DIR}

@@ -1,0 +1,2 @@
+# --force is the documented way to re-scaffold: it rewrites trck.json and the docs in place.
+init --dir {DIR} --force

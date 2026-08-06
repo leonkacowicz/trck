@@ -177,7 +177,7 @@ impl Ctx {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     // Tests assert; that is their job. The crate denies unwrap/expect/panic because a
     // malformed tracker must produce a diagnostic rather than a stack trace, but a test
     // that cannot panic cannot fail.
@@ -187,10 +187,10 @@ mod tests {
 
     /// A throwaway directory tree. `std::env::temp_dir` plus a counter rather than a
     /// crate — the engine takes no dependencies, and its tests should not either.
-    struct Tmp(PathBuf);
+    pub(crate) struct Tmp(PathBuf);
 
     impl Tmp {
-        fn new(tag: &str) -> Tmp {
+        pub(crate) fn new(tag: &str) -> Tmp {
             use std::sync::atomic::{AtomicUsize, Ordering};
             static N: AtomicUsize = AtomicUsize::new(0);
             let n = N.fetch_add(1, Ordering::Relaxed);
@@ -199,6 +199,12 @@ mod tests {
             let _ = std::fs::remove_dir_all(&p);
             std::fs::create_dir_all(&p).expect("temp dir");
             Tmp(p)
+        }
+
+        /// The root of the throwaway tree, for a test that wants to place its own
+        /// directories inside it rather than a ready-made tracker.
+        pub(crate) fn path(&self) -> &Path {
+            &self.0
         }
 
         fn tracker(&self, rel: &str) -> PathBuf {

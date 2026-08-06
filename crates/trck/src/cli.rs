@@ -5,17 +5,20 @@
 //! `--flag=value`, everything else is positional, and `--` is not special because no
 //! trck argument can be mistaken for a flag.
 //!
-//! Only the mutating verbs are wired so far. Anything else exits non-zero saying so,
-//! which is what keeps the conformance pass rate an honest number rather than a
-//! half-implemented verb quietly producing wrong output.
+//! Every verb is wired. While the port was in flight the unwired ones exited non-zero
+//! saying so, rather than producing something approximate — that is what kept the
+//! conformance pass rate an honest number. The guard remains for `repo`, whose
+//! subcommand list can still grow.
 
 use crate::config;
 use crate::discovery::Ctx;
+use crate::init;
 use crate::query::{self, DepsOpts, ListOpts};
 use crate::repo;
 use crate::verbs::{self, NewOpts, SetOpts};
 
-/// Verbs the Python engine has, so `--help` is honest about what is missing.
+/// Everything this binary offers. It began as a list of what the Python engine had, so
+/// `--help` could be honest about what was missing; it is now simply the verb list.
 const VERBS: &[&str] = &[
     "new",
     "mv",
@@ -250,6 +253,10 @@ const KNOWN_FLAGS: &[(&str, usize, &[&str])] = &[
         ],
     ),
     ("next", 0, &["--dir", "--json"]),
+    // `--no-vendor` is accepted and does nothing. It asked for the only behaviour there is
+    // now, so refusing it would mean erroring on a request already satisfied; every README
+    // and script that learned to pass it keeps working. `init -h` says as much.
+    ("init", 1, &["--dir", "--force", "--hook", "--no-vendor"]),
 ];
 
 /// How many positionals each verb requires.
@@ -330,10 +337,11 @@ fn usage_error(args: &Args) -> Option<String> {
 
 fn usage() -> String {
     format!(
-        "trck {} (Rust) — deterministic in-repo issue tracker\n\
+        "trck {} — deterministic in-repo issue tracker\n\
          \n\
-         The port is in progress: the mutating verbs work, the read verbs do not yet.\n\
-         Progress is measured by conformance/, not described here.\n\
+         One binary, no runtime and no dependencies. The tracker is plain files in your\n\
+         repository: a markdown body per issue, plus a generated index and summary.\n\
+         What the verbs do is specified by conformance/, which runs against this binary.\n\
          \n\
          Verbs: {}\n",
         env!("CARGO_PKG_VERSION"),
@@ -514,12 +522,33 @@ fn dispatch(raw: &[String]) -> Result<String, String> {
             }
             Ok(env!("CARGO_PKG_VERSION").to_string())
         }
+        // The one verb that runs without a tracker: it takes its target rather than
+        // discovering one, so it never goes through `context`.
+        "init" => init_from_args(&args),
         "" => Err("no verb given".to_string()),
         other if VERBS.contains(&other) => Err(format!(
             "`{other}` is not implemented yet in the Rust engine"
         )),
         other => Err(format!("unknown verb `{other}`")),
     }
+}
+
+/// Where `init` was told to put the tracker.
+///
+/// The positional and `--dir` mean the same thing, and giving both is refused rather than
+/// silently preferring one — the Python engine's rule, kept because a caller that passes two
+/// different directories has a bug worth being told about.
+fn init_from_args(args: &Args) -> Result<String, String> {
+    let positional = args.positional.first().map(std::path::PathBuf::from);
+    let flag = args.opt("--dir").map(std::path::PathBuf::from);
+    if positional.is_some() && flag.is_some() {
+        return Err("cannot combine a positional dir with --dir".to_string());
+    }
+    init::cmd_init(&init::InitOpts {
+        target: positional.or(flag),
+        force: args.has("--force"),
+        hook: args.has("--hook"),
+    })
 }
 
 /// What shipped since a cutoff.
@@ -727,6 +756,32 @@ mod tests {
 
     use super::*;
 
+    /// The preamble is the first thing a user reads, and it is the one piece of shipped text
+    /// with no fixture behind it. It said the read verbs did not work yet for as long as they
+    /// have worked. The standing arrangement is that progress is measured by `conformance/`
+    /// and never described in prose, so the help must not make a claim that can go stale.
+    #[test]
+    fn the_help_does_not_narrate_the_state_of_the_port() {
+        let text = usage();
+        for stale in [
+            "in progress",
+            "do not yet",
+            "not yet",
+            "so far",
+            "for now",
+            "currently",
+        ] {
+            assert!(
+                !text.to_lowercase().contains(stale),
+                "help claims a state that will go stale ({stale:?}): {text}"
+            );
+        }
+        assert!(text.contains(env!("CARGO_PKG_VERSION")), "{text}");
+        for verb in ["new", "list", "check", "html"] {
+            assert!(text.contains(verb), "help omits `{verb}`: {text}");
+        }
+    }
+
     fn args(argv: &[&str]) -> Args {
         parse_args(&argv.iter().map(|s| (*s).to_string()).collect::<Vec<_>>())
     }
@@ -861,13 +916,32 @@ mod tests {
 
     #[test]
     fn an_unimplemented_verb_says_so_rather_than_guessing() {
-        // `init` is still unported. Saying so beats producing something approximate: a
-        // half-implemented verb is what would turn the conformance pass rate into a lie.
-        // (This named `list`, then `deps`, then `changelog` as each landed — the churn
-        // is the point: the test tracks the frontier.)
-        let err = dispatch(&["init".to_string()]).expect_err("not implemented");
+        // Saying so beats producing something approximate: a half-implemented verb is what
+        // would turn the conformance pass rate into a lie. This test named `list`, then
+        // `deps`, then `changelog`, then `init` as each landed — the churn was the point,
+        // it tracked the frontier. `init` was the last of them, so what it guards now is
+        // `repo`, whose subcommand list is the one that can still grow.
+        let err =
+            dispatch(&["repo".to_string(), "nonesuch".to_string()]).expect_err("not implemented");
         assert!(err.contains("not implemented"), "{err}");
         let unknown = usage_error(&parse_args(&["nonesuch".to_string()]));
         assert!(unknown.is_some_and(|m| m.contains("unknown verb")));
+    }
+
+    /// The catch-all that told users a verb was unported is now unreachable from the top
+    /// level. Asserting that here means the day someone adds a verb to `VERBS` without
+    /// wiring it, this test — not a user — is what finds out.
+    #[test]
+    fn every_advertised_verb_is_wired_to_something() {
+        for verb in VERBS {
+            // Dispatching would run them; the frontier is a property of the match arms, so
+            // read it off the message the catch-all would produce instead.
+            let orphan = format!("`{verb}` is not implemented yet in the Rust engine");
+            assert!(
+                !usage().contains(&orphan),
+                "the help advertises an unported verb: {verb}"
+            );
+        }
+        assert!(VERBS.contains(&"init"), "init dropped out of the verb list");
     }
 }

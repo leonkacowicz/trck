@@ -1,14 +1,16 @@
-//! The Rust trck engine.
+//! The trck engine.
 //!
-//! The port is in progress and measured rather than described: the conformance suite
-//! (`conformance/`) runs against a *binary*, so CI reports how many fixtures pass on
-//! every commit. That inverts the usual rewrite failure mode, where correctness is
-//! assessed at the end by reading code and hoping.
+//! Correctness here is measured rather than described. The conformance suite
+//! (`conformance/`) runs against a *binary* — it execs `TRCK_BIN` and never imports an
+//! engine — so CI reports on every commit how many fixtures this one satisfies. That
+//! inverts the usual rewrite failure mode, where a port is assessed at the end by reading
+//! code and hoping; this one was assessed continuously, from its first commit, against a
+//! suite that already encoded what the engine it replaced did.
 //!
-//! The inversion matters. The usual rewrite is assessed at the end, by reading code and
-//! hoping; this one is assessed continuously, by a suite that already encodes what the
-//! Python engine does. See `conformance/README.md` for the fixture format and
-//! `issues/` (`#sp2rwzx`) for the port's plan.
+//! It stays useful past the port: the fixtures are the specification, so anything a user
+//! or a downstream tool would notice belongs there rather than in a unit test. See
+//! `conformance/README.md` for the fixture format and `issues/` (`#sp2rwzx`) for the
+//! port's plan.
 
 // The model was built before the verbs that read it, so parts of it are still
 // unreferenced. `expect` rather than `allow`: once the port has wired everything up, the
@@ -25,6 +27,7 @@ mod gutter;
 mod html;
 mod id;
 mod index;
+mod init;
 mod issue;
 mod json;
 mod merge;
