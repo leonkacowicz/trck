@@ -1,0 +1,13 @@
+# The line ending is part of the format.
+#
+# `index.jsonl`, the generated `SUMMARY.md` and every conformance golden are
+# compared literally, and both engines write them with `\n`. A checkout that
+# rewrote them to CRLF would leave the working tree permanently disagreeing
+# with what the engine produces: the first verb would rewrite the whole file
+# back to LF, and every commit would show it as wholly changed. The Windows
+# CI job found this by failing the byte-for-byte round-trip over this repo's
+# own tracker.
+#
+# So: normalise to LF in the object database, and check out LF everywhere,
+# whatever `core.autocrlf` says on the machine doing the checkout.
+* text=auto eol=lf
