@@ -8,8 +8,8 @@
 | backlog | 50 |
 | ongoing | 3 |
 | in-review | 0 |
-| done | 173 |
-| **total** | **226** |
+| done | 174 |
+| **total** | **227** |
 
 ## Hierarchies
 
@@ -281,6 +281,7 @@ _none_
 - [#rd6rk5e Allow any issue to be a parent (rollup for any parent)](items/rd6rk5e-allow-any-issue-to-be-a-parent-rollup-for-any-parent.md) — _medium_ (closed 2026-06-05)
 - [#tazdgkg deps --graph: lazygit-style dependency DAG renderer](items/tazdgkg-deps-graph-lazygit-style-dependency-dag-renderer.md) — _medium_ (closed 2026-06-10)
 - [#u8jt8rm extract the pure status transition out of move_issue](items/u8jt8rm-extract-the-pure-status-transition-out-of-move-issue.md) — _medium_ (closed 2026-07-30)
+- [#ukw95za pay down verbs.rs: the fattest file and cmd_set](items/ukw95za-pay-down-verbs-rs-the-fattest-file-and-cmd-set.md) — _medium_ (closed 2026-08-06)
 - [#uydwa9h Convert the #002 'richer tracker features' epic into a label](items/uydwa9h-convert-the-002-richer-tracker-features-epic-into-a-label.md) — _medium_ (closed 2026-06-23)
 - [#w8a87ky deps --graph <id>: scope to the focal issue's directed dependency line](items/w8a87ky-deps-graph-id-scope-to-the-focal-issue-s-directed-dependency-line.md) — _medium_ (closed 2026-06-10)
 - [#wwpsa3f Extract config-vocabulary validation helpers](items/wwpsa3f-extract-config-vocabulary-validation-helpers.md) — _medium_ (closed 2026-06-10)
