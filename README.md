@@ -153,58 +153,12 @@ exists mainly to mark the tracker's root:
 The `update` block only records where the binary came from — no verb acts on it, since
 upgrading is the job of whatever installed the file.
 
-A tracker still carrying the old vocabulary keys is not broken: they're ignored, and `check`
-names each one.
+`format` says which shape the tracker is written in: an engine refuses a tracker newer than it
+understands, and reads every older one. When to bump it, the extension mechanism, the older
+shapes still read, and the `TRCK_NOW` clock override are in
+[docs/tracker-format.md](docs/tracker-format.md).
 
-### Format version
-
-`format` says which shape the tracker is written in. An engine **refuses a tracker newer than
-it understands** — every verb goes through one guard, so there is no path that reads or writes
-a layout it can only half-parse. It never refuses an *older* one; that is what the migration
-verbs are for. Omitting the key means "the current shape", so every tracker written before this
-existed keeps working. The refusal names the remedy — upgrade the binary — since the engine
-has no way to migrate a shape it was written before.
-
-Bumps are rare, because the test is whether an older engine would be **wrong**, not merely
-ignorant:
-
-| change | bump? |
-|---|---|
-| a new field in `index.jsonl` | **no** — unknown keys round-trip verbatim, so an old engine preserves it |
-| a new verb, flag, or column | **no** |
-| an existing field changing meaning, or data moving | **yes** — an old engine gives wrong answers or destroys data |
-| an opt-in feature only some trackers use | **neither** — that is an extension |
-
-Extensions are git's model, taken for its granularity. A flat version pins the whole tracker,
-so bumping it for an opt-in feature would lock out old engines for every repo, including the
-ones not using it:
-
-```json
-{ "format": 1, "extensions": { "some-feature": {} } }
-```
-
-The version means "you may meet extension keys — refuse any you do not know", so only the
-repos that opted in are affected. No extensions are defined yet.
-
-One honest limit: this protects engines from the release that introduced it onward. An engine
-predating it ignores both keys and can still be fooled, so the guard is a floor rather than a
-guarantee — keep everyone reading a shared tracker on a version that has it.
-
-### Pinning the clock
-
-`TRCK_NOW` fixes the timestamp a command stamps into `created`/`started`/`closed`:
-
-```bash
-TRCK_NOW=2026-01-01T00:00:00Z trck new "Reproducible"
-```
-
-It's read per invocation, so a script can advance it between commands. Any ISO-8601
-instant is accepted and normalised to UTC; a malformed or day-only value is an error
-rather than a silent fall back to the real clock. This exists so the conformance suite
-can compare `index.jsonl` byte for byte — it is part of the specification, not a test hook
-bolted onto one implementation.
-
-### Machine-readable output (`--json`)
+## Machine-readable output (`--json`)
 
 `list`, `show`, `deps`, `ready` and `next` take `--json`. Every one emits **exactly one
 JSON document** — `json.loads(stdout)` is always the way to consume it — and issue objects
@@ -234,8 +188,7 @@ An empty result is `[]`, not silence.
 
 Each issue gets a **short random alphanumeric id** — 7 characters drawn from a base32
 alphabet with look-alike characters (`0/1/o/l/i`) removed, e.g. `k3m9x2a`. Random ids
-make concurrent `trck new` on two branches collision-free (the old sequential scheme
-caused merge conflicts).
+make concurrent `trck new` on two branches collision-free.
 
 Wherever a command takes an id, **any unambiguous prefix works** (git-short-hash style):
 `trck show k3m` resolves to `k3m9x2a` as long as no other id starts with `k3m`. An
@@ -325,9 +278,6 @@ links from `SUMMARY.md`, and renders as a clickable anchor in the HTML view. An 
 `in-review` drops out of `ready`/`next` while it waits — there is nothing there to pick up —
 yet still blocks its dependents until it's `done`.
 
-A tracker written before the rename carries `pr` instead; it is migrated on read and
-rewritten on the issue's next mutation, so nothing breaks and no migration verb is needed.
-
 Labels: tag issues with a flat, multi-valued set of free-text labels via
 `trck label NNN --add X --remove Y`, then filter with `trck list --label X`. Labels show
 up in `show`, `list`, `tree`, and `SUMMARY.md`.
@@ -409,37 +359,11 @@ cone with `trck deps NNN --requires` (only what it needs) or
 `--blocks` (only what waits on it); add `--full` instead to widen to the issue's whole
 connected cluster, including cousins joined only through a shared neighbour.
 
-Alongside the dependencies you authored, the graph draws an **inferred** `parent needs child`
-edge for every parent/child pair — a parent is done exactly when all its children are, which
-*is* a dependency. So a parent renders *below* the work it contains (it completes last), and
-`trck deps <epic>` answers "what is needed to finish this epic": its open descendants plus
-whatever they in turn wait on. Inferred edges are dimmed to set them apart from authored
-ones, and they are display-only — only `trck dep --add/--remove` ever changes what is stored.
-Since containment edges connect nearly the whole forest, the no-id view shows only components
-holding at least one authored edge, kept whole; pure hierarchy is what `trck list` is for.
-
-Dependencies are inherited downward too: an edge authored on a parent binds every issue beneath
-it. Where the ancestor carrying such an edge is itself on screen, it states the dependency once
-and its descendants stay quiet — the containment edges already connect them, and since inheritance
-reaches *every* descendant, restating it would replace one parent-level edge with a fan of `n`.
-Where that ancestor is **not** on screen — `trck deps NNN --requires` on a child, say — the child
-draws the inherited blocker itself, so a task blocked only through its parent never looks
-actionable. `--fanout` restates it under every child regardless; the parent's own edge then
-disappears as implied by its children, which is the ground truth about *which* work is blocked.
-(This mirrors how the `needs #NNN (via #AAA)` row note picks its moment to speak.)
-
-The graph is **transitively reduced**: an edge already implied by a longer path is not drawn. If
-`A` needs both `B` and `C` while `B` needs `C`, you see `A ← B ← C` and not the `A ← C` shortcut.
-On a DAG that reduction is unique and preserves reachability exactly, so nothing is lost — the
-path that justified dropping an edge is still on screen. It also gives parents a pleasing shape:
-an epic ends up pointing only at the work nothing else waits on. Like the inferred edges this is
-display-only, and it happens *after* `--omit-done` filtering, so hiding a finished middle node can
-never leave its neighbours looking unrelated. A hidden edge is not a forgotten one: it stays in the
-index and reappears in the graph by itself if the path that covered it ever goes away. The whole-graph
-view hides fully done components by default so completed chains don't drown out active work;
-`--include-done-chains` restores them. Done nodes inside a still-active chain remain visible
-as useful context, and `--omit-done` drops terminal nodes from the rendered graph without
-inventing replacement edges between their neighbours.
+The graph shows more than the edges you typed — parent/child containment is drawn as an
+inferred edge, inherited edges surface where their ancestor is off screen, redundant edges are
+reduced away, and done chains are hidden by default. All of it is display-only; only
+`trck dep --add/--remove` changes what is stored. The rules are in
+[docs/dependency-graph.md](docs/dependency-graph.md).
 
 <p align="center">
   <img src="docs/img/deps-graph.svg" alt="trck deps — the dependency DAG as a coloured gutter" width="800"><br>
@@ -497,41 +421,7 @@ urgent by hand only flattens the ordering you were trying to express.
 
 ## Develop
 
-```bash
-cargo build --release
-cargo test --all                                          # the engine's own tests
-python3 conformance/run.py --bin target/release/trck      # the executable specification
-python3 -m unittest discover -s scripts/tests             # the helper scripts
-```
-
-The engine is `src/` — one package at the repo root, no workspace — and it takes **no
-dependencies**: the binary is a single artifact a repository depends on for years, and every
-dependency is a future reason it stops building. The lints deny `unsafe`, `unwrap`, `expect`
-and `panic`: a malformed tracker must produce a diagnostic, never a stack trace.
-`cargo fmt --all --check` and `cargo clippy --all-targets --all-features -- -D warnings` both
-gate CI, and all three suites above run there.
-
-`conformance/` is the executable specification, and it is the one worth understanding first.
-It **execs** a binary rather than importing anything, so it describes behaviour instead of
-implementation: a fixture is a starting tracker, one command, and what that command should
-print. Anything a user or a downstream tool would notice belongs there; internals stay in
-unit tests. The release workflow installs the built artifact and runs the suite against it,
-so a build that cannot pass its own spec never becomes a download.
-
-`quality-report.json` is a committed snapshot of structural metrics — function length,
-cognitive and cyclomatic complexity, argument counts, file size. CI runs
-[ratchet](https://github.com/leonkacowicz/ratchet) over it twice: `check` fails if the report
-no longer describes the code, and `compare` fails if any metric got worse than the baseline.
-Existing debt is grandfathered and may only shrink, so a change under `src/` needs
-`ratchet generate` and the regenerated report staged with it.
-
-Enable the pre-commit guard once with `git config core.hooksPath scripts/hooks`. This repo
-**self-hosts** its own issues under `./issues/` — browse them to see `trck` tracking its own
-roadmap.
-
-The README screenshots are regenerated from the bundled example tracker with
-`python3 docs/gen-screenshots.py`, which writes the SVGs under `docs/img/`.
-
-Releasing: bump `version` in `Cargo.toml` and in `packaging/homebrew/trck.rb`
-in one commit, then tag `vX.Y.Z`. The release workflow cross-builds every target, verifies
-the artifact against `conformance/`, and only then publishes.
+`cargo build --release`. The engine is `src/` — one package at the repo root, no workspace,
+and no dependencies. Build, tests, the quality ratchet and the release process are in
+[CONTRIBUTING.md](CONTRIBUTING.md). This repo **self-hosts** its own issues under `./issues/` —
+browse them to see `trck` tracking its own roadmap.
