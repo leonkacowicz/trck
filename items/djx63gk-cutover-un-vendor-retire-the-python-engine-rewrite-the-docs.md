@@ -6,20 +6,27 @@ fully against the Rust binary and the differential runner finds no divergence on
 tracker.
 
 ## Acceptance criteria
-- [ ] `trck init` stops vendoring; the vendored-engine resolution path goes.
-- [ ] `src/trck/`, `build.py`, the amalgamation and its MANIFEST discipline all removed.
-- [ ] The pre-commit hook, `.gitattributes` merge drivers and CI all point at the installed
-      binary.
-- [ ] **`trck check` survives the deletion.** It runs today as a step in the Python `test:`
-      job of `.github/workflows/ci.yml` — the job this removes wholesale — so it leaves with
-      it unless deliberately carried over. Losing it would be silent: CI stays green, and the
-      repo simply stops noticing an inconsistent tracker. See `#k6g7kvf`, which is the same
-      check for everyone else.
-- [ ] The 706 tests under `tests/` go with `src/trck/`. Record what that leaves behind — 175
-      Rust tests and 227 conformance fixtures — and name anything the Python suite covered
-      that neither does, rather than discovering it later.
-- [ ] README, `CLAUDE.md`, `issues/CLAUDE.md` and the skill rewritten — several of them describe
-      the single-file amalgamation as the central fact about the project.
-- [ ] A documented answer for a contributor who does not have trck installed, since that is
-      exactly what vendoring used to solve.
-- [ ] A final release of the Python engine, tagged and noted as the last of its line.
+- [x] `trck init` stops vendoring; the vendored-engine resolution path goes — including the
+      branch that resolved a tracker from the running binary's own directory, which only ever
+      made sense for an engine committed beside its data.
+- [x] `src/trck/`, `build.py`, the amalgamation and its MANIFEST discipline all removed, along
+      with `./trck` itself and the 44 test modules that imported it.
+- [x] The pre-commit hook, CI, `conformance/run.py`, `docs/gen-screenshots.py` and
+      `scripts/tests/` all point at the binary — the one in `target/`, so the engine under
+      change is the one that answers rather than whatever happens to be installed.
+- [x] **`trck check` survives the deletion.** Carried over to the `rust` job, where a built
+      binary already exists. See `#k6g7kvf` for the same check as something consumers can use.
+- [x] The 706 deleted tests accounted for. What remains: 175 engine tests, 28 helper-script
+      tests, and 227 conformance fixtures. Most of what went tested things that no longer
+      exist — an amalgamation build, a self-updater, a second implementation. Three areas lost
+      real coverage and are filed as `#38qfknm`: `install-hook` (now untested entirely),
+      `setup-git`'s `.git/config` half, and `diff` across git revisions. All three are the
+      parts that need a real git repository, which is what made them awkward as fixtures.
+- [x] README, `CLAUDE.md`, `issues/CLAUDE.md`, the skill and `conformance/README.md` rewritten.
+      They describe what trck is, with no account of what it used to be.
+- [x] A documented answer for a contributor without trck installed: the README leads with the
+      install script, and in this repository `cargo build --release` produces the engine every
+      harness already looks for.
+- [x] A final release of the retired engine, tagged `v0.25.1` and published as a pre-release so
+      it cannot become `/releases/latest` and misdirect the installer. Its `update` verb answers
+      with the migration path instead of fetching a file that no longer exists.

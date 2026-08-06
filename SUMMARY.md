@@ -6,10 +6,10 @@
 | State | Count |
 |---|---:|
 | backlog | 50 |
-| ongoing | 4 |
+| ongoing | 3 |
 | in-review | 0 |
-| done | 168 |
-| **total** | **222** |
+| done | 171 |
+| **total** | **224** |
 
 ## Hierarchies
 
@@ -147,7 +147,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#kaqhtfc list/tree: drop the tree alias (nested forest is list's default)](items/kaqhtfc-list-tree-drop-the-tree-alias-nested-forest-is-list-s-default.md) _(backlog)_
 - [x] [#v8tmkrt json: shared emit_json stdout seam + --json flag plumbing](items/v8tmkrt-json-shared-emit-json-stdout-seam-json-flag-plumbing.md)
 
-### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 97% (116/119 pts · 41/42 done) · _medium_ · ongoing
+### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 100% (119/119 pts · 42/42 done) · _medium_ · done
 
 - [x] [#2w5panf rust: diff and changelog](items/2w5panf-rust-diff-and-changelog.md)
 - [x] [#2zvwj33 rust: init — scaffold a tracker, and stop vendoring](items/2zvwj33-rust-init-scaffold-a-tracker-and-stop-vendoring.md)
@@ -169,7 +169,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#d6mquku rust: re-parent cycle error drops the explanation of which edge closes the loop](items/d6mquku-rust-re-parent-cycle-error-drops-the-explanation-of-which-edge-closes-the-loop.md)
 - [x] [#d7y2emr rust: config, vocabulary and tracker discovery](items/d7y2emr-rust-config-vocabulary-and-tracker-discovery.md)
 - [x] [#dfe48ds ids: drop renumber and every trace of integer ids](items/dfe48ds-ids-drop-renumber-and-every-trace-of-integer-ids.md)
-- [ ] [#djx63gk cutover: un-vendor, retire the Python engine, rewrite the docs](items/djx63gk-cutover-un-vendor-retire-the-python-engine-rewrite-the-docs.md) _(backlog)_
+- [x] [#djx63gk cutover: un-vendor, retire the Python engine, rewrite the docs](items/djx63gk-cutover-un-vendor-retire-the-python-engine-rewrite-the-docs.md)
 - [x] [#eek4hat rust: check, validate and the repo maintenance verbs](items/eek4hat-rust-check-validate-and-the-repo-maintenance-verbs.md)
 - [x] [#ehqv6sk rust: graph semantics — parents, effective deps, demand, readiness](items/ehqv6sk-rust-graph-semantics-parents-effective-deps-demand-readiness.md)
 - [x] [#gh363h3 rust: --json output for list, show, deps and ready](items/gh363h3-rust-json-output-for-list-show-deps-and-ready.md)
@@ -210,6 +210,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 ## Backlog
 
 - [#35qkx68 install: Windows has assets but no working install path](items/35qkx68-install-windows-has-assets-but-no-working-install-path.md) — _high_
+- [#38qfknm restore the coverage the deleted suite carried: hooks, setup-git, git-revision diff](items/38qfknm-restore-the-coverage-the-deleted-suite-carried-hooks-setup-git-git-revision-diff.md) — _high_
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](items/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#jkvexgs docs: record a terminal demo of the next-driven loop for the README](items/jkvexgs-docs-record-a-terminal-demo-of-the-next-driven-loop-for-the-readme.md) — _medium_
 - [#k6g7kvf CI: a consistency check a consumer repo can drop in](items/k6g7kvf-ci-a-consistency-check-a-consumer-repo-can-drop-in.md) — _medium_
@@ -250,6 +251,7 @@ _none_
 - [#nhanp8c Strip null/empty fields from index.jsonl rows to reduce noise](items/nhanp8c-strip-null-empty-fields-from-index-jsonl-rows-to-reduce-noise.md) — _high_ (closed 2026-06-06)
 - [#nuf3t68 check: reject a non-terminal issue carrying resolution or closed](items/nuf3t68-check-reject-a-non-terminal-issue-carrying-resolution-or-closed.md) — _high_ [conflict-resolution] (closed 2026-07-30)
 - [#qc48tds Add 'ready'/'next' command: list unblocked, not-done leaves](items/qc48tds-add-ready-next-command-list-unblocked-not-done-leaves.md) — _high_ [tracker-features] (closed 2026-06-06)
+- [#t4azhkq a legacy integer-id tracker gets four wrong errors instead of the way out](items/t4azhkq-a-legacy-integer-id-tracker-gets-four-wrong-errors-instead-of-the-way-out.md) — _high_ · _wontfix_ (closed 2026-08-06)
 - [#y8asnbe Write root README.md and CLAUDE.md](items/y8asnbe-write-root-readme-md-and-claude-md.md) — _high_ (closed 2026-06-05)
 - [#3e3cn37 init: accept positional dir and add --no-vendor for self-hosting repos](items/3e3cn37-init-accept-positional-dir-and-add-no-vendor-for-self-hosting-repos.md) — _medium_ (closed 2026-06-05)
 - [#3f8mb3n release v0.25.0](items/3f8mb3n-release-v0-25-0.md) — _medium_ (closed 2026-08-02)
