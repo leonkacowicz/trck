@@ -24,6 +24,7 @@ mod diff;
 mod discovery;
 mod graph;
 mod gutter;
+mod help;
 mod html;
 mod id;
 mod index;

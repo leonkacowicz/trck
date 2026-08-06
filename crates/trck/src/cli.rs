@@ -12,6 +12,7 @@
 
 use crate::config;
 use crate::discovery::Ctx;
+use crate::help;
 use crate::init;
 use crate::query::{self, DepsOpts, ListOpts};
 use crate::repo;
@@ -19,7 +20,7 @@ use crate::verbs::{self, NewOpts, SetOpts};
 
 /// Everything this binary offers. It began as a list of what the Python engine had, so
 /// `--help` could be honest about what was missing; it is now simply the verb list.
-const VERBS: &[&str] = &[
+pub(crate) const VERBS: &[&str] = &[
     "new",
     "mv",
     "start",
@@ -64,7 +65,6 @@ const VALUED: &[&str] = &[
     "--priority",
     "--points",
     "--parent",
-    "--depends",
     "--spec",
     "--review-url",
     "--resolution",
@@ -85,6 +85,20 @@ const VALUED: &[&str] = &[
     "--cmd",
 ];
 
+/// `--requires` is the one flag whose arity depends on the verb: `new --requires a,b` names
+/// the issues a new one waits on, while `deps --requires` is a filter that takes nothing.
+/// Same word, deliberately — they describe the same edges from either end — so the parser
+/// resolves it against the verb rather than forcing one of them to be spelled differently.
+///
+/// Reading the verb first is safe because a flag before it can only be `--dir`, which is
+/// unambiguously valued.
+fn is_valued(name: &str, verb: &str) -> bool {
+    if name == "--requires" {
+        return verb == "new";
+    }
+    VALUED.contains(&name)
+}
+
 fn parse_args(argv: &[String]) -> Args {
     let mut out = Args { verb: String::new(), positional: Vec::new(), options: Vec::new() };
     let mut i = 0;
@@ -97,7 +111,7 @@ fn parse_args(argv: &[String]) -> Args {
             };
             let value = if inline.is_some() {
                 inline
-            } else if VALUED.contains(&name.as_str()) && i + 1 < argv.len() {
+            } else if is_valued(&name, &out.verb) && i + 1 < argv.len() {
                 i += 1;
                 Some(argv[i].clone())
             } else {
@@ -138,8 +152,8 @@ impl Args {
 /// --stauts done` would list everything and read as a successful filter. Python's
 /// argparse rejects it; so does this, though the message differs — argparse prints its
 /// own usage block, and reproducing that is pinning argparse rather than trck.
-const KNOWN_FLAGS: &[(&str, usize, &[&str])] = &[
-    ("new", 0, &["--dir", "--id", "--slug", "--priority", "--points", "--parent", "--depends", "--spec", "--review-url"]),
+pub(crate) const KNOWN_FLAGS: &[(&str, usize, &[&str])] = &[
+    ("new", 0, &["--dir", "--id", "--slug", "--priority", "--points", "--parent", "--requires", "--spec", "--review-url"]),
     ("mv", 0, &["--dir", "--resolution", "--review-url"]),
     ("start", 0, &["--dir"]),
     ("review", 0, &["--dir", "--review-url"]),
@@ -234,6 +248,16 @@ fn usage_error(args: &Args) -> Option<String> {
     // someone with the habit deserves to be told what replaced it. The binary does not
     // replace itself — whatever installed it owns the file, and a self-updater fighting
     // a package manager is worse than having none.
+    // Renamed to sit beside `deps --requires`, which already means "what this needs".
+    // A bare "unrecognized argument" would be correct and useless: the flag existed, the
+    // spelling moved, and only this message can say so.
+    if args.has("--depends") {
+        return Some(format!(
+            "`--depends` is now `--requires` (it reads with `trck deps --requires`, which \
+             shows the same edges). Try: trck {} --requires <ids>",
+            args.verb
+        ));
+    }
     if args.verb == "update" {
         return Some(
             "`update` is gone: trck is a binary now, upgraded however you installed it \
@@ -559,7 +583,7 @@ fn new_opts(args: &Args) -> Result<NewOpts, String> {
         priority: args.opt("--priority").map(str::to_string),
         points: args.opt("--points").map(|v| v.parse().map_err(|_| format!("bad points '{v}'"))).transpose()?,
         parent: args.opt("--parent").map(str::to_string),
-        depends: args.opt("--depends").map(|v| v.split(',').map(str::trim).filter(|s| !s.is_empty()).map(str::to_string).collect()).unwrap_or_default(),
+        depends: args.opt("--requires").map(|v| v.split(',').map(str::trim).filter(|s| !s.is_empty()).map(str::to_string).collect()).unwrap_or_default(),
         spec: args.opt("--spec").map(str::to_string),
         review_url: args.opt("--review-url").map(str::to_string),
     })
@@ -608,7 +632,11 @@ fn emit_or_status(text: &str, ok: std::process::ExitCode) -> std::process::ExitC
 pub(crate) fn main() -> std::process::ExitCode {
     let argv: Vec<String> = std::env::args().skip(1).collect();
     if argv.is_empty() || argv.iter().any(|a| a == "-h" || a == "--help") {
-        return emit_or_status(&usage(), std::process::ExitCode::SUCCESS);
+        // `trck <verb> --help` is a question about the verb. Falling back to the program's
+        // own help when the verb is unknown beats an error: someone reaching for help is
+        // already telling you they do not know what to type.
+        let text = argv.first().filter(|a| !a.starts_with('-')).and_then(|verb| help::for_verb(verb)).unwrap_or_else(usage);
+        return emit_or_status(&text, std::process::ExitCode::SUCCESS);
     }
     if let Some(msg) = usage_error(&parse_args(&argv)) {
         eprintln!("error: {msg}");
@@ -657,6 +685,30 @@ mod tests {
         for verb in ["new", "list", "check", "html"] {
             assert!(text.contains(verb), "help omits `{verb}`: {text}");
         }
+    }
+
+    /// The same word means the same relationship from either end — what an issue needs —
+    /// so both verbs spell it `--requires`. They differ in arity, and that is the whole
+    /// hazard: with a single global table, `deps --requires --json` swallowed `--json` as
+    /// the value of `--requires` and emitted human text to a caller expecting JSON.
+    #[test]
+    fn requires_takes_a_value_for_new_and_none_for_deps() {
+        let a = args(&["new", "Title", "--requires", "aaaaaaa,bbbbbbb"]);
+        assert_eq!(a.opt("--requires"), Some("aaaaaaa,bbbbbbb"));
+
+        let d = args(&["deps", "bbbbbbb", "--requires", "--json"]);
+        assert!(d.has("--requires"), "deps lost its filter");
+        assert!(d.has("--json"), "--json was eaten as a value");
+        assert_eq!(d.opt("--requires"), None, "deps' filter took a value");
+    }
+
+    /// A rename is the one case where "unrecognized argument" is correct and useless: the
+    /// flag existed, its spelling moved, and only a specific message can say so.
+    #[test]
+    fn the_old_spelling_names_the_new_one() {
+        let msg = usage_error(&args(&["new", "Title", "--depends", "aaaaaaa"])).expect("refused");
+        assert!(msg.contains("--requires"), "{msg}");
+        assert!(msg.contains("--depends"), "{msg}");
     }
 
     fn args(argv: &[&str]) -> Args {
