@@ -5,10 +5,10 @@
 
 | State | Count |
 |---|---:|
-| backlog | 50 |
+| backlog | 49 |
 | ongoing | 4 |
 | in-review | 0 |
-| done | 165 |
+| done | 166 |
 | **total** | **219** |
 
 ## Hierarchies
@@ -147,7 +147,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#kaqhtfc list/tree: drop the tree alias (nested forest is list's default)](items/kaqhtfc-list-tree-drop-the-tree-alias-nested-forest-is-list-s-default.md) _(backlog)_
 - [x] [#v8tmkrt json: shared emit_json stdout seam + --json flag plumbing](items/v8tmkrt-json-shared-emit-json-stdout-seam-json-flag-plumbing.md)
 
-### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 94% (111/118 pts · 38/41 done) · _medium_ · ongoing
+### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 96% (113/118 pts · 39/41 done) · _medium_ · ongoing
 
 - [x] [#2w5panf rust: diff and changelog](items/2w5panf-rust-diff-and-changelog.md)
 - [x] [#2zvwj33 rust: init — scaffold a tracker, and stop vendoring](items/2zvwj33-rust-init-scaffold-a-tracker-and-stop-vendoring.md)
@@ -164,7 +164,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#agm4zhf rust: --json is accepted but silently ignored — must error until implemented](items/agm4zhf-rust-json-is-accepted-but-silently-ignored-must-error-until-implemented.md)
 - [x] [#av3efth conformance: convert the on-disk artifact tests](items/av3efth-conformance-convert-the-on-disk-artifact-tests.md)
 - [x] [#b2r89au rust: fold in the html view](items/b2r89au-rust-fold-in-the-html-view.md)
-- [ ] [#b3mmung update: the Python engine 404s once ./trck leaves the tree](items/b3mmung-update-the-python-engine-404s-once-trck-leaves-the-tree.md) _(backlog)_
+- [x] [#b3mmung update: the Python engine 404s once ./trck leaves the tree](items/b3mmung-update-the-python-engine-404s-once-trck-leaves-the-tree.md)
 - [x] [#bdmgj7r rust: the deps gutter renderer](items/bdmgj7r-rust-the-deps-gutter-renderer.md)
 - [x] [#d6mquku rust: re-parent cycle error drops the explanation of which edge closes the loop](items/d6mquku-rust-re-parent-cycle-error-drops-the-explanation-of-which-edge-closes-the-loop.md)
 - [x] [#d7y2emr rust: config, vocabulary and tracker discovery](items/d7y2emr-rust-config-vocabulary-and-tracker-discovery.md)
