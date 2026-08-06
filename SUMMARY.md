@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 48 |
+| backlog | 49 |
 | ongoing | 5 |
 | in-review | 0 |
 | done | 166 |
-| **total** | **219** |
+| **total** | **220** |
 
 ## Hierarchies
 
@@ -147,7 +147,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#kaqhtfc list/tree: drop the tree alias (nested forest is list's default)](items/kaqhtfc-list-tree-drop-the-tree-alias-nested-forest-is-list-s-default.md) _(backlog)_
 - [x] [#v8tmkrt json: shared emit_json stdout seam + --json flag plumbing](items/v8tmkrt-json-shared-emit-json-stdout-seam-json-flag-plumbing.md)
 
-### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 96% (113/118 pts · 39/41 done) · _medium_ · ongoing
+### [#sp2rwzx trck in Rust: one fast binary, a fixed vocabulary, and the HTML view folded in](items/sp2rwzx-trck-in-rust-one-fast-binary-a-fixed-vocabulary-and-the-html-view-folded-in.md) — 95% (113/119 pts · 39/42 done) · _medium_ · ongoing
 
 - [x] [#2w5panf rust: diff and changelog](items/2w5panf-rust-diff-and-changelog.md)
 - [x] [#2zvwj33 rust: init — scaffold a tracker, and stop vendoring](items/2zvwj33-rust-init-scaffold-a-tracker-and-stop-vendoring.md)
@@ -176,6 +176,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#gtkastb rust: mutating verbs and SUMMARY generation](items/gtkastb-rust-mutating-verbs-and-summary-generation.md)
 - [x] [#gw9qnmw rust: duplicate-id diagnostic is terser than the Python engine's](items/gw9qnmw-rust-duplicate-id-diagnostic-is-terser-than-the-python-engine-s.md)
 - [x] [#h8nxqx7 vocabulary: fix priorities at five canonical levels](items/h8nxqx7-vocabulary-fix-priorities-at-five-canonical-levels-names-as-display-aliases.md)
+- [ ] [#heasfq7 release: the artifact carried its own staging tree, and publish choked on it](items/heasfq7-release-the-artifact-carried-its-own-staging-tree-and-publish-choked-on-it.md) _(backlog)_
 - [x] [#jpash72 new: --id to supply an issue id instead of generating one](items/jpash72-new-id-to-supply-an-issue-id-instead-of-generating-one.md)
 - [x] [#n8v8qba rust: workspace, CI, and the conformance runner](items/n8v8qba-rust-workspace-ci-and-the-conformance-runner.md)
 - [x] [#qgpk65t vocabulary: fix the four statuses in code, not in config](items/qgpk65t-vocabulary-fix-the-four-statuses-in-code-not-in-config.md)
