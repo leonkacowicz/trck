@@ -5,8 +5,8 @@
 
 | State | Count |
 |---|---:|
-| backlog | 49 |
-| ongoing | 4 |
+| backlog | 48 |
+| ongoing | 5 |
 | in-review | 0 |
 | done | 166 |
 | **total** | **219** |
@@ -154,7 +154,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#4susb3g rust: query verbs — list, tree, show](items/4susb3g-rust-query-verbs-list-tree-show.md)
 - [x] [#5p738hu conformance: fixture format and the Python runner](items/5p738hu-conformance-fixture-format-and-the-python-runner.md)
 - [x] [#6vpkjxg rust: validation-error order differs after a mutating verb re-sorts extras](items/6vpkjxg-rust-validation-error-order-differs-after-a-mutating-verb-re-sorts-extras.md)
-- [ ] [#7htpzdd release: the first Rust binary release](items/7htpzdd-release-the-first-rust-binary-release.md) _(backlog)_
+- [ ] [#7htpzdd release: the first Rust binary release](items/7htpzdd-release-the-first-rust-binary-release.md) _(ongoing)_
 - [x] [#88ax67p conformance: convert the graph-semantics tests](items/88ax67p-conformance-convert-the-graph-semantics-tests.md)
 - [x] [#8pwztvy rust: ready and next, with the demand annotations](items/8pwztvy-rust-ready-and-next-with-the-demand-annotations.md)
 - [x] [#9898xru rust: release artifacts per platform, and self-update](items/9898xru-rust-release-artifacts-per-platform-and-self-update.md)
