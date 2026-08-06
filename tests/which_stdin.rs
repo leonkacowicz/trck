@@ -42,9 +42,19 @@ fn run(args: &[&str], input: Option<&str>) -> String {
 }
 
 /// The id a body filename carries, which is everything before its first `-`.
+///
+/// Splits on either separator rather than going through `Path`: on Windows the listed paths
+/// come back as `\\?\D:\...\items\<id>-<slug>.md`, and a `/`-only split would swallow the whole
+/// path into the id.
 fn id_of(path: &str) -> String {
-    let name = path.rsplit('/').next().unwrap_or(path);
+    let name = path.rsplit(['/', '\\']).next().unwrap_or(path);
     name.split('-').next().unwrap_or(name).to_string()
+}
+
+#[test]
+fn id_of_reads_the_last_component_on_either_separator() {
+    assert_eq!(id_of("/repo/issues/items/3e3cn37-a-title.md"), "3e3cn37");
+    assert_eq!(id_of(r"\\?\D:\repo\issues\items\3e3cn37-a-title.md"), "3e3cn37");
 }
 
 #[test]
