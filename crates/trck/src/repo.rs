@@ -193,7 +193,10 @@ fn make_executable(path: &Path) -> Result<(), String> {
         .map_err(|e| format!("{}: {e}", path.display()))
 }
 
+// The `Result` is unnecessary on this platform, and deliberately kept: the two `cfg`
+// arms are one function to every caller, and the unix arm can genuinely fail.
 #[cfg(not(unix))]
+#[allow(clippy::unnecessary_wraps)]
 fn make_executable(_path: &Path) -> Result<(), String> {
     Ok(()) // Windows has no executable bit; git runs hooks through the shell there.
 }

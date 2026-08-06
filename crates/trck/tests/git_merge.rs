@@ -31,8 +31,7 @@ fn git_ok(dir: &Path, args: &[&str]) -> bool {
         .args(args)
         .current_dir(dir)
         .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
+        .is_ok_and(|o| o.status.success())
 }
 
 fn trck(dir: &Path, args: &[&str]) -> std::process::Output {
