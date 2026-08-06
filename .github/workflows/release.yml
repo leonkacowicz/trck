@@ -16,7 +16,36 @@ permissions:
   contents: write
 
 jobs:
+  # The tag namespace is shared with the Python engine's releases by history, and this
+  # workflow only knows how to build the Rust one. Without this, tagging the final Python
+  # release would cross-build six targets from whatever the workspace Cargo.toml happened
+  # to say — publishing binaries whose version disagrees with the tag that produced them.
+  #
+  # Seconds, and before the matrix: a mismatched tag should cost a checkout, not a full
+  # cross-build. It fails rather than skips, because a tag that reaches this workflow by
+  # accident is a mistake somebody wants to hear about.
+  guard:
+    name: tag matches Cargo.toml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: The tag and the crate must agree
+        run: |
+          tag="${{ inputs.tag || github.ref_name }}"
+          crate="$(sed -n 's/^version *= *"\(.*\)"/\1/p' Cargo.toml | head -1)"
+          echo "tag=$tag  Cargo.toml=$crate"
+          if [ "$tag" != "v$crate" ]; then
+            echo "::error::tag $tag does not match the workspace version $crate." >&2
+            echo "This workflow builds the Rust binary. Bump Cargo.toml in the same" >&2
+            echo "commit you tag, or if this tag is not a Rust release, delete it." >&2
+            exit 1
+          fi
+
   build:
+    needs: guard
     name: ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     strategy:

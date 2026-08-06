@@ -637,7 +637,14 @@ fn cmd_check(ctx: &Ctx) -> Result<String, String> {
         report.errors.len(),
         report.warnings.len()
     ));
-    println!("{}", out.join("\n"));
+    // Printed here rather than returned because this path exits non-zero with its report on
+    // *stdout*, which the `Err` arm of `main` cannot express. A reader that has gone away
+    // still must not turn a failed check into a panic.
+    if let Err(ref e) = emit(&(out.join("\n") + "\n")) {
+        if !is_closed_pipe(e) {
+            eprintln!("error: writing output: {e}");
+        }
+    }
     Err(String::new())
 }
 
@@ -711,25 +718,58 @@ fn new_opts(args: &Args) -> Result<NewOpts, String> {
     })
 }
 
+/// Whether a write to stdout failed because nobody is reading any more.
+///
+/// `trck list | head` closes the pipe while the engine still has output. That is the shell
+/// working as designed, not a failure to report, so it ends the process quietly and
+/// successfully. It has to be handled rather than ignored: `println!` unwraps the write and
+/// would panic, which is precisely what this crate's denied `panic`/`unwrap`/`expect` lints
+/// exist to prevent — and a standard-library macro walks underneath them. The usual Unix
+/// answer, restoring the default `SIGPIPE` disposition so the process dies by signal, needs
+/// a raw `signal()` call, and `unsafe` is forbidden here.
+fn is_closed_pipe(e: &std::io::Error) -> bool {
+    e.kind() == std::io::ErrorKind::BrokenPipe
+}
+
+/// Write to stdout and flush, reporting a closed reader rather than panicking on it.
+///
+/// Flushing here rather than leaving it to process teardown is the point: `Stdout` is
+/// line-buffered, so without an explicit flush the failing write can happen after `main`
+/// has returned, where there is no longer anything that can decide what it means.
+fn emit(text: &str) -> Result<(), std::io::Error> {
+    use std::io::Write as _;
+    let stdout = std::io::stdout();
+    let mut lock = stdout.lock();
+    lock.write_all(text.as_bytes())?;
+    lock.flush()
+}
+
+/// `emit`, resolved to the status the process should exit with.
+fn emit_or_status(text: &str, ok: std::process::ExitCode) -> std::process::ExitCode {
+    match emit(text) {
+        Ok(()) => ok,
+        Err(ref e) if is_closed_pipe(e) => std::process::ExitCode::SUCCESS,
+        Err(e) => {
+            eprintln!("error: writing output: {e}");
+            std::process::ExitCode::FAILURE
+        }
+    }
+}
+
 /// Entry point. Returns the process status; everything user-facing goes to stdout on
 /// success and stderr on failure, matching the Python engine's `die`.
 pub(crate) fn main() -> std::process::ExitCode {
     let argv: Vec<String> = std::env::args().skip(1).collect();
     if argv.is_empty() || argv.iter().any(|a| a == "-h" || a == "--help") {
-        print!("{}", usage());
-        return std::process::ExitCode::SUCCESS;
+        return emit_or_status(&usage(), std::process::ExitCode::SUCCESS);
     }
     if let Some(msg) = usage_error(&parse_args(&argv)) {
         eprintln!("error: {msg}");
         return std::process::ExitCode::from(2);
     }
     match dispatch(&argv) {
-        Ok(out) => {
-            if !out.is_empty() {
-                println!("{out}");
-            }
-            std::process::ExitCode::SUCCESS
-        }
+        Ok(out) if out.is_empty() => std::process::ExitCode::SUCCESS,
+        Ok(out) => emit_or_status(&(out + "\n"), std::process::ExitCode::SUCCESS),
         Err(msg) if msg.is_empty() => std::process::ExitCode::FAILURE,
         // A message that already labels itself is printed verbatim. The merge drivers are
         // the case: git shows their stderr to the user as-is, so the diagnostic is written
