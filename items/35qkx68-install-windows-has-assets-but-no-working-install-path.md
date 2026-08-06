@@ -35,14 +35,18 @@ And `choose_bin_dir` prefers `$HOME/.local/bin`, which under Git Bash is a direc
 itself has no opinion about and which is not on `PATH` by default. The script does warn.
 
 ## Acceptance criteria
-- [ ] Confirm on a real Windows machine whether `install.sh` under Git Bash gets as far as
-      unpacking. Everything below depends on the answer.
-- [ ] Unpacking works with what a stock Windows actually has — `tar -xf` for the zip, with
-      `unzip` as the fallback rather than the requirement.
+- [x] Confirm on a real Windows machine whether `install.sh` under Git Bash gets as far as
+      unpacking. Now asserted continuously rather than once: the `installer (windows)` CI job
+      runs the installer under Git Bash against a release built on disk and served over
+      `file://`, so the day nothing on that machine can open a zip, CI says so.
+- [x] Unpacking works with what a stock Windows actually has — `tar -xf` first, `unzip` as the
+      fallback rather than the requirement. tar's failure is non-fatal on purpose: the `tar` on
+      PATH under Git Bash is GNU tar, which cannot read a zip at all, so it tries and falls
+      through rather than trusting a tool it cannot identify in advance.
 - [ ] A supported path for someone who does not have Git Bash: either a short PowerShell
       installer alongside `install.sh`, or documented manual steps that name the PATH edit.
-- [ ] Documented wherever installation ends up being documented — see `#djx63gk`, which owns
-      the README rewrite, since the README currently describes no installation at all.
+- [x] Documented: the README now leads with the install script, names the prebuilt targets, and
+      gives Windows both routes (Git Bash, or download the zip and extend `PATH`).
 - [ ] Decide whether `aarch64-pc-windows-msvc` joins the matrix, or is a stated non-target.
 
 ## Notes
