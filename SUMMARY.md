@@ -8,8 +8,8 @@
 | backlog | 50 |
 | ongoing | 3 |
 | in-review | 0 |
-| done | 172 |
-| **total** | **225** |
+| done | 173 |
+| **total** | **226** |
 
 ## Hierarchies
 
@@ -254,6 +254,7 @@ _none_
 - [#qc48tds Add 'ready'/'next' command: list unblocked, not-done leaves](items/qc48tds-add-ready-next-command-list-unblocked-not-done-leaves.md) — _high_ [tracker-features] (closed 2026-06-06)
 - [#t4azhkq a legacy integer-id tracker gets four wrong errors instead of the way out](items/t4azhkq-a-legacy-integer-id-tracker-gets-four-wrong-errors-instead-of-the-way-out.md) — _high_ · _wontfix_ (closed 2026-08-06)
 - [#y8asnbe Write root README.md and CLAUDE.md](items/y8asnbe-write-root-readme-md-and-claude-md.md) — _high_ (closed 2026-06-05)
+- [#22sn73g pay down dispatch and cmd_list](items/22sn73g-pay-down-dispatch-and-cmd-list.md) — _medium_ (closed 2026-08-06)
 - [#3e3cn37 init: accept positional dir and add --no-vendor for self-hosting repos](items/3e3cn37-init-accept-positional-dir-and-add-no-vendor-for-self-hosting-repos.md) — _medium_ (closed 2026-06-05)
 - [#3f8mb3n release v0.25.0](items/3f8mb3n-release-v0-25-0.md) — _medium_ (closed 2026-08-02)
 - [#3x6mmhu list: annotate blocked/blocker relationships and clear them when resolved](items/3x6mmhu-list-annotate-blocked-blocker-relationships-and-clear-them-when-resolved.md) — _medium_ [tracker-features] (closed 2026-06-09)
