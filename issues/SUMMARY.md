@@ -6,9 +6,9 @@
 | State | Count |
 |---|---:|
 | backlog | 50 |
-| ongoing | 3 |
+| ongoing | 2 |
 | in-review | 0 |
-| done | 175 |
+| done | 176 |
 | **total** | **228** |
 
 ## Hierarchies
@@ -85,7 +85,7 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 - [x] [#ex5cugg trck repo merge-index: the driver entrypoint (+ SUMMARY regeneration)](items/ex5cugg-trck-repo-merge-index-the-driver-entrypoint-summary-regeneration.md)
 - [x] [#pfackaw merge_rows: row-wise 3-way merge of index rows, keyed by id](items/pfackaw-merge-rows-row-wise-3-way-merge-of-index-rows-keyed-by-id.md)
 
-### [#fkrp9dh trck-html: static HTML SPA to browse issues in a browser](items/fkrp9dh-trck-html-static-html-spa-to-browse-issues-in-a-browser.md) — 78% (14/18 pts · 12/14 done) · _medium_ · ongoing
+### [#fkrp9dh trck-html: static HTML SPA to browse issues in a browser](items/fkrp9dh-trck-html-static-html-spa-to-browse-issues-in-a-browser.md) — 100% (14/14 pts · 12/12 done) · _medium_ · done
 
 - [x] [#2ytfth4 v5: board / kanban by status](items/2ytfth4-v5-board-kanban-by-status.md)
 - [x] [#4vbk79y v4: tree / hierarchy view with rolled-up progress %](items/4vbk79y-v4-tree-hierarchy-view-with-rolled-up-progress.md)
@@ -97,9 +97,7 @@ Spec: [`docs/specs/2026-06-09-graph-derived-view-design.md`](../docs/specs/2026-
 - [x] [#d9ckqzc trck-html: highlight shortest-unique id prefix (like the CLI)](items/d9ckqzc-trck-html-highlight-shortest-unique-id-prefix-like-the-cli.md)
 - [x] [#ej5772f trck-html: draggable divider to resize left pane vs detail](items/ej5772f-trck-html-draggable-divider-to-resize-left-pane-vs-detail.md)
 - [x] [#me67zba trck-html: mirror demand-cone ranking in the ready/next view](items/me67zba-trck-html-mirror-demand-cone-ranking-in-the-ready-next-view.md)
-- [ ] [#mf7ue8j trck-html: timeline view over created/started/closed](items/mf7ue8j-trck-html-timeline-view-over-created-started-closed.md) [dates] _(backlog)_
 - [x] [#qcgr8sy v2: command-copy — stage status/priority edits, show equivalent ./trck commands](items/qcgr8sy-v2-command-copy-stage-status-priority-edits-show-equivalent-trck-commands.md)
-- [ ] [#tcm5s56 v7: trck serve — live process, edits write back to index.jsonl](items/tcm5s56-v7-trck-serve-live-process-edits-write-back-to-index-jsonl.md) _(backlog)_
 - [x] [#zssaj4k trck-html: graph view — done-chain filters + filter-as-seeds](items/zssaj4k-trck-html-graph-view-done-chain-filters-filter-as-seeds.md)
 
 ### [#gke345p dates: due dates as a first-class field](items/gke345p-dates-due-dates-as-a-first-class-field.md) — 0% (0/6 pts · 0/3 done) · _low_ · backlog
@@ -226,7 +224,9 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#j967byf deps: order graph components by demand (most-demanded cluster first)](items/j967byf-deps-order-graph-components-by-demand-most-demanded-cluster-first.md) — _low_
 - [#kj2c95b validate: suppress redundant bad-slug error when filename-slug mismatch already reported](items/kj2c95b-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
 - [#m3z2ywb summary: include foreign/unknown statuses in the counts table](items/m3z2ywb-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
+- [#mf7ue8j trck-html: timeline view over created/started/closed](items/mf7ue8j-trck-html-timeline-view-over-created-started-closed.md) — _low_ [dates trck-html]
 - [#s3d6xyz Add reconfigure verb to rename/reorder statuses](items/s3d6xyz-add-reconfigure-verb-to-rename-reorder-statuses.md) — _low_ [tracker-features]
+- [#tcm5s56 v7: trck serve — live process, edits write back to index.jsonl](items/tcm5s56-v7-trck-serve-live-process-edits-write-back-to-index-jsonl.md) — _low_
 - [#ut9bqm4 dates: time-in-status and per-status cycle time reporting](items/ut9bqm4-dates-time-in-status-and-per-status-cycle-time-reporting.md) — _low_ [dates]
 - [#v9nyy42 Part C: curses TUI for browsing and quick actions](items/v9nyy42-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
 - [#xr994r6 list --as-of DATE: reconstruct and browse tracker state at a past date](items/xr994r6-list-as-of-date-reconstruct-and-browse-tracker-state-at-a-past-date.md) — _low_ [dates]
