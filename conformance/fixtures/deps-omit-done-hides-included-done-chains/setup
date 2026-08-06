@@ -1,5 +1,5 @@
 # --omit-done wins over --include-done-chains: a fully-done graph prints nothing.
 new "Done base" --id aaaaaaa
-new "Done top" --id bbbbbbb --depends aaaaaaa
+new "Done top" --id bbbbbbb --requires aaaaaaa
 done aaaaaaa
 done bbbbbbb

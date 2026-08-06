@@ -1,5 +1,5 @@
 # The blocker names the parent it blocks, not every issue in that parent's subtree —
 # the subtree is implied by containment.
 new "Dep" --id aaaaaaa
-new "Parent epic" --id bbbbbbb --depends aaaaaaa
+new "Parent epic" --id bbbbbbb --requires aaaaaaa
 new "Child leaf" --id ccccccc --parent bbbbbbb

@@ -2,7 +2,7 @@
 # one outranks a high one that blocks nothing — and the row says why. An epic ranks its
 # own leaves the same way, since a parent is not done until its children are.
 new "Blocker" --id aaaaaaa --priority medium
-new "Urgent thing" --id bbbbbbb --priority urgent --depends aaaaaaa
+new "Urgent thing" --id bbbbbbb --priority urgent --requires aaaaaaa
 new "High, blocks nothing" --id ccccccc --priority high
 new "Epic" --id ddddddd --priority urgent
 new "Kid" --id eeeeeee --priority lowest --parent ddddddd

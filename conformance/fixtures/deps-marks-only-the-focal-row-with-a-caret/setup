@@ -1,4 +1,4 @@
 # The color-independent caret marks only the focal row; context rows keep a blank
 # two-column margin so the graph stays aligned under the marker.
 new "Base" --id aaaaaaa
-new "Top" --id bbbbbbb --depends aaaaaaa
+new "Top" --id bbbbbbb --requires aaaaaaa

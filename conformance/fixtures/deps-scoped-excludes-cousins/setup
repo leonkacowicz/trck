@@ -1,5 +1,5 @@
 # A blocks B and C; B blocks D. B's line is A,B,D — the cousin C is excluded by default.
 new "A" --id aaaaaaa
-new "B" --id bbbbbbb --depends aaaaaaa
-new "C" --id ccccccc --depends aaaaaaa
-new "D" --id ddddddd --depends bbbbbbb
+new "B" --id bbbbbbb --requires aaaaaaa
+new "C" --id ccccccc --requires aaaaaaa
+new "D" --id ddddddd --requires bbbbbbb

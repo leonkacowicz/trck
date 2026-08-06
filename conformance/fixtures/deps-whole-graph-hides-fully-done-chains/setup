@@ -1,7 +1,7 @@
 # A fully-done component is hidden from the bare view; the live one stays.
 new "Done base" --id aaaaaaa
-new "Done top" --id bbbbbbb --depends aaaaaaa
+new "Done top" --id bbbbbbb --requires aaaaaaa
 new "Live base" --id ccccccc
-new "Live top" --id ddddddd --depends ccccccc
+new "Live top" --id ddddddd --requires ccccccc
 done aaaaaaa
 done bbbbbbb

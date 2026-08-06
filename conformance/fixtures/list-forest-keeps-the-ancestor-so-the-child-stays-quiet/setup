@@ -1,5 +1,5 @@
 # The nested forest keeps a match's ancestor spine as context, so the parent is on screen
 # and the child does not repeat the inherited note.
 new "Dep" --id aaaaaaa
-new "Parent epic" --id bbbbbbb --depends aaaaaaa
+new "Parent epic" --id bbbbbbb --requires aaaaaaa
 new "Child leaf" --id ccccccc --parent bbbbbbb

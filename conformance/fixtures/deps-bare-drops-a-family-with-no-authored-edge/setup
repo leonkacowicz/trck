@@ -3,4 +3,4 @@
 new "Lone epic" --id aaaaaaa
 new "Lone kid" --id bbbbbbb --parent aaaaaaa
 new "Base" --id ccccccc
-new "Top" --id ddddddd --depends ccccccc
+new "Top" --id ddddddd --requires ccccccc

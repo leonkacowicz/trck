@@ -1,2 +1,2 @@
 new "Blocker" --id aaaaaaa
-new "Blocked" --id bbbbbbb --depends aaaaaaa
+new "Blocked" --id bbbbbbb --requires aaaaaaa

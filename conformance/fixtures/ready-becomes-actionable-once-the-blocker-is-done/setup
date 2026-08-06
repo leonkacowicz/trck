@@ -1,4 +1,4 @@
 # Finishing the blocker unblocks its dependent, which then becomes the only actionable leaf.
 new "Blocker" --id aaaaaaa
-new "Dependent" --id bbbbbbb --depends aaaaaaa
+new "Dependent" --id bbbbbbb --requires aaaaaaa
 done aaaaaaa

@@ -2,5 +2,5 @@
 # a partially-shown epic would misreport what it needs.
 new "Blocker" --id aaaaaaa
 new "Epic" --id bbbbbbb
-new "Kid" --id ccccccc --parent bbbbbbb --depends aaaaaaa
+new "Kid" --id ccccccc --parent bbbbbbb --requires aaaaaaa
 new "Sibling" --id ddddddd --parent bbbbbbb

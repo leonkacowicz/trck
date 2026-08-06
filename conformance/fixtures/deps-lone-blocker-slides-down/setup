@@ -4,5 +4,5 @@
 # just above 4 costs the chain one row and saves it two.
 new "Lone blocker" --id aaaaaaa
 new "Chain head" --id bbbbbbb
-new "Chain middle" --id ccccccc --depends bbbbbbb
-new "Chain tail" --id ddddddd --depends aaaaaaa,ccccccc
+new "Chain middle" --id ccccccc --requires bbbbbbb
+new "Chain tail" --id ddddddd --requires aaaaaaa,ccccccc

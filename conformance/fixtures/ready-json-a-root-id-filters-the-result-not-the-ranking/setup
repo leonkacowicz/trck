@@ -3,5 +3,5 @@
 # look actionable just because the blocker is out of view.
 new "Outside" --id aaaaaaa
 new "Epic" --id bbbbbbb
-new "In subtree, blocked from outside" --id ccccccc --parent bbbbbbb --depends aaaaaaa
+new "In subtree, blocked from outside" --id ccccccc --parent bbbbbbb --requires aaaaaaa
 new "In subtree, free" --id ddddddd --parent bbbbbbb

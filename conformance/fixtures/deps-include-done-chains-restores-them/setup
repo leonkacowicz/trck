@@ -1,5 +1,5 @@
 # --include-done-chains brings a fully-done component back into the bare view.
 new "Done base" --id aaaaaaa
-new "Done top" --id bbbbbbb --depends aaaaaaa
+new "Done top" --id bbbbbbb --requires aaaaaaa
 done aaaaaaa
 done bbbbbbb

@@ -1,0 +1,1 @@
+error: `--depends` is now `--requires` (it reads with `trck deps --requires`, which shows the same edges). Try: trck new --requires <ids>

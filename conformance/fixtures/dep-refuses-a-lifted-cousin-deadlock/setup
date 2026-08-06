@@ -1,6 +1,6 @@
 # P2 depends on P1. Adding C1(under P1) -> C2(under P2) would deadlock through the
 # hierarchy: P2's subtree already waits on P1's, so C1 waiting on C2 closes a lifted loop.
 new "P1" --id aaaaaaa
-new "P2" --id bbbbbbb --depends aaaaaaa
+new "P2" --id bbbbbbb --requires aaaaaaa
 new "C1" --id ccccccc --parent aaaaaaa
 new "C2" --id ddddddd --parent bbbbbbb

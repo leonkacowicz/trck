@@ -2,5 +2,5 @@
 # it still costs no lane. The authored edge remains in the index (only dep --remove
 # deletes it).
 new "C" --id ccccccc
-new "B" --id bbbbbbb --depends ccccccc
-new "A" --id aaaaaaa --depends bbbbbbb,ccccccc
+new "B" --id bbbbbbb --requires ccccccc
+new "A" --id aaaaaaa --requires bbbbbbb,ccccccc

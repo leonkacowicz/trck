@@ -1,5 +1,5 @@
 # The parent authored the dep; filtering to the child alone leaves the parent's row off
 # screen, so the child's note spells the edge out and tags where it lives.
 new "Dep" --id aaaaaaa
-new "Parent epic" --id bbbbbbb --depends aaaaaaa
+new "Parent epic" --id bbbbbbb --requires aaaaaaa
 new "Child leaf" --id ccccccc --parent bbbbbbb

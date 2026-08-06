@@ -1,4 +1,4 @@
 # A finished dependent exerts no demand: the blocker keeps its own priority and no ↑ mark.
 new "Medium blocker" --id aaaaaaa --priority medium
-new "Urgent but done" --id bbbbbbb --priority urgent --depends aaaaaaa
+new "Urgent but done" --id bbbbbbb --priority urgent --requires aaaaaaa
 done bbbbbbb

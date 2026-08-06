@@ -2,6 +2,6 @@
 # a count. The high-blocker ranks first despite the other blocking more tasks.
 new "Blocks two mediums" --id aaaaaaa --priority lowest
 new "Blocks one high" --id bbbbbbb --priority lowest
-new "Medium 1" --id ccccccc --priority medium --depends aaaaaaa
-new "Medium 2" --id ddddddd --priority medium --depends aaaaaaa
-new "High 1" --id eeeeeee --priority high --depends bbbbbbb
+new "Medium 1" --id ccccccc --priority medium --requires aaaaaaa
+new "Medium 2" --id ddddddd --priority medium --requires aaaaaaa
+new "High 1" --id eeeeeee --priority high --requires bbbbbbb

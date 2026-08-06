@@ -1,4 +1,4 @@
 # Blocking two things, the blocker is lifted to — and names — the highest-priority one.
 new "Low blocker" --id aaaaaaa --priority lowest
-new "High waiter" --id bbbbbbb --priority high --depends aaaaaaa
-new "Urgent waiter" --id ccccccc --priority urgent --depends aaaaaaa
+new "High waiter" --id bbbbbbb --priority high --requires aaaaaaa
+new "Urgent waiter" --id ccccccc --priority urgent --requires aaaaaaa

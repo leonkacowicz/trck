@@ -1,6 +1,6 @@
 # 1 forks to 2,3 which both feed 4: a fork and a merge. A diamond has nothing to
 # reduce, so all four edges are drawn.
 new "Base" --id aaaaaaa
-new "Left" --id bbbbbbb --depends aaaaaaa
-new "Right" --id ccccccc --depends aaaaaaa
-new "Top" --id ddddddd --depends bbbbbbb,ccccccc
+new "Left" --id bbbbbbb --requires aaaaaaa
+new "Right" --id ccccccc --requires aaaaaaa
+new "Top" --id ddddddd --requires bbbbbbb,ccccccc

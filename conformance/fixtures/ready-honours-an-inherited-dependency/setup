@@ -1,5 +1,5 @@
 # The epic depends on a blocker, so its child inherits the block and is not ready while the
 # blocker is open. Only the blocker itself is actionable.
 new "Blocker" --id aaaaaaa
-new "Epic" --id bbbbbbb --depends aaaaaaa
+new "Epic" --id bbbbbbb --requires aaaaaaa
 new "Kid" --id ccccccc --parent bbbbbbb

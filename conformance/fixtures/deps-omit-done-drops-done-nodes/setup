@@ -1,6 +1,6 @@
 # --omit-done removes the done middle node; the graph is recomputed, leaving two
 # singleton components.
 new "Base" --id aaaaaaa
-new "Mid" --id bbbbbbb --depends aaaaaaa
-new "Top" --id ccccccc --depends bbbbbbb
+new "Mid" --id bbbbbbb --requires aaaaaaa
+new "Top" --id ccccccc --requires bbbbbbb
 done bbbbbbb

@@ -23,13 +23,13 @@ base32 alphabet, e.g. `k3m9x2a`) — **not** a sequential integer. Ids are rando
 order is *creation* order, not id order. Anywhere a command wants an `ID`, **any unambiguous
 prefix works** (`trck show k3m` resolves `k3m9x2a`); an ambiguous prefix errors and lists the
 candidates. Integer ids were an earlier iteration and are no longer supported at all — a
-tracker that still has them is refused, with `scripts/renumber.py` in the trck repo as the way out.
+tracker that still has them is unreadable by this engine.
 
 ## Common verbs (run `trck --help` for all)
 Run from anywhere in the repo — `trck` finds the tracker by walking up to the folder
 holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
 
-- `trck new "<title>" [--priority …] [--parent ID] [--depends a,b] [--id ID]`
+- `trck new "<title>" [--priority …] [--parent ID] [--requires a,b] [--id ID]`
 - `trck mv ID <status>`; `trck start ID` / `trck review ID [URL]` / `trck done ID [--resolution …]` (aliases)
 - `trck set ID [--priority …] [--parent …|none] [--title …] [--review-url URL|none] [--field k=v] [--unset k]`
 - `trck dep ID --add ID2 | --remove ID2`

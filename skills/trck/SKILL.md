@@ -112,7 +112,7 @@ criteria / Notes) — never `index.jsonl` or `SUMMARY.md`, and never move or ren
 hand (the verbs own the filename, and it tracks the slug, not the status).
 
 **Create & modify**
-- `trck new "<title>" [--priority P] [--kind K] [--parent ID] [--depends a,b] [--points N] [--spec PATH] [--pr URL] [--slug S]`
+- `trck new "<title>" [--priority P] [--parent ID] [--requires a,b] [--points N] [--spec PATH] [--review-url URL] [--slug S] [--id ID]`
   — create an issue; prints the new file path. Then open that file and write the body prose.
 - `trck set ID [--priority P] [--parent ID|none] [--kind K] [--title T] [--points N] [--spec PATH|none] [--pr URL|none] [--field k=v] [--unset k] [--auto]`
   — edit metadata. `--parent` **re-parents** (guarded against cycles); `--field`/`--unset`
@@ -185,7 +185,7 @@ follow them proactively, without being asked.
   not dumped. Run a quick `trck list --match <keywords>` / `trck list --all` and check for:
   1. **A duplicate** — if it already exists, update or comment on that one instead of forking a
      second record of the same work.
-  2. **Dependencies** — does this new work require something already tracked (add `--depends`),
+  2. **Dependencies** — does this new work require something already tracked (add `--requires`),
      or does existing work now depend on it? Wire the edges so ordering is explicit.
   3. **The right parent** — if this is a sub-task of an existing goal, create it under that
      parent (`--parent ID`) so it rolls up correctly. If it's a peer, leave it top-level.

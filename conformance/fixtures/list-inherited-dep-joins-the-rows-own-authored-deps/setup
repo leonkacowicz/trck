@@ -1,6 +1,6 @@
 # A row's own blocker and an inherited one appear in one note, own edge first.
 new "Dep" --id aaaaaaa
-new "Parent epic" --id bbbbbbb --depends aaaaaaa
+new "Parent epic" --id bbbbbbb --requires aaaaaaa
 new "Child leaf" --id ccccccc --parent bbbbbbb
 new "Own dep" --id ddddddd
 dep ccccccc --add ddddddd

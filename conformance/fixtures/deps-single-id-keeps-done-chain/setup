@@ -1,5 +1,5 @@
 # Asking for a specific id keeps its done chain: done-hiding is a whole-graph default.
 new "Done base" --id aaaaaaa
-new "Done top" --id bbbbbbb --depends aaaaaaa
+new "Done top" --id bbbbbbb --requires aaaaaaa
 done aaaaaaa
 done bbbbbbb

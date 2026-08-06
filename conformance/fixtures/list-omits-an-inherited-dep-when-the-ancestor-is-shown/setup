@@ -1,5 +1,5 @@
 # Unfiltered, the parent's own row already carries the note; repeating it on every child
 # would be noise.
 new "Dep" --id aaaaaaa
-new "Parent epic" --id bbbbbbb --depends aaaaaaa
+new "Parent epic" --id bbbbbbb --requires aaaaaaa
 new "Child leaf" --id ccccccc --parent bbbbbbb

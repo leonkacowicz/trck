@@ -1,5 +1,5 @@
 # From the middle of a chain: what this issue needs, and what waits on it. The focal issue
 # appears in neither.
 new "Base" --id aaaaaaa
-new "Middle" --id bbbbbbb --depends aaaaaaa
-new "Top" --id ccccccc --depends bbbbbbb
+new "Middle" --id bbbbbbb --requires aaaaaaa
+new "Top" --id ccccccc --requires bbbbbbb

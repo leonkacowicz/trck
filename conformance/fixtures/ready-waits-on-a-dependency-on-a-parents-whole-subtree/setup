@@ -2,4 +2,4 @@
 # dependent waits. The kid itself is the only actionable leaf.
 new "Epic" --id aaaaaaa
 new "Kid" --id bbbbbbb --parent aaaaaaa
-new "Waits on the epic" --id ccccccc --depends aaaaaaa
+new "Waits on the epic" --id ccccccc --requires aaaaaaa

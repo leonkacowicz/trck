@@ -2,5 +2,5 @@
 # They must serialise in a fixed canonical order regardless of the order set.
 new "Prereq" --id ppppppp
 new "Epic" --id qqqqqqq
-new "Alpha" --id aaaaaaa --parent qqqqqqq --depends ppppppp
+new "Alpha" --id aaaaaaa --parent qqqqqqq --requires ppppppp
 label aaaaaaa --add backend

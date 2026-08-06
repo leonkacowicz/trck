@@ -2,5 +2,5 @@
 # `needs` note at the altitude the edge was authored.
 new "Epic" --id aaaaaaa
 new "First step" --id bbbbbbb --parent aaaaaaa --points 3
-new "Second step" --id ccccccc --parent aaaaaaa --depends bbbbbbb
+new "Second step" --id ccccccc --parent aaaaaaa --requires bbbbbbb
 new "Standalone" --id ddddddd --priority urgent
