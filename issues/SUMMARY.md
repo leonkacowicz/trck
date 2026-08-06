@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 48 |
+| backlog | 49 |
 | ongoing | 4 |
 | in-review | 0 |
 | done | 168 |
-| **total** | **220** |
+| **total** | **221** |
 
 ## Hierarchies
 
@@ -211,6 +211,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](items/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#jkvexgs docs: record a terminal demo of the next-driven loop for the README](items/jkvexgs-docs-record-a-terminal-demo-of-the-next-driven-loop-for-the-readme.md) — _medium_
+- [#k6g7kvf CI: a consistency check a consumer repo can drop in](items/k6g7kvf-ci-a-consistency-check-a-consumer-repo-can-drop-in.md) — _medium_
 - [#tfhhp8h mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](items/tfhhp8h-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
 - [#v5wvabj list: --since/--until date-range filters over created/started/closed](items/v5wvabj-list-since-until-date-range-filters-over-created-started-closed.md) — _medium_ [dates]
 - [#wh3mv52 mv/done: guard closing a parent with open descendants (--recurse to cascade)](items/wh3mv52-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
