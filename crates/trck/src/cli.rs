@@ -355,16 +355,8 @@ fn usage() -> String {
 fn tracker_dir(args: &Args) -> Result<std::path::PathBuf, String> {
     let cwd =
         std::env::current_dir().map_err(|e| format!("cannot read the working directory: {e}"))?;
-    let self_dir = std::env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(std::path::Path::to_path_buf));
     let env_dir = std::env::var("TRCK_DIR").ok().filter(|v| !v.is_empty());
-    crate::discovery::resolve_tracker_dir(
-        args.opt("--dir"),
-        env_dir.as_deref(),
-        self_dir.as_deref(),
-        &cwd,
-    )
+    crate::discovery::resolve_tracker_dir(args.opt("--dir"), env_dir.as_deref(), &cwd)
 }
 
 fn context(args: &Args) -> Result<Ctx, String> {

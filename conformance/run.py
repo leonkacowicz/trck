@@ -23,7 +23,10 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 FIXTURES = HERE / "fixtures"
-DEFAULT_BIN = HERE.parent / "trck"
+# The freshly built binary, because that is what anyone running this suite is asking about.
+# An installed `trck` would answer for a version that is not the one under change, and do it
+# silently — so this points at the build tree and says so when nothing has been built yet.
+DEFAULT_BIN = HERE.parent / "target" / "release" / "trck"
 
 # Fixed so anything the engine stamps is reproducible. Every invocation gets the same
 # instant; a fixture that needs the clock to move is not expressible yet (see README).
@@ -237,6 +240,9 @@ def main(argv=None):
     def resolve_bin(value, flag):
         b = Path(value).resolve()
         if not b.is_file():
+            if b == DEFAULT_BIN.resolve():
+                sys.exit(f"error: {b} not found — run `cargo build --release` first, "
+                         f"or point {flag} at another implementation")
             sys.exit(f"error: {b} not found (set {flag})")
         if not os.access(b, os.X_OK):
             sys.exit(f"error: {b} is not executable")

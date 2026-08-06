@@ -63,14 +63,17 @@ pub(crate) fn find_tracker(start: &Path) -> Result<PathBuf, String> {
 
 /// Where the engine should look, given the explicit overrides.
 ///
-/// `dir_opt` is `--dir`, `env_dir` is `$TRCK_DIR`, `self_dir` is the directory holding
-/// the running binary (a vendored copy sits beside the tracker it serves). An explicit
-/// override that is not a tracker is an error rather than a fallback: silently walking
-/// up from a mistyped `--dir` is how you edit the wrong repo.
+/// `dir_opt` is `--dir` and `env_dir` is `$TRCK_DIR`; absent both, walk up from `cwd`. An
+/// explicit override that is not a tracker is an error rather than a fallback, because
+/// silently walking up from a mistyped `--dir` is how you edit the wrong repo.
+///
+/// There was a third source: the directory holding the running binary, which resolved a
+/// tracker with an engine committed beside it. That made sense while the engine was a file
+/// a repository could vendor. It is a binary now — installed on the machine, never in the
+/// repo it serves — so its own location says nothing about which tracker anyone means.
 pub(crate) fn resolve_tracker_dir(
     dir_opt: Option<&str>,
     env_dir: Option<&str>,
-    self_dir: Option<&Path>,
     cwd: &Path,
 ) -> Result<PathBuf, String> {
     if let Some(explicit) = dir_opt.or(env_dir) {
@@ -83,11 +86,6 @@ pub(crate) fn resolve_tracker_dir(
             ));
         }
         return Ok(p);
-    }
-    if let Some(d) = self_dir
-        && is_tracker(d)
-    {
-        return Ok(d.to_path_buf());
     }
     find_tracker(cwd)
 }
@@ -263,7 +261,6 @@ pub(crate) mod tests {
         let got = resolve_tracker_dir(
             Some(&a.display().to_string()),
             Some(&b.display().to_string()),
-            None,
             &tmp.0,
         )
         .expect("resolved");
@@ -274,8 +271,8 @@ pub(crate) mod tests {
     fn env_wins_over_discovery() {
         let tmp = Tmp::new("env");
         let b = tmp.tracker("b");
-        let got = resolve_tracker_dir(None, Some(&b.display().to_string()), None, &tmp.0)
-            .expect("resolved");
+        let got =
+            resolve_tracker_dir(None, Some(&b.display().to_string()), &tmp.0).expect("resolved");
         assert_eq!(got, b);
     }
 
@@ -285,17 +282,26 @@ pub(crate) mod tests {
         // wrong repo.
         let tmp = Tmp::new("bogus");
         tmp.tracker("issues");
-        let err = resolve_tracker_dir(Some(&tmp.0.display().to_string()), None, None, &tmp.0)
+        let err = resolve_tracker_dir(Some(&tmp.0.display().to_string()), None, &tmp.0)
             .expect_err("refused");
         assert!(err.contains("is not a tracker"), "{err}");
     }
 
+    /// The binary's own location is no longer a source of trackers. It used to be — an
+    /// engine committed beside the tracker it served resolved that one — and it stops
+    /// making sense for something installed on the machine rather than in the repo.
     #[test]
-    fn a_vendored_engine_finds_the_tracker_beside_it() {
-        let tmp = Tmp::new("vendored");
-        let d = tmp.tracker("issues");
-        let got = resolve_tracker_dir(None, None, Some(&d), &tmp.0).expect("resolved");
-        assert_eq!(got, d);
+    fn the_binarys_own_directory_is_not_a_tracker_source() {
+        let tmp = Tmp::new("selfdir");
+        // A tracker at <tmp>/beside/issues — where a binary living in `beside` would once
+        // have found it — and a working directory in a different branch of the tree, so
+        // neither walking up nor looking down can reach it. Nothing points at it, so
+        // nothing finds it.
+        tmp.tracker("beside/issues");
+        let elsewhere = tmp.0.join("elsewhere");
+        std::fs::create_dir_all(&elsewhere).expect("mkdir");
+        let err = resolve_tracker_dir(None, None, &elsewhere).expect_err("no tracker in reach");
+        assert!(err.contains("no tracker found"), "{err}");
     }
 
     #[test]

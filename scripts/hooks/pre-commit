@@ -1,28 +1,32 @@
 #!/usr/bin/env bash
 #
-# Pre-commit guard for the trck engine dev repo.
-#
-# `./trck` is a GENERATED artifact — its source of truth is the `src/trck/`
-# package, flattened by `build.py`. This hook refuses a commit when:
-#   1. `./trck` is out of sync with `src/trck/` (someone edited src without
-#      rebuilding, or hand-edited the generated `./trck`); and
-#   2. the issue tracker under `issues/` is inconsistent.
+# Pre-commit guard for the trck dev repo: refuse a commit that would leave the
+# issue tracker under `issues/` inconsistent.
 #
 # Enable it once per clone:  git config core.hooksPath scripts/hooks
+#
+# This is a convenience, not a gate — `--no-verify` skips it, and it does nothing
+# when no engine can be found. The check that binds runs in CI.
 set -euo pipefail
 
 root="$(git rev-parse --show-toplevel)"
 cd "$root"
 
-python3 build.py --check || {
-    echo "pre-commit: ./trck is out of sync with src/trck/." >&2
-    echo "            run 'python3 build.py' and stage ./trck, then commit again." >&2
+# The build tree first: in this repo the engine under change is the one that should
+# answer, and an installed trck would speak for a different version without saying so.
+if [ -x target/release/trck ]; then
+    engine=(target/release/trck)
+elif [ -x target/debug/trck ]; then
+    engine=(target/debug/trck)
+elif command -v trck >/dev/null 2>&1; then
+    engine=(trck)
+else
+    echo "pre-commit: no trck found — skipping the tracker check." >&2
+    echo "            build one with 'cargo build --release' to enable it." >&2
+    exit 0
+fi
+
+"${engine[@]}" check || {
+    echo "pre-commit: trck tracker is inconsistent — aborting commit." >&2
     exit 1
 }
-
-if [ -x ./trck ]; then
-    python3 ./trck check || {
-        echo "pre-commit: trck tracker is inconsistent — aborting commit." >&2
-        exit 1
-    }
-fi

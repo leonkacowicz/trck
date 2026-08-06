@@ -12,6 +12,7 @@ this suite stays free of it.
     python3 -m unittest discover -s scripts/tests
 """
 import json
+import os
 import subprocess
 import sys
 import unittest
@@ -20,7 +21,9 @@ from tempfile import TemporaryDirectory
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 SCRIPT_PATH = REPO_ROOT / "scripts" / "renumber.py"
-ENGINE_PATH = REPO_ROOT / "trck"
+# The built binary: this asserts that the engine accepts what the converter produced, and an
+# installed trck would answer for a version that is not the one under change.
+ENGINE_PATH = Path(os.environ.get("TRCK_BIN") or REPO_ROOT / "target" / "release" / "trck")
 
 
 def load_renumber():
@@ -121,20 +124,24 @@ class TestRenumber(unittest.TestCase):
             self.assertIn("nothing to convert", r.stdout)
             self.assertEqual((Path(d) / "index.jsonl").read_text(), before)
 
-    @unittest.skipUnless(ENGINE_PATH.is_file(), "./trck not built")
+    @unittest.skipUnless(ENGINE_PATH.is_file(), "engine not built (cargo build --release)")
     def test_the_engine_accepts_what_the_script_produces(self):
         """The claim that spans both sides, made by subprocess so this suite keeps its
-        independence from the engine. Before conversion the engine refuses outright;
-        after it, `check` is clean."""
+        independence from the engine: a legacy tracker is refused, and a converted one is
+        clean.
+
+        Only the refusal's *existence* is asserted, not its wording. The engine used to
+        recognise integer ids by name and point at this script; it no longer does, and that
+        was decided rather than lost (`#t4azhkq`) — a tracker this old is unreadable, and
+        saying so imprecisely beats promising a conversion the engine does not implement."""
         with TemporaryDirectory() as tmp:
             d = legacy_tracker(tmp)
-            before = subprocess.run([sys.executable, str(ENGINE_PATH), "--dir", str(d),
-                                     "check"], capture_output=True, text=True)
-            self.assertNotEqual(before.returncode, 0)
-            self.assertIn("legacy integer ids", before.stderr)
+            before = subprocess.run([str(ENGINE_PATH), "--dir", str(d), "check"],
+                                    capture_output=True, text=True)
+            self.assertNotEqual(before.returncode, 0, "a legacy tracker was accepted")
 
             self.run_script(d)
-            after = subprocess.run([sys.executable, str(ENGINE_PATH), "--dir", str(d),
-                                    "check"], capture_output=True, text=True)
+            after = subprocess.run([str(ENGINE_PATH), "--dir", str(d), "check"],
+                                   capture_output=True, text=True)
             self.assertEqual(after.returncode, 0, after.stderr)
             self.assertIn("OK", after.stdout)

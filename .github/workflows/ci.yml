@@ -6,46 +6,19 @@ on:
   pull_request:
 
 jobs:
-  test:
+  # The helper scripts: a timestamp backfill, an id converter, and the installer. None of
+  # them is part of the engine, and they run as their own suite for that reason — a
+  # one-shot nobody will run again should not gate every engine change. Two of them do
+  # reach for a built binary, and skip cleanly when there isn't one.
+  scripts:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ['3.12', '3.13', '3.14']
     steps:
       - uses: actions/checkout@v7
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v7
+      - uses: actions/setup-python@v7
         with:
-          python-version: ${{ matrix.python-version }}
-
-      # Runs FIRST, against the pristine checkout: ./trck is generated from
-      # src/trck/, so the committed engine must equal build(src/). The test suite
-      # regenerates ./trck (see tests/__init__.py), so this check has to come
-      # before it to catch a commit where ./trck was left stale.
-      - name: ./trck is in sync with src/trck/
-        run: python3 build.py --check
-
-      - name: Test suite
-        run: python3 -m unittest discover -s tests -v
-
-      # scripts/ holds standalone one-shots that are no longer part of the
-      # executable: an integer-id converter and a timestamp backfill. Neither
-      # imports the engine, and neither has anything to say about an engine
-      # change, so they run as their own suite rather than gating every commit.
-      # The one claim that spans both sides — that the engine accepts what the
-      # converter produces — is made there by running ./trck as a subprocess.
+          python-version: '3.13'
       - name: Helper-script suite
         run: python3 -m unittest discover -s scripts/tests -v
-
-      # The executable specification. It execs ./trck rather than importing it, so
-      # this same step will one day run against the Rust binary via TRCK_BIN.
-      - name: Conformance suite
-        run: python3 conformance/run.py
-
-      - name: Tracker consistency
-        run: python3 ./trck check
 
   # The installer, on the platform it was broken on.
   #
@@ -96,6 +69,18 @@ jobs:
       # Linux only: the fixtures compare output literally, and path rendering and
       # line endings differ on Windows. Cross-platform correctness is the build and
       # test matrix above; the fixtures are about behaviour.
-      - name: Conformance (pass rate)
+      #
+      # This is the specification, and the only thing that says the engine still does what
+      # it is supposed to. --min-pass is a floor that only moves up, so a fixture cannot
+      # quietly stop passing and every raise is a visible commit.
+      - name: Conformance (the specification)
         if: matrix.os == 'ubuntu-latest'
         run: python3 conformance/run.py --bin target/release/trck --min-pass 227
+
+      # This repository's own tracker, checked by the engine it ships. It lives here rather
+      # than in a job of its own because it needs a built binary and this is where one
+      # exists — and it must live *somewhere*: an inconsistent tracker that nothing checks
+      # is a tracker that stops being true without anyone finding out.
+      - name: Tracker consistency
+        if: matrix.os == 'ubuntu-latest'
+        run: ./target/release/trck check

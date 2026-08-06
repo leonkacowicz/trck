@@ -20,7 +20,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-TRCK = ROOT / "trck"
+# The built binary, so the screenshots show the engine as it is in this tree rather than
+# whatever happens to be installed. Override with $TRCK_BIN to shoot against another build.
+TRCK = Path(os.environ.get("TRCK_BIN") or ROOT / "target" / "release" / "trck")
 EXAMPLE = "examples/action-game"
 OUT = ROOT / "docs" / "img"
 
@@ -57,8 +59,11 @@ SGR = re.compile("\x1b\\[([0-9;]*)m")
 def run(argv):
     env = {**os.environ, "FORCE_COLOR": "1"}
     env.pop("NO_COLOR", None)
+    if not TRCK.is_file():
+        sys.exit(f"error: {TRCK} not found — run `cargo build --release` first, "
+                 "or set $TRCK_BIN")
     res = subprocess.run(
-        [sys.executable, str(TRCK), "--dir", EXAMPLE, *argv],
+        [str(TRCK), "--dir", EXAMPLE, *argv],
         cwd=ROOT, env=env, capture_output=True, text=True, check=True,
     )
     return res.stdout

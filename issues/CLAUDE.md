@@ -53,8 +53,8 @@ holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
 - `trck repo migrate-layout` — one-shot upgrade of a pre-0.23 tracker whose issue files still sit
   in per-status folders, into the flat `items/` layout. Such a tracker is **refused by every
   verb** (`legacy status-folder layout: …`) until this runs; `--dry-run` previews the moves.
-- `trck update` — on a Python engine, reports that the line has ended and how to install
-  the binary. The binary has no self-update: whatever installed it owns the file.
+- `trck version` — what engine this tracker is being driven by. There is no self-update:
+  whatever installed `trck` owns the file, so upgrade it the way you installed it.
 
 The vocabulary is fixed, not configured: statuses run `backlog → ongoing → in-review → done`,
 priorities are `urgent`/`high`/`medium`/`low`/`lowest`, and a closed issue may carry one of

@@ -248,28 +248,6 @@ reintroduce the collisions random ids exist to prevent.
 There's no equivalent on `set`: changing an existing issue's id would have to rewrite every
 `parent`/`depends_on` pointing at it and rename its body file.
 
-### If you still have integer ids
-
-Integer ids were trck's first iteration, replaced because two branches running `trck new`
-minted the same number. They are **no longer supported** — not read, not written, not
-resolved — and a tracker that still has them is refused with a message pointing here.
-
-Converting is a one-shot job that no tracker needs twice, so it lives outside the engine as
-`scripts/renumber.py` in this repository rather than as a verb:
-
-```bash
-python3 scripts/renumber.py issues --dry-run   # show the mapping, write nothing
-python3 scripts/renumber.py issues             # convert; review the diff and commit
-```
-
-It mints a random id per issue, rewrites `parent`/`depends_on`, renames the body files,
-rewrites `#NN` mentions **in issue bodies**, and writes `issues/legacy-ids.json` with the
-old→new map.
-
-**Keep that map.** Commit messages are not rewritable, so a `#24` in your history resolves
-nowhere else — the engine used to store each issue's old number and resolve `trck show 24`
-through it, and no longer does.
-
 ## Common verbs
 
 `new` · `mv` · `start` · `review` · `done` · `set` · `dep` · `label` · `show` · `list` · `ready` ·
