@@ -46,7 +46,7 @@ from pathlib import Path
 from typing import NoReturn
 
 
-__version__ = "0.25.0"
+__version__ = "0.25.1"
 DEFAULT_UPDATE_REPO = "leonkacowicz/trck"
 SELF_PATH = Path(__file__).resolve()  # the running engine file; tests may override
 
@@ -2788,7 +2788,8 @@ holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
 - `trck repo migrate-layout` — one-shot upgrade of a pre-0.23 tracker whose issue files still sit
   in per-status folders, into the flat `items/` layout. Such a tracker is **refused by every
   verb** (`legacy status-folder layout: …`) until this runs; `--dry-run` previews the moves.
-- `trck update` — pull the latest engine from the canonical repo.
+- `trck update` — on a Python engine, reports that the line has ended and how to install
+  the binary. The binary has no self-update: whatever installed it owns the file.
 
 The vocabulary is fixed, not configured: statuses run `backlog → ongoing → in-review → done`,
 priorities are `urgent`/`high`/`medium`/`low`/`lowest`, and a closed issue may carry one of
@@ -4135,9 +4136,39 @@ def cmd_setup_git(args) -> None:
           "every clone must run `trck repo setup-git` for auto-resolution to apply.")
 
 
+# The last thing this engine has to do is explain its own retirement.
+#
+# `update` fetches `./trck` from the repository *tree* at the newest release tag. The
+# cutover deletes that file, so an engine that kept fetching would ask for a path that no
+# longer exists and report `HTTP Error 404` — blaming the network for a decision this
+# project made. Worse, it would do it forever: there is no later Python release that could
+# ever teach it otherwise.
+#
+# So it stops here, and says where to go. Not by downloading a stub that explains itself:
+# the download is accepted if it compiles and mentions `__version__`, so a stub would pass
+# validation and replace a working engine with something that cannot run a tracker.
+#
+# `--ref` is left alone. Someone pinning a specific Python version still can, and that is
+# also what makes this safe to state unconditionally rather than probing the network to
+# find out whether the line has really ended.
+END_OF_LINE = """\
+this is the final Python release of trck, and there is nothing left to update to.
+
+trck is a single binary now. Install it with:
+
+  curl -fsSL https://raw.githubusercontent.com/{repo}/main/scripts/install.sh | sh
+
+or from a Homebrew tap, or by downloading a release asset directly. Your tracker needs no
+migration — the on-disk format is unchanged, and the binary reads it as it stands.
+
+`trck update --ref <tag>` still fetches a specific Python version, if you need one."""
+
+
 def cmd_update(args) -> None:
     repo = _update_repo(args)
     cur_ver = _current_version()
+    if not args.ref:
+        die(END_OF_LINE.format(repo=repo))
     try:
         if args.ref:
             ref = args.ref
@@ -4659,8 +4690,10 @@ def build_parser() -> argparse.ArgumentParser:
     iv.add_argument("--force", action="store_true", help="overwrite existing tracker files")
     iv.set_defaults(func=cmd_init)
 
-    up = sub.add_parser("update", help="self-update from the canonical repo",
-                        description="Self-update the engine from the canonical repo's latest release.")
+    up = sub.add_parser("update", help="report the migration to the binary (this is the last Python release)",
+                        description="This is the final Python release; there is nothing left to "
+                                    "update to. Reports how to install the binary instead. "
+                                    "`--ref` still fetches a specific Python version.")
     up.add_argument("--check", action="store_true",
                     help="report whether an update is available without applying it")
     up.add_argument("--ref", help="update to a specific git ref/tag instead of the latest release")

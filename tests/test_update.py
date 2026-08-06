@@ -2,7 +2,7 @@ import io
 import json
 import os
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -42,49 +42,83 @@ class TestUpdate(unittest.TestCase):
     def test_check_reports_newer_without_writing(self):
         with TemporaryDirectory() as tmp:
             p = self.make_self(tmp, "0.1.0")
-            self.t.latest_release = lambda repo: ("v0.2.0", "shiny")
             buf = io.StringIO()
             with redirect_stdout(buf):
-                self.t.cmd_update(ns(dir=None, check=True, ref=None))
+                self.t.cmd_update(ns(dir=None, check=True, ref="v0.2.0"))
             self.assertIn("0.2.0", buf.getvalue())
             self.assertIn("__version__ = '0.1.0'", p.read_text())  # unchanged
 
     def test_update_replaces_file_when_newer(self):
         with TemporaryDirectory() as tmp:
             p = self.make_self(tmp, "0.1.0")
-            self.t.latest_release = lambda repo: ("v0.2.0", "notes")
             new_src = "#!/usr/bin/env python3\n__version__ = '0.2.0'\n# new\n"
             self.t.fetch_url = lambda url, accept=None: new_src
             with redirect_stdout(io.StringIO()):
-                self.t.cmd_update(ns(dir=None, check=False, ref=None))
+                self.t.cmd_update(ns(dir=None, check=False, ref="v0.2.0"))
             self.assertEqual(p.read_text(), new_src)
             self.assertTrue(os.access(p, os.X_OK))  # exec bit preserved
 
-    def test_already_up_to_date_is_noop(self):
+    # --- the end of the line ---------------------------------------------------- #
+
+    def test_update_without_a_ref_names_the_migration_instead_of_fetching(self):
+        """This is the last Python engine, so there is nothing left to update to.
+
+        The alternative was to let it keep fetching: once `./trck` leaves the tree, every
+        engine in the wild would ask for a path that 404s and report the network as the
+        cause of a decision this project made. Saying so plainly is the whole job of the
+        final release."""
         with TemporaryDirectory() as tmp:
-            p = self.make_self(tmp, "0.2.0")
-            self.t.latest_release = lambda repo: ("v0.2.0", "")
+            p = self.make_self(tmp, "0.25.1")
             before = p.read_text()
-            with redirect_stdout(io.StringIO()):
+
+            def unreachable(*a, **k):
+                raise AssertionError("update went to the network after the final release")
+
+            self.t.latest_release = unreachable
+            self.t.fetch_url = unreachable
+            buf = io.StringIO()
+            with self.assertRaises(SystemExit) as cm, redirect_stdout(buf):
                 self.t.cmd_update(ns(dir=None, check=False, ref=None))
-            self.assertEqual(p.read_text(), before)
+            self.assertNotEqual(cm.exception.code, 0, "a dead update path exited 0")
+            self.assertEqual(p.read_text(), before, "the engine was replaced")
+
+    def test_the_notice_says_how_to_get_the_binary(self):
+        with TemporaryDirectory() as tmp:
+            self.make_self(tmp, "0.25.1")
+            err = io.StringIO()
+            with self.assertRaises(SystemExit), redirect_stderr(err):
+                self.t.cmd_update(ns(dir=None, check=False, ref=None))
+            text = err.getvalue()
+            self.assertIn("install.sh", text, text)
+            self.assertIn("--ref", text, text)  # the escape hatch is named
+
+    def test_check_also_reports_the_end_of_the_line(self):
+        """`--check` asks whether an update is available. The answer is no, and why."""
+        with TemporaryDirectory() as tmp:
+            self.make_self(tmp, "0.25.1")
+
+            def unreachable(*a, **k):
+                raise AssertionError("--check went to the network")
+
+            self.t.latest_release = unreachable
+            with self.assertRaises(SystemExit), redirect_stderr(io.StringIO()):
+                self.t.cmd_update(ns(dir=None, check=True, ref=None))
 
     def test_compile_failure_does_not_overwrite(self):
         with TemporaryDirectory() as tmp:
             p = self.make_self(tmp, "0.1.0")
-            self.t.latest_release = lambda repo: ("v0.2.0", "")
             self.t.fetch_url = lambda url, accept=None: "def (oops"  # invalid python
             with self.assertRaises(SystemExit), redirect_stdout(io.StringIO()):
-                self.t.cmd_update(ns(dir=None, check=False, ref=None))
+                self.t.cmd_update(ns(dir=None, check=False, ref="v0.2.0"))
             self.assertIn("__version__ = '0.1.0'", p.read_text())  # untouched
 
     def test_network_error_aborts_cleanly(self):
         with TemporaryDirectory() as tmp:
             p = self.make_self(tmp, "0.1.0")
-            def boom(repo): raise __import__("urllib").error.URLError("no net")
-            self.t.latest_release = boom
+            def boom(url, accept=None): raise __import__("urllib").error.URLError("no net")
+            self.t.fetch_url = boom
             with self.assertRaises(SystemExit), redirect_stdout(io.StringIO()):
-                self.t.cmd_update(ns(dir=None, check=False, ref=None))
+                self.t.cmd_update(ns(dir=None, check=False, ref="v0.2.0"))
             self.assertIn("__version__ = '0.1.0'", p.read_text())
 
     def test_ref_writes_regardless_of_version(self):
@@ -99,21 +133,19 @@ class TestUpdate(unittest.TestCase):
     def test_compile_failure_leaves_no_temp_file(self):
         with TemporaryDirectory() as tmp:
             self.make_self(tmp, "0.1.0")
-            self.t.latest_release = lambda repo: ("v0.2.0", "")
             self.t.fetch_url = lambda url, accept=None: "def (oops"  # invalid python
             with self.assertRaises(SystemExit), redirect_stdout(io.StringIO()):
-                self.t.cmd_update(ns(dir=None, check=False, ref=None))
+                self.t.cmd_update(ns(dir=None, check=False, ref="v0.2.0"))
             self.assertEqual(list(Path(tmp).glob("*.trck-update.tmp")), [])
 
     def test_replace_failure_cleans_up_temp_and_keeps_original(self):
         from unittest import mock
         with TemporaryDirectory() as tmp:
             p = self.make_self(tmp, "0.1.0")
-            self.t.latest_release = lambda repo: ("v0.2.0", "")
             self.t.fetch_url = lambda url, accept=None: "#!/usr/bin/env python3\n__version__ = '0.2.0'\n"
             with mock.patch.object(self.t.os, "replace", side_effect=OSError("boom")), \
                     self.assertRaises(SystemExit), redirect_stdout(io.StringIO()):
-                self.t.cmd_update(ns(dir=None, check=False, ref=None))
+                self.t.cmd_update(ns(dir=None, check=False, ref="v0.2.0"))
             self.assertEqual(list(Path(tmp).glob("*.trck-update.tmp")), [])  # cleaned up
             self.assertIn("__version__ = '0.1.0'", p.read_text())  # original intact
 
@@ -140,11 +172,12 @@ class TestUpdateRefreshesManagedDocs(unittest.TestCase):
         )
 
     def run_update(self, tracker, source):
-        self.t.latest_release = lambda repo: ("v0.2.0", "")
+        # Through `--ref`: the version-comparing path is retired with the engine, and this
+        # is about what happens *after* a fetch succeeds, which `--ref` still reaches.
         self.t.fetch_url = lambda url, accept=None: source
         buf = io.StringIO()
         with redirect_stdout(buf):
-            self.t.cmd_update(ns(dir=str(tracker), check=False, ref=None))
+            self.t.cmd_update(ns(dir=str(tracker), check=False, ref="v0.2.0"))
         return buf.getvalue()
 
     def test_refreshes_when_doc_matches_current_template(self):

@@ -102,10 +102,12 @@ the release and uploads the assets. A build that cannot pass its own spec never 
 download.
 
 The workflow fires on **any** `v*` tag, and the two engines share the tag namespace, so its
-first job refuses a tag that does not equal `v` + the workspace `Cargo.toml` version — bump and
+first job builds only when the tag equals `v` + the workspace `Cargo.toml` version — bump and
 tag in the same commit, or a Python-era tag would publish Rust binaries labelled with someone
-else's version. The check runs before the matrix, so a wrong tag costs a checkout rather than
-six cross-builds.
+else's version. It **skips** on a mismatch rather than failing, so the Python engine's own tags
+don't leave red runs behind; the run summary says which happened. The check is before the
+matrix, so a wrong tag costs a checkout rather than six cross-builds. **If a release you
+expected never appears, read the guard's summary first.**
 
 Targets are `x86_64-unknown-linux-{gnu,musl}`, `aarch64-unknown-linux-musl`,
 `{x86_64,aarch64}-apple-darwin`, `x86_64-pc-windows-msvc`. musl is the default the installer

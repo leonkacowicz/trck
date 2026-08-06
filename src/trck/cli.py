@@ -481,8 +481,10 @@ def build_parser() -> argparse.ArgumentParser:
     iv.add_argument("--force", action="store_true", help="overwrite existing tracker files")
     iv.set_defaults(func=cmd_init)
 
-    up = sub.add_parser("update", help="self-update from the canonical repo",
-                        description="Self-update the engine from the canonical repo's latest release.")
+    up = sub.add_parser("update", help="report the migration to the binary (this is the last Python release)",
+                        description="This is the final Python release; there is nothing left to "
+                                    "update to. Reports how to install the binary instead. "
+                                    "`--ref` still fetches a specific Python version.")
     up.add_argument("--check", action="store_true",
                     help="report whether an update is available without applying it")
     up.add_argument("--ref", help="update to a specific git ref/tag instead of the latest release")

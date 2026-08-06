@@ -21,31 +21,49 @@ jobs:
   # release would cross-build six targets from whatever the workspace Cargo.toml happened
   # to say — publishing binaries whose version disagrees with the tag that produced them.
   #
-  # Seconds, and before the matrix: a mismatched tag should cost a checkout, not a full
-  # cross-build. It fails rather than skips, because a tag that reaches this workflow by
-  # accident is a mistake somebody wants to hear about.
+  # Seconds, and before the matrix: a mismatched tag costs a checkout, not a full
+  # cross-build.
+  #
+  # It skips rather than fails. A tag that is not this crate's version is not this
+  # workflow's business — the final Python release is tagged deliberately and would
+  # otherwise leave a red run behind for doing the right thing. The trade is that a
+  # genuinely mistaken Rust tag publishes nothing quietly, which you notice the same way
+  # you would notice any release that failed to appear: it isn't there. The summary says
+  # which happened.
   guard:
     name: tag matches Cargo.toml
     runs-on: ubuntu-latest
+    outputs:
+      is_rust_release: ${{ steps.check.outputs.match }}
     steps:
       - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.tag || github.ref }}
 
-      - name: The tag and the crate must agree
+      - name: Does the tag name this crate's version?
+        id: check
         run: |
           tag="${{ inputs.tag || github.ref_name }}"
           crate="$(sed -n 's/^version *= *"\(.*\)"/\1/p' Cargo.toml | head -1)"
-          echo "tag=$tag  Cargo.toml=$crate"
-          if [ "$tag" != "v$crate" ]; then
-            echo "::error::tag $tag does not match the workspace version $crate." >&2
-            echo "This workflow builds the Rust binary. Bump Cargo.toml in the same" >&2
-            echo "commit you tag, or if this tag is not a Rust release, delete it." >&2
-            exit 1
+          if [ "$tag" = "v$crate" ]; then
+            echo "match=true" >> "$GITHUB_OUTPUT"
+            echo "### Building $tag" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "match=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### Skipped: $tag is not a Rust release"
+              echo ""
+              echo "This workflow builds the Rust binary, and the workspace \`Cargo.toml\`"
+              echo "says \`$crate\`, so \`v$crate\` is the tag it would build."
+              echo ""
+              echo "If you meant to release the binary, bump \`Cargo.toml\` in the same"
+              echo "commit you tag. If this tag is the Python engine's, nothing to do."
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
   build:
     needs: guard
+    if: needs.guard.outputs.is_rust_release == 'true'
     name: ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     strategy:
