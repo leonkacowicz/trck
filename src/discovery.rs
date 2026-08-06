@@ -294,7 +294,7 @@ pub(crate) mod tests {
     /// ones actually in use, and would catch a guard that rejects a real tracker.
     #[test]
     fn the_repos_own_configs_load_and_pass_the_guard() {
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().and_then(Path::parent).expect("crates/trck is two levels below the repo root").to_path_buf();
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).to_path_buf();
         let mut checked = 0;
         for rel in ["issues", "examples/action-game"] {
             let dir = root.join(rel);

@@ -495,7 +495,7 @@ cargo test --all
 python3 conformance/run.py --bin target/release/trck
 ```
 
-The engine is `crates/trck/`, and it takes **no dependencies** — the binary is a single
+The engine is `src/`, and it takes **no dependencies** — the binary is a single
 artifact a repository depends on for years, and every dependency is a future reason it stops
 building. The lints deny `unsafe`, `unwrap`, `expect` and `panic`: a malformed tracker must
 produce a diagnostic, never a stack trace. `cargo fmt --all --check` and

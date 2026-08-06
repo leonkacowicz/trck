@@ -20,17 +20,19 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
 /// This repository's own tracker: a real one, and big enough that the verb has plenty to say.
-fn repo_tracker() -> Option<PathBuf> {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).parent()?.parent()?.to_path_buf();
-    let dir = root.join("issues");
-    dir.join("index.jsonl").exists().then_some(dir)
+///
+/// Absent, this fails rather than skipping. It used to return `None` and let the assertions
+/// run against empty output — which passes, silently, and would have gone on passing after
+/// the crate moved to the repo root had the path been wrong.
+fn repo_tracker() -> PathBuf {
+    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("issues");
+    assert!(dir.join("index.jsonl").is_file(), "no tracker at {}", dir.display());
+    dir
 }
 
 /// Run a verb with stdout piped, drop the read end at once, and report the child's stderr.
 fn stderr_after_closing_stdout(args: &[&str]) -> String {
-    let Some(tracker) = repo_tracker() else {
-        return String::new(); // a consumer of this crate need not have the tracker
-    };
+    let tracker = repo_tracker();
     let mut child = Command::new(env!("CARGO_BIN_EXE_trck"))
         .args(args)
         .arg("--dir")

@@ -805,7 +805,7 @@ mod tests {
         let Ok(want) = std::env::var("TRCK_DUMP_GRAPH") else {
             return; // opt-in: this is a comparison harness, not an assertion
         };
-        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).parent().and_then(std::path::Path::parent).expect("repo root");
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
         let text = std::fs::read_to_string(root.join("issues/index.jsonl")).expect("index");
         let g = Graph::new(crate::index::parse_index(&text, "index.jsonl").expect("parses"));
         let mut out = String::new();

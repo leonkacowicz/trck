@@ -142,7 +142,7 @@ mod tests {
     /// normalize` and committed.
     #[test]
     fn real_indexes_round_trip_byte_for_byte() {
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().and_then(Path::parent).expect("crates/trck is two levels below the repo root").to_path_buf();
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).to_path_buf();
         let mut checked = 0;
         for rel in ["issues/index.jsonl", "examples/action-game/index.jsonl"] {
             let path = root.join(rel);

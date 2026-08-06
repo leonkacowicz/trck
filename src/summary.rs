@@ -251,7 +251,7 @@ mod tests {
     /// with real epics, labels, review links, resolutions and unicode titles.
     #[test]
     fn the_repos_own_summary_regenerates_byte_for_byte() {
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().and_then(Path::parent).expect("repo root");
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"));
         let mut checked = 0;
         for rel in ["issues", "examples/action-game"] {
             let dir = root.join(rel);

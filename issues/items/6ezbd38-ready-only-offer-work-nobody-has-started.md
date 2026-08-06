@@ -9,7 +9,7 @@ Offering a claimed task to whoever asks next is precisely the failure mode `read
 to prevent.
 
 The rule that produces this is `is_actionable`, which excludes only `in-review` and `done`
-(`src/trck/config.py`, `crates/trck/src/config.rs`). Its own docstring justifies excluding
+(`src/trck/config.py`, `src/config.rs`). Its own docstring justifies excluding
 `in-review` as "in flight, but its own output is pending someone else's judgement, so there is
 nothing here to start" — and `ongoing` is *more* in flight than `in-review`. The two cases are
 being treated differently for no reason that survives a second reader.
@@ -38,7 +38,7 @@ moves an issue "into ready".
 ## Notes
 Blast radius of the definition change: `is_actionable` in both engines, the conformance fixtures
 that exercise `ready`/`next` over a started leaf, and the `ready` field emitted by
-`crates/trck/src/html.rs`. It is a user-visible behaviour change, which is the right kind of
+`src/html.rs`. It is a user-visible behaviour change, which is the right kind of
 thing for the conformance suite to be the one to catch.
 
 History: #6pvt7fy ("ready/next: honor the actionable status flag") introduced the flag when the

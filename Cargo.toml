@@ -1,27 +1,28 @@
-[workspace]
-resolver = "3"
-members = ["crates/trck"]
-
-[workspace.package]
+[package]
+name = "trck"
+description = "Deterministic in-repo issue tracker"
 version = "0.27.0"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/leonkacowicz/trck"
 rust-version = "1.85"
 
-# Denied workspace-wide rather than per-crate, so a new crate inherits them by writing
-# `[lints] workspace = true` and cannot quietly opt out of the house rules.
-[workspace.lints.rust]
+# No dependencies, and that is a design constraint rather than an accident of being early:
+# the binary is meant to be a single self-contained artifact that a repo can depend on for
+# years, and every dependency is a future reason it stops building.
+[dependencies]
+
+[lints.rust]
 unsafe_code = "forbid"
 missing_docs = "warn"
 unreachable_pub = "warn"
 
-[workspace.lints.clippy]
-all = { level = "deny", priority = -1 }
-pedantic = { level = "warn", priority = -1 }
 # The engine's whole job is reading and writing files and exiting with a status.
 # unwrap/expect are the things that turn a bad tracker into a panic instead of a
 # diagnostic, so they are errors rather than style notes.
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
 unwrap_used = "deny"
 expect_used = "deny"
 panic = "deny"

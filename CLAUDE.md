@@ -9,8 +9,8 @@ tracks the work on it.
 
 ## Working on the engine
 
-The engine is **`crates/trck/`**. Build it with `cargo build --release`; that binary is what
-every harness in this repo points at.
+The engine is **`src/`** — one package at the repo root, no workspace. Build it with
+`cargo build --release`; that binary is what every harness in this repo points at.
 
 - **No dependencies, ever.** The binary is a single artifact a repository depends on for years,
   and every dependency is a future reason it stops building. The standard library is the whole
@@ -24,7 +24,7 @@ every harness in this repo points at.
 
 **Three suites, all run in CI:**
 
-- `cargo test --all` — the engine's own tests, including `crates/trck/tests/app_js.rs`, which
+- `cargo test --all` — the engine's own tests, including `tests/app_js.rs`, which
   lifts pure functions out of the compiled-in `assets/app.js` and runs them under `node`
   (skipped when node is absent). That asset is a string to the compiler, so nothing else would
   catch a syntax error in it. And `broken_pipe.rs`, which closes a reader on a running verb.
@@ -45,7 +45,7 @@ runs `trck check` before commits, preferring the binary in `target/` over an ins
 this repo the engine under change is the one that should answer.
 
 The vocabulary is **fixed in code**, not configured — `backlog → ongoing → in-review → done`,
-five priorities, three resolutions, all constants in `crates/trck/src/config.rs`. It used to come
+five priorities, three resolutions, all constants in `src/config.rs`. It used to come
 from each tracker's `trck.json`; that is gone, and `check` warns about leftover keys. `trck.json`
 now holds only the format version and the update channel.
 
