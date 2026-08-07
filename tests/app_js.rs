@@ -112,6 +112,9 @@ fn the_board_gives_ready_a_column_and_takes_those_cards_out_of_backlog() {
     // not a status, so it can only have a column if the cards it shows are subtracted
     // from the status column they would otherwise be in — and the two counts have to add
     // back up to the status total, or the board is quietly lying about how much is left.
+    //
+    // Position is asserted too, not only membership: `ready` sits immediately after the
+    // column it takes from, so the row reads as the path a card travels.
     let script = format!(
         "{}\n\
          const statuses = [{{name: 'backlog'}}, {{name: 'ongoing'}}, {{name: 'done'}}];\n\
@@ -126,7 +129,7 @@ fn the_board_gives_ready_a_column_and_takes_those_cards_out_of_backlog() {
         lift(&["boardColumns"])
     );
     let out = run_node(&script);
-    let want = r#"[["ready",["a"]],["backlog",["b","c"]],["ongoing",["d"]],["done",[]]]"#;
+    let want = r#"[["backlog",["b","c"]],["ready",["a"]],["ongoing",["d"]],["done",[]]]"#;
     assert_eq!(out.trim(), want, "{out}");
 }
 
