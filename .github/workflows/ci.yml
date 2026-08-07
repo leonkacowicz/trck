@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Merging is gated on three of these jobs, so a check that never reports blocks a pull
+  # request indefinitely — which is what a GitHub Actions outage looks like from here. This
+  # is the way to make one report without inventing an empty commit to hang it on.
+  workflow_dispatch:
 
 jobs:
   # The helper scripts: a timestamp backfill, an id converter, and the installer. None of
