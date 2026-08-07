@@ -678,7 +678,7 @@ function card(i) {
   c.append(m);
   return c;
 }
-// The columns, `ready` first and then one per status.
+// One column per status, plus `ready` sitting between the initial status and the next.
 //
 // `ready` is not a status and nothing is ever moved into it: an issue is ready when it
 // is an unblocked leaf nobody has started, which makes it a strict subset of the initial
@@ -686,12 +686,18 @@ function card(i) {
 // exactly one other column, so every card still sits in exactly one place, and the
 // initial column reads as "not yet" rather than as a bag holding both.
 //
+// It goes straight after the column it takes those cards from, so the board reads left
+// to right as the path a card actually travels: not yet, available, taken, in review,
+// finished. `statuses` arrives in vocabulary order — the same order the columns are laid
+// out in — so the initial status is the first of them.
+//
 // Subtracting `ready` from *every* status column rather than only the initial one says
 // the same thing without this view having to know which status is initial: a ready issue
 // is by definition in the initial one.
 function boardColumns(statuses, shown) {
-  return [{ name: 'ready', derived: true, items: shown.filter(i => i.ready) }].concat(
-    statuses.map(s => ({ name: s.name, derived: false, items: shown.filter(i => i.status === s.name && !i.ready) })));
+  const cols = statuses.map(s => ({ name: s.name, derived: false, items: shown.filter(i => i.status === s.name && !i.ready) }));
+  cols.splice(1, 0, { name: 'ready', derived: true, items: shown.filter(i => i.ready) });
+  return cols;
 }
 function renderBoard() {
   const box = $('#board'); box.textContent = '';
