@@ -226,6 +226,19 @@ graph, so a constraint routed through another epic still orders two siblings tha
 other nowhere, and filtering rows out never reshuffles the ones that remain. A **done**
 dependency constrains nothing — the same rule that clears a row's `needs #NNN` note — so a
 tracker with no open dependencies comes out in plain `--sort` order.
+Each row opens with a **gutter glyph**, single-width so the ids line up:
+
+| glyph | means |
+|---|---|
+| `◇` | **ready** — an unblocked leaf nobody has started. What `trck ready` would list |
+| `○` | `backlog`, but not ready: waiting on a dependency, or an epic |
+| `◐` | `ongoing` or `in-review` — started, and somebody's |
+| `●` | `done` |
+
+`◇` is deliberately outside the `○◐●` fill gauge: that gauge says how far along the work is,
+and readiness is not a point on it. So a dense `list` answers "what could I pick up" without a
+second command.
+
 By default it also **hides settled work**: a terminal (done) issue is shown only while it is
 still open or sits directly under a non-terminal parent — so an open epic keeps its done
 children as progress context, but a fully-done subtree and standalone done tasks drop off.
@@ -274,7 +287,7 @@ blockers urgent, exactly as it stops blocking them.
 
 A row that ranks above its own priority says why, naming the issue that drives it:
 
-    ○ #k3m9x2a backlog  medium  Extract the parser  ↑urgent(#a1b2c3)
+    ◇ #k3m9x2a backlog  medium  Extract the parser  ↑urgent(#a1b2c3)
 
 Nothing about this is stored — it's derived from the graph on every run, like readiness
 itself. `list --sort priority` still sorts the declared field, and so does `SUMMARY.md`.

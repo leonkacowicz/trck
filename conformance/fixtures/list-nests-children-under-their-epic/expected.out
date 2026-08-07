@@ -1,4 +1,4 @@
 ○ #aaaaaaa backlog  medium  Epic 0% [EPIC]
-○ #bbbbbbb backlog  medium  ├─ First step blocks #ccccccc
+◇ #bbbbbbb backlog  medium  ├─ First step blocks #ccccccc
 ○ #ccccccc backlog  medium  └─ Second step needs #bbbbbbb
-○ #ddddddd backlog  urgent  Standalone
+◇ #ddddddd backlog  urgent  Standalone

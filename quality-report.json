@@ -10,8 +10,8 @@
     "module_files": 20
   },
   "totals": {
-    "file_functions": 264,
-    "file_lines": 870,
+    "file_functions": 249,
+    "file_lines": 805,
     "function_args": 13,
     "function_cognitive": 207,
     "function_cyclomatic": 306,
@@ -33,7 +33,7 @@
       "src/merge.rs": 7,
       "src/query/deps.rs": 3,
       "src/query/list.rs": 25,
-      "src/render.rs": 26,
+      "src/render/mod.rs": 11,
       "src/repo.rs": 18,
       "src/verbs/edit/set.rs": 7,
       "src/verbs/mod.rs": 4
@@ -47,7 +47,6 @@
       "src/help.rs": 132,
       "src/issue.rs": 68,
       "src/json.rs": 100,
-      "src/render.rs": 65,
       "src/repo.rs": 82
     },
     "function_args": {
@@ -82,8 +81,8 @@
       "src/json.rs::write_pretty": 1,
       "src/merge.rs::merge_one": 10,
       "src/merge.rs::merge_rows": 3,
-      "src/render.rs::block_annotations": 17,
-      "src/render.rs::render_rows": 5,
+      "src/render/mod.rs::block_annotations": 17,
+      "src/render/mod.rs::render_rows": 5,
       "src/repo.rs::cmd_migrate_layout": 3,
       "src/repo.rs::gitattributes_update": 14,
       "src/summary.rs::hierarchies_section": 7,
@@ -135,10 +134,10 @@
       "src/query/list.rs::cmd_list": 7,
       "src/query/list.rs::keeps": 10,
       "src/query/show.rs::cmd_show": 9,
-      "src/render.rs::ansi": 6,
-      "src/render.rs::block_annotations": 8,
-      "src/render.rs::field_value": 17,
-      "src/render.rs::render_rows": 5,
+      "src/render/colour.rs::ansi": 6,
+      "src/render/mod.rs::block_annotations": 8,
+      "src/render/mod.rs::field_value": 17,
+      "src/render/mod.rs::render_rows": 5,
       "src/repo.rs::cmd_install_hook": 8,
       "src/repo.rs::cmd_merge_index": 8,
       "src/repo.rs::cmd_migrate_layout": 10,
