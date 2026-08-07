@@ -1,7 +1,7 @@
 # Issues spread across statuses; SUMMARY has a count row for every status and a
 # section per status, both in the fixed vocabulary order.
 new "Backlog item" --id aaaaaaa
-new "Ongoing item" --id bbbbbbb
+new "In-progress item" --id bbbbbbb
 new "Review item" --id ccccccc
 new "Done item" --id ddddddd
 start bbbbbbb

@@ -6,18 +6,18 @@
 | State | Count |
 |---|---:|
 | backlog | 19 |
-| ongoing | 11 |
+| in-progress | 11 |
 | in-review | 0 |
 | done | 5 |
 | **total** | **35** |
 
 ## Hierarchies
 
-### [#6ekkhbe Combat system](items/6ekkhbe-combat-system.md) — 0% (0/20 pts · 0/6 done) · _high_ · ongoing
+### [#6ekkhbe Combat system](items/6ekkhbe-combat-system.md) — 0% (0/20 pts · 0/6 done) · _high_ · in-progress
 
-- [ ] [#2sg3uhd Melee combos](items/2sg3uhd-melee-combos.md) [combat] _(ongoing)_
-- [ ] [#7qax2vu Damage & health system](items/7qax2vu-damage-health-system.md) [combat] _(ongoing)_
-- [ ] [#adgus46 Dash i-frames not applied](items/adgus46-dash-i-frames-not-applied.md) [combat] _(ongoing)_
+- [ ] [#2sg3uhd Melee combos](items/2sg3uhd-melee-combos.md) [combat] _(in-progress)_
+- [ ] [#7qax2vu Damage & health system](items/7qax2vu-damage-health-system.md) [combat] _(in-progress)_
+- [ ] [#adgus46 Dash i-frames not applied](items/adgus46-dash-i-frames-not-applied.md) [combat] _(in-progress)_
 - [ ] [#gbnvvsc Enemy AI: patrol & aggro](items/gbnvvsc-enemy-ai-patrol-aggro.md) [combat enemies] _(backlog)_
 - [ ] [#m9n7pn6 Ranged / projectile attacks](items/m9n7pn6-ranged-projectile-attacks.md) [combat needs-design] _(backlog)_
 - [ ] [#r3m4yz9 Hitbox persists after enemy death](items/r3m4yz9-hitbox-persists-after-enemy-death.md) [combat enemies tech-debt] _(backlog)_
@@ -28,26 +28,26 @@
 - [ ] [#nv76h2p Combat SFX](items/nv76h2p-combat-sfx.md) [audio combat] _(backlog)_
 - [ ] [#vg35ftf Forest biome music](items/vg35ftf-forest-biome-music.md) [audio] _(backlog)_
 
-### [#9angn6c Art & animation pipeline](items/9angn6c-art-animation-pipeline.md) — 11% (2/18 pts · 1/5 done) · _medium_ · ongoing
+### [#9angn6c Art & animation pipeline](items/9angn6c-art-animation-pipeline.md) — 11% (2/18 pts · 1/5 done) · _medium_ · in-progress
 
 - [x] [#adejzqs Sprite atlas build tool](items/adejzqs-sprite-atlas-build-tool.md) [art tooling]
-- [ ] [#fb8zz9c Player sprite sheet](items/fb8zz9c-player-sprite-sheet.md) [art] _(ongoing)_
+- [ ] [#fb8zz9c Player sprite sheet](items/fb8zz9c-player-sprite-sheet.md) [art] _(in-progress)_
 - [ ] [#fd34m5t Enemy sprite sheets](items/fd34m5t-enemy-sprite-sheets.md) [art enemies] _(backlog)_
 - [ ] [#r4c8ajk Forest tileset](items/r4c8ajk-forest-tileset.md) [art] _(backlog)_
 - [ ] [#sr4c37v Cave tileset](items/sr4c37v-cave-tileset.md) [art] _(backlog)_
 
-### [#hqpjvhv UI, menus & HUD](items/hqpjvhv-ui-menus-hud.md) — 0% (0/9 pts · 0/3 done) · _medium_ · ongoing
+### [#hqpjvhv UI, menus & HUD](items/hqpjvhv-ui-menus-hud.md) — 0% (0/9 pts · 0/3 done) · _medium_ · in-progress
 
 - [ ] [#2v3w3zj Pause & settings menu](items/2v3w3zj-pause-settings-menu.md) [ux] _(backlog)_
-- [ ] [#br4e7qz Main menu](items/br4e7qz-main-menu.md) [ux] _(ongoing)_
+- [ ] [#br4e7qz Main menu](items/br4e7qz-main-menu.md) [ux] _(in-progress)_
 - [ ] [#z8be3ac HUD: health & ammo](items/z8be3ac-hud-health-ammo.md) [ux] _(backlog)_
 
-### [#j7n7grh Player movement & combat](items/j7n7grh-player-movement-combat.md) — 10% (3/30 pts · 1/9 done) · _high_ · ongoing
+### [#j7n7grh Player movement & combat](items/j7n7grh-player-movement-combat.md) — 10% (3/30 pts · 1/9 done) · _high_ · in-progress
 
 - [ ] [#3msf24b Crouch & slide](items/3msf24b-crouch-slide.md) [movement] _(backlog)_
 - [x] [#5qmdpg6 Walk / run / jump controller](items/5qmdpg6-walk-run-jump-controller.md) [movement]
-- [ ] [#6ekkhbe Combat system](items/6ekkhbe-combat-system.md) _(ongoing)_
-- [ ] [#e6mpzcj Dash & wall-jump](items/e6mpzcj-dash-wall-jump.md) [combat movement] _(ongoing)_
+- [ ] [#6ekkhbe Combat system](items/6ekkhbe-combat-system.md) _(in-progress)_
+- [ ] [#e6mpzcj Dash & wall-jump](items/e6mpzcj-dash-wall-jump.md) [combat movement] _(in-progress)_
 
 ### [#qw3rnfb World building & levels](items/qw3rnfb-world-building-levels.md) — 0% (0/21 pts · 0/4 done) · _medium_ · backlog
 
@@ -60,7 +60,7 @@
 
 - [#nmde6ad Save / load system](items/nmde6ad-save-load-system.md) — _medium_ [tech]
 
-## Ongoing
+## In-progress
 
 - [#h9chxqu Pick a save-data format](items/h9chxqu-pick-a-save-data-format.md) — _high_ [needs-design tech]
 

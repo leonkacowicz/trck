@@ -85,12 +85,12 @@ reading a tracker know what it is looking at without first reading a config file
 
 ### Statuses
 
-    backlog  →  ongoing  →  in-review  →  done
+    backlog  →  in-progress  →  in-review  →  done
 
 | status | means | to the engine |
 |---|---|---|
 | `backlog` | not started | where `trck new` lands an issue; the first move off it stamps `started` |
-| `ongoing` | someone is on it | claimed, so `ready`/`next` skip it — but it still **blocks** its dependents. What a partly-finished parent rolls up to |
+| `in-progress` | someone is on it | claimed, so `ready`/`next` skip it — but it still **blocks** its dependents. What a partly-finished parent rolls up to |
 | `in-review` | in flight, output pending someone else's judgement | nothing to pick up, so `ready`/`next` skip it — but it still **blocks** its dependents |
 | `done` | finished | satisfies a dependency; counts toward progress. Entering it stamps `closed`; leaving it (reopen) clears that and any resolution |
 
@@ -107,7 +107,7 @@ judging yours, so a task for it would be a fiction — and one per reviewable is
 double the tracker. Same for a vendor reply or a sign-off nobody here will ever close.
 
 A **parent's status is derived from its children**: all `backlog` → `backlog`, all `done` →
-`done`, otherwise `ongoing`. The rollup is maintained on every move, recursively up to the
+`done`, otherwise `in-progress`. The rollup is maintained on every move, recursively up to the
 root. To override it, `mv` the parent by hand — that pins its status; `set NNN --auto`
 returns it to derivation.
 
@@ -232,7 +232,7 @@ Each row opens with a **gutter glyph**, single-width so the ids line up:
 |---|---|
 | `◇` | **ready** — an unblocked leaf nobody has started. What `trck ready` would list |
 | `○` | `backlog`, but not ready: waiting on a dependency, or an epic |
-| `◐` | `ongoing` or `in-review` — started, and somebody's |
+| `◐` | `in-progress` or `in-review` — started, and somebody's |
 | `●` | `done` |
 
 `◇` is deliberately outside the `○◐●` fill gauge: that gauge says how far along the work is,
@@ -267,7 +267,7 @@ subtree, directly or through an edge authored on an ancestor, stays out of the l
 never the ranking either: rows are ranked over the whole graph, then filtered.
 
 **`next` names what is taken before it names what to take.** Above the single pick sits an
-`in flight:` line listing the leaves somebody has already started — `ongoing` or `in-review`.
+`in flight:` line listing the leaves somebody has already started — `in-progress` or `in-review`.
 There is no assignee field, so `start` is the only claim a tracker records, and this is where
 you read it: an idle picker sees what a colleague holds without being offered it, and comes
 back to their own in-progress work without it competing for the top slot. Nothing started, no
@@ -305,7 +305,7 @@ one move:
     trck review 42 https://github.com/you/repo/pull/12    # -> in-review, linked
     trck new "Fix login" --review-url https://…/pull/9    # or set it at creation
     trck set 42 --review-url https://…/pull/13            # relink; `none` clears it
-    trck mv 42 ongoing --review-url https://…/pull/13     # or record it on any move
+    trck mv 42 in-progress --review-url https://…/pull/13     # or record it on any move
     trck list --show-field review_url                     # show it as a column
 
 The value must be an absolute `http(s)` URL (`check` enforces it) but is otherwise

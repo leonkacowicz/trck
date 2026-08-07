@@ -26,7 +26,7 @@ pub(crate) fn gutter(status: &str, ready: bool) -> (&'static str, &'static [&'st
     match status {
         config::DONE => ("●", &["green"]),
         config::BACKLOG => ("○", &["dim"]),
-        config::ONGOING | config::IN_REVIEW => ("◐", &["yellow"]),
+        config::IN_PROGRESS | config::IN_REVIEW => ("◐", &["yellow"]),
         _ => ("⏳", &["yellow"]),
     }
 }
@@ -151,7 +151,7 @@ mod tests {
             }
         }
         assert_eq!(gutter("done", false).0, "●");
-        assert_eq!(gutter("in-review", false).0, gutter("ongoing", false).0);
+        assert_eq!(gutter("in-review", false).0, gutter("in-progress", false).0);
         // Availability, not progress: outside ○◐● rather than a fourth degree of fill.
         assert_eq!(gutter("backlog", true).0, "◇");
     }

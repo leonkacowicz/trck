@@ -6,7 +6,7 @@
 | State | Count |
 |---|---:|
 | backlog | 3 |
-| ongoing | 0 |
+| in-progress | 0 |
 | in-review | 0 |
 | done | 0 |
 | **total** | **3** |
@@ -17,7 +17,7 @@
 - [#aaaaaaa Med A](items/aaaaaaa-med-a.md) — _medium_
 - [#bbbbbbb Med B](items/bbbbbbb-med-b.md) — _medium_
 
-## Ongoing
+## In-progress
 
 _none_
 

@@ -1,1 +1,1 @@
-error: unknown status 'nosuch' (expected one of: backlog, ongoing, in-review, done)
+error: unknown status 'nosuch' (expected one of: backlog, in-progress, in-review, done)

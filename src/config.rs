@@ -13,10 +13,10 @@ use crate::json::{Json, parse};
 // --------------------------------------------------------------------------- //
 // Four statuses. Fixed — not configured, not renameable, not extensible.
 //
-//   backlog     not started.                      what `new` assigns, and all `ready` offers.
-//   ongoing     started, someone is on it.        claimed; what a mixed parent rolls up to.
-//   in-review   started, output pending judgement. claimed; nothing to pick up.
-//   done        finished.                         satisfies a dependency.
+//   backlog       not started.                      what `new` assigns, and all `ready` offers.
+//   in-progress   started, someone is on it.        claimed; what a mixed parent rolls up to.
+//   in-review     started, output pending judgement. claimed; nothing to pick up.
+//   done          finished.                         satisfies a dependency.
 //
 // The middle two are the *claim*: there is no assignee field, so a status is how a
 // tracker records that work is taken. Both still block their dependents.
@@ -26,13 +26,32 @@ use crate::json::{Json, parse};
 // close, `in-review` when making it a task would be inventing one. A code review forces
 // the distinction — the reviewer judges your deliverable rather than producing one.
 pub(crate) const BACKLOG: &str = "backlog";
-pub(crate) const ONGOING: &str = "ongoing";
+pub(crate) const IN_PROGRESS: &str = "in-progress";
 pub(crate) const IN_REVIEW: &str = "in-review";
 pub(crate) const DONE: &str = "done";
-pub(crate) const STATUSES: &[&str] = &[BACKLOG, ONGOING, IN_REVIEW, DONE];
+pub(crate) const STATUSES: &[&str] = &[BACKLOG, IN_PROGRESS, IN_REVIEW, DONE];
+
+/// What `in-progress` used to be called.
+///
+/// `ongoing` said the wrong thing — it reads as work of indeterminate duration, something
+/// done routinely rather than something that finishes. It is still accepted wherever a
+/// status is *read*, so a tracker written by an older engine keeps working and nobody has
+/// to retype their muscle memory; nothing ever writes it back, so a tracker converts to
+/// the new name the first time any verb rewrites its index.
+pub(crate) const LEGACY_IN_PROGRESS: &str = "ongoing";
+
+/// The canonical spelling of a status name, resolving the ones the vocabulary retired.
+///
+/// The one place a retired name is understood, so deleting it later is one edit and the
+/// grep that finds every caller. Applied at each boundary a status arrives through — a
+/// stored row, a `mv` argument, a `--status` filter — and never on the way out, which is
+/// what makes the old name readable without being writable.
+pub(crate) fn canonical_status(value: &str) -> &str {
+    if value == LEGACY_IN_PROGRESS { IN_PROGRESS } else { value }
+}
 
 /// verb -> status, for the `start` / `review` / `done` aliases.
-pub(crate) const VERB_STATUS: &[(&str, &str)] = &[("start", ONGOING), ("review", IN_REVIEW), ("done", DONE)];
+pub(crate) const VERB_STATUS: &[(&str, &str)] = &[("start", IN_PROGRESS), ("review", IN_REVIEW), ("done", DONE)];
 
 /// Five priorities, ordered by precedence. Fixing the count also fixes the shape of the
 /// demand vector, which is one slot per priority.
@@ -55,10 +74,6 @@ pub(crate) fn default_priority() -> &'static str {
     PRIORITIES[PRIORITIES.len() / 2]
 }
 
-pub(crate) fn initial_status() -> &'static str {
-    BACKLOG
-}
-
 pub(crate) fn is_terminal(status: &str) -> bool {
     status == DONE
 }
@@ -68,7 +83,7 @@ pub(crate) fn is_terminal(status: &str) -> bool {
 ///
 /// There is no assignee field, so `start` is the only claim a tracker records. Offering a
 /// claimed issue to whoever asks next is exactly the collision `ready` exists to prevent —
-/// which makes `ongoing` no more available than `in-review`, whose output is merely
+/// which makes `in-progress` no more available than `in-review`, whose output is merely
 /// pending someone else's judgement rather than someone else's keyboard.
 ///
 /// For the fixed vocabulary this reduces to `== BACKLOG`, and is kept as a predicate
@@ -86,7 +101,7 @@ pub(crate) fn is_actionable(status: &str) -> bool {
 /// Spelled as the two statuses rather than "not backlog, not done" so an unrecognised
 /// status from a hand-edited row is not reported as somebody's work in progress.
 pub(crate) fn is_in_flight(status: &str) -> bool {
-    status == ONGOING || status == IN_REVIEW
+    status == IN_PROGRESS || status == IN_REVIEW
 }
 
 /// The status a parent should carry given its children's: all initial -> initial, all
@@ -98,7 +113,7 @@ pub(crate) fn reconcile(children: &[String]) -> &'static str {
     if children.iter().all(|s| is_terminal(s)) {
         return DONE;
     }
-    ONGOING
+    IN_PROGRESS
 }
 
 pub(crate) fn resolve_alias(verb: &str) -> Option<&'static str> {
@@ -283,7 +298,7 @@ mod tests {
 
     #[test]
     fn the_vocabulary_is_fixed() {
-        assert_eq!(STATUSES, ["backlog", "ongoing", "in-review", "done"]);
+        assert_eq!(STATUSES, ["backlog", "in-progress", "in-review", "done"]);
         assert_eq!(PRIORITIES, ["urgent", "high", "medium", "low", "lowest"]);
         assert_eq!(RESOLUTIONS, ["superseded", "wontfix", "duplicate"]);
         assert_eq!(default_priority(), "medium");
@@ -317,8 +332,24 @@ mod tests {
         let s = |v: &[&str]| v.iter().map(|x| (*x).to_string()).collect::<Vec<_>>();
         assert_eq!(reconcile(&s(&["backlog", "backlog"])), "backlog");
         assert_eq!(reconcile(&s(&["done", "done"])), "done");
-        assert_eq!(reconcile(&s(&["backlog", "done"])), "ongoing");
-        assert_eq!(reconcile(&s(&["in-review"])), "ongoing");
+        assert_eq!(reconcile(&s(&["backlog", "done"])), "in-progress");
+        assert_eq!(reconcile(&s(&["in-review"])), "in-progress");
+    }
+
+    #[test]
+    fn the_retired_name_reads_as_the_status_it_became_and_is_not_one() {
+        assert_eq!(canonical_status(LEGACY_IN_PROGRESS), IN_PROGRESS);
+        // Every current name is already canonical, and a junk one is left alone so the
+        // status check still gets to refuse it by the name that was actually written.
+        for s in STATUSES {
+            assert_eq!(canonical_status(s), *s);
+        }
+        assert_eq!(canonical_status("wat"), "wat");
+        // Readable, never writable: canonicalisation happens at the boundaries, so nothing
+        // downstream — validation included — recognises the old name.
+        assert!(!STATUSES.contains(&LEGACY_IN_PROGRESS));
+        assert!(check_status(LEGACY_IN_PROGRESS).is_some());
+        assert!(!is_in_flight(LEGACY_IN_PROGRESS), "a row can never carry it");
     }
 
     #[test]
@@ -416,7 +447,7 @@ mod tests {
 
     #[test]
     fn the_verb_aliases_are_constants() {
-        assert_eq!(resolve_alias("start"), Some("ongoing"));
+        assert_eq!(resolve_alias("start"), Some("in-progress"));
         assert_eq!(resolve_alias("review"), Some("in-review"));
         assert_eq!(resolve_alias("done"), Some("done"));
         assert_eq!(resolve_alias("nonesuch"), None);

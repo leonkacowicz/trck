@@ -1,2 +1,2 @@
-{"id": "aaaaaaa", "slug": "epic", "title": "Epic", "status": "ongoing", "priority": "medium", "created": "2026-01-01T00:00:00Z", "started": "2026-01-01T00:00:00Z", "manual_status": true}
+{"id": "aaaaaaa", "slug": "epic", "title": "Epic", "status": "in-progress", "priority": "medium", "created": "2026-01-01T00:00:00Z", "started": "2026-01-01T00:00:00Z", "manual_status": true}
 {"id": "bbbbbbb", "slug": "kid", "title": "Kid", "status": "backlog", "priority": "medium", "parent": "aaaaaaa", "created": "2026-01-01T00:00:00Z"}

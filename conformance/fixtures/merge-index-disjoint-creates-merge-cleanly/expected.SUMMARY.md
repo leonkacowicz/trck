@@ -6,7 +6,7 @@
 | State | Count |
 |---|---:|
 | backlog | 2 |
-| ongoing | 0 |
+| in-progress | 0 |
 | in-review | 0 |
 | done | 0 |
 | **total** | **2** |
@@ -16,7 +16,7 @@
 - [#aaa1111 From A](items/aaa1111-a.md) — _medium_
 - [#bbb2222 From B](items/bbb2222-b.md) — _medium_
 
-## Ongoing
+## In-progress
 
 _none_
 

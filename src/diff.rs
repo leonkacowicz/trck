@@ -8,7 +8,7 @@
 //! The change model is deliberately three-way. A scalar field that moved, a set field
 //! that gained and lost members, and a timestamp are different questions, and flattening
 //! them into "these keys differ" would lose the one thing a reader wants — whether a
-//! `done -> ongoing` move is a reopen or a start.
+//! `done -> in-progress` move is a reopen or a start.
 
 use crate::config::{self, is_terminal};
 use crate::discovery::Ctx;
@@ -70,8 +70,8 @@ pub(crate) struct Change {
 ///
 /// A status the engine does not know — an old snapshot written under a renamed
 /// vocabulary — is unordered, so the move is `lateral` rather than an error. A renderer
-/// needs this because a `done -> ongoing` reopen must not read like a `backlog ->
-/// ongoing` start.
+/// needs this because a `done -> in-progress` reopen must not read like a `backlog ->
+/// in-progress` start.
 pub(crate) fn status_direction(old: &str, new: &str) -> Option<&'static str> {
     if old == new {
         return None;
@@ -382,8 +382,8 @@ mod tests {
     fn a_reopen_reads_differently_from_a_start() {
         // The reason `direction` exists: both are status moves, and a renderer that
         // cannot tell them apart reports a regression as progress.
-        assert_eq!(status_direction("backlog", "ongoing"), Some("forward"));
-        assert_eq!(status_direction("done", "ongoing"), Some("backward"));
+        assert_eq!(status_direction("backlog", "in-progress"), Some("forward"));
+        assert_eq!(status_direction("done", "in-progress"), Some("backward"));
         assert_eq!(status_direction("done", "done"), None);
     }
 

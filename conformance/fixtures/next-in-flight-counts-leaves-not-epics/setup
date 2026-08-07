@@ -1,4 +1,4 @@
-# An epic is ongoing because a child is; only the child says who holds what, so the
+# An epic is in-progress because a child is; only the child says who holds what, so the
 # derived parent stays out of the line.
 new "Epic" --id aaaaaaa --priority high
 new "Child" --id bbbbbbb --parent aaaaaaa --priority high

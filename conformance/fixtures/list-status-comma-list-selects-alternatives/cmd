@@ -1,1 +1,1 @@
-list --status ongoing,backlog --flat
+list --status in-progress,backlog --flat

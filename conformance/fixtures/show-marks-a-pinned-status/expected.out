@@ -1,7 +1,7 @@
            id  aaaaaaa
          slug  epic
         title  Epic
-       status  ongoing
+       status  in-progress
      priority  medium
       created  2026-01-01
 manual_status  True

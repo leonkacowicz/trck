@@ -240,7 +240,7 @@ edge that's still true.
 - **`trck check` before committing**, always. Keep tracker commits separate from code commits
   where reasonable (`index.jsonl` + `SUMMARY.md` — plus the body file when you wrote prose or the
   slug changed — are one tracker change and belong together).
-- The **vocabulary is fixed in code**, not configured: `backlog → ongoing → in-review → done`,
+- The **vocabulary is fixed in code**, not configured: `backlog → in-progress → in-review → done`,
   five priorities, three resolutions, the same in every tracker. `trck.json` holds the format
   version, not a vocabulary. A tracker still carrying the old vocabulary keys is not broken —
   they are ignored, and `check` names each one. Anything finer than the four statuses is a

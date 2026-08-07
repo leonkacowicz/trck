@@ -16,6 +16,10 @@ use crate::verbs::{load_rows, resolve_ref};
 use std::collections::{BTreeMap, BTreeSet};
 
 /// `--status a,b` keeps those; `--status '!done'` drops them. Returns `(keep, drop)`.
+///
+/// Names are canonicalised, so a filter spelled with a retired status selects the rows
+/// that status became — which is the only reading that can match anything, since no row
+/// is stored under the old name.
 fn parse_status_filter(spec: Option<&str>) -> (BTreeSet<String>, BTreeSet<String>) {
     let (mut keep, mut drop) = (BTreeSet::new(), BTreeSet::new());
     for part in spec.unwrap_or("").split(',').map(str::trim) {
@@ -23,9 +27,9 @@ fn parse_status_filter(spec: Option<&str>) -> (BTreeSet<String>, BTreeSet<String
             continue;
         }
         if let Some(name) = part.strip_prefix('!') {
-            drop.insert(name.to_string());
+            drop.insert(crate::config::canonical_status(name).to_string());
         } else {
-            keep.insert(part.to_string());
+            keep.insert(crate::config::canonical_status(part).to_string());
         }
     }
     (keep, drop)
@@ -296,12 +300,24 @@ mod tests {
 
     #[test]
     fn a_status_filter_separates_keeps_from_drops() {
-        let (keep, drop) = parse_status_filter(Some("backlog,ongoing"));
+        let (keep, drop) = parse_status_filter(Some("backlog,in-progress"));
         assert_eq!(keep.len(), 2);
         assert!(drop.is_empty());
         let (keep, drop) = parse_status_filter(Some("!done"));
         assert!(keep.is_empty());
         assert!(drop.contains("done"));
+    }
+
+    #[test]
+    fn a_retired_status_name_filters_on_what_it_became() {
+        // No row is stored under the old name, so a filter that kept it verbatim could
+        // only ever match nothing — on either side of the negation.
+        let (keep, drop) = parse_status_filter(Some("ongoing"));
+        assert!(keep.contains("in-progress"));
+        assert!(!keep.contains("ongoing"));
+        let (_, drop_legacy) = parse_status_filter(Some("!ongoing"));
+        assert!(drop_legacy.contains("in-progress"));
+        assert!(drop.is_empty());
     }
 
     #[test]
