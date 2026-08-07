@@ -10,7 +10,7 @@ Reuses `list`'s column layout, with the static status cell replaced by a transit
 ```
 + #a1b2c3d  new              deps --json: {requires, blocks} cones as JSON        medium
 ~ #2ry5d58  backlog → done   integration tests: real git merges and rebases       high
-~ #fkrp9dh  ongoing          trck-html: static HTML SPA        priority med→high  +label ui
+~ #fkrp9dh  in-progress          trck-html: static HTML SPA        priority med→high  +label ui
 - #x9y8z7w  removed          obsolete thing
 ```
 

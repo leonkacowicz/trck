@@ -4,7 +4,7 @@
 One line summarising net movement across the configured statuses, plus creations and deletions:
 
 ```
-backlog 24 → 21   ongoing 3 → 2   done 88 → 94      +2 new  −0 gone
+backlog 24 → 21   in-progress 3 → 2   done 88 → 94      +2 new  −0 gone
 ```
 
 Cheap to read, cheap to compute, and the right shape for a commit hook, a CI comment, or a PR

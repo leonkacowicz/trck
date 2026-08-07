@@ -7,7 +7,7 @@ need to see.
 
 ```
 ~ #fkrp9dh trck-html: static HTML SPA to browse issues in a browser
-     status    ongoing → done
+     status    in-progress → done
      priority  medium → high
      parent    (none) → #et9qb2y
      labels    +ui −later
