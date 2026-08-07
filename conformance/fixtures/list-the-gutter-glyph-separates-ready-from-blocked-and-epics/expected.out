@@ -1,0 +1,5 @@
+○ #aaaaaaa backlog  medium  Epic 0% [EPIC]
+◇ #bbbbbbb backlog  medium  ├─ Ready leaf blocks #ccccccc
+○ #ccccccc backlog  medium  └─ Blocked leaf needs #bbbbbbb
+◐ #ddddddd ongoing  medium  Started
+● #eeeeeee done     medium  Finished

@@ -11,7 +11,7 @@ use crate::graph::Graph;
 use crate::gutter;
 use crate::issue::Issue;
 use crate::json::Json;
-use crate::render::{LANE_PALETTE, hl_id, lane_palette_index, paint, status_codes, status_icon, unique_prefix_lens};
+use crate::render::{LANE_PALETTE, gutter, hl_id, lane_palette_index, paint, unique_prefix_lens};
 use crate::verbs::{load_rows, resolve_ref};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -180,7 +180,11 @@ impl Deps<'_> {
         let tag = if self.g.children_of(&r.id).is_empty() { String::new() } else { " ·epic·".to_string() };
         let labels = if r.labels.is_empty() { String::new() } else { paint(&format!(" [{}]", r.labels.join(" ")), &["dim"]) };
         let emph: &[&str] = if focal { &["bold"] } else { &[] };
-        format!("{} {} {}{tag}{labels}", hl_id(&r.id, Some(&self.abbrev), true), paint(status_icon(&r.status), &status_codes(&r.status)), paint(&r.title, emph))
+        // Status only, never the ready glyph: this view answers "what is waiting on
+        // what", and marking the roots of the unblocked chains would restate what the
+        // gutter beside them already draws.
+        let (glyph, codes) = gutter(&r.status, false);
+        format!("{} {} {}{tag}{labels}", hl_id(&r.id, Some(&self.abbrev), true), paint(glyph, codes), paint(&r.title, emph))
     }
 }
 

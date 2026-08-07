@@ -1,128 +1,17 @@
-//! Human-facing rendering: colour, icons, id emphasis, and the one-line row format the
-//! read verbs share.
+//! Human-facing rendering: id emphasis, the blocking and demand annotations, and the
+//! one-line row format the read verbs share.
 //!
-//! Colour is TTY-gated and honours `NO_COLOR`, so piping to a file or into the
-//! conformance runner produces plain text. That is not only politeness — it is what
-//! makes the rendered output comparable at all.
+//! Which colour anything is — and whether there is any colour at all — lives in
+//! [`colour`], re-exported here so the read verbs have one rendering import rather than
+//! two.
 
-use crate::config::{self, PRIORITIES, is_terminal};
+mod colour;
+pub(crate) use colour::{LANE_PALETTE, gutter, lane_palette_index, paint, priority_codes, status_codes};
+
+use crate::config::is_terminal;
 use crate::graph::Graph;
 use crate::issue::{CANON_KEYS, Issue};
 use std::collections::BTreeMap;
-use std::ffi::OsStr;
-use std::io::IsTerminal;
-
-/// Single-width, so the id column lines up whatever the status.
-pub(crate) fn status_icon(status: &str) -> &'static str {
-    match status {
-        config::DONE => "●",
-        config::BACKLOG => "○",
-        config::ONGOING | config::IN_REVIEW => "◐",
-        _ => "⏳",
-    }
-}
-
-fn ansi(code: &str) -> &'static str {
-    match code {
-        "reset" => "\u{1b}[0m",
-        "bold" => "\u{1b}[1m",
-        "dim" => "\u{1b}[2m",
-        "red" => "\u{1b}[31m",
-        "green" => "\u{1b}[32m",
-        "yellow" => "\u{1b}[33m",
-        "blue" => "\u{1b}[34m",
-        "magenta" => "\u{1b}[35m",
-        "cyan" => "\u{1b}[36m",
-        "bgreen" => "\u{1b}[92m",
-        "byellow" => "\u{1b}[93m",
-        "bblue" => "\u{1b}[94m",
-        "bmagenta" => "\u{1b}[95m",
-        "bcyan" => "\u{1b}[96m",
-        _ => "",
-    }
-}
-
-/// Whether to emit escape codes at all.
-///
-/// `NO_COLOR` set to anything, including empty, disables — that is the no-color.org
-/// convention. `FORCE_COLOR` set to anything but `0` forces colour on even off a terminal
-/// (its companion convention). Otherwise, colour only when stdout is a real terminal —
-/// `is_terminal()` is `isatty(1)` from std, so no dependency and no `unsafe` are needed.
-pub(crate) fn use_colour() -> bool {
-    colour_decision(std::env::var_os("NO_COLOR").is_some(), std::env::var_os("FORCE_COLOR").as_deref(), std::io::stdout().is_terminal())
-}
-
-/// The colour gate with its three inputs passed in rather than read from the environment,
-/// so the precedence (`NO_COLOR` > `FORCE_COLOR` > isatty) is testable without mutating process
-/// state — `set_var` is unsafe in this edition, and the crate forbids unsafe.
-fn colour_decision(no_color: bool, force_color: Option<&OsStr>, is_tty: bool) -> bool {
-    if no_color {
-        return false;
-    }
-    if force_color.is_some_and(|v| v != OsStr::new("0")) {
-        return true;
-    }
-    is_tty
-}
-
-/// Wrap `text` in the given codes, or return it unchanged when colour is off.
-pub(crate) fn paint(text: &str, codes: &[&str]) -> String {
-    paint_with(use_colour(), text, codes)
-}
-
-/// `paint` with the decision passed in rather than read from the environment. Split out
-/// so the formatting is testable without mutating process state — `set_var` is unsafe in
-/// this edition, and the crate forbids unsafe.
-fn paint_with(on: bool, text: &str, codes: &[&str]) -> String {
-    if codes.is_empty() || !on {
-        return text.to_string();
-    }
-    let mut out = String::new();
-    for c in codes {
-        out.push_str(ansi(c));
-    }
-    out.push_str(text);
-    out.push_str(ansi("reset"));
-    out
-}
-
-pub(crate) fn priority_codes(priority: &str) -> Vec<&'static str> {
-    if PRIORITIES.first().is_some_and(|p| *p == priority) {
-        vec!["red"]
-    } else if PRIORITIES.last().is_some_and(|p| *p == priority) {
-        vec!["dim"]
-    } else {
-        Vec::new()
-    }
-}
-
-pub(crate) fn status_codes(status: &str) -> Vec<&'static str> {
-    match status {
-        config::DONE => vec!["green"],
-        config::BACKLOG => vec!["dim"],
-        _ => vec!["yellow"],
-    }
-}
-
-/// Rotating palette used to colour graph lanes; each lane keeps one colour for its whole
-/// descent so it can be traced through crossings (`deps`). Distinguishing lanes *from each
-/// other* is the point, so this is a spread of hues rather than the status trichrome.
-pub(crate) const LANE_PALETTE: [&str; 11] = ["red", "green", "yellow", "blue", "magenta", "cyan", "bgreen", "byellow", "bblue", "bmagenta", "bcyan"];
-
-/// The palette slot a lane's owning id lands in. An id is read as one big integer — decimal
-/// if it is all digits, otherwise its bytes big-endian — then taken mod the palette length,
-/// so the same id always draws the same hue. Only the remainder is ever needed, so it is
-/// folded a byte at a time rather than materialising the (unbounded) integer.
-pub(crate) fn lane_palette_index(id: &str) -> usize {
-    let n = LANE_PALETTE.len();
-    // Fold in `usize`: every intermediate is a remainder < n plus one base-256/base-10 digit,
-    // so it stays far below `usize::MAX` and never truncates.
-    if !id.is_empty() && id.bytes().all(|b| b.is_ascii_digit()) {
-        id.bytes().fold(0usize, |acc, b| (acc * 10 + usize::from(b - b'0')) % n)
-    } else {
-        id.bytes().fold(0usize, |acc, b| (acc * 256 + usize::from(b)) % n)
-    }
-}
 
 /// Each id mapped to the length of its shortest prefix that identifies it uniquely —
 /// git-short-hash style, the fewest characters you would have to type. When an id is
@@ -280,18 +169,20 @@ pub(crate) fn render_rows(g: &Graph, rows: &[&Issue], opts: &RowOpts) -> Vec<Str
         };
         let fsuf = field_suffix(r, &opts.show_fields);
 
+        // The glyph carries readiness on its own; the status word beside it stays the
+        // status word, coloured by status like every other row's.
+        let (icon, icodes) = gutter(&r.status, g.is_ready(&r.id));
         if opts.dim.contains(&r.id) {
             // Ancestor context: the whole line dims, with no per-field colour.
-            let body = format!("{} #{} {:<sw$}  {:<pw$}  {pre}{}{prog}{plain_tags}", status_icon(&r.status), r.id, r.status, r.priority, r.title);
+            let body = format!("{icon} #{} {:<sw$}  {:<pw$}  {pre}{}{prog}{plain_tags}", r.id, r.status, r.priority, r.title);
             out.push(format!("{}{ann}{fsuf}", paint(&body, &["dim"])));
             continue;
         }
-        let codes = status_codes(&r.status);
         out.push(format!(
             "{} {} {}  {}  {pre}{}{}{}{ann}{fsuf}",
-            paint(status_icon(&r.status), &codes),
+            paint(icon, icodes),
             hl_id(&r.id, opts.abbrev.as_ref(), true),
-            paint(&format!("{:<sw$}", r.status), &codes),
+            paint(&format!("{:<sw$}", r.status), &status_codes(&r.status)),
             paint(&format!("{:<pw$}", r.priority), &priority_codes(&r.priority)),
             r.title,
             paint(&prog, &["dim"]),
@@ -371,65 +262,6 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
     use super::*;
-
-    #[test]
-    fn icons_are_one_per_status_and_single_width() {
-        for s in config::STATUSES {
-            assert_eq!(status_icon(s).chars().count(), 1, "{s}");
-        }
-        assert_eq!(status_icon("done"), "●");
-        assert_eq!(status_icon("in-review"), status_icon("ongoing"));
-    }
-
-    #[test]
-    fn colour_decision_matches_the_python_gate() {
-        let f = OsStr::new;
-        // NO_COLOR wins over FORCE_COLOR and over a real tty.
-        assert!(!colour_decision(true, Some(f("1")), true));
-        // FORCE_COLOR set to anything but "0" forces on, even when piped.
-        assert!(colour_decision(false, Some(f("1")), false));
-        assert!(colour_decision(false, Some(f("")), false)); // "" != "0" → forced on
-        // FORCE_COLOR=0 does not force; the tty check decides.
-        assert!(!colour_decision(false, Some(f("0")), false));
-        assert!(colour_decision(false, Some(f("0")), true));
-        // Unset FORCE_COLOR: follow the terminal.
-        assert!(colour_decision(false, None, true));
-        assert!(!colour_decision(false, None, false));
-    }
-
-    #[test]
-    fn colour_off_suppresses_every_escape() {
-        // The conformance runner sets NO_COLOR, and this is what makes rendered output
-        // comparable at all.
-        assert_eq!(paint_with(false, "x", &["red", "bold"]), "x");
-        assert_eq!(paint_with(true, "x", &["red"]), "\u{1b}[31mx\u{1b}[0m");
-        assert_eq!(paint_with(true, "x", &[]), "x", "no codes, no escapes");
-    }
-
-    #[test]
-    fn lane_palette_index_matches_the_python_engine() {
-        // Oracle values from the Python `paint_lane`: `int.from_bytes(id.encode(), "big")`
-        // (or `int(id)` when all-digit) mod len(_LANE_PALETTE).
-        for (id, want) in [
-            ("sp2rwzx", "green"),
-            ("eek4hat", "magenta"),
-            ("qktc8z7", "bmagenta"),
-            ("bdmgj7r", "magenta"),
-            ("2w5panf", "blue"),
-            ("a", "bmagenta"),
-            ("123", "yellow"),  // all-digit: int("123") % 11 == 2
-            ("007", "byellow"), // all-digit, leading zeros: int("007") == 7
-        ] {
-            assert_eq!(LANE_PALETTE[lane_palette_index(id)], want, "{id}");
-        }
-    }
-
-    #[test]
-    fn every_lane_palette_colour_has_an_escape() {
-        for c in LANE_PALETTE {
-            assert_ne!(ansi(c), "", "{c} has no ANSI code");
-        }
-    }
 
     #[test]
     fn unique_prefixes_are_the_fewest_characters_youd_type() {

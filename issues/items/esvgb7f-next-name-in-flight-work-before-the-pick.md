@@ -18,17 +18,33 @@ no longer competes with fresh work for the top slot.
 Ships **before** the narrowing, so no release drops the reminder.
 
 ## Acceptance criteria
-- [ ] `trck next` prints an `in flight:` line naming non-terminal, non-`backlog` leaves before
+- [x] `trck next` prints an `in flight:` line naming non-terminal, non-`backlog` leaves before
       the recommended pick.
-- [ ] The line is omitted entirely when nothing is in flight — no empty header.
-- [ ] `trck ready` (the full list) is unchanged: the line belongs to the one-pick view.
-- [ ] `next --json` carries the same information as a field rather than printing it, so the
+- [x] The line is omitted entirely when nothing is in flight — no empty header.
+- [x] `trck ready` (the full list) is unchanged: the line belongs to the one-pick view.
+- [x] `next --json` carries the same information as a field rather than printing it, so the
       document stays a single ranked array plus its context.
-- [ ] Scoping to a subtree (`ready ID --next`) scopes the in-flight line to that subtree too.
-- [ ] A conformance fixture covers next-with-in-flight and next-with-nothing-in-flight.
+- [x] Scoping to a subtree (`ready ID --next`) scopes the in-flight line to that subtree too.
+- [x] A conformance fixture covers next-with-in-flight and next-with-nothing-in-flight.
 
 ## Notes
 Leaves only, deliberately: an `ongoing` epic is ongoing because its children are, and listing it
 would say nothing about who holds what. In this repo all four ongoing issues are epics, so the
 line would be empty today — the fixture has to build the case rather than rely on the dogfood
 tracker.
+
+**The JSON shape, as decided.** "A field rather than printing it" cannot be an array's field,
+so `--json` became an object: `{"in_flight": [...], "ready": [...]}`, in-flight as whole rows
+rather than bare ids. Two calls that could have gone the other way:
+
+- **Both verbs, not just `next`.** `ready --json` and `next --json` had one shape, asserted by
+  a fixture; giving only `next` the object would have split them for the sake of a key. The
+  cost is the one asymmetry left: `ready --json` carries `in_flight` where the human `ready`
+  prints no line. A caller that does not want the context ignores a key, and one that does
+  cannot invent it — whereas the human full list already renders every row the line would name,
+  which is why it stays out of *that* view.
+- **Whole rows, not ids.** Every other `--json` document emits issue objects; ids would have
+  made this the one place a consumer needs a second call to render what it was handed.
+
+Breaking: `ready`/`next --json` no longer parse as an array. Both are pre-1.0 and the fixtures
+that pinned the array shape moved with the change.

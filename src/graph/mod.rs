@@ -17,7 +17,9 @@
 //!
 //! Every derived answer here is that rule read in one direction or the other:
 //! [`Graph::is_blocked`] reads the source side, [`Graph::demand_edges`] reads it
-//! reversed, and the cycle checks compose both.
+//! reversed, and the cycle checks in [`cycles`] compose both.
+
+mod cycles;
 
 use crate::config::{self, is_terminal};
 use crate::issue::Issue;
@@ -161,14 +163,29 @@ impl Graph {
         self.lifted_deps(id).iter().any(|b| !self.is_terminal_id(b))
     }
 
-    /// An unblocked leaf that could be picked up right now.
+    /// An unblocked leaf nobody has started — work that is genuinely free to pick up.
     ///
-    /// `in-review` fails this without being terminal: an issue awaiting judgement is in
-    /// flight, not available, so there is nothing to start — but it still blocks whatever
-    /// waits on it.
+    /// `ongoing` and `in-review` both fail this without being terminal. Neither is
+    /// available: one is on somebody's desk, the other on somebody's screen. Both still
+    /// block whatever waits on them, and both still count toward the demand cone — none of
+    /// that is what this predicate answers.
+    ///
+    /// No `is_terminal` term is needed: [`config::is_actionable`] admits only `backlog`.
     pub(crate) fn is_ready(&self, id: &str) -> bool {
         let Some(r) = self.get(id) else { return false };
-        !is_terminal(&r.status) && config::is_actionable(&r.status) && self.is_leaf(id) && !self.is_blocked(id)
+        config::is_actionable(&r.status) && self.is_leaf(id) && !self.is_blocked(id)
+    }
+
+    /// The leaves somebody is already holding, id-sorted — what `next` names above its
+    /// pick so an idle reader can see what is taken without being offered it.
+    ///
+    /// Leaves only, and deliberately: a parent is `ongoing` because a child is, so
+    /// listing it would name a container rather than a claim. Blocking plays no part —
+    /// a started issue is held whether or not it is waiting on something.
+    pub(crate) fn in_flight(&self) -> Vec<String> {
+        let mut out: Vec<String> = self.rows.iter().filter(|r| config::is_in_flight(&r.status) && self.is_leaf(&r.id)).map(|r| r.id.clone()).collect();
+        out.sort();
+        out
     }
 
     // --- demand: effective blocking, reversed -------------------------------- //
@@ -326,126 +343,6 @@ impl Graph {
         seen
     }
 
-    // --- cycles -------------------------------------------------------------- //
-
-    /// Everything effectively depended on, transitively, by anything in `start`: from
-    /// each node climb the spine to inherit authored deps, then expand each target's
-    /// subtree. Restarting from every target is what chains hops correctly.
-    fn effective_reach(&self, start: impl IntoIterator<Item = String>) -> BTreeSet<String> {
-        let mut seen: BTreeSet<String> = BTreeSet::new();
-        let mut stack: Vec<String> = start.into_iter().collect();
-        while let Some(node) = stack.pop() {
-            for b in self.lifted_deps(&node) {
-                for t in self.subtree(&b) {
-                    if seen.insert(t.clone()) {
-                        stack.push(t);
-                    }
-                }
-            }
-        }
-        seen
-    }
-
-    /// The parent-spine relationship between two issues, or `None` when their subtrees
-    /// are disjoint: `"same"`, `"descendant"` (a is below b), `"ancestor"` (a is above b).
-    ///
-    /// A dependency edge is admissible only when this is `None`. Overlapping subtrees
-    /// self-cycle under lifting — but *not* in a way `would_cycle` detects, because with
-    /// no authored edges anywhere there is nothing for it to reach through. It is a
-    /// separate invariant, checked separately, and it is cheap: one spine walk.
-    pub(crate) fn containment(&self, a: &str, b: &str) -> Option<&'static str> {
-        if a == b {
-            return Some("same");
-        }
-        if self.get(a).is_none() || self.get(b).is_none() {
-            return None;
-        }
-        if self.ancestors_of(a).iter().any(|x| x == b) {
-            return Some("descendant");
-        }
-        if self.ancestors_of(b).iter().any(|x| x == a) {
-            return Some("ancestor");
-        }
-        None
-    }
-
-    /// Why a candidate `src depends_on dep` edge must be refused, or `None` when it is
-    /// admissible. Checked before anything is written, so a rejection persists nothing.
-    pub(crate) fn check_dep_edge(&self, src: &str, dep: &str) -> Option<String> {
-        match self.containment(src, dep) {
-            Some("same") => return Some(format!("#{src} cannot depend on itself")),
-            Some("descendant") => {
-                return Some(format!(
-                    "#{src} is a descendant of #{dep}; a node can't depend on its own \
-                     ancestor (their subtrees overlap)"
-                ));
-            },
-            Some("ancestor") => {
-                return Some(format!(
-                    "#{src} is an ancestor of #{dep}; a node can't depend on its own \
-                     descendant (their subtrees overlap)"
-                ));
-            },
-            _ => {},
-        }
-        if self.would_cycle(src, dep) {
-            return Some(format!(
-                "#{src} -> #{dep} would create an effective dependency cycle \
-                 (a dependency inherited through the parent hierarchy closes the loop)"
-            ));
-        }
-        None
-    }
-
-    /// Whether adding `src depends_on dep` would close an *effective* cycle — one
-    /// implied through the hierarchy, not only through authored edges.
-    ///
-    /// The new edge lifts to `subtree(src)` waiting on `subtree(dep)`, so it closes a
-    /// loop exactly when something inside `dep` already effectively reaches something
-    /// inside `src`. An issue and its own ancestor or descendant can never depend on each
-    /// other, which falls out of this rather than being a separate rule.
-    pub(crate) fn would_cycle(&self, src: &str, dep: &str) -> bool {
-        if src == dep {
-            return true;
-        }
-        if self.get(src).is_none() || self.get(dep).is_none() {
-            return false;
-        }
-        let src_ids: BTreeSet<String> = self.subtree(src).into_iter().collect();
-        let reached = self.effective_reach(self.subtree(dep));
-        reached.intersection(&src_ids).next().is_some()
-    }
-
-    /// Every cycle in the effective dependency graph, each reported once, as the ids in
-    /// loop order. A superset of the authored cycles: an authored cycle is an effective
-    /// one too.
-    pub(crate) fn effective_cycles(&self) -> Vec<Vec<String>> {
-        let mut succ: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
-        for x in &self.rows {
-            let entry = succ.entry(x.id.clone()).or_default();
-            for b in self.lifted_deps(&x.id) {
-                entry.extend(self.subtree(&b));
-            }
-        }
-        find_cycles(&succ)
-    }
-
-    /// Cycles in the parent hierarchy, which make the tree not a tree. Reported
-    /// separately because the fix is different: a dependency cycle is an authoring
-    /// mistake, a parent cycle is structural damage.
-    pub(crate) fn parent_cycles(&self) -> Vec<Vec<String>> {
-        let mut succ: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
-        for r in &self.rows {
-            let entry = succ.entry(r.id.clone()).or_default();
-            if let Some(p) = &r.parent
-                && self.get(p).is_some()
-            {
-                entry.insert(p.clone());
-            }
-        }
-        find_cycles(&succ)
-    }
-
     // --- rollup -------------------------------------------------------------- //
 
     /// `(done_points, total_points, done_count, total_count)` over the leaf descendants.
@@ -494,58 +391,6 @@ impl Graph {
             (200 * done + total) / (2 * total)
         })
     }
-}
-
-/// Every cycle in a successor map, each reported once, in id order.
-fn find_cycles(succ: &BTreeMap<String, BTreeSet<String>>) -> Vec<Vec<String>> {
-    let mut cycles: Vec<Vec<String>> = Vec::new();
-    let mut seen_keys: BTreeSet<Vec<String>> = BTreeSet::new();
-    let mut colour: BTreeMap<&str, u8> = BTreeMap::new(); // 0 unseen, 1 on stack, 2 done
-    let mut path: Vec<String> = Vec::new();
-
-    // Iterative depth-first search. Recursion would be shorter and would also blow the
-    // stack on a deep hierarchy, which a malformed index can produce.
-    for start in succ.keys() {
-        if colour.get(start.as_str()).copied().unwrap_or(0) != 0 {
-            continue;
-        }
-        let mut stack: Vec<(&str, Vec<String>)> = vec![(start.as_str(), succ.get(start).map(|s| s.iter().cloned().collect()).unwrap_or_default())];
-        colour.insert(start.as_str(), 1);
-        path.push(start.clone());
-        while let Some((node, kids)) = stack.last_mut() {
-            let Some(next) = kids.pop() else {
-                colour.insert(node, 2);
-                path.pop();
-                stack.pop();
-                continue;
-            };
-            match colour.get(next.as_str()).copied().unwrap_or(0) {
-                1 => {
-                    // Back edge: the loop is the path from `next` to the top.
-                    if let Some(at) = path.iter().position(|n| *n == next) {
-                        let cycle = path[at..].to_vec();
-                        let mut key = cycle.clone();
-                        key.sort();
-                        if seen_keys.insert(key) {
-                            cycles.push(cycle);
-                        }
-                    }
-                },
-                0 => {
-                    let Some((k, _)) = succ.get_key_value(&next) else {
-                        continue;
-                    };
-                    colour.insert(k.as_str(), 1);
-                    path.push(next.clone());
-                    let kids = succ.get(&next).map(|s| s.iter().cloned().collect()).unwrap_or_default();
-                    stack.push((k.as_str(), kids));
-                },
-                _ => {},
-            }
-        }
-    }
-    cycles.sort();
-    cycles
 }
 
 #[cfg(test)]
@@ -601,14 +446,33 @@ mod tests {
     }
 
     #[test]
-    fn readiness_is_leaf_only_unblocked_and_actionable() {
-        let g = graph(&["epic", "kid:epic", "blocked ->kid", "reviewing @in-review", "finished @done", "free"]);
+    fn readiness_is_leaf_only_unblocked_and_unclaimed() {
+        let g = graph(&["epic", "kid:epic", "blocked ->kid", "started @ongoing", "reviewing @in-review", "finished @done", "free"]);
         assert!(g.is_ready("kid"));
         assert!(!g.is_ready("epic"), "a parent is not something you pick up");
         assert!(!g.is_ready("blocked"));
+        assert!(!g.is_ready("started"), "somebody already claimed it by starting it");
         assert!(!g.is_ready("reviewing"), "in flight, but its output is pending someone else's judgement");
         assert!(!g.is_ready("finished"));
         assert!(g.is_ready("free"));
+    }
+
+    #[test]
+    fn a_started_issue_still_blocks_and_still_conducts_demand() {
+        // The narrowing is about what is *offered*, and must not leak into the two things
+        // an unfinished issue does regardless of who holds it.
+        let g = graph(&["blocker !medium", "urgent ->blocker !urgent @ongoing", "high !high"]);
+        assert!(g.is_blocked("urgent"), "a dependency is satisfied by done, not by started");
+        assert_eq!(g.ranked_ready(), ["blocker", "high"]);
+        assert_eq!(g.demand_source("blocker").as_deref(), Some("urgent"));
+    }
+
+    #[test]
+    fn in_flight_is_the_started_leaves() {
+        let g = graph(&["epic @ongoing", "kid:epic @ongoing", "reviewing @in-review", "waiting ->kid @ongoing", "fresh", "finished @done"]);
+        assert_eq!(g.in_flight(), ["kid", "reviewing", "waiting"]);
+        // `epic` is ongoing only because `kid` is, so it names no claim of its own.
+        assert!(!g.in_flight().contains(&"epic".to_string()));
     }
 
     #[test]
@@ -670,60 +534,6 @@ mod tests {
     fn ties_break_by_points_then_id() {
         let g = graph(&["b !medium #3", "a !medium #3", "c !medium #9"]);
         assert_eq!(g.ranked_ready(), ["c", "a", "b"]);
-    }
-
-    #[test]
-    fn a_direct_cycle_is_refused() {
-        let g = graph(&["a", "b ->a"]);
-        assert!(g.would_cycle("a", "b"));
-        assert!(g.check_dep_edge("a", "b").is_some_and(|m| m.contains("cycle")));
-    }
-
-    #[test]
-    fn an_ancestor_or_descendant_edge_is_refused_by_containment_not_by_reachability() {
-        // Worth pinning, because the obvious guess is wrong: with no authored edges
-        // anywhere, `would_cycle` has nothing to reach through and says the edge is
-        // fine. Overlapping subtrees are a separate invariant.
-        let g = graph(&["epic", "kid:epic"]);
-        assert!(!g.would_cycle("kid", "epic"), "reachability cannot see this");
-        assert_eq!(g.containment("kid", "epic"), Some("descendant"));
-        assert_eq!(g.containment("epic", "kid"), Some("ancestor"));
-        assert!(g.check_dep_edge("kid", "epic").is_some_and(|m| m.contains("ancestor")));
-        assert!(g.check_dep_edge("epic", "kid").is_some_and(|m| m.contains("descendant")));
-    }
-
-    #[test]
-    fn an_issue_cannot_depend_on_itself() {
-        let g = graph(&["a"]);
-        assert_eq!(g.containment("a", "a"), Some("same"));
-        assert_eq!(g.check_dep_edge("a", "a").as_deref(), Some("#a cannot depend on itself"));
-    }
-
-    #[test]
-    fn siblings_and_cousins_may_depend_on_each_other() {
-        let g = graph(&["epic", "one:epic", "two:epic"]);
-        assert_eq!(g.containment("two", "one"), None);
-        assert!(!g.would_cycle("two", "one"));
-        assert_eq!(g.check_dep_edge("two", "one"), None);
-    }
-
-    #[test]
-    fn a_cycle_implied_through_the_hierarchy_is_refused() {
-        // `kid` inherits `epic -> other`, so `other -> kid` closes a loop that neither
-        // authored edge shows on its own.
-        let g = graph(&["epic ->other", "kid:epic", "other"]);
-        assert!(g.would_cycle("other", "kid"));
-        assert!(g.check_dep_edge("other", "kid").is_some_and(|m| m.contains("inherited")));
-        assert!(!g.would_cycle("other", "unrelated"));
-    }
-
-    #[test]
-    fn effective_cycles_finds_what_would_cycle_would_have_prevented() {
-        let g = graph(&["epic ->other", "kid:epic", "other ->kid"]);
-        let cycles = g.effective_cycles();
-        assert!(!cycles.is_empty(), "an implied loop should be reported");
-        let clean = graph(&["a", "b ->a", "c ->b"]);
-        assert!(clean.effective_cycles().is_empty());
     }
 
     #[test]

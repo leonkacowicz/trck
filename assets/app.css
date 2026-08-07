@@ -184,6 +184,9 @@ main { display: grid; grid-template-columns: minmax(12rem, var(--leftw, 40%)) 6p
 .bhead { padding: .45rem .6rem; border-bottom: 1px solid var(--line); font-weight: 600;
          display: flex; justify-content: space-between; gap: .5rem; }
 .bhead .bn { color: var(--muted); font-weight: 400; }
+/* `ready` is derived, not a status. Tinting its header says so without a legend — the
+   column is read-only in a way the other four are not. */
+.bcol.derived .bhead { color: var(--accent); border-bottom-color: var(--accent); }
 .bcards { padding: .4rem; overflow: auto; display: flex; flex-direction: column; gap: .4rem; }
 .card { background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
         padding: .45rem .55rem; cursor: pointer; }

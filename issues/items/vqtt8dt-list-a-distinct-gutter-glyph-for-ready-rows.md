@@ -15,16 +15,29 @@ Lowest-value of the four, and last: it is worth doing only if the glyph genuinel
 glance in a dense list.
 
 ## Acceptance criteria
-- [ ] A ready row renders a distinct single-width glyph; a blocked or epic backlog row keeps `○`.
-- [ ] Alignment is unchanged — single-width, as the existing comment on `STATUS_ICON` requires.
-- [ ] Both engines render the same glyph for the same row.
-- [ ] The legend (`trck --help` / docs) explains the glyph set including the new one.
-- [ ] A conformance fixture pins the gutter for ready / blocked / epic backlog rows.
+- [x] A ready row renders a distinct single-width glyph; a blocked or epic backlog row keeps `○`.
+- [x] Alignment is unchanged — single-width, pinned by a test over every status × ready.
+- [x] The legend (`trck list --help` and the README) explains the glyph set including the new one.
+- [x] A conformance fixture pins the gutter for ready / blocked / epic backlog rows.
+- [~] Two-engine agreement — moot, as in #gccs68j. There is one engine.
 
 ## Notes
-`◔` is the obvious candidate but the choice deserves a look in a real terminal at a few fonts
-before it is pinned by a fixture — `◐` and `◔` are close enough to confuse if the font renders
-them poorly.
+**The glyph is `◇`, not `◔`.** The candidates were looked at in a terminal side by side, and
+the reasoning that settled it is not really about the font: `○◐●` is a *fill gauge*, a picture
+of how far along the work is, and readiness is not a point on that scale — it says the work is
+available, which is a fact about its dependencies and about nobody holding it. A fourth degree
+of fill would have re-introduced the "started work is nearly ready" reading the whole epic
+removed. Leaving the family says it outright, and as a side effect nothing can be confused with
+`◐` in a bad font. It is also the one glyph rendered bright rather than dim, since scanning for
+it is the point.
+
+`deps` deliberately keeps status-only glyphs. That view answers "what is waiting on what", and
+marking the roots of the unblocked chains would restate what the gutter beside them already
+draws. Worth revisiting only if the graph ever gets read as a pick-list.
+
+The gutter glyph and its colour are now decided together (`render::colour::gutter`), because
+they are one decision: the two were separate calls, and the ready case is the first row state
+where the pair does not follow from the status alone.
 
 Watch the interaction with #teawzv6 and #3dtnmtv, which both want to put a staleness or
 due-date marker on `list`/`ready` rows. Those are trailing markers rather than gutter glyphs, so

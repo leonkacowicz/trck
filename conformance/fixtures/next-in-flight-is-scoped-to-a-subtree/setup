@@ -1,0 +1,8 @@
+# Scoping the pick scopes its context too: work in flight elsewhere is not this
+# subtree's business.
+new "Here" --id aaaaaaa --priority high
+new "Here taken" --id bbbbbbb --parent aaaaaaa --priority high
+new "Here free" --id ccccccc --parent aaaaaaa --priority urgent
+new "Elsewhere taken" --id ddddddd --priority high
+start bbbbbbb
+start ddddddd

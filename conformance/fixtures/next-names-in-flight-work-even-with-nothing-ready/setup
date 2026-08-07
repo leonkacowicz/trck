@@ -1,0 +1,6 @@
+# Every leaf is parked awaiting review. There is nothing to recommend, but naming
+# what is held is still the answer to "what is going on".
+new "First" --id aaaaaaa --priority urgent
+new "Second" --id bbbbbbb --priority high
+review aaaaaaa https://example.com/pr/1
+review bbbbbbb https://example.com/pr/2

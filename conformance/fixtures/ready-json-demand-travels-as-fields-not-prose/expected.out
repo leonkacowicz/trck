@@ -1,22 +1,25 @@
-[
-  {
-    "id": "aaaaaaa",
-    "slug": "blocker",
-    "title": "Blocker",
-    "status": "backlog",
-    "priority": "medium",
-    "points": 1,
-    "parent": null,
-    "labels": [],
-    "depends_on": [],
-    "spec": null,
-    "review_url": null,
-    "created": "2026-01-01T00:00:00Z",
-    "started": null,
-    "closed": null,
-    "resolution": null,
-    "manual_status": false,
-    "demand_priority": "urgent",
-    "demand_source": "bbbbbbb"
-  }
-]
+{
+  "in_flight": [],
+  "ready": [
+    {
+      "id": "aaaaaaa",
+      "slug": "blocker",
+      "title": "Blocker",
+      "status": "backlog",
+      "priority": "medium",
+      "points": 1,
+      "parent": null,
+      "labels": [],
+      "depends_on": [],
+      "spec": null,
+      "review_url": null,
+      "created": "2026-01-01T00:00:00Z",
+      "started": null,
+      "closed": null,
+      "resolution": null,
+      "manual_status": false,
+      "demand_priority": "urgent",
+      "demand_source": "bbbbbbb"
+    }
+  ]
+}

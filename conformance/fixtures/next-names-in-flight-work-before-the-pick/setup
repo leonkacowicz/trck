@@ -1,0 +1,6 @@
+# Two leaves are taken — one started, one awaiting review — and one is free.
+new "First" --id aaaaaaa --priority urgent
+new "Second" --id bbbbbbb --priority high
+new "Third" --id ccccccc --priority medium
+start bbbbbbb
+review ccccccc https://example.com/pr/1

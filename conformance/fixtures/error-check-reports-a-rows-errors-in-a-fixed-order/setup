@@ -1,0 +1,5 @@
+# One row wrong in every way a per-row check can catch, seeded literally because no verb
+# would write it. The point is the *order* the complaints come back in: identity against
+# the file, then values against the vocabulary, then the (status, closed, resolution)
+# unit, then custom fields. Nothing else pins that, so a refactor of the row checks could
+# reshuffle a user's error report and every other fixture would still pass.

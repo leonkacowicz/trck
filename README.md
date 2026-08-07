@@ -90,7 +90,7 @@ reading a tracker know what it is looking at without first reading a config file
 | status | means | to the engine |
 |---|---|---|
 | `backlog` | not started | where `trck new` lands an issue; the first move off it stamps `started` |
-| `ongoing` | someone is on it | what a partly-finished parent rolls up to |
+| `ongoing` | someone is on it | claimed, so `ready`/`next` skip it — but it still **blocks** its dependents. What a partly-finished parent rolls up to |
 | `in-review` | in flight, output pending someone else's judgement | nothing to pick up, so `ready`/`next` skip it — but it still **blocks** its dependents |
 | `done` | finished | satisfies a dependency; counts toward progress. Entering it stamps `closed`; leaving it (reopen) clears that and any resolution |
 
@@ -169,20 +169,26 @@ trck list --json                  # nested forest: each node + a "children" arra
 trck list --flat --json           # flat array, in the sorted order
 trck show NNN --json              # the metadata plus a "body" field
 trck deps NNN --json              # {"requires": [...], "blocks": [...]}
-trck next --json                  # array of one, ranked
+trck next --json                  # {"in_flight": [...], "ready": [one row]}
 ```
 
-Two shape notes worth knowing:
+Three shape notes worth knowing:
 
 - **`list --json` marks context rows.** The forest pulls non-matching ancestors in so a
   matched child never floats free; the human view dims them, and the JSON sets
   `"context": true`. Without it you can't tell a result from the scaffolding.
+- **`ready`/`next --json` are an object, not an array.** `{"in_flight": [...], "ready":
+  [...]}` — the ranked pick list beside the leaves somebody has already started, as whole
+  rows. Both verbs emit the same shape; `next` differs only in that `ready` holds at most
+  one row. The document always carries `in_flight`, even though the human view prints it
+  only above the one-pick view: a caller that doesn't want the context can ignore a key,
+  while one that does can't invent it.
 - **`ready`/`next --json` carry the demand note as data.** A row lifted above its own
   priority gets `demand_priority` and `demand_source` — what the human view renders as
-  `↑urgent(#a1b2c3)` — omitted on rows that aren't lifted. **The array order is the
+  `↑urgent(#a1b2c3)` — omitted on rows that aren't lifted. **The `ready` order is the
   contract**: this verb's whole answer is "in what order", so you never re-derive it.
 
-An empty result is `[]`, not silence.
+An empty result is `[]` — or, for `ready`/`next`, an object of empty arrays — not silence.
 
 ## Issue ids
 
@@ -220,6 +226,19 @@ graph, so a constraint routed through another epic still orders two siblings tha
 other nowhere, and filtering rows out never reshuffles the ones that remain. A **done**
 dependency constrains nothing — the same rule that clears a row's `needs #NNN` note — so a
 tracker with no open dependencies comes out in plain `--sort` order.
+Each row opens with a **gutter glyph**, single-width so the ids line up:
+
+| glyph | means |
+|---|---|
+| `◇` | **ready** — an unblocked leaf nobody has started. What `trck ready` would list |
+| `○` | `backlog`, but not ready: waiting on a dependency, or an epic |
+| `◐` | `ongoing` or `in-review` — started, and somebody's |
+| `●` | `done` |
+
+`◇` is deliberately outside the `○◐●` fill gauge: that gauge says how far along the work is,
+and readiness is not a point on it. So a dense `list` answers "what could I pick up" without a
+second command.
+
 By default it also **hides settled work**: a terminal (done) issue is shown only while it is
 still open or sits directly under a non-terminal parent — so an open epic keeps its done
 children as progress context, but a fully-done subtree and standalone done tasks drop off.
@@ -235,13 +254,25 @@ away from its parent. `tree` is an alias for `list` (`trck tree 4` == `trck list
   <sub><code>trck tree</code> — the active forest; done items show as context under open epics (settled subtrees are hidden; <code>--all</code> shows them)</sub>
 </p>
 
-`ready` lists issues whose dependencies are all satisfied (add `--next` for just the top
-pick); `next` prints the single best issue to work on next. Both take an optional issue id —
+`ready` lists the **unclaimed** issues whose dependencies are all satisfied (add `--next` for
+just the top pick); `next` prints the single best issue to work on next. Ready means
+`backlog` — a leaf nobody has started, blocked by nothing. A started issue is somebody's, and
+handing it to the next person who asks is the collision these verbs exist to prevent; it is
+still listed, still blocks its dependents, still counts toward the ranking below, and `next`
+names it (see the in-flight line). Both take an optional issue id —
 `trck ready NNN` scopes to that issue's subtree, answering "what can I pick up on this epic
 right now".
 Scoping narrows the answer, never the constraints: a leaf waiting on something outside the
 subtree, directly or through an edge authored on an ancestor, stays out of the list — and
 never the ranking either: rows are ranked over the whole graph, then filtered.
+
+**`next` names what is taken before it names what to take.** Above the single pick sits an
+`in flight:` line listing the leaves somebody has already started — `ongoing` or `in-review`.
+There is no assignee field, so `start` is the only claim a tracker records, and this is where
+you read it: an idle picker sees what a colleague holds without being offered it, and comes
+back to their own in-progress work without it competing for the top slot. Nothing started, no
+line. Scoping to a subtree scopes the line too. The full `ready` list carries no such line —
+it already renders every row the line would name.
 
 **Ranked by demand.** `ready`/`next` don't order by an issue's own priority alone — a
 medium task standing between you and an urgent one matters more than a high one that
@@ -256,7 +287,7 @@ blockers urgent, exactly as it stops blocking them.
 
 A row that ranks above its own priority says why, naming the issue that drives it:
 
-    ○ #k3m9x2a backlog  medium  Extract the parser  ↑urgent(#a1b2c3)
+    ◇ #k3m9x2a backlog  medium  Extract the parser  ↑urgent(#a1b2c3)
 
 Nothing about this is stored — it's derived from the graph on every run, like readiness
 itself. `list --sort priority` still sorts the declared field, and so does `SUMMARY.md`.

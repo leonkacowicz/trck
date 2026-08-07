@@ -29,11 +29,12 @@ the HTML payload, and none of them can disagree. It stays derived — nothing is
 moves an issue "into ready".
 
 ## Acceptance criteria
-- [ ] All four children are done.
-- [ ] `trck ready` and `trck next` never propose an issue whose status is not `backlog`.
-- [ ] `next` names in-flight work without offering it.
-- [ ] Board, `list` and the JSON `ready` field all agree with `trck ready` on which issues are
-      ready — no view carries a second, wider definition.
+- [x] All four children are done.
+- [x] `trck ready` and `trck next` never propose an issue whose status is not `backlog`.
+- [x] `next` names in-flight work without offering it.
+- [x] Board, `list` and the JSON `ready` field all agree with `trck ready` on which issues are
+      ready — no view carries a second, wider definition. Every one of them reads
+      `Graph::is_ready`, directly or through the payload's `ready` field.
 
 ## Notes
 Blast radius of the definition change: `is_actionable` in both engines, the conformance fixtures
@@ -49,3 +50,18 @@ the same treatment.
 Not covered here: two idle agents asking `next` at the same moment get the same deterministic
 answer and can both `start` it. `start` is the claim, but the window between asking and claiming
 is unguarded. That is a separate issue (`next --claim`, or accepting the race as narrow).
+
+## Outcome
+Shipped in four commits, in dependency order, so no release ever dropped the reminder before it
+had a replacement. Two behaviour changes a downstream consumer can notice:
+
+- `ready`/`next --json` are now an object, `{"in_flight": [...], "ready": [...]}`, not an array.
+  See #esvgb7f for why the field could not live on an array and why both verbs took the shape.
+- an unblocked `ongoing` leaf is no longer offered by `ready`, `next`, the HTML `ready` field,
+  the board or the `list` glyph.
+
+Two paydowns went with it, both real seams the change happened to expose rather than metric
+shuffling: the cycle checks left `graph.rs`, and the colour layer left `render.rs`.
+
+The word `ready` now means exactly one thing across the CLI, the JSON and the HTML — the
+`is_ready` predicate — which was the second half of the point.

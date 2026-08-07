@@ -1,0 +1,13 @@
+error: #aaaaaaa index slug 'Bad_Slug' != filename slug 'on-disk'
+error: #aaaaaaa filename 'aaaaaaa-on-disk.md' != expected 'aaaaaaa-Bad_Slug.md'
+error: #aaaaaaa bad slug 'Bad_Slug'
+error: #aaaaaaa unknown status 'nosuch'
+error: #aaaaaaa bad priority 'nope' (expected one of: urgent, high, medium, low, lowest)
+error: #aaaaaaa bad points -1 (must be a non-negative integer)
+error: #aaaaaaa bad resolution 'invalid' (expected one of: superseded, wontfix, duplicate)
+error: #aaaaaaa is 'nosuch' (not terminal) but carries resolution 'invalid'
+error: #aaaaaaa is 'nosuch' (not terminal) but carries closed '2026-01-01T00:00:00Z'
+error: #aaaaaaa bad review_url 'not-a-url' (must be an absolute http(s) URL)
+error: #aaaaaaa custom field 'zz_num' must be a string, got 5
+
+11 error(s), 0 warning(s) — FAIL
