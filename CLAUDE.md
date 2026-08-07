@@ -56,7 +56,7 @@ holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
 - `trck version` — what engine this tracker is being driven by. There is no self-update:
   whatever installed `trck` owns the file, so upgrade it the way you installed it.
 
-The vocabulary is fixed, not configured: statuses run `backlog → ongoing → in-review → done`,
+The vocabulary is fixed, not configured: statuses run `backlog → in-progress → in-review → done`,
 priorities are `urgent`/`high`/`medium`/`low`/`lowest`, and a closed issue may carry one of
 `superseded`/`wontfix`/`duplicate` — no resolution means it shipped. Anything finer is a
 label or a custom field. `trck.json` holds only the format version and the update channel;

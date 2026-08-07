@@ -20,11 +20,11 @@ the tree scaffolding is free. `forest_layout` supplies the connectors; `print_ro
 just `Graph(cfg, old_rows)`.
 
 ```
-  ◐ #fkrp9dh  ongoing         medium  trck-html: static HTML SPA  60% → 90% (20 → 28 pts) [EPIC]
-  ● #4vbk79y  ongoing → done  low     ├─ v4: tree / hierarchy view with rolled-up progress
-  ● #6yttx97  ongoing → done  low     ├─ v3: dependency graph view
+  ◐ #fkrp9dh  in-progress         medium  trck-html: static HTML SPA  60% → 90% (20 → 28 pts) [EPIC]
+  ● #4vbk79y  in-progress → done  low     ├─ v4: tree / hierarchy view with rolled-up progress
+  ● #6yttx97  in-progress → done  low     ├─ v3: dependency graph view
 + ○ #tcm5s56  new             low     └─ v7: trck serve — live process
-  ◐ #d9ckqzc  done ↩ ongoing  medium  trck-html: highlight shortest-unique id prefix
+  ◐ #d9ckqzc  done ↩ in-progress  medium  trck-html: highlight shortest-unique id prefix
 - ○ #x9y8z7w  removed         low     obsolete thing
   ○ #wh3mv52  backlog         medium  mv/done: guard closing a parent   priority low → medium
 ```
@@ -42,7 +42,7 @@ and modification is the common case, so marking it would put a sigil on nearly e
 the gutter means a non-blank gutter always signals *something structural happened*. The status icon
 is kept and shows the **new** state.
 
-**Direction must survive monochrome.** A backward move renders `done ↩ ongoing`, not just a
+**Direction must survive monochrome.** A backward move renders `done ↩ in-progress`, not just a
 differently-coloured `→`. Colour is an enhancement here, never the sole carrier — `NO_COLOR` and
 pipes are first-class.
 
@@ -77,10 +77,10 @@ the sole full record of what else changed. Symmetry would mean reading the same 
 twice.
 
 ```
-  ◐ #fkrp9dh  ongoing         medium  trck-html: static HTML SPA  90% → 75% (28 → 20 pts) [EPIC]
+  ◐ #fkrp9dh  in-progress         medium  trck-html: static HTML SPA  90% → 75% (28 → 20 pts) [EPIC]
 - ● #zssaj4k                  medium  └─ trck-html: graph view    moved to #u5fc5vm      ← dimmed
 + ○ #u5fc5vm  new             medium  trck diff: semantic diff of tracker state  0% [EPIC]
-+ ● #zssaj4k  ongoing → done  medium  ├─ trck-html: graph view    moved from #fkrp9dh
++ ● #zssaj4k  in-progress → done  medium  ├─ trck-html: graph view    moved from #fkrp9dh
 ```
 
 Three places must know about shadows:

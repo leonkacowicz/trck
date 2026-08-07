@@ -38,7 +38,7 @@ Design context (from discussion):
   the truth. Leaning **warn-by-default + `--recurse` to cascade**, but a hard block is
   defensible. Decide before implementing.
 - **Cascade is heavy/semi-destructive:** `done X --resolution wontfix --recurse` would
-  close descendants that were e.g. `ongoing` as wontfix. Hence the requirement to list
+  close descendants that were e.g. `in-progress` as wontfix. Hence the requirement to list
   affected issues first.
 - **Asymmetry (out of scope):** there is no cascade-reopen counterpart; reopening a
   parent will not reopen children. Deliberate omission.

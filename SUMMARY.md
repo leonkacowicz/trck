@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 46 |
-| ongoing | 2 |
+| backlog | 47 |
+| in-progress | 2 |
 | in-review | 0 |
 | done | 184 |
-| **total** | **232** |
+| **total** | **233** |
 
 ## Hierarchies
 
@@ -136,7 +136,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#ub2ssg4 list: nested forest default (--flat, positional id, dimmed ancestors, tree alias)](items/ub2ssg4-list-nested-forest-default-flat-positional-id-dimmed-ancestors-tree-alias.md)
 - [x] [#uqtjp9p Graph: add ancestor-closure, match-set and sibling-sort traversal](items/uqtjp9p-graph-add-ancestor-closure-match-set-and-sibling-sort-traversal.md)
 
-### [#r9zefup Add --json output to list/show/deps/tree for scripting](items/r9zefup-add-json-output-to-list-show-deps-tree-for-scripting.md) — 83% (5/6 pts · 5/6 done) · _low_ · ongoing
+### [#r9zefup Add --json output to list/show/deps/tree for scripting](items/r9zefup-add-json-output-to-list-show-deps-tree-for-scripting.md) — 83% (5/6 pts · 5/6 done) · _low_ · in-progress
 
 - [x] [#57kz6xp deps --json: {requires, blocks} cones as JSON](items/57kz6xp-deps-json-requires-blocks-cones-as-json.md)
 - [x] [#e75dysa show --json: single JSON document with body folded in](items/e75dysa-show-json-single-json-document-with-body-folded-in.md)
@@ -185,7 +185,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#uq2zc2p conformance: convert the deps gutter tests](items/uq2zc2p-conformance-convert-the-deps-gutter-tests.md)
 - [x] [#xm6h2qn conformance: convert the command-output tests](items/xm6h2qn-conformance-convert-the-command-output-tests.md)
 
-### [#u5fc5vm trck diff: semantic diff of tracker state between revisions](items/u5fc5vm-trck-diff-semantic-diff-of-tracker-state-between-revisions.md) — 29% (5/17 pts · 2/8 done) · _medium_ · ongoing
+### [#u5fc5vm trck diff: semantic diff of tracker state between revisions](items/u5fc5vm-trck-diff-semantic-diff-of-tracker-state-between-revisions.md) — 29% (5/17 pts · 2/8 done) · _medium_ · in-progress
 
 - [ ] [#6xcseef diff: body-file edits — flag with a ± line count, --body to inline the real git diff](items/6xcseef-diff-body-file-edits-flag-with-a-line-count-body-to-inline-the-real-git-diff.md) _(backlog)_
 - [ ] [#jxxz2fm diff: epic-rollup layout (default) — progress deltas with moved children nested](items/jxxz2fm-diff-epic-rollup-layout-default-progress-deltas-with-moved-children-nested.md) _(backlog)_
@@ -227,6 +227,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#mf7ue8j trck-html: timeline view over created/started/closed](items/mf7ue8j-trck-html-timeline-view-over-created-started-closed.md) — _low_ [dates trck-html]
 - [#s3d6xyz Add reconfigure verb to rename/reorder statuses](items/s3d6xyz-add-reconfigure-verb-to-rename-reorder-statuses.md) — _low_ [tracker-features]
 - [#tcm5s56 v7: trck serve — live process, edits write back to index.jsonl](items/tcm5s56-v7-trck-serve-live-process-edits-write-back-to-index-jsonl.md) — _low_
+- [#u833fh6 vocabulary: drop the 'ongoing' status alias](items/u833fh6-vocabulary-drop-the-ongoing-status-alias.md) — _low_ [tracker-features]
 - [#ut9bqm4 dates: time-in-status and per-status cycle time reporting](items/ut9bqm4-dates-time-in-status-and-per-status-cycle-time-reporting.md) — _low_ [dates]
 - [#v9nyy42 Part C: curses TUI for browsing and quick actions](items/v9nyy42-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
 - [#xr994r6 list --as-of DATE: reconstruct and browse tracker state at a past date](items/xr994r6-list-as-of-date-reconstruct-and-browse-tracker-state-at-a-past-date.md) — _low_ [dates]
@@ -234,7 +235,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#9ax2ny2 deps: --depth N to cut expansion N hops from the seed(s)](items/9ax2ny2-deps-depth-n-to-cut-expansion-n-hops-from-the-seed-s.md) — _lowest_
 - [#p4vp2ae deps: demand as innermost tie-break within a component's layout](items/p4vp2ae-deps-demand-as-innermost-tie-break-within-a-component-s-layout.md) — _lowest_
 
-## Ongoing
+## In-progress
 
 _none_
 
