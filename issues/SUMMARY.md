@@ -8,8 +8,8 @@
 | backlog | 51 |
 | ongoing | 2 |
 | in-review | 0 |
-| done | 177 |
-| **total** | **230** |
+| done | 178 |
+| **total** | **231** |
 
 ## Hierarchies
 
@@ -260,6 +260,7 @@ _none_
 - [#3f8mb3n release v0.25.0](items/3f8mb3n-release-v0-25-0.md) — _medium_ (closed 2026-08-02)
 - [#3x6mmhu list: annotate blocked/blocker relationships and clear them when resolved](items/3x6mmhu-list-annotate-blocked-blocker-relationships-and-clear-them-when-resolved.md) — _medium_ [tracker-features] (closed 2026-06-09)
 - [#4vqukyy Part D: richer tracker features](items/4vqukyy-part-d-richer-tracker-features.md) — _medium_ · _superseded_ (closed 2026-06-23)
+- [#568yj7v pay down cmd_deps](items/568yj7v-pay-down-cmd-deps.md) — _medium_ (closed 2026-08-07)
 - [#5wbwpjv Add full-text search/grep across issue bodies](items/5wbwpjv-add-full-text-search-grep-across-issue-bodies.md) — _medium_ [tracker-features] (closed 2026-06-10)
 - [#9pf42be Add points field with leaves-only deep-recursive weighted rollup](items/9pf42be-add-points-field-with-leaves-only-deep-recursive-weighted-rollup.md) — _medium_ (closed 2026-06-06)
 - [#9sevgpn Enrich 'list' filters: multi/negated status, title match, sort, --blocked, --orphan](items/9sevgpn-enrich-list-filters-multi-negated-status-title-match-sort-blocked-orphan.md) — _medium_ [tracker-features] (closed 2026-06-06)
