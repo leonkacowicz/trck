@@ -80,8 +80,109 @@ pub(super) fn paths_of(ctx: &Ctx, g: &Graph, ids: &[String]) -> String {
         .filter_map(|id| g.get(id))
         .map(|r| {
             let p = issue_path(ctx, r);
-            p.canonicalize().unwrap_or(p).display().to_string()
+            plain(&p.canonicalize().unwrap_or(p).display().to_string())
         })
         .collect::<Vec<_>>()
         .join("\n")
+}
+
+/// Windows' longest path, terminator included — the limit the verbatim prefix exists to lift.
+const MAX_PATH: usize = 260;
+
+/// Drop a `\\?\` prefix where the plain spelling names the same file, and keep it where it
+/// does not.
+///
+/// `canonicalize` answers in the verbatim form on Windows, so `list --paths` and `path` print
+/// `\\?\C:\repo\issues\items\...` — correct, and nothing a user expects to see. But the prefix
+/// is load-bearing: a verbatim path reaches the filesystem unnormalized, so `/`, `.`, `..`, a
+/// trailing dot or space and the reserved device names are ordinary characters there and are
+/// not without it. It is also what lifts `MAX_PATH`. Any of those and the prefix stays — a path
+/// that reads better but names nothing is worse than an ugly one that works.
+///
+/// Pure string work, deliberately: it asks the platform nothing, so the Windows shapes are
+/// exercised by the tests below on whatever machine runs them.
+fn plain(path: &str) -> String {
+    let Some(rest) = path.strip_prefix(r"\\?\") else { return path.to_string() };
+    let mut c = rest.chars();
+    let is_drive = matches!((c.next(), c.next(), c.next()), (Some(d), Some(':'), Some('\\')) if d.is_ascii_alphabetic());
+    // `skip(1)` steps over the drive itself, which is the one component that is meant to
+    // carry a colon.
+    if !is_drive || rest.len() >= MAX_PATH || rest.contains('/') || rest.split('\\').skip(1).any(needs_verbatim) {
+        return path.to_string();
+    }
+    rest.to_string()
+}
+
+/// A component whose meaning the plain spelling would change — or refuse.
+///
+/// The device names are reserved by their stem, so `con.md` is as unusable as `con`.
+fn needs_verbatim(part: &str) -> bool {
+    const RESERVED: &[&str] = &["con", "prn", "aux", "nul"];
+    if part.is_empty() || part == "." || part == ".." || part.ends_with('.') || part.ends_with(' ') {
+        return true;
+    }
+    let stem = part.split('.').next().unwrap_or(part).to_ascii_lowercase();
+    RESERVED.contains(&stem.as_str())
+        || matches!(stem.strip_prefix("com").or_else(|| stem.strip_prefix("lpt")), Some(n) if n.len() == 1 && n.starts_with(|c: char| c.is_ascii_digit()))
+}
+
+#[cfg(test)]
+mod tests {
+    // Tests assert; that is their job. The crate denies unwrap/expect/panic because a
+    // malformed tracker must produce a diagnostic rather than a stack trace, but a test
+    // that cannot panic cannot fail.
+    #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
+    use super::*;
+
+    #[test]
+    fn a_path_with_no_verbatim_prefix_is_untouched() {
+        assert_eq!(plain("/repo/issues/items/aaa-x.md"), "/repo/issues/items/aaa-x.md");
+        assert_eq!(plain(r"C:\repo\issues\items\aaa-x.md"), r"C:\repo\issues\items\aaa-x.md");
+    }
+
+    #[test]
+    fn an_ordinary_drive_path_loses_the_prefix() {
+        assert_eq!(plain(r"\\?\C:\repo\issues\items\aaa-x.md"), r"C:\repo\issues\items\aaa-x.md");
+        assert_eq!(plain(r"\\?\d:\repo\x.md"), r"d:\repo\x.md");
+    }
+
+    /// `\\?\UNC\server\share` would have to become `\\server\share` — a different rewrite,
+    /// and one nothing here produces.
+    #[test]
+    fn a_unc_share_keeps_its_prefix() {
+        assert_eq!(plain(r"\\?\UNC\server\share\x.md"), r"\\?\UNC\server\share\x.md");
+    }
+
+    /// The prefix is what lets a path exceed `MAX_PATH`. Strip it there and the result names
+    /// a file the API would refuse.
+    #[test]
+    fn a_path_over_max_path_keeps_its_prefix() {
+        let long = format!(r"\\?\C:\{}\x.md", "d".repeat(300));
+        assert_eq!(plain(&long), long);
+    }
+
+    /// A verbatim path is not normalized: `/`, `.` and `..` are ordinary characters there,
+    /// so dropping the prefix would change which file is named.
+    #[test]
+    fn a_component_the_plain_form_would_reinterpret_keeps_the_prefix() {
+        for p in [r"\\?\C:\repo/issues\x.md", r"\\?\C:\repo\.\x.md", r"\\?\C:\repo\..\x.md"] {
+            assert_eq!(plain(p), p, "{p}");
+        }
+    }
+
+    /// Reserved device names, and components ending in a dot or a space: legal verbatim,
+    /// reinterpreted or rejected without the prefix.
+    #[test]
+    fn a_component_windows_reserves_keeps_the_prefix() {
+        for p in [r"\\?\C:\repo\NUL\x.md", r"\\?\C:\repo\con.md", r"\\?\C:\repo\COM1\x.md", r"\\?\C:\repo\odd.\x.md", r"\\?\C:\repo\odd \x.md"] {
+            assert_eq!(plain(p), p, "{p}");
+        }
+    }
+
+    #[test]
+    fn something_that_is_not_a_drive_path_keeps_the_prefix() {
+        assert_eq!(plain(r"\\?\x.md"), r"\\?\x.md");
+        assert_eq!(plain(r"\\?\C\repo\x.md"), r"\\?\C\repo\x.md");
+    }
 }
