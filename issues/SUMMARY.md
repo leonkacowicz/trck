@@ -8,8 +8,8 @@
 | backlog | 51 |
 | ongoing | 2 |
 | in-review | 0 |
-| done | 176 |
-| **total** | **229** |
+| done | 177 |
+| **total** | **230** |
 
 ## Hierarchies
 
@@ -209,7 +209,6 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 - [#35qkx68 install: Windows has assets but no working install path](items/35qkx68-install-windows-has-assets-but-no-working-install-path.md) — _high_
 - [#38qfknm restore the coverage the deleted suite carried: hooks, setup-git, git-revision diff](items/38qfknm-restore-the-coverage-the-deleted-suite-carried-hooks-setup-git-git-revision-diff.md) — _high_
-- [#ccht2u2 list: order siblings by a global topological rank (blockers first)](items/ccht2u2-list-order-siblings-by-a-global-topological-rank-blockers-first.md) — _medium_
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](items/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#jkvexgs docs: record a terminal demo of the next-driven loop for the README](items/jkvexgs-docs-record-a-terminal-demo-of-the-next-driven-loop-for-the-readme.md) — _medium_
 - [#k6g7kvf CI: a consistency check a consumer repo can drop in](items/k6g7kvf-ci-a-consistency-check-a-consumer-repo-can-drop-in.md) — _medium_
@@ -218,6 +217,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#wh3mv52 mv/done: guard closing a parent with open descendants (--recurse to cascade)](items/wh3mv52-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
 - [#ycg7egx dates: shared cutoff parser — accept relative forms (7d, 2w, yesterday) and resolve to absolute](items/ycg7egx-dates-shared-cutoff-parser-accept-relative-forms-7d-2w-yesterday-and-resolve-to-absolute.md) — _medium_ [dates]
 - [#5jhvpz4 update: add a minimum-size sanity check on the downloaded engine](items/5jhvpz4-update-add-a-minimum-size-sanity-check-on-the-downloaded-engine.md) — _low_
+- [#bbek25a summary/html: follow list's topological sibling order, or state why not](items/bbek25a-summary-html-follow-list-s-topological-sibling-order-or-state-why-not.md) — _low_
 - [#c2wadyd graph/render: id type annotations still say int after the random-id migration](items/c2wadyd-graph-render-id-type-annotations-still-say-int-after-the-random-id-migration.md) — _low_
 - [#cbf4sxp config: friendly errors for empty statuses/priorities/kinds lists](items/cbf4sxp-config-friendly-errors-for-empty-statuses-priorities-kinds-lists.md) — _low_
 - [#eemqu4g Support configurable custom fields](items/eemqu4g-support-configurable-custom-fields.md) — _low_ [tracker-features]
@@ -267,6 +267,7 @@ _none_
 - [#at6pwut release v0.24.0](items/at6pwut-release-v0-24-0.md) — _medium_ (closed 2026-07-31)
 - [#b7t7d4q list: show points-weighted percent-complete on parent rows](items/b7t7d4q-list-show-points-weighted-percent-complete-on-parent-rows.md) — _medium_ (closed 2026-06-14)
 - [#bpwuedw Deduplicate parent-cycle detection via Graph.ancestors_of](items/bpwuedw-deduplicate-parent-cycle-detection-via-graph-ancestors-of.md) — _medium_ (closed 2026-06-10)
+- [#ccht2u2 list: order siblings by a global topological rank (blockers first)](items/ccht2u2-list-order-siblings-by-a-global-topological-rank-blockers-first.md) — _medium_ (closed 2026-08-07)
 - [#cea683t validate/dep: detect and prevent dependency cycles](items/cea683t-validate-dep-detect-and-prevent-dependency-cycles.md) — _medium_ [tracker-features] (closed 2026-06-08)
 - [#dbq2wqn deps: hide done work by default (fully-done chains + --omit-done)](items/dbq2wqn-deps-hide-done-by-default.md) — _medium_ (closed 2026-06-24)
 - [#dscmxng Use random alphanumeric ids to make concurrent creation collision-free](items/dscmxng-use-random-alphanumeric-ids-to-make-concurrent-creation-collision-free.md) — _medium_ [conflict-resolution tracker-features] (closed 2026-06-15)
