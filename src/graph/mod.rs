@@ -163,14 +163,17 @@ impl Graph {
         self.lifted_deps(id).iter().any(|b| !self.is_terminal_id(b))
     }
 
-    /// An unblocked leaf that could be picked up right now.
+    /// An unblocked leaf nobody has started — work that is genuinely free to pick up.
     ///
-    /// `in-review` fails this without being terminal: an issue awaiting judgement is in
-    /// flight, not available, so there is nothing to start — but it still blocks whatever
-    /// waits on it.
+    /// `ongoing` and `in-review` both fail this without being terminal. Neither is
+    /// available: one is on somebody's desk, the other on somebody's screen. Both still
+    /// block whatever waits on them, and both still count toward the demand cone — none of
+    /// that is what this predicate answers.
+    ///
+    /// No `is_terminal` term is needed: [`config::is_actionable`] admits only `backlog`.
     pub(crate) fn is_ready(&self, id: &str) -> bool {
         let Some(r) = self.get(id) else { return false };
-        !is_terminal(&r.status) && config::is_actionable(&r.status) && self.is_leaf(id) && !self.is_blocked(id)
+        config::is_actionable(&r.status) && self.is_leaf(id) && !self.is_blocked(id)
     }
 
     /// The leaves somebody is already holding, id-sorted — what `next` names above its
@@ -443,14 +446,25 @@ mod tests {
     }
 
     #[test]
-    fn readiness_is_leaf_only_unblocked_and_actionable() {
-        let g = graph(&["epic", "kid:epic", "blocked ->kid", "reviewing @in-review", "finished @done", "free"]);
+    fn readiness_is_leaf_only_unblocked_and_unclaimed() {
+        let g = graph(&["epic", "kid:epic", "blocked ->kid", "started @ongoing", "reviewing @in-review", "finished @done", "free"]);
         assert!(g.is_ready("kid"));
         assert!(!g.is_ready("epic"), "a parent is not something you pick up");
         assert!(!g.is_ready("blocked"));
+        assert!(!g.is_ready("started"), "somebody already claimed it by starting it");
         assert!(!g.is_ready("reviewing"), "in flight, but its output is pending someone else's judgement");
         assert!(!g.is_ready("finished"));
         assert!(g.is_ready("free"));
+    }
+
+    #[test]
+    fn a_started_issue_still_blocks_and_still_conducts_demand() {
+        // The narrowing is about what is *offered*, and must not leak into the two things
+        // an unfinished issue does regardless of who holds it.
+        let g = graph(&["blocker !medium", "urgent ->blocker !urgent @ongoing", "high !high"]);
+        assert!(g.is_blocked("urgent"), "a dependency is satisfied by done, not by started");
+        assert_eq!(g.ranked_ready(), ["blocker", "high"]);
+        assert_eq!(g.demand_source("blocker").as_deref(), Some("urgent"));
     }
 
     #[test]

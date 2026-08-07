@@ -1,0 +1,4 @@
+# `start` is the only claim a tracker records, so a started leaf is taken, not available.
+new "First" --id aaaaaaa --priority urgent
+new "Second" --id bbbbbbb --priority high
+start aaaaaaa

@@ -90,7 +90,7 @@ reading a tracker know what it is looking at without first reading a config file
 | status | means | to the engine |
 |---|---|---|
 | `backlog` | not started | where `trck new` lands an issue; the first move off it stamps `started` |
-| `ongoing` | someone is on it | what a partly-finished parent rolls up to |
+| `ongoing` | someone is on it | claimed, so `ready`/`next` skip it — but it still **blocks** its dependents. What a partly-finished parent rolls up to |
 | `in-review` | in flight, output pending someone else's judgement | nothing to pick up, so `ready`/`next` skip it — but it still **blocks** its dependents |
 | `done` | finished | satisfies a dependency; counts toward progress. Entering it stamps `closed`; leaving it (reopen) clears that and any resolution |
 
@@ -241,8 +241,12 @@ away from its parent. `tree` is an alias for `list` (`trck tree 4` == `trck list
   <sub><code>trck tree</code> — the active forest; done items show as context under open epics (settled subtrees are hidden; <code>--all</code> shows them)</sub>
 </p>
 
-`ready` lists issues whose dependencies are all satisfied (add `--next` for just the top
-pick); `next` prints the single best issue to work on next. Both take an optional issue id —
+`ready` lists the **unclaimed** issues whose dependencies are all satisfied (add `--next` for
+just the top pick); `next` prints the single best issue to work on next. Ready means
+`backlog` — a leaf nobody has started, blocked by nothing. A started issue is somebody's, and
+handing it to the next person who asks is the collision these verbs exist to prevent; it is
+still listed, still blocks its dependents, still counts toward the ranking below, and `next`
+names it (see the in-flight line). Both take an optional issue id —
 `trck ready NNN` scopes to that issue's subtree, answering "what can I pick up on this epic
 right now".
 Scoping narrows the answer, never the constraints: a leaf waiting on something outside the

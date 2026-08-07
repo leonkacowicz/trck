@@ -13,10 +13,13 @@ use crate::json::{Json, parse};
 // --------------------------------------------------------------------------- //
 // Four statuses. Fixed — not configured, not renameable, not extensible.
 //
-//   backlog     not started.                      what `new` assigns.
-//   ongoing     started, someone is on it.        what a mixed parent rolls up to.
-//   in-review   started, output pending judgement. nothing to pick up.
+//   backlog     not started.                      what `new` assigns, and all `ready` offers.
+//   ongoing     started, someone is on it.        claimed; what a mixed parent rolls up to.
+//   in-review   started, output pending judgement. claimed; nothing to pick up.
 //   done        finished.                         satisfies a dependency.
+//
+// The middle two are the *claim*: there is no assignee field, so a status is how a
+// tracker records that work is taken. Both still block their dependents.
 //
 // `in-review` is the one that needs a rule, because it looks like it overlaps
 // `depends_on`: use `depends_on` when the blocker is real work someone will do and
@@ -60,11 +63,20 @@ pub(crate) fn is_terminal(status: &str) -> bool {
     status == DONE
 }
 
-/// Whether `ready`/`next` may propose this as work to pick up. False for `in-review` —
-/// in flight, but its own output is pending someone else's judgement, so there is
-/// nothing here to start — and for `done`.
+/// Whether `ready`/`next` may propose this as work to pick up: only `backlog`, work
+/// nobody has started.
+///
+/// There is no assignee field, so `start` is the only claim a tracker records. Offering a
+/// claimed issue to whoever asks next is exactly the collision `ready` exists to prevent —
+/// which makes `ongoing` no more available than `in-review`, whose output is merely
+/// pending someone else's judgement rather than someone else's keyboard.
+///
+/// For the fixed vocabulary this reduces to `== BACKLOG`, and is kept as a predicate
+/// anyway: it is the seam a fifth status would slot into, and it names the rule at the
+/// call sites instead of making each of them restate it. Its complement over the
+/// unfinished statuses is [`is_in_flight`].
 pub(crate) fn is_actionable(status: &str) -> bool {
-    status != IN_REVIEW && status != DONE
+    status == BACKLOG
 }
 
 /// Whether someone is holding this issue: started, not finished. There is no assignee
@@ -278,9 +290,19 @@ mod tests {
     }
 
     #[test]
-    fn only_backlog_and_ongoing_offer_work_to_pick_up() {
+    fn only_backlog_offers_work_to_pick_up() {
         let got: Vec<bool> = STATUSES.iter().map(|s| is_actionable(s)).collect();
-        assert_eq!(got, [true, true, false, false]);
+        assert_eq!(got, [true, false, false, false]);
+    }
+
+    #[test]
+    fn actionable_and_in_flight_partition_the_unfinished_statuses() {
+        // Every status is exactly one of: available, held, finished. A fifth status added
+        // to only one of the two predicates would land in neither and go missing.
+        for s in STATUSES {
+            let claims = usize::from(is_actionable(s)) + usize::from(is_in_flight(s)) + usize::from(is_terminal(s));
+            assert_eq!(claims, 1, "{s} should be actionable, in flight or terminal — exactly one");
+        }
     }
 
     #[test]

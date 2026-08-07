@@ -72,7 +72,7 @@ const HELP: &[VerbHelp] = &[
         verb: "start",
         tagline: "alias: move to ongoing",
         usage: "trck start <id>",
-        blurb: "Alias: move an issue to ongoing.",
+        blurb: "Alias: move an issue to ongoing. With no assignee field, this is how a tracker records a claim: from here the issue is out of ready/next, so nobody else is offered it, and `next` names it on its in-flight line instead.",
         args: &[("id", "issue id")],
         opts: &[],
         alias_of: "",
@@ -206,9 +206,9 @@ const HELP: &[VerbHelp] = &[
     },
     VerbHelp {
         verb: "ready",
-        tagline: "list issues you can work on right now",
+        tagline: "list unclaimed issues you can work on right now",
         usage: "trck ready <id> [options]",
-        blurb: "List not-done leaf issues whose dependencies are all in a terminal status, ranked by demand: an issue counts for what it unblocks, so a medium task blocking an urgent one outranks a high task blocking nothing. Ties go to the number of issues blocked at that priority, then points, then id. A row ranked above its own priority is marked ↑<priority>(#id), naming what drives it. With an id, scope to that issue's subtree — what can I pick up on this epic right now. Scoping never loosens blocking: a leaf waiting on an issue outside the subtree, directly or through an edge authored on an ancestor, stays out; nor does it change the ranking, which is computed over the whole graph.",
+        blurb: "List the backlog leaf issues whose dependencies are all in a terminal status — work nobody has started and nothing is blocking. A started issue (ongoing or in-review) is somebody's claim, so it is not offered here, though it still blocks its dependents and still counts toward the ranking. Ranked by demand: an issue counts for what it unblocks, so a medium task blocking an urgent one outranks a high task blocking nothing. Ties go to the number of issues blocked at that priority, then points, then id. A row ranked above its own priority is marked ↑<priority>(#id), naming what drives it. With an id, scope to that issue's subtree — what can I pick up on this epic right now. Scoping never loosens blocking: a leaf waiting on an issue outside the subtree, directly or through an edge authored on an ancestor, stays out; nor does it change the ranking, which is computed over the whole graph.",
         args: &[("id", "scope to this issue's subtree")],
         opts: &[
             ("--json", "one JSON document: \"ready\" in rank order with the demand note as fields, beside \"in_flight\""),
