@@ -1,0 +1,3 @@
+# A hand-edited effective cycle: `check` only warns about one, so `list` still has to
+# render every row rather than hang or silently drop the rows Kahn cannot reach.
+list

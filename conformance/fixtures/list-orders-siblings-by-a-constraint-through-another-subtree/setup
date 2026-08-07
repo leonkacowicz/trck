@@ -1,0 +1,10 @@
+# The two steps are siblings that name each other nowhere: the ordering runs
+# "Earlier step" -> "Middle" -> "Later step", through an issue outside their epic. Only
+# a rank computed over the whole graph can see it, and it has to survive being projected
+# back onto one sibling group.
+new "Epic" --id aaaaaaa
+new "Later step" --id bbbbbbb --parent aaaaaaa
+new "Earlier step" --id ccccccc --parent aaaaaaa
+new "Middle" --id ddddddd
+dep bbbbbbb --add ddddddd
+dep ddddddd --add ccccccc

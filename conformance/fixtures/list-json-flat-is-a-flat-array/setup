@@ -1,3 +1,5 @@
+# The flat form drops the nesting but keeps the order the forest would have used, so
+# the blocker still precedes the issue waiting on it.
 new "Epic" --id aaaaaaa
 new "Kid" --id bbbbbbb --parent aaaaaaa
 new "Grandkid" --id ccccccc --parent bbbbbbb

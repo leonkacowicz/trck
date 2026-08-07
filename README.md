@@ -213,7 +213,13 @@ There's no equivalent on `set`: changing an existing issue's id would have to re
 for details.
 
 `list` is the structure-aware browse verb. By default it prints a **nested forest** — each
-issue, with children nested under their parent and siblings ordered by `--sort` (default `created`).
+issue, with children nested under their parent. Siblings are ordered **topologically**: a
+blocker sits above what it blocks, the same order `deps` draws, with `--sort` (default
+`created`) deciding between rows no dependency separates. The rank is computed over the whole
+graph, so a constraint routed through another epic still orders two siblings that name each
+other nowhere, and filtering rows out never reshuffles the ones that remain. A **done**
+dependency constrains nothing — the same rule that clears a row's `needs #NNN` note — so a
+tracker with no open dependencies comes out in plain `--sort` order.
 By default it also **hides settled work**: a terminal (done) issue is shown only while it is
 still open or sits directly under a non-terminal parent — so an open epic keeps its done
 children as progress context, but a fully-done subtree and standalone done tasks drop off.

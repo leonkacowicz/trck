@@ -5,13 +5,13 @@
 //! *keep* and how to *show* it are different questions, and the filtering half — ten
 //! conditions, all the same shape — is most of the weight.
 
-use super::ListOpts;
+use super::{ListOpts, rank};
 use crate::config::is_terminal;
 use crate::discovery::Ctx;
-use crate::graph::{Graph, priority_rank};
+use crate::graph::Graph;
 use crate::issue::{Issue, check_field_key};
 use crate::json::Json;
-use crate::render::{Annotation, RowOpts, field_value, field_value_raw, render_rows, unique_prefix_lens};
+use crate::render::{Annotation, RowOpts, field_value_raw, render_rows, unique_prefix_lens};
 use crate::verbs::{load_rows, resolve_ref};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -29,29 +29,6 @@ fn parse_status_filter(spec: Option<&str>) -> (BTreeSet<String>, BTreeSet<String
         }
     }
     (keep, drop)
-}
-
-/// The sort key for a row, as a tuple that compares in the right order.
-fn sort_key(g: &Graph, r: &Issue, sort: &str) -> (usize, String, String) {
-    match sort {
-        "priority" => (priority_rank(&r.priority), String::new(), r.id.clone()),
-        "points" => (
-            // Descending, so a bigger weight sorts first.
-            usize::MAX - usize::try_from(r.points.max(0)).unwrap_or(0),
-            String::new(),
-            r.id.clone(),
-        ),
-        "id" => (0, r.id.clone(), r.id.clone()),
-        _ if sort.starts_with("field:") => {
-            let name = &sort["field:".len()..];
-            // Rows carrying the field sort by value; rows without it sort last.
-            field_value(r, name).map_or_else(|| (1, String::new(), r.id.clone()), |v| (0, v, r.id.clone()))
-        },
-        _ => {
-            let _ = g;
-            (0, r.created.clone().unwrap_or_default(), r.id.clone())
-        },
-    }
 }
 
 /// Validate the option combination before any work: an unknown `--sort` or a malformed
@@ -164,8 +141,9 @@ pub(crate) fn cmd_list(ctx: &Ctx, opts: &ListOpts) -> Result<String, String> {
     let keep = |r: &Issue| filter.keeps(&g, r);
 
     let sort = opts.sort.unwrap_or("created");
+    let rank = rank::sibling_rank(&g, |id| rank::seed_key(&g, id, sort));
     let mut sorted = |ids: &mut Vec<String>| {
-        ids.sort_by_cached_key(|id| g.get(id).map_or_else(|| (0, String::new(), id.clone()), |r| sort_key(&g, r, sort)));
+        ids.sort_by_cached_key(|id| (rank.get(id).copied().unwrap_or(usize::MAX), rank::seed_key(&g, id, sort)));
     };
 
     if opts.paths {

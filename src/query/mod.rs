@@ -11,6 +11,7 @@
 
 mod list;
 mod paths;
+mod rank;
 mod show;
 pub(crate) use list::cmd_list;
 pub(crate) use paths::{cmd_path, cmd_which, which_operands};

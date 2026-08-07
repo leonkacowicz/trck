@@ -114,7 +114,7 @@ jobs:
       # quietly stop passing and every raise is a visible commit.
       - name: Conformance (the specification)
         if: matrix.os == 'ubuntu-latest'
-        run: python3 conformance/run.py --bin target/release/trck --min-pass 237
+        run: python3 conformance/run.py --bin target/release/trck --min-pass 242
 
       # This repository's own tracker, checked by the engine it ships. It lives here rather
       # than in a job of its own because it needs a built binary and this is where one

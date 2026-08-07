@@ -36,6 +36,8 @@ mod query;
 mod render;
 mod repo;
 mod summary;
+#[cfg(test)]
+mod test_graph;
 mod validate;
 mod verbs;
 
