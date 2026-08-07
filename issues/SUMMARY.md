@@ -5,10 +5,10 @@
 
 | State | Count |
 |---|---:|
-| backlog | 49 |
+| backlog | 48 |
 | ongoing | 3 |
 | in-review | 0 |
-| done | 180 |
+| done | 181 |
 | **total** | **232** |
 
 ## Hierarchies
@@ -24,10 +24,10 @@ Spec: [`docs/plans/2026-07-30-flat-items-layout.md`](../docs/plans/2026-07-30-fl
 - [x] [#x2exfdf add the migrate-layout verb](items/x2exfdf-add-the-migrate-layout-verb.md)
 - [x] [#zk5k59n move_issue: drop the now-unreachable file move](items/zk5k59n-move-issue-drop-the-now-unreachable-file-move.md)
 
-### [#6ezbd38 ready: only offer work nobody has started](items/6ezbd38-ready-only-offer-work-nobody-has-started.md) — 20% (1/5 pts · 1/4 done) · _medium_ · ongoing
+### [#6ezbd38 ready: only offer work nobody has started](items/6ezbd38-ready-only-offer-work-nobody-has-started.md) — 60% (3/5 pts · 2/4 done) · _medium_ · ongoing
 
 - [x] [#esvgb7f next: name in-flight work before the pick](items/esvgb7f-next-name-in-flight-work-before-the-pick.md)
-- [ ] [#gccs68j ready: narrow the actionable set to not-yet-started leaves](items/gccs68j-ready-narrow-the-actionable-set-to-not-yet-started-leaves.md) _(backlog)_
+- [x] [#gccs68j ready: narrow the actionable set to not-yet-started leaves](items/gccs68j-ready-narrow-the-actionable-set-to-not-yet-started-leaves.md)
 - [ ] [#vhzs9jx trck-html: present ready as a board column, not a badge](items/vhzs9jx-trck-html-present-ready-as-a-board-column-not-a-badge.md) _(backlog)_
 - [ ] [#vqtt8dt list: a distinct gutter glyph for ready rows](items/vqtt8dt-list-a-distinct-gutter-glyph-for-ready-rows.md) _(backlog)_
 
