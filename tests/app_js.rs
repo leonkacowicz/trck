@@ -104,6 +104,33 @@ fn the_isotonic_fit_keeps_rows_ordered_and_apart() {
 }
 
 #[test]
+fn the_board_gives_ready_a_column_and_takes_those_cards_out_of_backlog() {
+    if !have_node() {
+        return;
+    }
+    // The board's invariant is that every card sits in exactly one column. `ready` is
+    // not a status, so it can only have a column if the cards it shows are subtracted
+    // from the status column they would otherwise be in — and the two counts have to add
+    // back up to the status total, or the board is quietly lying about how much is left.
+    let script = format!(
+        "{}\n\
+         const statuses = [{{name: 'backlog'}}, {{name: 'ongoing'}}, {{name: 'done'}}];\n\
+         const shown = [\n\
+           {{id: 'a', status: 'backlog', ready: true}},\n\
+           {{id: 'b', status: 'backlog', ready: false}},\n\
+           {{id: 'c', status: 'backlog', ready: false}},\n\
+           {{id: 'd', status: 'ongoing', ready: false}},\n\
+         ];\n\
+         const cols = boardColumns(statuses, shown);\n\
+         console.log(JSON.stringify(cols.map(c => [c.name, c.items.map(i => i.id)])));\n",
+        lift(&["boardColumns"])
+    );
+    let out = run_node(&script);
+    let want = r#"[["ready",["a"]],["backlog",["b","c"]],["ongoing",["d"]],["done",[]]]"#;
+    assert_eq!(out.trim(), want, "{out}");
+}
+
+#[test]
 fn a_view_only_applies_the_facets_it_declares() {
     if !have_node() {
         return;

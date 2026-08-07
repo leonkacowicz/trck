@@ -678,15 +678,31 @@ function card(i) {
   c.append(m);
   return c;
 }
+// The columns, `ready` first and then one per status.
+//
+// `ready` is not a status and nothing is ever moved into it: an issue is ready when it
+// is an unblocked leaf nobody has started, which makes it a strict subset of the initial
+// status. That subset relation is what earns it a column here — it takes cards from
+// exactly one other column, so every card still sits in exactly one place, and the
+// initial column reads as "not yet" rather than as a bag holding both.
+//
+// Subtracting `ready` from *every* status column rather than only the initial one says
+// the same thing without this view having to know which status is initial: a ready issue
+// is by definition in the initial one.
+function boardColumns(statuses, shown) {
+  return [{ name: 'ready', derived: true, items: shown.filter(i => i.ready) }].concat(
+    statuses.map(s => ({ name: s.name, derived: false, items: shown.filter(i => i.status === s.name && !i.ready) })));
+}
 function renderBoard() {
   const box = $('#board'); box.textContent = '';
-  const shown = DATA.issues.filter(matches);
-  for (const s of DATA.config.statuses) {
-    const items = shown.filter(i => i.status === s.name).sort((a, b) =>
+  const cols = boardColumns(DATA.config.statuses, DATA.issues.filter(matches));
+  for (const c of cols) {
+    const items = c.items.sort((a, b) =>
       (prio.indexOf(a.priority) - prio.indexOf(b.priority)) || a.id.localeCompare(b.id));
-    const col = el('div', { class: 'bcol' });
-    col.append(el('div', { class: 'bhead' },
-      el('span', { text: s.name }), el('span', { class: 'bn', text: String(items.length) })));
+    const col = el('div', { class: 'bcol' + (c.derived ? ' derived' : '') });
+    col.append(el('div', { class: 'bhead',
+      title: c.derived ? 'derived, not a status: unblocked leaves nobody has started' : null },
+      el('span', { text: c.name }), el('span', { class: 'bn', text: String(items.length) })));
     const cards = el('div', { class: 'bcards' });
     if (!items.length) cards.append(el('div', { class: 'bempty', text: '—' }));
     for (const i of items) cards.append(card(i));
@@ -796,7 +812,7 @@ function renderTreeNode(container, id, depth, vis, searching) {
     // `is_ready` is leaf-only, so this always lands on the badge branch — a parent
     // shows its progress bar instead and is never itself actionable.
     if (i.ready) r.append(el('span', { class: 'badge ready',
-      title: 'nothing blocks this — see the ready view for where it ranks', text: 'ready' }));
+      title: 'nobody has started this and nothing blocks it — see the ready view for where it ranks', text: 'ready' }));
   }
   const rl = reviewLink(i, 'review');
   if (rl) r.append(rl);
