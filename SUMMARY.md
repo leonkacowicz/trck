@@ -207,7 +207,6 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## Backlog
 
-- [#35qkx68 install: Windows has assets but no working install path](items/35qkx68-install-windows-has-assets-but-no-working-install-path.md) — _high_
 - [#38qfknm restore the coverage the deleted suite carried: hooks, setup-git, git-revision diff](items/38qfknm-restore-the-coverage-the-deleted-suite-carried-hooks-setup-git-git-revision-diff.md) — _high_
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](items/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#jkvexgs docs: record a terminal demo of the next-driven loop for the README](items/jkvexgs-docs-record-a-terminal-demo-of-the-next-driven-loop-for-the-readme.md) — _medium_
@@ -231,6 +230,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#ut9bqm4 dates: time-in-status and per-status cycle time reporting](items/ut9bqm4-dates-time-in-status-and-per-status-cycle-time-reporting.md) — _low_ [dates]
 - [#v9nyy42 Part C: curses TUI for browsing and quick actions](items/v9nyy42-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
 - [#xr994r6 list --as-of DATE: reconstruct and browse tracker state at a past date](items/xr994r6-list-as-of-date-reconstruct-and-browse-tracker-state-at-a-past-date.md) — _low_ [dates]
+- [#35qkx68 install: Windows has assets but no working install path](items/35qkx68-install-windows-has-assets-but-no-working-install-path.md) — _lowest_
 - [#9ax2ny2 deps: --depth N to cut expansion N hops from the seed(s)](items/9ax2ny2-deps-depth-n-to-cut-expansion-n-hops-from-the-seed-s.md) — _lowest_
 - [#p4vp2ae deps: demand as innermost tie-break within a component's layout](items/p4vp2ae-deps-demand-as-innermost-tie-break-within-a-component-s-layout.md) — _lowest_
 
