@@ -78,19 +78,30 @@ now holds only the format version and the update channel.
 
 ## Releasing
 
-Bump `version` in the workspace **`Cargo.toml`** → commit →
-tag `vX.Y.Z`. `.github/workflows/release.yml` takes it from there: it cross-builds six targets,
-**installs the musl artifact and runs the conformance suite against it**, and only then creates
-the release and uploads the assets. A build that cannot pass its own spec never becomes a
-download.
+Bump `version` in the workspace **`Cargo.toml`** → **open a PR** → merge it once CI is green →
+tag `vX.Y.Z` **on the merged commit**. `.github/workflows/release.yml` takes it from there: it
+cross-builds six targets, **installs the musl artifact and runs the conformance suite against
+it**, and only then creates the release and uploads the assets. A build that cannot pass its own
+spec never becomes a download.
+
+**A release commit goes through a PR like any other.** `main` is protected and its required
+checks are the point — pushing a bump straight to it means the commit every published binary is
+built from is the one commit nobody ran CI on. Admin permissions make the bypass possible; that
+is not a reason to use it. The release workflow's own `verify` job is a stricter gate than the PR
+checks, but it runs *after* the tag, so a bump that breaks the build costs a tag you then have to
+delete and re-cut.
+
+**Tag after the merge, never the branch.** A squash merge writes a *new* commit, so the branch
+SHA the bump was authored on is not the SHA that lands on `main` — tagging it would point the
+release at a commit that is not in the history. Merge, `git pull`, then tag `HEAD`.
 
 The workflow fires on **any** `v*` tag, so its first job builds only when the tag equals `v` +
-the workspace `Cargo.toml` version — bump and tag in the same commit, or a tag cut for some
-other purpose would publish binaries labelled with someone else's version. It **skips** on a
-mismatch rather than failing, so a tag that is not a release of this binary leaves no red run
-behind; the run summary says which happened. The check is before the matrix, so a wrong tag
-costs a checkout rather than six cross-builds. **If a release you expected never appears, read
-the guard's summary first.**
+the workspace `Cargo.toml` version — which is what makes "tag the merged commit" load-bearing
+rather than tidiness, since a tag cut anywhere else would publish binaries labelled with someone
+else's version. It **skips** on a mismatch rather than failing, so a tag that is not a release of
+this binary leaves no red run behind; the run summary says which happened. The check is before
+the matrix, so a wrong tag costs a checkout rather than six cross-builds. **If a release you
+expected never appears, read the guard's summary first.**
 
 Targets are `x86_64-unknown-linux-{gnu,musl}`, `aarch64-unknown-linux-musl`,
 `{x86_64,aarch64}-apple-darwin`, `x86_64-pc-windows-msvc`. musl is the default the installer
