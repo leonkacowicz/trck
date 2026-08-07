@@ -6,14 +6,14 @@
 | State | Count |
 |---|---:|
 | backlog | 1 |
-| ongoing | 1 |
+| in-progress | 1 |
 | in-review | 0 |
 | done | 1 |
 | **total** | **3** |
 
 ## Hierarchies
 
-### [#aaaaaaa Epic](items/aaaaaaa-epic.md) — 50% (1/2 pts · 1/2 done) · _medium_ · ongoing
+### [#aaaaaaa Epic](items/aaaaaaa-epic.md) — 50% (1/2 pts · 1/2 done) · _medium_ · in-progress
 
 - [x] [#bbbbbbb Kid one](items/bbbbbbb-kid-one.md)
 - [ ] [#ccccccc Kid two](items/ccccccc-kid-two.md) _(backlog)_
@@ -22,7 +22,7 @@
 
 _none_
 
-## Ongoing
+## In-progress
 
 _none_
 

@@ -165,7 +165,7 @@ impl Graph {
 
     /// An unblocked leaf nobody has started — work that is genuinely free to pick up.
     ///
-    /// `ongoing` and `in-review` both fail this without being terminal. Neither is
+    /// `in-progress` and `in-review` both fail this without being terminal. Neither is
     /// available: one is on somebody's desk, the other on somebody's screen. Both still
     /// block whatever waits on them, and both still count toward the demand cone — none of
     /// that is what this predicate answers.
@@ -179,7 +179,7 @@ impl Graph {
     /// The leaves somebody is already holding, id-sorted — what `next` names above its
     /// pick so an idle reader can see what is taken without being offered it.
     ///
-    /// Leaves only, and deliberately: a parent is `ongoing` because a child is, so
+    /// Leaves only, and deliberately: a parent is `in-progress` because a child is, so
     /// listing it would name a container rather than a claim. Blocking plays no part —
     /// a started issue is held whether or not it is waiting on something.
     pub(crate) fn in_flight(&self) -> Vec<String> {
@@ -447,7 +447,7 @@ mod tests {
 
     #[test]
     fn readiness_is_leaf_only_unblocked_and_unclaimed() {
-        let g = graph(&["epic", "kid:epic", "blocked ->kid", "started @ongoing", "reviewing @in-review", "finished @done", "free"]);
+        let g = graph(&["epic", "kid:epic", "blocked ->kid", "started @in-progress", "reviewing @in-review", "finished @done", "free"]);
         assert!(g.is_ready("kid"));
         assert!(!g.is_ready("epic"), "a parent is not something you pick up");
         assert!(!g.is_ready("blocked"));
@@ -461,7 +461,7 @@ mod tests {
     fn a_started_issue_still_blocks_and_still_conducts_demand() {
         // The narrowing is about what is *offered*, and must not leak into the two things
         // an unfinished issue does regardless of who holds it.
-        let g = graph(&["blocker !medium", "urgent ->blocker !urgent @ongoing", "high !high"]);
+        let g = graph(&["blocker !medium", "urgent ->blocker !urgent @in-progress", "high !high"]);
         assert!(g.is_blocked("urgent"), "a dependency is satisfied by done, not by started");
         assert_eq!(g.ranked_ready(), ["blocker", "high"]);
         assert_eq!(g.demand_source("blocker").as_deref(), Some("urgent"));
@@ -469,9 +469,9 @@ mod tests {
 
     #[test]
     fn in_flight_is_the_started_leaves() {
-        let g = graph(&["epic @ongoing", "kid:epic @ongoing", "reviewing @in-review", "waiting ->kid @ongoing", "fresh", "finished @done"]);
+        let g = graph(&["epic @in-progress", "kid:epic @in-progress", "reviewing @in-review", "waiting ->kid @in-progress", "fresh", "finished @done"]);
         assert_eq!(g.in_flight(), ["kid", "reviewing", "waiting"]);
-        // `epic` is ongoing only because `kid` is, so it names no claim of its own.
+        // `epic` is in-progress only because `kid` is, so it names no claim of its own.
         assert!(!g.in_flight().contains(&"epic".to_string()));
     }
 

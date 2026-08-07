@@ -1,4 +1,4 @@
-# An ongoing issue still counts in the demand cone: the urgency of the work waiting on
+# An in-progress issue still counts in the demand cone: the urgency of the work waiting on
 # `aaaaaaa` does not depend on whether that work has been picked up yet.
 new "Blocker" --id aaaaaaa --priority medium
 new "Urgent dependent" --id bbbbbbb --priority urgent --requires aaaaaaa

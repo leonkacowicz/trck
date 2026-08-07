@@ -241,7 +241,7 @@ impl Issue {
         let id = want_id("id", &req("id"))?;
         let slug = want_str("slug", &req("slug"))?;
         let title = want_str("title", &req("title"))?;
-        let status = want_str("status", &req("status"))?;
+        let status = crate::config::canonical_status(&want_str("status", &req("status"))?).to_string();
         let priority = want_str("priority", &req("priority"))?;
 
         let points = match row.get("points") {
@@ -489,6 +489,16 @@ mod tests {
         assert_eq!(r.review_url.as_deref(), Some("https://example.test/pull/1"));
         assert!(!r.extra.contains_key("pr"));
         assert!(!r.to_canonical().to_json().contains("\"pr\""));
+    }
+
+    #[test]
+    fn ongoing_migrates_to_in_progress() {
+        // A tracker written by an older engine: read under the current name, and written
+        // back under it, so the next index write converts the row for good.
+        let raw = MINIMAL.replace(r#""status": "backlog""#, r#""status": "ongoing""#);
+        let r = issue(&raw).expect("parses");
+        assert_eq!(r.status, "in-progress");
+        assert!(!r.to_canonical().to_json().contains("ongoing"));
     }
 
     #[test]

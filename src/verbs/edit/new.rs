@@ -71,7 +71,7 @@ fn build_row(ctx: &Ctx, rows: &[Issue], opts: &NewOpts) -> Result<Issue, String>
         id,
         slug,
         title: opts.title.clone(),
-        status: config::initial_status().to_string(),
+        status: config::BACKLOG.to_string(),
         priority,
         points,
         parent,

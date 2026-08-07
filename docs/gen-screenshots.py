@@ -31,7 +31,7 @@ COMMANDS = [
     ("tree",       ["tree"]),
     ("deps-graph", ["deps"]),
     ("ready",      ["ready"]),
-    ("show-21",    ["show", "21"]),
+    ("show-21",    ["show", "exg4e3b"]),
 ]
 
 # Terminal chrome + a One-Dark-ish mapping of trck's _ANSI names to hex.

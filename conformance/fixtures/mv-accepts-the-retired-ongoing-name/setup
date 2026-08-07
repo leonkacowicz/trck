@@ -1,0 +1,2 @@
+# `ongoing` was renamed to `in-progress`; typing the old name still moves the issue.
+new "Alpha" --id aaaaaaa

@@ -1,7 +1,7 @@
            id  aaaaaaa
          slug  rich-issue
         title  Rich issue
-       status  ongoing
+       status  in-progress
      priority  medium
        points  3
        parent  eeeeeee

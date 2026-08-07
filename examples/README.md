@@ -40,7 +40,7 @@ Run everything against it with `--dir examples/action-game` (from the repo root)
 | **All 5 kinds** | task, epic, bug, story, investigation — e.g. `list --kind bug`. |
 | **Priorities (soft order)** | `list --status '!done' --sort priority`. |
 | **Labels (the cross-cutting axis)** | `list --label combat` — labels categorize *across* the hierarchy. |
-| **Statuses** | `list --status ongoing`; folders `backlog/ ongoing/ done/` mirror them. |
+| **Statuses** | `list --status in-progress`; status is an index field, so every body stays in `items/`. |
 | **Resolutions on closed work** | `show 33` (superseded), `show 34` (duplicate), `show 35` (wontfix) — settled standalone tasks, so hidden from the default `tree` (`tree --all` to see them). |
 | **Default view hides settled work** | `tree` vs `tree --all` — done items under open epics (`#007`, `#016`) stay as context; fully-settled tasks (`#033`–`#035`) drop off. |
 

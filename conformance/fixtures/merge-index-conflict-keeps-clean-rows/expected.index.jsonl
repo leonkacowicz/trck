@@ -1,6 +1,6 @@
 {"id": "zzz9999", "slug": "z", "title": "Zeta", "status": "backlog", "priority": "medium", "created": "2026-01-01T00:00:00Z"}
 <<<<<<< one side (abc1234)
-{"id": "abc1234", "slug": "a", "title": "Alpha", "status": "ongoing", "priority": "medium", "created": "2026-01-01T00:00:00Z", "started": "2026-01-01T00:00:00Z"}
+{"id": "abc1234", "slug": "a", "title": "Alpha", "status": "in-progress", "priority": "medium", "created": "2026-01-01T00:00:00Z", "started": "2026-01-01T00:00:00Z"}
 =======
 {"id": "abc1234", "slug": "a", "title": "Alpha", "status": "done", "priority": "medium", "created": "2026-01-01T00:00:00Z", "closed": "2026-01-01T00:00:00Z"}
 >>>>>>> the other side (abc1234)

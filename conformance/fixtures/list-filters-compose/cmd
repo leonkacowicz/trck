@@ -1,1 +1,1 @@
-list --status ongoing --match match --flat
+list --status in-progress --match match --flat

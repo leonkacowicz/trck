@@ -97,9 +97,9 @@ pub(crate) fn apply_status(row: &mut Issue, new_status: &str) -> Result<(), Stri
     if let Some(msg) = config::check_status(new_status) {
         return Err(msg);
     }
-    let was_initial = row.status == config::initial_status();
+    let was_initial = row.status == config::BACKLOG;
     row.status = new_status.to_string();
-    if was_initial && new_status != config::initial_status() && row.started.is_none() {
+    if was_initial && new_status != config::BACKLOG && row.started.is_none() {
         row.started = Some(now_utc()?);
     }
     if is_terminal(new_status) {
@@ -241,7 +241,7 @@ mod tests {
     #[test]
     fn reopening_clears_both_closed_and_resolution() {
         // Leaving a terminal status must clear the whole closure record, not just the
-        // timestamp: a row that is 'ongoing' while carrying a resolution is one our own
+        // timestamp: a row that is 'in-progress' while carrying a resolution is one our own
         // `check` rejects, so keeping it would have the verb write an invalid tracker.
         let mut row = Issue {
             id: "aaaaaaa".into(),
@@ -262,7 +262,7 @@ mod tests {
             manual_status: false,
             extra: BTreeMap::new(),
         };
-        apply_status(&mut row, config::ONGOING).unwrap();
+        apply_status(&mut row, config::IN_PROGRESS).unwrap();
         assert_eq!(row.closed, None);
         assert_eq!(row.resolution, None, "resolution must not outlive the closure");
     }

@@ -204,7 +204,7 @@ class TestGitLayer(unittest.TestCase):
             _commit_index(tmp, _row(1, created="2026-06-01") + "\n",
                           "2026-06-01T09:00:00+00:00")
             _commit_index(tmp, _row(1, created="2026-06-01", started="2026-06-02",
-                                    status="ongoing") + "\n",
+                                    status="in-progress") + "\n",
                           "2026-06-02T12:00:00-03:00")
             _commit_index(tmp, _row(1, created="2026-06-01", started="2026-06-02",
                                     closed="2026-06-03", status="done") + "\n",
@@ -228,13 +228,13 @@ class TestMainEndToEnd(unittest.TestCase):
         _commit_index(tmp, _row(1, created="2026-06-01") + "\n",
                       "2026-06-01T09:00:00+00:00")
         _commit_index(tmp, _row(1, created="2026-06-01", started="2026-06-02",
-                                status="ongoing") + "\n",
+                                status="in-progress") + "\n",
                       "2026-06-02T12:00:00-03:00")
         _commit_index(tmp, _row(1, created="2026-06-01", started="2026-06-02",
                                 closed="2026-06-03", status="done") + "\n",
                       "2026-06-03T10:00:00+00:00")
         _commit_index(tmp, _row(1, created="2026-06-01", started="2026-06-02",
-                                status="ongoing") + "\n",   # reopened
+                                status="in-progress") + "\n",   # reopened
                       "2026-06-04T10:00:00+00:00")
         _commit_index(tmp, _row(1, created="2026-06-01", started="2026-06-02",
                                 closed="2026-06-05", status="done") + "\n",   # reclosed

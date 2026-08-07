@@ -58,7 +58,7 @@ the same change as a new violation.
 runs `trck check` before commits, preferring the binary in `target/` over an installed one — in
 this repo the engine under change is the one that should answer.
 
-The vocabulary is **fixed in code**, not configured — `backlog → ongoing → in-review → done`,
+The vocabulary is **fixed in code**, not configured — `backlog → in-progress → in-review → done`,
 five priorities, three resolutions, all constants in `src/config.rs`. It used to come
 from each tracker's `trck.json`; that is gone, and `check` warns about leftover keys. `trck.json`
 now holds only the format version and the update channel.

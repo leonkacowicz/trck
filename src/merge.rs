@@ -296,7 +296,7 @@ mod tests {
     #[test]
     fn a_lifecycle_divergence_conflicts_as_one_unit() {
         let base = [row("aaaaaaa", "")];
-        let a = [row("aaaaaaa", r#""status": "ongoing""#)];
+        let a = [row("aaaaaaa", r#""status": "in-progress""#)];
         let b = [row("aaaaaaa", r#""status": "done", "closed": "2026-01-01T00:00:00Z""#)];
         let (_, conflicts) = merge(&base, &a, &b);
         assert_eq!(conflicts.len(), 1, "{conflicts:?}");
@@ -311,10 +311,10 @@ mod tests {
     #[test]
     fn one_sided_lifecycle_change_is_taken_not_conflicted() {
         let base = [row("aaaaaaa", "")];
-        let a = [row("aaaaaaa", r#""status": "ongoing""#)];
+        let a = [row("aaaaaaa", r#""status": "in-progress""#)];
         let (rows, conflicts) = merge(&base, &a, &base);
         assert!(conflicts.is_empty(), "{conflicts:?}");
-        assert_eq!(rows[0].status, "ongoing");
+        assert_eq!(rows[0].status, "in-progress");
         assert_symmetric(&base, &a, &base);
     }
 
@@ -378,7 +378,7 @@ mod tests {
         // Both sides recomputed the epic's status from different child sets. That is not two
         // people disagreeing, so it must not surface as a conflict the user has to resolve.
         let base = [row("aaaaaaa", ""), row("bbbbbbb", r#""parent": "aaaaaaa""#)];
-        let a = [row("aaaaaaa", r#""status": "ongoing""#), row("bbbbbbb", r#""parent": "aaaaaaa", "status": "ongoing""#)];
+        let a = [row("aaaaaaa", r#""status": "in-progress""#), row("bbbbbbb", r#""parent": "aaaaaaa", "status": "in-progress""#)];
         let b = [
             row("aaaaaaa", r#""status": "done", "closed": "2026-01-01T00:00:00Z""#),
             row("bbbbbbb", r#""parent": "aaaaaaa", "status": "done", "closed": "2026-01-01T00:00:00Z""#),

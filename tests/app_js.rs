@@ -117,19 +117,19 @@ fn the_board_gives_ready_a_column_and_takes_those_cards_out_of_backlog() {
     // column it takes from, so the row reads as the path a card travels.
     let script = format!(
         "{}\n\
-         const statuses = [{{name: 'backlog'}}, {{name: 'ongoing'}}, {{name: 'done'}}];\n\
+         const statuses = [{{name: 'backlog'}}, {{name: 'in-progress'}}, {{name: 'done'}}];\n\
          const shown = [\n\
            {{id: 'a', status: 'backlog', ready: true}},\n\
            {{id: 'b', status: 'backlog', ready: false}},\n\
            {{id: 'c', status: 'backlog', ready: false}},\n\
-           {{id: 'd', status: 'ongoing', ready: false}},\n\
+           {{id: 'd', status: 'in-progress', ready: false}},\n\
          ];\n\
          const cols = boardColumns(statuses, shown);\n\
          console.log(JSON.stringify(cols.map(c => [c.name, c.items.map(i => i.id)])));\n",
         lift(&["boardColumns"])
     );
     let out = run_node(&script);
-    let want = r#"[["backlog",["b","c"]],["ready",["a"]],["ongoing",["d"]],["done",[]]]"#;
+    let want = r#"[["backlog",["b","c"]],["ready",["a"]],["in-progress",["d"]],["done",[]]]"#;
     assert_eq!(out.trim(), want, "{out}");
 }
 
