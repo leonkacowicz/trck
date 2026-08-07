@@ -169,20 +169,26 @@ trck list --json                  # nested forest: each node + a "children" arra
 trck list --flat --json           # flat array, in the sorted order
 trck show NNN --json              # the metadata plus a "body" field
 trck deps NNN --json              # {"requires": [...], "blocks": [...]}
-trck next --json                  # array of one, ranked
+trck next --json                  # {"in_flight": [...], "ready": [one row]}
 ```
 
-Two shape notes worth knowing:
+Three shape notes worth knowing:
 
 - **`list --json` marks context rows.** The forest pulls non-matching ancestors in so a
   matched child never floats free; the human view dims them, and the JSON sets
   `"context": true`. Without it you can't tell a result from the scaffolding.
+- **`ready`/`next --json` are an object, not an array.** `{"in_flight": [...], "ready":
+  [...]}` — the ranked pick list beside the leaves somebody has already started, as whole
+  rows. Both verbs emit the same shape; `next` differs only in that `ready` holds at most
+  one row. The document always carries `in_flight`, even though the human view prints it
+  only above the one-pick view: a caller that doesn't want the context can ignore a key,
+  while one that does can't invent it.
 - **`ready`/`next --json` carry the demand note as data.** A row lifted above its own
   priority gets `demand_priority` and `demand_source` — what the human view renders as
-  `↑urgent(#a1b2c3)` — omitted on rows that aren't lifted. **The array order is the
+  `↑urgent(#a1b2c3)` — omitted on rows that aren't lifted. **The `ready` order is the
   contract**: this verb's whole answer is "in what order", so you never re-derive it.
 
-An empty result is `[]`, not silence.
+An empty result is `[]` — or, for `ready`/`next`, an object of empty arrays — not silence.
 
 ## Issue ids
 
@@ -242,6 +248,14 @@ right now".
 Scoping narrows the answer, never the constraints: a leaf waiting on something outside the
 subtree, directly or through an edge authored on an ancestor, stays out of the list — and
 never the ranking either: rows are ranked over the whole graph, then filtered.
+
+**`next` names what is taken before it names what to take.** Above the single pick sits an
+`in flight:` line listing the leaves somebody has already started — `ongoing` or `in-review`.
+There is no assignee field, so `start` is the only claim a tracker records, and this is where
+you read it: an idle picker sees what a colleague holds without being offered it, and comes
+back to their own in-progress work without it competing for the top slot. Nothing started, no
+line. Scoping to a subtree scopes the line too. The full `ready` list carries no such line —
+it already renders every row the line would name.
 
 **Ranked by demand.** `ready`/`next` don't order by an issue's own priority alone — a
 medium task standing between you and an urgent one matters more than a high one that

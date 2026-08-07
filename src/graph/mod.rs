@@ -173,6 +173,18 @@ impl Graph {
         !is_terminal(&r.status) && config::is_actionable(&r.status) && self.is_leaf(id) && !self.is_blocked(id)
     }
 
+    /// The leaves somebody is already holding, id-sorted — what `next` names above its
+    /// pick so an idle reader can see what is taken without being offered it.
+    ///
+    /// Leaves only, and deliberately: a parent is `ongoing` because a child is, so
+    /// listing it would name a container rather than a claim. Blocking plays no part —
+    /// a started issue is held whether or not it is waiting on something.
+    pub(crate) fn in_flight(&self) -> Vec<String> {
+        let mut out: Vec<String> = self.rows.iter().filter(|r| config::is_in_flight(&r.status) && self.is_leaf(&r.id)).map(|r| r.id.clone()).collect();
+        out.sort();
+        out
+    }
+
     // --- demand: effective blocking, reversed -------------------------------- //
 
     /// `id -> the ids directly waiting on it`, over non-terminal issues only.
@@ -439,6 +451,14 @@ mod tests {
         assert!(!g.is_ready("reviewing"), "in flight, but its output is pending someone else's judgement");
         assert!(!g.is_ready("finished"));
         assert!(g.is_ready("free"));
+    }
+
+    #[test]
+    fn in_flight_is_the_started_leaves() {
+        let g = graph(&["epic @ongoing", "kid:epic @ongoing", "reviewing @in-review", "waiting ->kid @ongoing", "fresh", "finished @done"]);
+        assert_eq!(g.in_flight(), ["kid", "reviewing", "waiting"]);
+        // `epic` is ongoing only because `kid` is, so it names no claim of its own.
+        assert!(!g.in_flight().contains(&"epic".to_string()));
     }
 
     #[test]

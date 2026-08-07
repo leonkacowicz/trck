@@ -10,8 +10,8 @@
     "module_files": 20
   },
   "totals": {
-    "file_functions": 261,
-    "file_lines": 855,
+    "file_functions": 264,
+    "file_lines": 867,
     "function_args": 13,
     "function_cognitive": 207,
     "function_cyclomatic": 306,
@@ -25,7 +25,7 @@
       "src/config.rs": 11,
       "src/diff.rs": 40,
       "src/discovery.rs": 12,
-      "src/graph/mod.rs": 22,
+      "src/graph/mod.rs": 25,
       "src/gutter/mod.rs": 30,
       "src/html.rs": 9,
       "src/issue.rs": 21,
@@ -42,7 +42,7 @@
       "src/cli/mod.rs": 80,
       "src/diff.rs": 64,
       "src/discovery.rs": 20,
-      "src/graph/mod.rs": 80,
+      "src/graph/mod.rs": 92,
       "src/gutter/mod.rs": 164,
       "src/help.rs": 132,
       "src/issue.rs": 68,

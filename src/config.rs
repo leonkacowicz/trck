@@ -56,10 +56,6 @@ pub(crate) fn initial_status() -> &'static str {
     BACKLOG
 }
 
-pub(crate) fn active_status() -> &'static str {
-    ONGOING
-}
-
 pub(crate) fn is_terminal(status: &str) -> bool {
     status == DONE
 }
@@ -71,6 +67,16 @@ pub(crate) fn is_actionable(status: &str) -> bool {
     status != IN_REVIEW && status != DONE
 }
 
+/// Whether someone is holding this issue: started, not finished. There is no assignee
+/// field, so `start` is the only claim a tracker records — which is what makes this the
+/// set `next` names above its pick.
+///
+/// Spelled as the two statuses rather than "not backlog, not done" so an unrecognised
+/// status from a hand-edited row is not reported as somebody's work in progress.
+pub(crate) fn is_in_flight(status: &str) -> bool {
+    status == ONGOING || status == IN_REVIEW
+}
+
 /// The status a parent should carry given its children's: all initial -> initial, all
 /// terminal -> terminal, otherwise active.
 pub(crate) fn reconcile(children: &[String]) -> &'static str {
@@ -80,7 +86,7 @@ pub(crate) fn reconcile(children: &[String]) -> &'static str {
     if children.iter().all(|s| is_terminal(s)) {
         return DONE;
     }
-    active_status()
+    ONGOING
 }
 
 pub(crate) fn resolve_alias(verb: &str) -> Option<&'static str> {
@@ -275,6 +281,13 @@ mod tests {
     fn only_backlog_and_ongoing_offer_work_to_pick_up() {
         let got: Vec<bool> = STATUSES.iter().map(|s| is_actionable(s)).collect();
         assert_eq!(got, [true, true, false, false]);
+    }
+
+    #[test]
+    fn the_started_statuses_are_the_ones_in_flight() {
+        let got: Vec<bool> = STATUSES.iter().map(|s| is_in_flight(s)).collect();
+        assert_eq!(got, [false, true, true, false]);
+        assert!(!is_in_flight("wat"), "a hand-edited junk status is nobody's claim");
     }
 
     #[test]

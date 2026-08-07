@@ -1,0 +1,5 @@
+# The line is the one-pick view's context; the full list does not carry it, even
+# with work in flight.
+new "First" --id aaaaaaa --priority urgent
+new "Second" --id bbbbbbb --priority high
+review bbbbbbb https://example.com/pr/1

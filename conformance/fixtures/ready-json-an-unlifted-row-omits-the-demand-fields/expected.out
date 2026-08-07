@@ -1,20 +1,23 @@
-[
-  {
-    "id": "aaaaaaa",
-    "slug": "alone",
-    "title": "Alone",
-    "status": "backlog",
-    "priority": "high",
-    "points": 1,
-    "parent": null,
-    "labels": [],
-    "depends_on": [],
-    "spec": null,
-    "review_url": null,
-    "created": "2026-01-01T00:00:00Z",
-    "started": null,
-    "closed": null,
-    "resolution": null,
-    "manual_status": false
-  }
-]
+{
+  "in_flight": [],
+  "ready": [
+    {
+      "id": "aaaaaaa",
+      "slug": "alone",
+      "title": "Alone",
+      "status": "backlog",
+      "priority": "high",
+      "points": 1,
+      "parent": null,
+      "labels": [],
+      "depends_on": [],
+      "spec": null,
+      "review_url": null,
+      "created": "2026-01-01T00:00:00Z",
+      "started": null,
+      "closed": null,
+      "resolution": null,
+      "manual_status": false
+    }
+  ]
+}

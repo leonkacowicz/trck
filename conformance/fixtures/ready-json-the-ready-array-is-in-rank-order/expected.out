@@ -20,6 +20,24 @@
       "manual_status": false,
       "demand_priority": "urgent",
       "demand_source": "bbbbbbb"
+    },
+    {
+      "id": "ccccccc",
+      "slug": "high-blocks-nothing",
+      "title": "High, blocks nothing",
+      "status": "backlog",
+      "priority": "high",
+      "points": 1,
+      "parent": null,
+      "labels": [],
+      "depends_on": [],
+      "spec": null,
+      "review_url": null,
+      "created": "2026-01-01T00:00:00Z",
+      "started": null,
+      "closed": null,
+      "resolution": null,
+      "manual_status": false
     }
   ]
 }
