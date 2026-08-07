@@ -141,7 +141,14 @@ impl Deps<'_> {
     /// Done filtering, which is display-only: fully terminal components disappear from the
     /// whole-graph view, never from an issue's own line.
     fn done_filtered(&self, ids: &BTreeSet<String>) -> BTreeSet<String> {
-        gutter::filter_done(&self.g, ids, self.opts.omit_done, self.opts.include_done_chains, self.root.is_none())
+        let filter = gutter::DoneFilter {
+            omit_done: self.opts.omit_done,
+            include_chains: self.opts.include_done_chains,
+            // A rooted view is answering "what is this issue's line?" — every part of it
+            // belongs on screen, done or not.
+            hide_chains: self.root.is_none(),
+        };
+        gutter::filter_done(&self.g, ids, &filter)
     }
 
     /// The graph itself: a gutter column padded to a common width, then each row's label.
