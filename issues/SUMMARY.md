@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 50 |
+| backlog | 51 |
 | ongoing | 2 |
 | in-review | 0 |
 | done | 176 |
-| **total** | **228** |
+| **total** | **229** |
 
 ## Hierarchies
 
@@ -209,6 +209,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 - [#35qkx68 install: Windows has assets but no working install path](items/35qkx68-install-windows-has-assets-but-no-working-install-path.md) — _high_
 - [#38qfknm restore the coverage the deleted suite carried: hooks, setup-git, git-revision diff](items/38qfknm-restore-the-coverage-the-deleted-suite-carried-hooks-setup-git-git-revision-diff.md) — _high_
+- [#ccht2u2 list: order siblings by a global topological rank (blockers first)](items/ccht2u2-list-order-siblings-by-a-global-topological-rank-blockers-first.md) — _medium_
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](items/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#jkvexgs docs: record a terminal demo of the next-driven loop for the README](items/jkvexgs-docs-record-a-terminal-demo-of-the-next-driven-loop-for-the-readme.md) — _medium_
 - [#k6g7kvf CI: a consistency check a consumer repo can drop in](items/k6g7kvf-ci-a-consistency-check-a-consumer-repo-can-drop-in.md) — _medium_
