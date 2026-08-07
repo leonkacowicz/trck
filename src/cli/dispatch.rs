@@ -5,10 +5,9 @@
 //! function nobody can hold in their head. The three groups here (write something, read
 //! something, maintain the repository) are the seams the verbs already fall along.
 
-use super::opts::{deps_opts, init_from_args, list_opts, new_opts, set_opts};
+use super::opts::{deps_opts, init_from_args, list_opts, mv_opts, new_opts, set_opts};
 use super::reports::{cmd_changelog, cmd_check, cmd_diff};
 use super::{Args, VERBS, context, parse_args, tracker_dir};
-use crate::config;
 use crate::discovery::Ctx;
 use crate::query;
 use crate::repo;
@@ -29,17 +28,7 @@ fn dispatch_mutating(args: &Args) -> Option<Result<String, String>> {
     let ctx = || context(args);
     Some(match args.verb.as_str() {
         "new" => ctx().and_then(|c| new_opts(args).and_then(|o| verbs::cmd_new(&c, &o))),
-        "mv" => ctx().and_then(|c| {
-            let status = args.positional_at(1).ok_or_else(|| "mv: missing a target status".to_string())?;
-            verbs::cmd_mv(&c, id_operand(args, 0)?, status, args.opt("--resolution"), args.opt("--review-url"))
-        }),
-        verb @ ("start" | "review" | "done") => ctx().and_then(|c| {
-            let status = config::resolve_alias(verb).unwrap_or(config::BACKLOG);
-            // `review` takes the URL positionally: the moment a review exists is the
-            // moment both facts are known.
-            let url = if verb == "review" { args.positional_at(1).or_else(|| args.opt("--review-url")) } else { args.opt("--review-url") };
-            verbs::cmd_mv(&c, id_operand(args, 0)?, status, args.opt("--resolution"), url)
-        }),
+        verb @ ("mv" | "start" | "review" | "done") => ctx().and_then(|c| mv_opts(args, verb).and_then(|o| verbs::cmd_mv(&c, id_operand(args, 0)?, &o))),
         "set" => ctx().and_then(|c| set_opts(args).and_then(|o| verbs::cmd_set(&c, id_operand(args, 0)?, &o))),
         "label" => ctx().and_then(|c| verbs::cmd_label(&c, id_operand(args, 0)?, &args.all("--add"), &args.all("--remove"))),
         "dep" => ctx().and_then(|c| verbs::cmd_dep(&c, id_operand(args, 0)?, args.opt("--add"), args.opt("--remove"))),

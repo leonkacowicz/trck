@@ -15,7 +15,7 @@ mod clock;
 mod edit;
 
 pub(crate) use clock::now_utc;
-pub(crate) use edit::{NewOpts, SetOpts, cmd_dep, cmd_label, cmd_mv, cmd_new, cmd_set};
+pub(crate) use edit::{MvOpts, NewOpts, SetOpts, cmd_dep, cmd_label, cmd_mv, cmd_new, cmd_set};
 
 use crate::config::{self, is_terminal};
 use crate::discovery::Ctx;

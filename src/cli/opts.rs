@@ -7,7 +7,21 @@
 use super::Args;
 use crate::init;
 use crate::query::{DepsOpts, ListOpts};
-use crate::verbs::{NewOpts, SetOpts};
+use crate::verbs::{MvOpts, NewOpts, SetOpts};
+
+/// `mv`'s options — and, through `verb`, those of its three aliases.
+///
+/// `start`/`review`/`done` name the destination instead of taking it positionally, and
+/// `review` takes the URL positionally too: the moment a review exists is the moment both
+/// facts are known.
+pub(super) fn mv_opts<'a>(args: &'a Args, verb: &str) -> Result<MvOpts<'a>, String> {
+    let status = match crate::config::resolve_alias(verb) {
+        Some(status) => status,
+        None => args.positional_at(1).ok_or_else(|| "mv: missing a target status".to_string())?,
+    };
+    let positional_url = (verb == "review").then(|| args.positional_at(1)).flatten();
+    Ok(MvOpts { status, resolution: args.opt("--resolution"), review_url: positional_url.or_else(|| args.opt("--review-url")) })
+}
 
 /// `set`'s options.
 pub(super) fn set_opts(args: &Args) -> Result<SetOpts<'_>, String> {

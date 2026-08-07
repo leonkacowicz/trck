@@ -8,8 +8,8 @@
 | backlog | 51 |
 | ongoing | 2 |
 | in-review | 0 |
-| done | 178 |
-| **total** | **231** |
+| done | 179 |
+| **total** | **232** |
 
 ## Hierarchies
 
@@ -274,6 +274,7 @@ _none_
 - [#dscmxng Use random alphanumeric ids to make concurrent creation collision-free](items/dscmxng-use-random-alphanumeric-ids-to-make-concurrent-creation-collision-free.md) — _medium_ [conflict-resolution tracker-features] (closed 2026-06-15)
 - [#fwxbrvc resolve_ref: accept a leading # on id args (paste-back from output)](items/fwxbrvc-resolve-ref-accept-a-leading-on-id-args-paste-back-from-output.md) — _medium_ (closed 2026-07-24)
 - [#ge5jt9s Cascading parent status: derive parent status from children (status rollup)](items/ge5jt9s-cascading-parent-status-derive-parent-status-from-children-status-rollup.md) — _medium_ (closed 2026-06-13)
+- [#ggpcvg3 pay down the edit verbs](items/ggpcvg3-pay-down-the-edit-verbs.md) — _medium_ (closed 2026-08-07)
 - [#gs3vd4w ready/next: scope to a subtree (what can I pick up on this parent now)](items/gs3vd4w-ready-next-scope-to-a-subtree-what-can-i-pick-up-on-this-parent-now.md) — _medium_ (closed 2026-07-24)
 - [#gwcr9qd deps: shorter edges / fewer crossings in the graph layout](items/gwcr9qd-deps-shorter-edges-fewer-crossings-in-the-graph-layout.md) — _medium_ (closed 2026-06-12)
 - [#httj4xf Add labels/tags to issues](items/httj4xf-add-labels-tags-to-issues.md) — _medium_ [tracker-features] (closed 2026-06-06)
