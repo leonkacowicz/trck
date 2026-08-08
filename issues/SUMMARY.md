@@ -6,10 +6,10 @@
 | State | Count |
 |---|---:|
 | backlog | 52 |
-| in-progress | 2 |
+| in-progress | 3 |
 | in-review | 0 |
 | done | 186 |
-| **total** | **240** |
+| **total** | **241** |
 
 ## Hierarchies
 
@@ -244,7 +244,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## In-progress
 
-_none_
+- [#nbjnx54 CI: skip the engine suites on issues- and docs-only pull requests](items/nbjnx54-ci-skip-the-engine-suites-on-issues-and-docs-only-pull-requests.md) — _medium_
 
 ## In-review
 
