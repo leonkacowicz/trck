@@ -10,11 +10,56 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Does this change touch the engine at all?
+  #
+  # A pull request that only edits tracker data or prose cannot break the build, so it has
+  # no business running three platforms of it. `paths-ignore` cannot express that here:
+  # merging is gated on named checks, and a workflow filtered out by paths never reports
+  # them — the pull request would wait forever for a check that will never arrive. A job
+  # skipped by an `if:` *does* report, and branch protection counts skipped as passing. So
+  # the gate lives on the jobs, and this is what they consult.
+  #
+  # The rule itself is in scripts/ci_changed.py, under test, because the way it fails is
+  # silent: a rule that wrongly says "skippable" makes the checks green by never running
+  # them. Uncertainty resolves to running everything — including for a push or a manual
+  # dispatch, where `main` being green should mean the whole suite said so.
+  changes:
+    name: changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.classify.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The three-dot diff below needs the merge base with the target branch.
+          fetch-depth: 0
+
+      - id: classify
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          code=true
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags origin "$BASE_REF"
+            # --no-renames so a rename reports both paths: moving a file *out* of issues/
+            # is a code change, and rename detection would report only where it landed.
+            code=$(git diff --no-renames --name-only "origin/$BASE_REF...HEAD" \
+                   | tee changed-paths.txt \
+                   | python3 scripts/ci_changed.py)
+            echo "Changed paths:"; cat changed-paths.txt
+          fi
+          echo "Runs the engine's suites: $code"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
   # The helper scripts: a timestamp backfill, an id converter, and the installer. None of
   # them is part of the engine, and they run as their own suite for that reason — a
   # one-shot nobody will run again should not gate every engine change. Two of them do
   # reach for a built binary, and skip cleanly when there isn't one.
   scripts:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -37,6 +82,8 @@ jobs:
   # makes the ratchet bite on exactly the change being pushed.
   quality:
     name: quality ratchet
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -72,6 +119,8 @@ jobs:
   # finding something that can open a zip, this is the job that says so.
   installer:
     name: installer (windows)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -86,6 +135,8 @@ jobs:
   # pass rate of 0; --min-pass is a floor that only moves up, so the port could never
   # regress and every raise is a visible commit. It now sits at the full suite.
   rust:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -120,10 +171,35 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: python3 conformance/run.py --bin target/release/trck --min-pass 266
 
-      # This repository's own tracker, checked by the engine it ships. It lives here rather
-      # than in a job of its own because it needs a built binary and this is where one
-      # exists — and it must live *somewhere*: an inconsistent tracker that nothing checks
-      # is a tracker that stops being true without anyone finding out.
+      # This repository's own tracker, checked by the engine it ships. It rides along here
+      # because it needs a built binary and this is where one exists. When this job is
+      # skipped the `tracker` job below builds one for it — the check must live *somewhere*
+      # on every change, and an issues-only pull request is precisely the change that can
+      # break it.
       - name: Tracker consistency
         if: matrix.os == 'ubuntu-latest'
+        run: ./target/release/trck check
+
+  # The other half of that check: the one thing an issues- or docs-only pull request still
+  # has to prove. It runs exactly when `rust` does not, so the tracker is validated on every
+  # change and built twice on none.
+  #
+  # It builds the engine rather than downloading a release, for the same reason nothing is
+  # vendored: the tracker must be answered for by the engine in this commit, not by whatever
+  # version happens to be published. The crate has no dependencies, so that is a short build.
+  tracker:
+    name: tracker consistency
+    needs: changes
+    if: needs.changes.outputs.code == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Toolchain
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Tracker consistency
         run: ./target/release/trck check
