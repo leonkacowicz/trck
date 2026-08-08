@@ -28,8 +28,30 @@ rather than inventing one.
 - [ ] `install-hook` covered end to end: installed, fires on a staged tracker change, ignores
       unrelated commits, aborts on an inconsistent tracker, and does nothing findable-engine-free
       rather than failing.
-- [ ] `setup-git` covered on the `.git/config` side, including idempotence and the absolute
+- [x] `setup-git` covered on the `.git/config` side, including idempotence and the absolute
       engine path.
 - [ ] `diff` covered across real revisions, not just across two in-memory snapshots.
-- [ ] Where the behaviour is user-visible, prefer a conformance fixture; reach for an
+- [x] Where the behaviour is user-visible, prefer a conformance fixture; reach for an
       integration test only where a fixture genuinely cannot express a git repository.
+
+## Notes
+
+**Two of the three areas landed in `#9ttp6rn`** (pay down repo.rs), because that refactor
+rewrote exactly the functions this issue says are untested — so the coverage had to come first.
+
+- `tests/git_hooks.rs` (8 tests, real git repositories, following `git_merge.rs`) covers
+  `install-hook` end to end and `setup-git`'s `.git/config` half: the hook is installed and
+  executable, stops a commit that breaks the tracker, lets an unrelated commit through, and
+  fires on any staged change when the tracker is the repo root; the drivers are registered with
+  an absolute engine path, re-running is idempotent, a user's own `.gitattributes` rules survive,
+  and both verbs refuse outside a repository.
+- 7 conformance fixtures cover `migrate-layout`, which was equally untested and is not in this
+  issue's original list — the dry run, the real move, both refusals, and the no-op.
+
+That also settled the fixture-versus-integration question in the last criterion: the conformance
+runner's `setup` lines exec only the trck binary, so **no fixture can `git init`**. Anything
+needing a real repository has to be an integration test; everything else stays a fixture.
+
+**What is left is the third bullet only:** `diff` across real git revisions. There is still no
+conformance fixture for `diff` at all, and nothing exercises reading an `index.jsonl` out of a
+revision as opposed to comparing two snapshots already in memory.
