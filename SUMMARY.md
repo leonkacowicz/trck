@@ -8,8 +8,8 @@
 | backlog | 52 |
 | in-progress | 2 |
 | in-review | 0 |
-| done | 185 |
-| **total** | **239** |
+| done | 186 |
+| **total** | **240** |
 
 ## Hierarchies
 
@@ -272,6 +272,7 @@ _none_
 - [#5wbwpjv Add full-text search/grep across issue bodies](items/5wbwpjv-add-full-text-search-grep-across-issue-bodies.md) — _medium_ [tracker-features] (closed 2026-06-10)
 - [#9pf42be Add points field with leaves-only deep-recursive weighted rollup](items/9pf42be-add-points-field-with-leaves-only-deep-recursive-weighted-rollup.md) — _medium_ (closed 2026-06-06)
 - [#9sevgpn Enrich 'list' filters: multi/negated status, title match, sort, --blocked, --orphan](items/9sevgpn-enrich-list-filters-multi-negated-status-title-match-sort-blocked-orphan.md) — _medium_ [tracker-features] (closed 2026-06-06)
+- [#9ttp6rn pay down repo.rs](items/9ttp6rn-pay-down-repo-rs.md) — _medium_ (closed 2026-08-08)
 - [#9wd4tkf list: hide settled work by default (keep done children under open parents)](items/9wd4tkf-list-hide-settled-work-by-default-keep-done-children-under-open-parents.md) — _medium_ [tracker-features] (closed 2026-06-14)
 - [#at6pwut release v0.24.0](items/at6pwut-release-v0-24-0.md) — _medium_ (closed 2026-07-31)
 - [#b7t7d4q list: show points-weighted percent-complete on parent rows](items/b7t7d4q-list-show-points-weighted-percent-complete-on-parent-rows.md) — _medium_ (closed 2026-06-14)
