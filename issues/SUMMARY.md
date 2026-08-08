@@ -6,8 +6,8 @@
 | State | Count |
 |---|---:|
 | backlog | 52 |
-| in-progress | 3 |
-| in-review | 0 |
+| in-progress | 2 |
+| in-review | 1 |
 | done | 186 |
 | **total** | **241** |
 
@@ -244,11 +244,11 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## In-progress
 
-- [#nbjnx54 CI: skip the engine suites on issues- and docs-only pull requests](items/nbjnx54-ci-skip-the-engine-suites-on-issues-and-docs-only-pull-requests.md) — _medium_
+_none_
 
 ## In-review
 
-_none_
+- [#nbjnx54 CI: skip the engine suites on issues- and docs-only pull requests](items/nbjnx54-ci-skip-the-engine-suites-on-issues-and-docs-only-pull-requests.md) — _medium_ · [review](https://github.com/leonkacowicz/trck/pull/10)
 
 ## Done
 
