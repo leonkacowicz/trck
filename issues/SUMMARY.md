@@ -7,8 +7,8 @@
 |---|---:|
 | backlog | 52 |
 | in-progress | 2 |
-| in-review | 1 |
-| done | 188 |
+| in-review | 0 |
+| done | 189 |
 | **total** | **243** |
 
 ## Hierarchies
@@ -248,7 +248,7 @@ _none_
 
 ## In-review
 
-- [#nbjnx54 CI: skip the engine suites on issues- and docs-only pull requests](items/nbjnx54-ci-skip-the-engine-suites-on-issues-and-docs-only-pull-requests.md) — _medium_ · [review](https://github.com/leonkacowicz/trck/pull/10)
+_none_
 
 ## Done
 
@@ -290,6 +290,7 @@ _none_
 - [#h4tu2h4 pay down the graph module](items/h4tu2h4-pay-down-the-graph-module.md) — _medium_ (closed 2026-08-08)
 - [#httj4xf Add labels/tags to issues](items/httj4xf-add-labels-tags-to-issues.md) — _medium_ [tracker-features] (closed 2026-06-06)
 - [#kd8ngqv Improve CLI output presentation (align/icons, color, show, SUMMARY)](items/kd8ngqv-improve-cli-output-presentation-align-icons-color-show-summary.md) — _medium_ (closed 2026-06-05)
+- [#nbjnx54 CI: skip the engine suites on issues- and docs-only pull requests](items/nbjnx54-ci-skip-the-engine-suites-on-issues-and-docs-only-pull-requests.md) — _medium_ (closed 2026-08-08) · [review](https://github.com/leonkacowicz/trck/pull/10)
 - [#nhscdux pay down the gutter renderer](items/nhscdux-pay-down-the-gutter-renderer.md) — _medium_ (closed 2026-08-07)
 - [#nu939p9 Add normalize command to rewrite index.jsonl in canonical slim form](items/nu939p9-add-normalize-command-to-rewrite-index-jsonl-in-canonical-slim-form.md) — _medium_ (closed 2026-06-06)
 - [#pzmyzv3 deps: inherit dependencies through the parent hierarchy (effective deps) + lifted cycle prevention](items/pzmyzv3-deps-inherit-dependencies-through-the-parent-hierarchy-effective-deps-lifted-cycle-prevention.md) — _medium_ (closed 2026-07-18)
