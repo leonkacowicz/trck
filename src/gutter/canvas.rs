@@ -4,8 +4,37 @@
 //! occupies and how lanes are shortened is graph work, while this is a canvas — cells,
 //! glyphs, and who owns the colour of each.
 
-use super::{EdgeKind, LaneOwner, Row, glyph};
+use super::{EdgeKind, LaneOwner, Row};
 use std::collections::BTreeSet;
+
+/// Every connection set a cell can carry, and the box-drawing glyph for it.
+///
+/// A table rather than a `match` because that is what it is: the keys are the cell's
+/// directions in `BTreeSet` order (`D` < `L` < `R` < `U`), so a row reads as "these
+/// connections look like this".
+const GLYPHS: [(&str, char); 15] = [
+    ("D", '│'),
+    ("U", '│'),
+    ("DU", '│'),
+    ("L", '─'),
+    ("R", '─'),
+    ("LR", '─'),
+    ("RU", '╰'),
+    ("LU", '╯'),
+    ("DR", '╭'),
+    ("DL", '╮'),
+    ("DRU", '├'),
+    ("DLU", '┤'),
+    ("LRU", '┴'),
+    ("DLR", '┬'),
+    ("DLRU", '┼'),
+];
+
+/// A cell's connections, mapped to a box-drawing glyph. Blank where nothing connects.
+fn glyph(dirs: &BTreeSet<char>) -> char {
+    let key: String = dirs.iter().collect();
+    GLYPHS.iter().find(|(k, _)| *k == key).map_or(' ', |(_, g)| *g)
+}
 
 /// One row's worth of gutter, under construction.
 ///
@@ -97,5 +126,40 @@ impl Canvas {
             owners.pop();
         }
         (n.to_string(), chars.into_iter().collect(), owners)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // Tests assert; that is their job. The crate denies unwrap/expect/panic because a
+    // malformed tracker must produce a diagnostic rather than a stack trace, but a test
+    // that cannot panic cannot fail.
+    #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
+    use super::*;
+
+    #[test]
+    fn glyphs_cover_every_connection_set() {
+        let set = |s: &str| s.chars().collect::<BTreeSet<char>>();
+        assert_eq!(glyph(&set("UD")), '│');
+        assert_eq!(glyph(&set("LR")), '─');
+        assert_eq!(glyph(&set("UR")), '╰');
+        assert_eq!(glyph(&set("UL")), '╯');
+        assert_eq!(glyph(&set("DR")), '╭');
+        assert_eq!(glyph(&set("DL")), '╮');
+        assert_eq!(glyph(&set("UDLR")), '┼');
+        assert_eq!(glyph(&set("")), ' ');
+    }
+
+    #[test]
+    fn every_table_key_is_reachable() {
+        // The lookup builds its key from a `BTreeSet`, so a key written out of sorted
+        // order would be dead: correct-looking, and never matched.
+        for (key, want) in GLYPHS {
+            let set: BTreeSet<char> = key.chars().collect();
+            let round: String = set.iter().collect();
+            assert_eq!(round, key, "table key {key:?} is not in BTreeSet order");
+            assert_eq!(glyph(&set), want);
+        }
     }
 }
