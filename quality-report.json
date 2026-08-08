@@ -10,11 +10,11 @@
     "module_files": 20
   },
   "totals": {
-    "file_functions": 147,
+    "file_functions": 136,
     "file_lines": 296,
     "function_args": 10,
-    "function_cognitive": 108,
-    "function_cyclomatic": 198,
+    "function_cognitive": 86,
+    "function_cyclomatic": 168,
     "function_lines": 15,
     "module_files": 0
   },
@@ -29,7 +29,6 @@
       "src/merge.rs": 7,
       "src/query/deps.rs": 3,
       "src/query/list.rs": 25,
-      "src/render/mod.rs": 11,
       "src/verbs/edit/set.rs": 7,
       "src/verbs/mod.rs": 4
     },
@@ -57,8 +56,6 @@
       "src/graph/cycles.rs::find_cycles": 9,
       "src/merge.rs::merge_one": 10,
       "src/merge.rs::merge_rows": 3,
-      "src/render/mod.rs::block_annotations": 17,
-      "src/render/mod.rs::render_rows": 5,
       "src/summary.rs::hierarchies_section": 7,
       "src/summary.rs::status_sections": 2,
       "src/validate/checks.rs::check_references": 1,
@@ -91,9 +88,6 @@
       "src/query/list.rs::keeps": 10,
       "src/query/show.rs::cmd_show": 9,
       "src/render/colour.rs::ansi": 6,
-      "src/render/mod.rs::block_annotations": 8,
-      "src/render/mod.rs::field_value": 17,
-      "src/render/mod.rs::render_rows": 5,
       "src/summary.rs::hierarchies_section": 1,
       "src/summary.rs::status_sections": 1,
       "src/validate/mod.rs::check_row": 10,
