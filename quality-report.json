@@ -10,11 +10,11 @@
     "module_files": 20
   },
   "totals": {
-    "file_functions": 176,
-    "file_lines": 464,
+    "file_functions": 168,
+    "file_lines": 364,
     "function_args": 10,
-    "function_cognitive": 114,
-    "function_cyclomatic": 241,
+    "function_cognitive": 108,
+    "function_cyclomatic": 217,
     "function_lines": 32,
     "module_files": 0
   },
@@ -27,7 +27,6 @@
       "src/discovery.rs": 12,
       "src/html.rs": 9,
       "src/issue.rs": 21,
-      "src/json.rs": 8,
       "src/merge.rs": 7,
       "src/query/deps.rs": 3,
       "src/query/list.rs": 25,
@@ -40,8 +39,7 @@
       "src/diff.rs": 64,
       "src/discovery.rs": 20,
       "src/help.rs": 132,
-      "src/issue.rs": 68,
-      "src/json.rs": 100
+      "src/issue.rs": 68
     },
     "function_args": {
       "src/diff.rs::walk": 1,
@@ -59,9 +57,6 @@
       "src/diff.rs::compare": 1,
       "src/diff.rs::parse_since": 2,
       "src/graph/cycles.rs::find_cycles": 9,
-      "src/json.rs::number": 4,
-      "src/json.rs::write": 1,
-      "src/json.rs::write_pretty": 1,
       "src/merge.rs::merge_one": 10,
       "src/merge.rs::merge_rows": 3,
       "src/render/mod.rs::block_annotations": 17,
@@ -94,13 +89,6 @@
       "src/init.rs::cmd_init": 7,
       "src/issue.rs::from_json": 18,
       "src/issue.rs::to_canonical": 1,
-      "src/json.rs::number": 6,
-      "src/json.rs::object": 1,
-      "src/json.rs::string": 9,
-      "src/json.rs::value": 3,
-      "src/json.rs::write": 2,
-      "src/json.rs::write_pretty": 1,
-      "src/json.rs::write_string": 2,
       "src/merge.rs::merge_one": 5,
       "src/merge.rs::merge_rows": 1,
       "src/query/list.rs::cmd_list": 7,
