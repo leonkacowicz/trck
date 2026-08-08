@@ -7,10 +7,10 @@ Re-run from the repo root whenever command output or the palette changes:
 
     python3 docs/gen-screenshots.py
 
-For each entry in COMMANDS this invokes ./trck with FORCE_COLOR=1, parses the
-ANSI SGR codes trck emits (a small fixed set — see `_ANSI` in ./trck), and lays
-the styled text into a rounded "terminal window" SVG under docs/img/. The SVGs
-are committed and referenced from README.md by relative path.
+For each entry in COMMANDS this invokes the built binary with FORCE_COLOR=1, parses
+the ANSI SGR codes trck emits (a small fixed set — see `src/render/colour.rs`), and lays the
+styled text into a rounded "terminal window" SVG under docs/img/. The SVGs are
+committed and referenced from README.md by relative path.
 """
 import html
 import os
@@ -31,7 +31,7 @@ COMMANDS = [
     ("tree",       ["tree"]),
     ("deps-graph", ["deps"]),
     ("ready",      ["ready"]),
-    ("show-21",    ["show", "exg4e3b"]),
+    ("show",       ["show", "exg4e3b"]),
 ]
 
 # Terminal chrome + a One-Dark-ish mapping of trck's _ANSI names to hex.

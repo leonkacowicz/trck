@@ -190,6 +190,55 @@ Three shape notes worth knowing:
 
 An empty result is `[]` — or, for `ready`/`next`, an object of empty arrays — not silence.
 
+## The browser view (`trck html`)
+
+```bash
+trck html                          # writes <tracker>/issues.html
+trck html --out docs/issues.html   # or wherever you want it
+```
+
+**One self-contained file.** The stylesheet, the script and the whole tracker are inlined, so
+the page references nothing external — no CDN, no webfont, no fetch. It opens over `file://`,
+survives being mailed around, and works as a CI artifact with nothing to serve.
+
+Five views over the same data, switched from the top bar:
+
+| view | what it is |
+|---|---|
+| `list` | every issue, flat, priority-ordered |
+| `graph` | the dependency DAG as a layered SVG, with `deps`' own done-chain toggles |
+| `tree` | the nested forest, collapsible parent by parent |
+| `board` | a column per status — plus a **`ready`** column right after the first one |
+| `ready` | the ranked pick list, in exactly `trck ready`'s order |
+
+A search box matches on id, title, body text and labels at once; status and priority facet
+boxes narrow whichever views they mean something for. Every box starts checked, so the bar
+states what is on screen rather than sitting empty beside an unfiltered list, and narrowing is
+always an unchecking. The board and `ready` opt out — a board already lays issues out *by*
+status, so filtering by it would blank columns instead of narrowing anything — and the
+selection is kept rather than cleared, so a trip through them leaves the list's filter as it
+was. In the graph a filter isn't a subtraction: it *seeds* the drawing with the union of the
+matches' dependency cones, so a match arrives with what it waits on and what waits on it.
+
+The board's `ready` column is derived, not a status, and nothing is ever moved into it: a ready
+issue is an unblocked leaf nobody has started, which makes it a strict subset of `backlog`. It
+takes cards from that one column and no other, so every card still sits in exactly one place
+and `backlog` reads as "not yet" rather than as a bag holding both.
+
+Selecting a row opens it beside the view: metadata, its labels and rollup `%`, links you can
+click through to its parent, children, blockers and dependents, its `review_url` as a real
+anchor, and its markdown body rendered (with a toggle back to raw).
+
+**The engine computes, the page renders.** Readiness, the demand cone and its `↑priority`
+marker, rollup percentages, the shortest-unique-id prefix — all of it is written into the data
+island by the binary, and the script re-derives none of it. The page and the CLI cannot
+disagree about what the tracker says.
+
+**Edits stage; they never save.** A page opened from disk has nothing to write to, and one that
+pretended otherwise would lose work silently. So changing a status or priority queues the
+`trck` command that *would* do it, and a bar at the bottom hands you the lot to paste into a
+terminal. The tracker is still only ever written by the binary.
+
 ## Issue ids
 
 Each issue gets a **short random alphanumeric id** — 7 characters drawn from a base32
@@ -214,7 +263,7 @@ There's no equivalent on `set`: changing an existing issue's id would have to re
 
 `new` · `mv` · `start` · `review` · `done` · `set` · `dep` · `label` · `show` · `list` · `ready` ·
 `next` · `tree` · `deps` · `path` · `which` · `changelog` · `diff` · `check` · `summary` ·
-`html` · `init` · `version`, plus `repo normalize` · `repo install-hook` · `repo setup-git` ·
+[`html`](#the-browser-view-trck-html) · `init` · `version`, plus `repo normalize` · `repo install-hook` · `repo setup-git` ·
 `repo migrate-layout` for tracker maintenance. Run `trck --help` (or `trck <verb> --help`)
 for details.
 
@@ -244,10 +293,10 @@ still open or sits directly under a non-terminal parent — so an open epic keep
 children as progress context, but a fully-done subtree and standalone done tasks drop off.
 `--all` shows everything; an explicit `--status` bypasses the prune (e.g. `--status done`
 lists every done issue). `--flat` gives a flat, globally-sorted list instead; a positional id
-(`trck list 4`) roots the forest at that issue's subtree. Filters (`--status`, `--priority`,
+(`trck list k3m`) roots the forest at that issue's subtree. Filters (`--status`, `--priority`,
 `--label`, `--field`, `--match`, `--parent`, `--blocked`, `--orphan`) select the matches and
 the forest fills in their **ancestor spine** as dimmed context, so a matched child never floats
-away from its parent. `tree` is an alias for `list` (`trck tree 4` == `trck list 4`).
+away from its parent. `tree` is an alias for `list` (`trck tree k3m` == `trck list k3m`).
 
 <p align="center">
   <img src="docs/img/tree.svg" alt="trck tree — the nested issue forest" width="900"><br>
@@ -302,10 +351,10 @@ Filter a list to one epic's children with `trck list --parent NNN`.
 and `review_url` records *where*. `trck review NNN <url>` moves the issue and links it in
 one move:
 
-    trck review 42 https://github.com/you/repo/pull/12    # -> in-review, linked
+    trck review k3m https://github.com/you/repo/pull/12   # -> in-review, linked
     trck new "Fix login" --review-url https://…/pull/9    # or set it at creation
-    trck set 42 --review-url https://…/pull/13            # relink; `none` clears it
-    trck mv 42 in-progress --review-url https://…/pull/13     # or record it on any move
+    trck set k3m --review-url https://…/pull/13           # relink; `none` clears it
+    trck mv k3m in-progress --review-url https://…/pull/13    # or record it on any move
     trck list --show-field review_url                     # show it as a column
 
 The value must be an absolute `http(s)` URL (`check` enforces it) but is otherwise
@@ -325,10 +374,10 @@ up in `show`, `list`, `tree`, and `SUMMARY.md`.
 model until you reach for them. Set them on `set`, then **filter**, **sort**, and **show**
 them on `list`:
 
-    trck set 42 --field assignee=alice --field component=engine   # set (repeatable)
-    trck set 42 --field assignee=                                 # clear (same as --unset assignee)
-    trck list --field component=engine                           # filter: exact, AND-ed, composes with --status etc.
-    trck list --field component=engine --sort field:assignee     # sort by a field (rows missing it sort last)
+    trck set k3m --field assignee=alice --field component=engine  # set (repeatable)
+    trck set k3m --field assignee=                                # clear (same as --unset assignee)
+    trck list --field component=engine                            # filter: exact, AND-ed, composes with --status etc.
+    trck list --field component=engine --sort field:assignee      # sort by a field (rows missing it sort last)
     trck list --show-field assignee --show-field component        # opt-in trailing columns
 
 Keys must be slug-like (`[a-z][a-z0-9_-]*`) and can't shadow a built-in field. Values always
@@ -346,7 +395,7 @@ render:
 
     rg -l 'race condition' $(trck list --paths --status '!done')   # paths, scoped by metadata
     rg -l 'race condition' $(trck list --paths) | trck which       # ...rendered back as issues
-    trck path 25                                                   # one issue's file, e.g. to $EDITOR
+    trck path k3m                                                  # one issue's file, e.g. to $EDITOR
 
 `which` answers in the tracker's own order, not the order the paths arrived in — the ordering
 of a grep's output is the grep's business — and silently skips any path that is not a body
@@ -357,8 +406,8 @@ Output is colorized when stdout is a terminal (disable with `NO_COLOR=1`, force 
 prints a human-readable summary by default — add `--json` for machine-readable metadata.
 
 <p align="center">
-  <img src="docs/img/show-21.svg" alt="trck show 21 — one issue's metadata and prose body" width="760"><br>
-  <sub><code>trck show 21</code> — one issue's metadata above its hand-authored body</sub>
+  <img src="docs/img/show.svg" alt="trck show — one issue's metadata and prose body" width="760"><br>
+  <sub><code>trck show exg4e3b</code> — one issue's metadata above its hand-authored body</sub>
 </p>
 
 ## Recommended usage
