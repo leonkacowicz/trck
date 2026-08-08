@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 47 |
+| backlog | 52 |
 | in-progress | 2 |
 | in-review | 0 |
 | done | 185 |
-| **total** | **234** |
+| **total** | **239** |
 
 ## Hierarchies
 
@@ -128,6 +128,13 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#kcqe3dj trck-html: export and link the pr field](items/kcqe3dj-trck-html-export-and-link-the-pr-field.md)
 - [x] [#mseqgr5 cli: --pr on new/set/mv](items/mseqgr5-cli-pr-on-new-set-mv.md)
 - [x] [#shaadcs render: PR links in SUMMARY.md, --show-field over canonical fields](items/shaadcs-render-pr-links-in-summary-md-show-field-over-canonical-fields.md)
+
+### [#pgpmbvw SUMMARY.md is a graveyard: redesign it around open work](items/pgpmbvw-summary-md-is-a-graveyard-redesign-it-around-open-work.md) — 0% (0/8 pts · 0/4 done) · _medium_ · backlog
+
+- [ ] [#2qrzwuf summary: lead with in-flight and next-up](items/2qrzwuf-summary-lead-with-in-flight-and-next-up.md) _(backlog)_
+- [ ] [#9jdkxwj summary: reference-style links so a row reads in raw markdown](items/9jdkxwj-summary-reference-style-links-so-a-row-reads-in-raw-markdown.md) _(backlog)_
+- [ ] [#df9ea2m summary: partition open work — every non-terminal row exactly once](items/df9ea2m-summary-partition-open-work-every-non-terminal-row-exactly-once.md) _(backlog)_
+- [ ] [#xmev3gp summary: hide settled work and collapse completed epics](items/xmev3gp-summary-hide-settled-work-and-collapse-completed-epics.md) _(backlog)_
 
 ### [#qapvxpz Merge tree into list: structure-aware browse verb](items/qapvxpz-merge-tree-into-list-structure-aware-browse-verb.md) — 100% (4/4 pts · 4/4 done) · _high_ · done
 
