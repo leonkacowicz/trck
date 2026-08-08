@@ -7,9 +7,9 @@
 |---|---:|
 | backlog | 52 |
 | in-progress | 2 |
-| in-review | 0 |
+| in-review | 1 |
 | done | 186 |
-| **total** | **240** |
+| **total** | **241** |
 
 ## Hierarchies
 
@@ -248,7 +248,7 @@ _none_
 
 ## In-review
 
-_none_
+- [#nbjnx54 CI: skip the engine suites on issues- and docs-only pull requests](items/nbjnx54-ci-skip-the-engine-suites-on-issues-and-docs-only-pull-requests.md) — _medium_ · [review](https://github.com/leonkacowicz/trck/pull/10)
 
 ## Done
 
