@@ -8,8 +8,8 @@
 | backlog | 52 |
 | in-progress | 2 |
 | in-review | 0 |
-| done | 186 |
-| **total** | **240** |
+| done | 190 |
+| **total** | **244** |
 
 ## Hierarchies
 
@@ -267,6 +267,7 @@ _none_
 - [#3e3cn37 init: accept positional dir and add --no-vendor for self-hosting repos](items/3e3cn37-init-accept-positional-dir-and-add-no-vendor-for-self-hosting-repos.md) — _medium_ (closed 2026-06-05)
 - [#3f8mb3n release v0.25.0](items/3f8mb3n-release-v0-25-0.md) — _medium_ (closed 2026-08-02)
 - [#3x6mmhu list: annotate blocked/blocker relationships and clear them when resolved](items/3x6mmhu-list-annotate-blocked-blocker-relationships-and-clear-them-when-resolved.md) — _medium_ [tracker-features] (closed 2026-06-09)
+- [#48f76d4 pay down the json module](items/48f76d4-pay-down-the-json-module.md) — _medium_ (closed 2026-08-08)
 - [#4vqukyy Part D: richer tracker features](items/4vqukyy-part-d-richer-tracker-features.md) — _medium_ · _superseded_ (closed 2026-06-23)
 - [#568yj7v pay down cmd_deps](items/568yj7v-pay-down-cmd-deps.md) — _medium_ (closed 2026-08-07)
 - [#5wbwpjv Add full-text search/grep across issue bodies](items/5wbwpjv-add-full-text-search-grep-across-issue-bodies.md) — _medium_ [tracker-features] (closed 2026-06-10)
@@ -274,6 +275,7 @@ _none_
 - [#9sevgpn Enrich 'list' filters: multi/negated status, title match, sort, --blocked, --orphan](items/9sevgpn-enrich-list-filters-multi-negated-status-title-match-sort-blocked-orphan.md) — _medium_ [tracker-features] (closed 2026-06-06)
 - [#9ttp6rn pay down repo.rs](items/9ttp6rn-pay-down-repo-rs.md) — _medium_ (closed 2026-08-08)
 - [#9wd4tkf list: hide settled work by default (keep done children under open parents)](items/9wd4tkf-list-hide-settled-work-by-default-keep-done-children-under-open-parents.md) — _medium_ [tracker-features] (closed 2026-06-14)
+- [#abuvrh2 pay down the issue record](items/abuvrh2-pay-down-the-issue-record.md) — _medium_ (closed 2026-08-08)
 - [#at6pwut release v0.24.0](items/at6pwut-release-v0-24-0.md) — _medium_ (closed 2026-07-31)
 - [#b7t7d4q list: show points-weighted percent-complete on parent rows](items/b7t7d4q-list-show-points-weighted-percent-complete-on-parent-rows.md) — _medium_ (closed 2026-06-14)
 - [#bpwuedw Deduplicate parent-cycle detection via Graph.ancestors_of](items/bpwuedw-deduplicate-parent-cycle-detection-via-graph-ancestors-of.md) — _medium_ (closed 2026-06-10)
@@ -286,8 +288,10 @@ _none_
 - [#ggpcvg3 pay down the edit verbs](items/ggpcvg3-pay-down-the-edit-verbs.md) — _medium_ (closed 2026-08-07)
 - [#gs3vd4w ready/next: scope to a subtree (what can I pick up on this parent now)](items/gs3vd4w-ready-next-scope-to-a-subtree-what-can-i-pick-up-on-this-parent-now.md) — _medium_ (closed 2026-07-24)
 - [#gwcr9qd deps: shorter edges / fewer crossings in the graph layout](items/gwcr9qd-deps-shorter-edges-fewer-crossings-in-the-graph-layout.md) — _medium_ (closed 2026-06-12)
+- [#h4tu2h4 pay down the graph module](items/h4tu2h4-pay-down-the-graph-module.md) — _medium_ (closed 2026-08-08)
 - [#httj4xf Add labels/tags to issues](items/httj4xf-add-labels-tags-to-issues.md) — _medium_ [tracker-features] (closed 2026-06-06)
 - [#kd8ngqv Improve CLI output presentation (align/icons, color, show, SUMMARY)](items/kd8ngqv-improve-cli-output-presentation-align-icons-color-show-summary.md) — _medium_ (closed 2026-06-05)
+- [#nbjnx54 CI: skip the engine suites on issues- and docs-only pull requests](items/nbjnx54-ci-skip-the-engine-suites-on-issues-and-docs-only-pull-requests.md) — _medium_ (closed 2026-08-08) · [review](https://github.com/leonkacowicz/trck/pull/10)
 - [#nhscdux pay down the gutter renderer](items/nhscdux-pay-down-the-gutter-renderer.md) — _medium_ (closed 2026-08-07)
 - [#nu939p9 Add normalize command to rewrite index.jsonl in canonical slim form](items/nu939p9-add-normalize-command-to-rewrite-index-jsonl-in-canonical-slim-form.md) — _medium_ (closed 2026-06-06)
 - [#pzmyzv3 deps: inherit dependencies through the parent hierarchy (effective deps) + lifted cycle prevention](items/pzmyzv3-deps-inherit-dependencies-through-the-parent-hierarchy-effective-deps-lifted-cycle-prevention.md) — _medium_ (closed 2026-07-18)

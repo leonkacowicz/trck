@@ -35,10 +35,23 @@ The engine is **`src/`** — one package at the repo root, no workspace. Build i
   downstream tool would notice belongs there**; internals stay in unit tests. `--min-pass` is a
   ratchet that only moves up.
 - `python3 -m unittest discover -s scripts/tests` — the helper scripts under `scripts/`: the
-  installer, a timestamp backfill, an id converter. None is part of the engine, which is why
-  they are a separate suite rather than something gating every engine change.
+  installer, a timestamp backfill, an id converter, the CI path classifier. None is part of the
+  engine, which is why they are a separate suite rather than something gating every engine change.
 
 Add a test for every change (TDD), in whichever of the three it belongs to.
+
+**CI skips the engine's suites on a tracker- or prose-only pull request.** `scripts/ci_changed.py`
+classifies the diff and the jobs carry `if: needs.changes.outputs.code == 'true'`; `trck check`
+runs either way. It is an **allowlist** — only `issues/`, `docs/` and repository-root markdown are
+skippable, because markdown elsewhere is a compiled-in asset, a conformance fixture, or the example
+tracker. Uncertainty resolves to running everything: a rule that wrongly says "skippable" does not
+turn a check red, it makes the checks green by never running them. So widening it means adding a
+case to `scripts/tests/test_ci_changed.py` first. It cannot be `paths-ignore`, either — merging is
+gated on named checks and a path-filtered workflow never reports them, leaving the pull request
+waiting forever; a job skipped by an `if:` reports as skipped, which counts as passing. **The
+matrix job is the exception:** skipped whole, `rust` reports under that bare name and the gated
+`rust (ubuntu-latest)` never arrives, so it always runs — `changes` shrinks its matrix to one
+platform and its steps carry the gate instead, with the build and `trck check` ungated.
 
 **The quality ratchet.** `quality-report.json` is a committed snapshot of structural metrics —
 function length, cognitive and cyclomatic complexity, argument counts, file size. CI runs

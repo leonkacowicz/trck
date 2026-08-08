@@ -10,11 +10,71 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Does this change touch the engine at all?
+  #
+  # A pull request that only edits tracker data or prose cannot break the build, so it has
+  # no business running three platforms of it. `paths-ignore` cannot express that here:
+  # merging is gated on named checks, and a workflow filtered out by paths never reports
+  # them — the pull request would wait forever for a check that will never arrive. A job
+  # skipped by an `if:` *does* report, and branch protection counts skipped as passing. So
+  # the gate lives on the jobs, and this is what they consult.
+  #
+  # The rule itself is in scripts/ci_changed.py, under test, because the way it fails is
+  # silent: a rule that wrongly says "skippable" makes the checks green by never running
+  # them. Uncertainty resolves to running everything — including for a push or a manual
+  # dispatch, where `main` being green should mean the whole suite said so.
+  #
+  # `matrix` is the same answer in the shape `rust` needs. A **matrix** job cannot take the
+  # `if:` the others do: skipped before it expands, it reports once under the bare job name
+  # and the per-combination check `rust (ubuntu-latest)` — which merging is gated on — never
+  # arrives at all. That is the same indefinite wait `paths-ignore` would have caused. So
+  # `rust` always runs; what shrinks is the matrix it runs over, and what its steps do.
+  changes:
+    name: changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.classify.outputs.code }}
+      matrix: ${{ steps.classify.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The three-dot diff below needs the merge base with the target branch.
+          fetch-depth: 0
+
+      - id: classify
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          code=true
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags origin "$BASE_REF"
+            # --no-renames so a rename reports both paths: moving a file *out* of issues/
+            # is a code change, and rename detection would report only where it landed.
+            code=$(git diff --no-renames --name-only "origin/$BASE_REF...HEAD" \
+                   | tee changed-paths.txt \
+                   | python3 scripts/ci_changed.py)
+            echo "Changed paths:"; cat changed-paths.txt
+          fi
+          if [ "$code" = "true" ]; then
+            matrix='["ubuntu-latest", "macos-latest", "windows-latest"]'
+          else
+            # One runner, and only to build the engine that answers `trck check`. The other
+            # two are about cross-platform correctness, which a tracker edit cannot affect.
+            matrix='["ubuntu-latest"]'
+          fi
+          echo "Runs the engine's suites: $code"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
   # The helper scripts: a timestamp backfill, an id converter, and the installer. None of
   # them is part of the engine, and they run as their own suite for that reason — a
   # one-shot nobody will run again should not gate every engine change. Two of them do
   # reach for a built binary, and skip cleanly when there isn't one.
   scripts:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -37,6 +97,8 @@ jobs:
   # makes the ratchet bite on exactly the change being pushed.
   quality:
     name: quality ratchet
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -72,6 +134,8 @@ jobs:
   # finding something that can open a zip, this is the job that says so.
   installer:
     name: installer (windows)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -85,12 +149,18 @@ jobs:
   # The port, measured rather than described. It began with an empty binary reporting a
   # pass rate of 0; --min-pass is a floor that only moves up, so the port could never
   # regress and every raise is a visible commit. It now sits at the full suite.
+  #
+  # This job carries no `if:` — see `changes`. Skipping a matrix job withholds the
+  # per-combination check that merging is gated on, and the pull request waits for it
+  # forever. So on a tracker- or prose-only change it still runs, over one platform, and
+  # does the one thing that change can break: build the engine and check the tracker.
   rust:
+    needs: changes
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: ${{ fromJSON(needs.changes.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v7
 
@@ -98,15 +168,22 @@ jobs:
         run: rustup toolchain install stable --profile minimal --component rustfmt,clippy
 
       - name: Format
+        if: needs.changes.outputs.code == 'true'
         run: cargo fmt --all --check
 
       - name: Lints
+        if: needs.changes.outputs.code == 'true'
         run: cargo clippy --all-targets --all-features -- -D warnings
 
+      # Unconditional: `trck check` below needs a binary, and it builds from source rather
+      # than downloading a release for the same reason nothing here is vendored — the
+      # tracker must be answered for by the engine in this commit. The crate has no
+      # dependencies, so that is a short build.
       - name: Build
         run: cargo build --release
 
       - name: Test
+        if: needs.changes.outputs.code == 'true'
         run: cargo test --all
 
       # Linux only: the fixtures compare output literally, and path rendering and
@@ -117,13 +194,12 @@ jobs:
       # it is supposed to. --min-pass is a floor that only moves up, so a fixture cannot
       # quietly stop passing and every raise is a visible commit.
       - name: Conformance (the specification)
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest' && needs.changes.outputs.code == 'true'
         run: python3 conformance/run.py --bin target/release/trck --min-pass 266
 
-      # This repository's own tracker, checked by the engine it ships. It lives here rather
-      # than in a job of its own because it needs a built binary and this is where one
-      # exists — and it must live *somewhere*: an inconsistent tracker that nothing checks
-      # is a tracker that stops being true without anyone finding out.
+      # This repository's own tracker, checked by the engine it ships — on every change,
+      # including the ones that skip everything above, since an issues-only pull request is
+      # precisely the change that can break it.
       - name: Tracker consistency
         if: matrix.os == 'ubuntu-latest'
         run: ./target/release/trck check
