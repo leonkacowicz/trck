@@ -48,7 +48,10 @@ tracker. Uncertainty resolves to running everything: a rule that wrongly says "s
 turn a check red, it makes the checks green by never running them. So widening it means adding a
 case to `scripts/tests/test_ci_changed.py` first. It cannot be `paths-ignore`, either — merging is
 gated on named checks and a path-filtered workflow never reports them, leaving the pull request
-waiting forever; a job skipped by an `if:` reports as skipped, which counts as passing.
+waiting forever; a job skipped by an `if:` reports as skipped, which counts as passing. **The
+matrix job is the exception:** skipped whole, `rust` reports under that bare name and the gated
+`rust (ubuntu-latest)` never arrives, so it always runs — `changes` shrinks its matrix to one
+platform and its steps carry the gate instead, with the build and `trck check` ungated.
 
 **The quality ratchet.** `quality-report.json` is a committed snapshot of structural metrics —
 function length, cognitive and cyclomatic complexity, argument counts, file size. CI runs

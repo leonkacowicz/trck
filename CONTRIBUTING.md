@@ -56,6 +56,13 @@ Merging is gated on named checks, and a workflow filtered out by paths never rep
 pull request would wait indefinitely for a check that is never coming. A job skipped by an
 `if:` reports as skipped, which branch protection counts as passing.
 
+**Except a matrix job.** `rust` carries no `if:`, because a matrix job skipped as a whole
+reports once under the bare name `rust` and never produces `rust (ubuntu-latest)` — the check
+merging is actually gated on, and the same indefinite wait `paths-ignore` would have caused. So
+it always runs; what shrinks is the matrix (`changes` publishes it: three platforms, or just
+`ubuntu-latest`) and what its steps do. Build and `trck check` run either way, which is why
+there is no separate tracker job.
+
 ## The quality ratchet
 
 `quality-report.json` is a committed snapshot of structural metrics — function length,

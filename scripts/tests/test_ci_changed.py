@@ -156,28 +156,58 @@ class CommandLine(unittest.TestCase):
 
 
 class WorkflowWiring(unittest.TestCase):
-    """The classifier is only worth anything if the workflow actually consults it, and
-    the required jobs are the ones that have to be gated on the answer."""
+    """The classifier is only worth anything if the workflow actually consults it, and only
+    safe if every required check still reports when the answer is "skip"."""
 
     def setUp(self):
         self.ci = (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+        # Each job's own block, so a claim about one job cannot be satisfied by another.
+        self.jobs = {}
+        name = None
+        for line in self.ci.splitlines():
+            if len(line) > 2 and line[2] != " " and line[2] != "#" and line.rstrip().endswith(":"):
+                name = line.strip().rstrip(":")
+                self.jobs[name] = []
+            elif name:
+                self.jobs[name].append(line)
+        self.jobs = {k: "\n".join(v) for k, v in self.jobs.items()}
 
     # assertIn would print the whole workflow on failure; the claim is short, so say it.
-    def contains(self, needle, claim):
-        self.assertTrue(needle in self.ci, f"ci.yml: {claim} — no `{needle}`")
+    def contains(self, haystack, needle, claim):
+        self.assertTrue(needle in haystack, f"ci.yml: {claim} — no `{needle}`")
 
     def test_the_workflow_calls_the_classifier(self):
-        self.contains("scripts/ci_changed.py", "the changes job consults the classifier")
+        self.contains(self.ci, "scripts/ci_changed.py", "the changes job consults the classifier")
 
-    def test_every_gated_job_is_gated_on_the_same_output(self):
+    def test_every_job_level_gate_reads_the_same_output(self):
         gate = "if: needs.changes.outputs.code == 'true'"
-        self.assertEqual(self.ci.count(gate), 4,
-                         f"ci.yml: scripts, quality, installer and rust each gated on `{gate}`")
+        # Exact lines: a job-level gate is indented four, a step-level one eight.
+        job_level = [ln for ln in self.ci.splitlines() if ln == f"    {gate}"]
+        self.assertEqual(len(job_level), 3,
+                         f"ci.yml: scripts, quality and installer each gated on `{gate}`")
+        for job in ("scripts", "quality", "installer"):
+            self.contains(self.jobs[job], gate, f"the {job} job is gated")
 
-    def test_the_tracker_is_checked_when_the_engine_jobs_are_skipped(self):
-        self.contains("if: needs.changes.outputs.code == 'false'",
-                      "a job takes over trck check when rust is skipped")
-        self.contains("trck check", "the tracker is checked somewhere")
+    def test_the_matrix_job_is_never_skipped_as_a_whole(self):
+        """A matrix job skipped by an `if:` reports once, under the bare job name — the
+        per-combination check `rust (ubuntu-latest)` that merging is gated on never arrives,
+        and the pull request waits for it indefinitely. So `rust` shrinks its matrix and
+        skips steps instead."""
+        rust = self.jobs["rust"]
+        self.assertNotIn("\n    if:", rust, "ci.yml: the rust job must carry no job-level if:")
+        self.contains(rust, "os: ${{ fromJSON(needs.changes.outputs.matrix) }}",
+                      "the rust job shrinks its matrix instead")
+        self.contains(self.jobs["changes"], "matrix=$matrix",
+                      "the changes job publishes that matrix")
+
+    def test_the_tracker_is_checked_on_every_change(self):
+        rust = self.jobs["rust"]
+        self.contains(rust, "run: ./target/release/trck check", "rust checks the tracker")
+        # The step before it is the build the check needs; neither may be gated on `code`.
+        for step in ("- name: Build", "- name: Tracker consistency"):
+            body = rust.split(step, 1)[1].split("- name:", 1)[0]
+            self.assertNotIn("needs.changes.outputs.code", body,
+                             f"ci.yml: `{step}` must run whatever the classifier said")
 
 
 if __name__ == "__main__":
