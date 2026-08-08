@@ -1,0 +1,3 @@
+# Idempotent: running it on a tracker that has already migrated says so and exits 0,
+# so it is safe to put in a setup script.
+repo migrate-layout

@@ -1,0 +1,2 @@
+{"id": "aaaaaaa", "slug": "first", "title": "First", "status": "backlog", "priority": "medium", "created": "2026-01-01T00:00:00Z"}
+{"id": "bbbbbbb", "slug": "second", "title": "Second", "status": "done", "priority": "medium", "created": "2026-01-01T00:00:00Z", "closed": "2026-01-01T00:00:00Z"}

@@ -1,0 +1,2 @@
+# Every move named, so the operator can check them before committing to any.
+repo migrate-layout --dry-run

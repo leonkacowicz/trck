@@ -1,0 +1,2 @@
+# After migrating, the bodies are all in items/ and the tracker is usable again.
+list --paths --all

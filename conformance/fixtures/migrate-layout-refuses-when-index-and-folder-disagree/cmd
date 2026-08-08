@@ -1,0 +1,3 @@
+# Two sources of truth that already disagree. Only the author knows which is right,
+# so it refuses rather than silently canonising one.
+repo migrate-layout

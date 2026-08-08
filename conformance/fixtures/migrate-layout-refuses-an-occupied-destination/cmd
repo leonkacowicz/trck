@@ -1,0 +1,2 @@
+# Moving would clobber a file already in items/. Refuse; do not pick a winner.
+repo migrate-layout
