@@ -8,8 +8,8 @@
 | backlog | 52 |
 | in-progress | 2 |
 | in-review | 1 |
-| done | 186 |
-| **total** | **241** |
+| done | 187 |
+| **total** | **242** |
 
 ## Hierarchies
 
@@ -286,6 +286,7 @@ _none_
 - [#ggpcvg3 pay down the edit verbs](items/ggpcvg3-pay-down-the-edit-verbs.md) — _medium_ (closed 2026-08-07)
 - [#gs3vd4w ready/next: scope to a subtree (what can I pick up on this parent now)](items/gs3vd4w-ready-next-scope-to-a-subtree-what-can-i-pick-up-on-this-parent-now.md) — _medium_ (closed 2026-07-24)
 - [#gwcr9qd deps: shorter edges / fewer crossings in the graph layout](items/gwcr9qd-deps-shorter-edges-fewer-crossings-in-the-graph-layout.md) — _medium_ (closed 2026-06-12)
+- [#h4tu2h4 pay down the graph module](items/h4tu2h4-pay-down-the-graph-module.md) — _medium_ (closed 2026-08-08)
 - [#httj4xf Add labels/tags to issues](items/httj4xf-add-labels-tags-to-issues.md) — _medium_ [tracker-features] (closed 2026-06-06)
 - [#kd8ngqv Improve CLI output presentation (align/icons, color, show, SUMMARY)](items/kd8ngqv-improve-cli-output-presentation-align-icons-color-show-summary.md) — _medium_ (closed 2026-06-05)
 - [#nhscdux pay down the gutter renderer](items/nhscdux-pay-down-the-gutter-renderer.md) — _medium_ (closed 2026-08-07)
