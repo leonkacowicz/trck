@@ -1,0 +1,3 @@
+# A dry run must not move anything — so the tracker is still legacy afterwards,
+# and every other verb still refuses it. That refusal IS the assertion.
+list

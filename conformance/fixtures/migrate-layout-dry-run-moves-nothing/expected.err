@@ -1,0 +1,1 @@
+error: legacy status-folder layout: 2 issue file(s) under backlog/, done/ — run `trck repo migrate-layout` to move them into items/ (status now lives only in index.jsonl)

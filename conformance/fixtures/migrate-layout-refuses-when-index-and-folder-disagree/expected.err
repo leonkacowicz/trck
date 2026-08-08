@@ -1,0 +1,2 @@
+error: index status and folder disagree for 1 issue(s); fix the index (or move the files) so they agree, then re-run:
+  #aaaaaaa: index says 'backlog', file sits in 'done/'

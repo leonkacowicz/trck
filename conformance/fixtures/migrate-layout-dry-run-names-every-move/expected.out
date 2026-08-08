@@ -1,0 +1,3 @@
+migrate-layout: would move 2 file(s) into items/
+  backlog/aaaaaaa-first.md -> items/aaaaaaa-first.md
+  done/bbbbbbb-second.md -> items/bbbbbbb-second.md
