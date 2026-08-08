@@ -8,8 +8,8 @@
 | backlog | 52 |
 | in-progress | 2 |
 | in-review | 1 |
-| done | 187 |
-| **total** | **242** |
+| done | 188 |
+| **total** | **243** |
 
 ## Hierarchies
 
@@ -267,6 +267,7 @@ _none_
 - [#3e3cn37 init: accept positional dir and add --no-vendor for self-hosting repos](items/3e3cn37-init-accept-positional-dir-and-add-no-vendor-for-self-hosting-repos.md) — _medium_ (closed 2026-06-05)
 - [#3f8mb3n release v0.25.0](items/3f8mb3n-release-v0-25-0.md) — _medium_ (closed 2026-08-02)
 - [#3x6mmhu list: annotate blocked/blocker relationships and clear them when resolved](items/3x6mmhu-list-annotate-blocked-blocker-relationships-and-clear-them-when-resolved.md) — _medium_ [tracker-features] (closed 2026-06-09)
+- [#48f76d4 pay down the json module](items/48f76d4-pay-down-the-json-module.md) — _medium_ (closed 2026-08-08)
 - [#4vqukyy Part D: richer tracker features](items/4vqukyy-part-d-richer-tracker-features.md) — _medium_ · _superseded_ (closed 2026-06-23)
 - [#568yj7v pay down cmd_deps](items/568yj7v-pay-down-cmd-deps.md) — _medium_ (closed 2026-08-07)
 - [#5wbwpjv Add full-text search/grep across issue bodies](items/5wbwpjv-add-full-text-search-grep-across-issue-bodies.md) — _medium_ [tracker-features] (closed 2026-06-10)
