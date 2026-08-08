@@ -8,8 +8,8 @@
 | backlog | 52 |
 | in-progress | 2 |
 | in-review | 0 |
-| done | 189 |
-| **total** | **243** |
+| done | 190 |
+| **total** | **244** |
 
 ## Hierarchies
 
@@ -275,6 +275,7 @@ _none_
 - [#9sevgpn Enrich 'list' filters: multi/negated status, title match, sort, --blocked, --orphan](items/9sevgpn-enrich-list-filters-multi-negated-status-title-match-sort-blocked-orphan.md) — _medium_ [tracker-features] (closed 2026-06-06)
 - [#9ttp6rn pay down repo.rs](items/9ttp6rn-pay-down-repo-rs.md) — _medium_ (closed 2026-08-08)
 - [#9wd4tkf list: hide settled work by default (keep done children under open parents)](items/9wd4tkf-list-hide-settled-work-by-default-keep-done-children-under-open-parents.md) — _medium_ [tracker-features] (closed 2026-06-14)
+- [#abuvrh2 pay down the issue record](items/abuvrh2-pay-down-the-issue-record.md) — _medium_ (closed 2026-08-08)
 - [#at6pwut release v0.24.0](items/at6pwut-release-v0-24-0.md) — _medium_ (closed 2026-07-31)
 - [#b7t7d4q list: show points-weighted percent-complete on parent rows](items/b7t7d4q-list-show-points-weighted-percent-complete-on-parent-rows.md) — _medium_ (closed 2026-06-14)
 - [#bpwuedw Deduplicate parent-cycle detection via Graph.ancestors_of](items/bpwuedw-deduplicate-parent-cycle-detection-via-graph-ancestors-of.md) — _medium_ (closed 2026-06-10)
