@@ -13,9 +13,9 @@
     "file_functions": 136,
     "file_lines": 296,
     "function_args": 10,
-    "function_cognitive": 86,
-    "function_cyclomatic": 168,
-    "function_lines": 15,
+    "function_cognitive": 58,
+    "function_cyclomatic": 155,
+    "function_lines": 1,
     "module_files": 0
   },
   "violations": {
@@ -59,9 +59,6 @@
       "src/summary.rs::hierarchies_section": 7,
       "src/summary.rs::status_sections": 2,
       "src/validate/checks.rs::check_references": 1,
-      "src/validate/mod.rs::check_row": 15,
-      "src/validate/mod.rs::describe_cycle": 11,
-      "src/validate/mod.rs::scan_files": 2,
       "src/verbs/mod.rs::finalize": 12,
       "src/verbs/mod.rs::postorder": 2
     },
@@ -90,8 +87,6 @@
       "src/render/colour.rs::ansi": 6,
       "src/summary.rs::hierarchies_section": 1,
       "src/summary.rs::status_sections": 1,
-      "src/validate/mod.rs::check_row": 10,
-      "src/validate/mod.rs::describe_cycle": 3,
       "src/verbs/clock.rs::parse_instant": 8,
       "src/verbs/edit/set.rs::apply_scalar_edits": 1,
       "src/verbs/edit/set.rs::check_scalar_edits": 2,
@@ -99,8 +94,7 @@
       "src/verbs/mod.rs::finalize": 11
     },
     "function_lines": {
-      "src/merge.rs::merge_one": 1,
-      "src/validate/mod.rs::check_row": 14
+      "src/merge.rs::merge_one": 1
     },
     "module_files": {}
   }

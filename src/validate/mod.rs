@@ -9,19 +9,27 @@
 //! *odd*. A missing body file is wrong. A terminal issue depending on a non-terminal one
 //! is odd — it happens when work is closed out of order, and saying so is more useful
 //! than refusing to proceed.
+//!
+//! [`validate`] is the list of passes. [`row`] holds the per-row ones, [`checks`] the ones that
+//! need the whole graph, and [`cycle`] the wording of the hardest of them to act on. What is
+//! left here is finding the files to check against.
 
 mod checks;
+mod cycle;
+mod row;
 
 use checks::{check_cycles, check_references, check_rollups, warn_unfinished_dependencies};
+pub(crate) use cycle::describe_cycle;
+use row::check_row;
 
-use crate::config::{self, is_terminal};
+use crate::config;
 use crate::discovery::Ctx;
 use crate::graph::Graph;
-use crate::issue::{DEFAULT_POINTS, Issue};
-use crate::json::Json;
-use crate::summary::filename;
+use crate::issue::Issue;
 use std::collections::{BTreeMap, BTreeSet};
-use std::fmt::Write as _;
+
+/// id -> (slug, filename) for every issue markdown in the items dir.
+type Files = BTreeMap<String, (String, String)>;
 
 /// What `check` found. Errors fail the run; warnings are printed and tolerated.
 pub(crate) struct Report {
@@ -29,34 +37,22 @@ pub(crate) struct Report {
     pub(crate) warnings: Vec<String>,
 }
 
-/// Map id -> (slug, filename) for every issue markdown in the items dir.
+/// Every issue markdown in the items dir, keyed by id.
 ///
 /// Status is not encoded in the path, so there is no folder component. Two files can
 /// still claim one id through different slugs, which is fatal rather than a validation
 /// error: it makes "the file for #x" ambiguous, and every later check would be guessing.
-fn scan_files(ctx: &Ctx) -> Result<BTreeMap<String, (String, String)>, String> {
-    let mut found: BTreeMap<String, (String, String)> = BTreeMap::new();
+fn scan_files(ctx: &Ctx) -> Result<Files, String> {
+    let mut found: Files = BTreeMap::new();
     let Ok(entries) = std::fs::read_dir(ctx.items_dir()) else {
         return Ok(found);
     };
     let mut names: Vec<String> = entries.flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect();
     names.sort();
     for name in names {
-        let Some(stem) = name.strip_suffix(".md") else {
+        let Some((id, slug)) = issue_filename(&name) else {
             continue;
         };
-        let Some((id, slug)) = stem.split_once('-') else {
-            continue;
-        };
-        // Only well-formed issue filenames count. A README or a scratch note parked in
-        // `items/` must not be mistaken for an issue and reported as one missing its
-        // index row — the id is lowercase alphanumeric, the slug is slug-shaped.
-        if id.is_empty() || !id.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit()) {
-            continue;
-        }
-        if !is_slug(slug) {
-            continue;
-        }
         if let Some((_, other)) = found.get(id) {
             return Err(format!("duplicate issue id {id} on disk: {other} and {name}"));
         }
@@ -65,144 +61,21 @@ fn scan_files(ctx: &Ctx) -> Result<BTreeMap<String, (String, String)>, String> {
     Ok(found)
 }
 
-/// A human-readable reason for an effective cycle: the node loop plus the authored edges
-/// and parent links that induce it. The loop itself is implied and was never typed, so
-/// naming only it would leave nothing to go and fix.
-#[allow(clippy::many_single_char_names, reason = "u/v are the loop edge, a/b the witness")]
-pub(crate) fn describe_cycle(g: &Graph, cyc: &[String]) -> String {
-    let mut seq: Vec<&String> = cyc.iter().collect();
-    if let Some(first) = cyc.first() {
-        seq.push(first);
-    }
-    let chain = seq.iter().map(|c| format!("#{c}")).collect::<Vec<_>>().join(" -> ");
-    let mut authored: Vec<String> = Vec::new();
-    let mut notes: Vec<String> = Vec::new();
-    for pair in seq.windows(2) {
-        let (u, v) = (pair[0], pair[1]);
-        // The witness: the authored edge (a -> b) with a an ancestor-or-self of u and v
-        // inside subtree(b), which is what makes u reach v.
-        let mut witness = None;
-        'outer: for a in std::iter::once(u.clone()).chain(g.ancestors_of(u)) {
-            for b in g.requires_of(&a) {
-                if g.subtree(&b).contains(v) {
-                    witness = Some((a.clone(), b.clone()));
-                    break 'outer;
-                }
-            }
-        }
-        let Some((a, b)) = witness else { continue };
-        let edge = format!("#{a} -> #{b}");
-        if !authored.contains(&edge) {
-            authored.push(edge);
-        }
-        if a != *u {
-            notes.push(format!("#{u} inherits #{a}'s deps"));
-        }
-        if b != *v {
-            notes.push(format!("#{v} is under #{b}"));
-        }
-    }
-    let mut reason = chain;
-    if !authored.is_empty() {
-        let _ = write!(reason, "; authored: {}", authored.join(", "));
-    }
-    if !notes.is_empty() {
-        let mut seen = BTreeSet::new();
-        let unique: Vec<&String> = notes.iter().filter(|n| seen.insert((*n).clone())).collect();
-        let _ = write!(reason, "; {}", unique.iter().map(|s| s.as_str()).collect::<Vec<_>>().join(", "));
-    }
-    reason
+/// `<id>-<slug>.md` split into its two halves, or `None` when the name is not one.
+///
+/// Only well-formed issue filenames count: a README or a scratch note parked in `items/` must
+/// not be mistaken for an issue and then reported as one missing its index row. The id is
+/// lowercase alphanumeric, the slug is slug-shaped.
+fn issue_filename(name: &str) -> Option<(&str, &str)> {
+    let stem = name.strip_suffix(".md")?;
+    let (id, slug) = stem.split_once('-')?;
+    let id_ok = !id.is_empty() && id.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit());
+    (id_ok && is_slug(slug)).then_some((id, slug))
 }
 
 fn is_slug(s: &str) -> bool {
     let mut chars = s.chars();
     chars.next().is_some_and(|c| c.is_ascii_lowercase() || c.is_ascii_digit()) && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
-}
-
-fn is_field_key(k: &str) -> bool {
-    let mut chars = k.chars();
-    chars.next().is_some_and(|c| c.is_ascii_lowercase()) && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_' || c == '-')
-}
-
-/// Python's `repr` of a custom-field value, so the two engines word the same complaint
-/// the same way.
-fn repr(v: &Json) -> String {
-    match v {
-        Json::Null => "None".into(),
-        Json::Bool(true) => "True".into(),
-        Json::Bool(false) => "False".into(),
-        Json::Number(raw) => raw.clone(),
-        Json::String(s) => format!("'{s}'"),
-        Json::Array(items) => format!("[{}]", items.iter().map(repr).collect::<Vec<_>>().join(", ")),
-        Json::Object(pairs) => format!("{{{}}}", pairs.iter().map(|(k, v)| format!("'{k}': {}", repr(v))).collect::<Vec<_>>().join(", ")),
-    }
-}
-
-/// Per-row checks: the file it should have, the values it may carry, and the invariants
-/// no verb would break.
-fn check_row(g: &Graph, r: &Issue, files: &BTreeMap<String, (String, String)>, errors: &mut Vec<String>) {
-    let iid = &r.id;
-    let Some((slug, fname)) = files.get(iid) else {
-        errors.push(format!("#{iid} in index but no markdown file on disk"));
-        return;
-    };
-    if r.slug != *slug {
-        errors.push(format!("#{iid} index slug '{}' != filename slug '{slug}'", r.slug));
-    }
-    if *fname != filename(r) {
-        errors.push(format!("#{iid} filename '{fname}' != expected '{}'", filename(r)));
-    }
-    if r.slug.is_empty() || !is_slug(&r.slug) {
-        errors.push(format!("#{iid} bad slug '{}'", r.slug));
-    }
-    if !config::STATUSES.contains(&r.status.as_str()) {
-        errors.push(format!("#{iid} unknown status '{}'", r.status));
-    }
-    if let Some(m) = config::check_priority(&r.priority) {
-        errors.push(format!("#{iid} {m}"));
-    }
-    if g.is_leaf(iid) {
-        if let Some(m) = config::check_points(r.points) {
-            errors.push(format!("#{iid} {m}"));
-        }
-    } else if r.points != DEFAULT_POINTS {
-        errors.push(format!("#{iid} has children but carries points {} (derived from leaves, must be unset)", r.points));
-    }
-    if let Some(res) = &r.resolution
-        && let Some(m) = config::check_resolution(res)
-    {
-        errors.push(format!("#{iid} {m}"));
-    }
-    // `(status, closed, resolution)` is one unit: a move to a non-terminal status clears
-    // both dates, and `--resolution` is refused unless the target is terminal. So a
-    // non-terminal row carrying either is a row no verb can have written — a hand-edit,
-    // or a field-wise merge that resolved the tuple's members independently. Two
-    // separate errors, because a merge can produce either alone.
-    //
-    // `review_url` is deliberately not in this set: a closed issue keeping its link is
-    // the review record for the change that resolved it.
-    if !is_terminal(&r.status) {
-        if let Some(res) = &r.resolution {
-            errors.push(format!("#{iid} is '{}' (not terminal) but carries resolution '{res}'", r.status));
-        }
-        if let Some(closed) = &r.closed {
-            errors.push(format!("#{iid} is '{}' (not terminal) but carries closed '{closed}'", r.status));
-        }
-    }
-    if let Some(url) = &r.review_url
-        && let Some(m) = config::check_review_url(url)
-    {
-        errors.push(format!("#{iid} {m}"));
-    }
-    for (k, v) in &r.extra {
-        if is_field_key(k) {
-            if !matches!(v, Json::String(_)) {
-                errors.push(format!("#{iid} custom field '{k}' must be a string, got {}", repr(v)));
-            }
-        } else {
-            errors.push(format!("#{iid} bad custom field key '{k}'"));
-        }
-    }
 }
 
 /// Validate the index against the on-disk files and against itself.
@@ -242,21 +115,31 @@ mod tests {
         assert!(!is_slug(""));
     }
 
+    /// The gate that keeps a stray file in `items/` from being read as an issue — and then
+    /// reported as one whose index row is missing.
     #[test]
-    fn a_field_key_must_be_slug_like_but_may_hold_underscores() {
-        assert!(is_field_key("assignee"));
-        assert!(is_field_key("due_date"));
-        assert!(!is_field_key("1st"));
-        assert!(!is_field_key("Assignee"));
+    fn only_a_well_formed_issue_filename_is_an_issue() {
+        assert_eq!(issue_filename("k3m9x2a-fix-the-parser.md"), Some(("k3m9x2a", "fix-the-parser")));
+        assert_eq!(issue_filename("a1-b.md"), Some(("a1", "b")));
+        for not_one in [
+            "README.md",         // no id-slug split
+            "notes.txt",         // not markdown
+            "-leading.md",       // empty id
+            "UPPER-slug.md",     // id is not lowercase alphanumeric
+            "a_b-slug.md",       // underscore is not an id character
+            "k3m9x2a-Upper.md",  // slug is not slug-shaped
+            "k3m9x2a-has it.md", // nor is that
+            "k3m9x2a.md",        // no slug at all
+        ] {
+            assert_eq!(issue_filename(not_one), None, "{not_one} should not read as an issue");
+        }
     }
 
+    /// A README *does* contain a dash in some repos, so the slug shape is what excludes it —
+    /// not the absence of one.
     #[test]
-    fn repr_matches_pythons_wording() {
-        // A fixture asserting stderr should not care which engine produced it.
-        assert_eq!(repr(&Json::Bool(true)), "True");
-        assert_eq!(repr(&Json::Null), "None");
-        assert_eq!(repr(&Json::Number("3".into())), "3");
-        assert_eq!(repr(&Json::String("x".into())), "'x'");
-        assert_eq!(repr(&Json::Array(vec![Json::Number("1".into()), Json::Null])), "[1, None]");
+    fn a_dashed_non_issue_file_is_still_excluded() {
+        assert_eq!(issue_filename("release-notes.md"), Some(("release", "notes")), "this one is indistinguishable by shape");
+        assert_eq!(issue_filename("Release-Notes.md"), None);
     }
 }
