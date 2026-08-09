@@ -8,8 +8,8 @@
 | backlog | 54 |
 | in-progress | 2 |
 | in-review | 0 |
-| done | 193 |
-| **total** | **249** |
+| done | 194 |
+| **total** | **250** |
 
 ## Hierarchies
 
@@ -310,6 +310,7 @@ _none_
 - [#wwpsa3f Extract config-vocabulary validation helpers](items/wwpsa3f-extract-config-vocabulary-validation-helpers.md) — _medium_ (closed 2026-06-10)
 - [#x5dcpmw Eliminate unnecessary index double-reads](items/x5dcpmw-eliminate-unnecessary-index-double-reads.md) — _medium_ (closed 2026-06-10)
 - [#x8ps68f docs: refresh the shipped trck docs — flat layout, repo setup-git/migrate-layout](items/x8ps68f-docs-refresh-the-claude-md-scaffold-template-flat-layout-repo-setup-git-migrate-layout.md) — _medium_ (closed 2026-07-30)
+- [#xrbb53h pay down finalize, the single write path](items/xrbb53h-pay-down-finalize-the-single-write-path.md) — _medium_ (closed 2026-08-09)
 - [#y5a9jwj pay down draw_row and validate](items/y5a9jwj-pay-down-draw-row-and-validate.md) — _medium_ (closed 2026-08-06)
 - [#yvbgt53 Consolidate parent-to-children map building onto Graph](items/yvbgt53-consolidate-parent-to-children-map-building-onto-graph.md) — _medium_ (closed 2026-06-10)
 - [#3qsk26v version/update: suppress no-tracker stderr noise when run outside a tracker](items/3qsk26v-version-update-suppress-no-tracker-stderr-noise-when-run-outside-a-tracker.md) — _low_ (closed 2026-06-05)
