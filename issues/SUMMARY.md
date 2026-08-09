@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 52 |
+| backlog | 54 |
 | in-progress | 2 |
 | in-review | 0 |
-| done | 191 |
-| **total** | **245** |
+| done | 192 |
+| **total** | **248** |
 
 ## Hierarchies
 
@@ -215,6 +215,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 ## Backlog
 
 - [#38qfknm restore the coverage the deleted suite carried: hooks, setup-git, git-revision diff](items/38qfknm-restore-the-coverage-the-deleted-suite-carried-hooks-setup-git-git-revision-diff.md) — _high_
+- [#jcdynvv check: warn when this clone's registered merge drivers no longer resolve](items/jcdynvv-check-warn-when-this-clone-s-registered-merge-drivers-no-longer-resolve.md) — _high_ [conflict-resolution]
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](items/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#jkvexgs docs: record a terminal demo of the next-driven loop for the README](items/jkvexgs-docs-record-a-terminal-demo-of-the-next-driven-loop-for-the-readme.md) — _medium_
 - [#k6g7kvf CI: a consistency check a consumer repo can drop in](items/k6g7kvf-ci-a-consistency-check-a-consumer-repo-can-drop-in.md) — _medium_
@@ -232,6 +233,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#kj2c95b validate: suppress redundant bad-slug error when filename-slug mismatch already reported](items/kj2c95b-validate-suppress-redundant-bad-slug-error-when-filename-slug-mismatch-already-reported.md) — _low_
 - [#m3z2ywb summary: include foreign/unknown statuses in the counts table](items/m3z2ywb-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
 - [#mf7ue8j trck-html: timeline view over created/started/closed](items/mf7ue8j-trck-html-timeline-view-over-created-started-closed.md) — _low_ [dates trck-html]
+- [#mwdg3pv validate and issue each carry their own Python repr, and they disagree](items/mwdg3pv-validate-and-issue-each-carry-their-own-python-repr-and-they-disagree.md) — _low_
 - [#s3d6xyz Add reconfigure verb to rename/reorder statuses](items/s3d6xyz-add-reconfigure-verb-to-rename-reorder-statuses.md) — _low_ [tracker-features]
 - [#tcm5s56 v7: trck serve — live process, edits write back to index.jsonl](items/tcm5s56-v7-trck-serve-live-process-edits-write-back-to-index-jsonl.md) — _low_
 - [#u833fh6 vocabulary: drop the 'ongoing' status alias](items/u833fh6-vocabulary-drop-the-ongoing-status-alias.md) — _low_ [tracker-features]
@@ -296,6 +298,7 @@ _none_
 - [#nhscdux pay down the gutter renderer](items/nhscdux-pay-down-the-gutter-renderer.md) — _medium_ (closed 2026-08-07)
 - [#nu939p9 Add normalize command to rewrite index.jsonl in canonical slim form](items/nu939p9-add-normalize-command-to-rewrite-index-jsonl-in-canonical-slim-form.md) — _medium_ (closed 2026-06-06)
 - [#pzmyzv3 deps: inherit dependencies through the parent hierarchy (effective deps) + lifted cycle prevention](items/pzmyzv3-deps-inherit-dependencies-through-the-parent-hierarchy-effective-deps-lifted-cycle-prevention.md) — _medium_ (closed 2026-07-18)
+- [#qct2pvw pay down the per-row checks](items/qct2pvw-pay-down-the-per-row-checks.md) — _medium_ (closed 2026-08-09)
 - [#qs4zwzr Group the maintenance verbs under 'trck repo'](items/qs4zwzr-group-the-maintenance-verbs-out-of-the-root-command-namespace.md) — _medium_ [tracker-features] (closed 2026-07-30)
 - [#rd6rk5e Allow any issue to be a parent (rollup for any parent)](items/rd6rk5e-allow-any-issue-to-be-a-parent-rollup-for-any-parent.md) — _medium_ (closed 2026-06-05)
 - [#tazdgkg deps --graph: lazygit-style dependency DAG renderer](items/tazdgkg-deps-graph-lazygit-style-dependency-dag-renderer.md) — _medium_ (closed 2026-06-10)
