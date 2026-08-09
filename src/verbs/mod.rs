@@ -32,16 +32,17 @@ use crate::summary::filename;
 use std::path::PathBuf;
 
 /// The prose skeleton a new issue's body starts from.
-pub(super) const TEMPLATE: &str = "# {title}\n\
-    \n\
-    ## Summary\n\
-    <!-- What needs doing and why. For an epic, link the spec instead of re-narrating it. -->\n\
-    \n\
-    ## Acceptance criteria\n\
-    - [ ]\n\
-    \n\
-    ## Notes\n\
-    <!-- Context, links to files/commits, open questions, decisions. -->\n";
+pub(super) const TEMPLATE: &str = r#"# {title}
+
+## Summary
+<!-- What needs doing and why. For an epic, link the spec instead of re-narrating it. -->
+
+## Acceptance criteria
+- [ ]
+
+## Notes
+<!-- Context, links to files/commits, open questions, decisions. -->
+"#;
 
 pub(crate) fn issue_path(ctx: &Ctx, row: &Issue) -> PathBuf {
     ctx.items_dir().join(filename(row))
