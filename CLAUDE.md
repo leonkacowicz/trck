@@ -85,9 +85,46 @@ now holds only the format version and the update channel.
   in `index.jsonl`. A `start`/`done` touches the index and `SUMMARY.md`, never the body file.
   (`trck repo migrate-layout` converts a pre-0.23 tracker; every verb refuses one until it runs.)
 - `trck check` must pass before committing. `SUMMARY.md` is generated.
-- Keep issue-tracker commits separate from engine-code commits where reasonable.
+- Tracker writes go straight to `main` from a throwaway worktree, never from the branch you are
+  working on — see **Tracker writes** below. That is what keeps issue-tracker commits out of
+  engine-code commits.
 - **Nothing is vendored.** `trck` is installed on the machine or built here, never committed
   into the repository it serves — so there is no second engine that can drift from the data.
+
+### Tracker writes
+
+An issue row is not code. It cannot break the build, so it does not get a branch, a PR or a
+review — it gets pushed to `main` from a detached worktree. That is what lets you file what you
+find without stopping what you are doing: your working branch is never touched, and no tracker
+change ever appears in a feature diff.
+
+```bash
+WT="$(git rev-parse --git-common-dir)/trck-wt"        # inside .git; discovery can't reach it
+git fetch origin main && git worktree add --detach "$WT" origin/main
+
+./target/release/trck --dir "$WT/issues" new "title" --priority high
+#   … edit the body file it prints, for verbs that have one …
+./target/release/trck --dir "$WT/issues" check        # no PR, so this is the only gate
+
+git -C "$WT" add -A && git -C "$WT" commit -m "file: <title>"
+for _ in 1 2 3 4 5; do
+    git -C "$WT" push origin HEAD:main && break
+    git -C "$WT" fetch origin main && git -C "$WT" rebase origin/main
+done
+git worktree remove --force "$WT"
+```
+
+`--dir` is load-bearing. A bare `trck new` walks up to the nearest `trck.json`, finds your primary
+checkout, and lands the row on your feature branch — the coupling this exists to avoid.
+
+The push loop is optimistic concurrency: a rejection means `main` moved, and the rebase replays
+your one commit with the merge drivers resolving `index.jsonl` and regenerating `SUMMARY.md`. Those
+drivers are per-clone, so `trck repo setup-git` is a precondition rather than a nicety — without it
+a contended rebase does not conflict, it fails outright with `fatal: custom merge driver
+trck-index lacks command line.` Never `push --force`: a rejection means someone else's work landed.
+
+Read verbs — `list`, `tree`, `ready`, `next`, `deps`, `show`, `check`, `summary`, `diff` — need
+none of this. Run them in your checkout.
 
 ## Releasing
 
@@ -100,9 +137,11 @@ spec never becomes a download.
 **A release commit goes through a PR like any other.** `main` is protected and its required
 checks are the point — pushing a bump straight to it means the commit every published binary is
 built from is the one commit nobody ran CI on. Admin permissions make the bypass possible; that
-is not a reason to use it. The release workflow's own `verify` job is a stricter gate than the PR
-checks, but it runs *after* the tag, so a bump that breaks the build costs a tag you then have to
-delete and re-cut.
+is not a reason to use it. **This rule is about code.** A tracker-only commit cannot affect the
+build — `scripts/ci_changed.py` already classifies `issues/` as skippable — and goes straight to
+`main` instead, per **Tracker writes** above. A version bump is code, whatever else it touches.
+The release workflow's own `verify` job is a stricter gate than the PR checks, but it runs
+*after* the tag, so a bump that breaks the build costs a tag you then have to delete and re-cut.
 
 **Tag after the merge, never the branch.** A squash merge writes a *new* commit, so the branch
 SHA the bump was authored on is not the SHA that lands on `main` — tagging it would point the
