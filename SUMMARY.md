@@ -6,8 +6,8 @@
 | State | Count |
 |---|---:|
 | backlog | 54 |
-| in-progress | 3 |
-| in-review | 1 |
+| in-progress | 2 |
+| in-review | 2 |
 | done | 194 |
 | **total** | **252** |
 
@@ -246,10 +246,11 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## In-progress
 
-- [#jfur4ky trck-html: selecting an issue resets the view pane's scroll position](items/jfur4ky-trck-html-selecting-an-issue-resets-the-view-pane-s-scroll-position.md) — _medium_
+_none_
 
 ## In-review
 
+- [#jfur4ky trck-html: selecting an issue resets the view pane's scroll position](items/jfur4ky-trck-html-selecting-an-issue-resets-the-view-pane-s-scroll-position.md) — _medium_ · [review](https://github.com/leonkacowicz/trck/pull/24)
 - [#xz43mwa trck-html: graph tab defaults to 'omit done' checked](items/xz43mwa-trck-html-graph-tab-defaults-to-omit-done-checked.md) — _low_ [trck-html] · [review](https://github.com/leonkacowicz/trck/pull/23)
 
 ## Done
