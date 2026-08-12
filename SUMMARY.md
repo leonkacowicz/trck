@@ -7,8 +7,8 @@
 |---|---:|
 | backlog | 54 |
 | in-progress | 2 |
-| in-review | 2 |
-| done | 194 |
+| in-review | 1 |
+| done | 195 |
 | **total** | **252** |
 
 ## Hierarchies
@@ -251,7 +251,6 @@ _none_
 ## In-review
 
 - [#jfur4ky trck-html: selecting an issue resets the view pane's scroll position](items/jfur4ky-trck-html-selecting-an-issue-resets-the-view-pane-s-scroll-position.md) — _medium_ · [review](https://github.com/leonkacowicz/trck/pull/24)
-- [#xz43mwa trck-html: graph tab defaults to 'omit done' checked](items/xz43mwa-trck-html-graph-tab-defaults-to-omit-done-checked.md) — _low_ [trck-html] · [review](https://github.com/leonkacowicz/trck/pull/23)
 
 ## Done
 
@@ -322,3 +321,4 @@ _none_
 - [#dkbmmrr Clean up minor lint and cruft in the engine](items/dkbmmrr-clean-up-minor-lint-and-cruft-in-the-engine.md) — _low_ (closed 2026-06-10)
 - [#g76mtuw validate: report one error per parent cycle, not one per node](items/g76mtuw-validate-report-one-error-per-parent-cycle-not-one-per-node.md) — _low_ (closed 2026-06-10)
 - [#xagqqgd deps: optimize node ordering to minimize edge span and crossings (local search)](items/xagqqgd-deps-optimize-node-ordering-to-minimize-edge-span-and-crossings-local-search.md) — _low_ (closed 2026-07-31)
+- [#xz43mwa trck-html: graph tab defaults to 'omit done' checked](items/xz43mwa-trck-html-graph-tab-defaults-to-omit-done-checked.md) — _low_ [trck-html] (closed 2026-08-12) · [review](https://github.com/leonkacowicz/trck/pull/23)
