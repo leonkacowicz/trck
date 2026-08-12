@@ -175,3 +175,32 @@ fn the_graph_opens_with_done_work_omitted() {
     assert!(APP_JS.contains("graphIncludeDone: GRAPH_DEFAULTS.includeDone"), "state must seed graphIncludeDone from GRAPH_DEFAULTS");
     assert!(APP_JS.contains("graphOmitDone: GRAPH_DEFAULTS.omitDone"), "state must seed graphOmitDone from GRAPH_DEFAULTS");
 }
+
+#[test]
+fn selecting_an_issue_leaves_the_view_pane_where_it_was() {
+    if !have_node() {
+        return;
+    }
+    // Selecting re-renders the active view, and every renderer empties its container to
+    // rebuild it — which is also the scrolling element, so the offsets go to zero and the
+    // graph the reader had scrolled to jumps out from under the pointer. Selection changes
+    // only which node is accented, never the layout, so the offsets are still the right
+    // ones afterwards: hold them across the rebuild.
+    let script = format!(
+        "{}\n\
+         let renders = 0;\n\
+         // A stand-in for the pane: rendering wipes it, which is what zeroes the offsets.\n\
+         const box = {{ scrollTop: 420, scrollLeft: 130 }};\n\
+         keepingScroll(box, () => {{ renders++; box.scrollTop = 0; box.scrollLeft = 0; }});\n\
+         // A view with no pane element must still render rather than throw.\n\
+         keepingScroll(null, () => {{ renders++; }});\n\
+         console.log(JSON.stringify([box.scrollTop, box.scrollLeft, renders]));\n",
+        lift(&["keepingScroll"])
+    );
+    let out = run_node(&script);
+    assert_eq!(out.trim(), "[420,130,2]", "{out}");
+
+    // And the helper has to be what selection actually goes through, or it is dead code
+    // that passes its own test. The pane ids match the view names one-for-one.
+    assert!(APP_JS.contains("keepingScroll($('#' + state.view), renderActiveView)"), "select() must re-render the active view through keepingScroll");
+}
