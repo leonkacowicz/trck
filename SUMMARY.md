@@ -6,8 +6,8 @@
 | State | Count |
 |---|---:|
 | backlog | 54 |
-| in-progress | 3 |
-| in-review | 0 |
+| in-progress | 2 |
+| in-review | 1 |
 | done | 194 |
 | **total** | **251** |
 
@@ -246,11 +246,11 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## In-progress
 
-- [#xz43mwa trck-html: graph tab defaults to 'omit done' checked](items/xz43mwa-trck-html-graph-tab-defaults-to-omit-done-checked.md) — _low_ [trck-html]
+_none_
 
 ## In-review
 
-_none_
+- [#xz43mwa trck-html: graph tab defaults to 'omit done' checked](items/xz43mwa-trck-html-graph-tab-defaults-to-omit-done-checked.md) — _low_ [trck-html] · [review](https://github.com/leonkacowicz/trck/pull/23)
 
 ## Done
 
