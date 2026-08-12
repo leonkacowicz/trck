@@ -24,13 +24,19 @@ const FACET_VALUES = {
   status: new Set(DATA.config.statuses.map(s => s.name)),
   priority: new Set(DATA.config.priorities),
 };
+// What the graph tab opens on. Unlike the facet boxes above, the useful default here is
+// not "everything": drawn whole, a mature tracker's graph is mostly finished work, and the
+// question the view answers — what is still open, and what is holding it up — is the part
+// left over. So done issues start hidden and showing them is the gesture. The done-chain
+// filter stays off underneath: it only has anything left to say once `omit done` is unticked.
+const GRAPH_DEFAULTS = { includeDone: false, omitDone: true };
 const state = { q: '', status: new Set(FACET_VALUES.status),
   priority: new Set(FACET_VALUES.priority), selected: null, edits: {},
   // Every parent starts collapsed, so the tree opens on its roots and expanding is the
   // gesture. A hierarchy view whose default is every leaf at once is just the list.
   view: 'list', collapsed: new Set(DATA.issues.filter(i => (i.children || []).length)
                                               .map(i => i.id)), bodyRaw: false,
-  graphIncludeDone: false, graphOmitDone: false };
+  graphIncludeDone: GRAPH_DEFAULTS.includeDone, graphOmitDone: GRAPH_DEFAULTS.omitDone };
 
 // --- filter facets (pure; exercised directly by the test suite) --------------
 // Status and priority are multi-select, and every box starts checked, so a selection

@@ -156,3 +156,22 @@ fn a_view_only_applies_the_facets_it_declares() {
     let out = run_node(&script);
     assert!(out.contains("true,false,true,true"), "{out}");
 }
+
+#[test]
+fn the_graph_opens_with_done_work_omitted() {
+    if !have_node() {
+        return;
+    }
+    // The graph tab's opening state is what the reader is asked to make sense of before
+    // they have found a control, so it starts on the live graph: done issues out. The
+    // done-*chains* filter stays off underneath it — that one is about whole settled
+    // components and only becomes visible again once someone unticks `omit done`.
+    let script = format!("{}\nconsole.log(JSON.stringify(GRAPH_DEFAULTS));\n", lift(&["GRAPH_DEFAULTS"]));
+    let out = run_node(&script);
+    assert_eq!(out.trim(), r#"{"includeDone":false,"omitDone":true}"#, "{out}");
+
+    // And the defaults have to be the ones the view actually starts from, or the
+    // constant above is a comment that happens to compile.
+    assert!(APP_JS.contains("graphIncludeDone: GRAPH_DEFAULTS.includeDone"), "state must seed graphIncludeDone from GRAPH_DEFAULTS");
+    assert!(APP_JS.contains("graphOmitDone: GRAPH_DEFAULTS.omitDone"), "state must seed graphOmitDone from GRAPH_DEFAULTS");
+}
