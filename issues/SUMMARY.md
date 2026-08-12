@@ -5,8 +5,8 @@
 
 | State | Count |
 |---|---:|
-| backlog | 55 |
-| in-progress | 2 |
+| backlog | 54 |
+| in-progress | 3 |
 | in-review | 0 |
 | done | 194 |
 | **total** | **251** |
@@ -240,14 +240,13 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#ut9bqm4 dates: time-in-status and per-status cycle time reporting](items/ut9bqm4-dates-time-in-status-and-per-status-cycle-time-reporting.md) — _low_ [dates]
 - [#v9nyy42 Part C: curses TUI for browsing and quick actions](items/v9nyy42-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
 - [#xr994r6 list --as-of DATE: reconstruct and browse tracker state at a past date](items/xr994r6-list-as-of-date-reconstruct-and-browse-tracker-state-at-a-past-date.md) — _low_ [dates]
-- [#xz43mwa trck-html: graph tab defaults to 'omit done' checked](items/xz43mwa-trck-html-graph-tab-defaults-to-omit-done-checked.md) — _low_ [trck-html]
 - [#35qkx68 install: Windows has assets but no working install path](items/35qkx68-install-windows-has-assets-but-no-working-install-path.md) — _lowest_
 - [#9ax2ny2 deps: --depth N to cut expansion N hops from the seed(s)](items/9ax2ny2-deps-depth-n-to-cut-expansion-n-hops-from-the-seed-s.md) — _lowest_
 - [#p4vp2ae deps: demand as innermost tie-break within a component's layout](items/p4vp2ae-deps-demand-as-innermost-tie-break-within-a-component-s-layout.md) — _lowest_
 
 ## In-progress
 
-_none_
+- [#xz43mwa trck-html: graph tab defaults to 'omit done' checked](items/xz43mwa-trck-html-graph-tab-defaults-to-omit-done-checked.md) — _low_ [trck-html]
 
 ## In-review
 
