@@ -328,10 +328,23 @@ function renderActiveView() {
   else if (state.view === 'board') renderBoard();
   else if (state.view === 'ready') renderReady();
 }
+// Run `render` without letting the pane it rebuilds lose its place. Every renderer empties
+// its container before refilling it, and that container is the scrolling element — so a
+// rebuild silently returns the reader to the top-left of a graph they had scrolled across.
+// Sound only because the caller's change is cosmetic: selection moves the `sel` class and
+// nothing else, so the geometry the offsets refer to is the same one on the way out.
+function keepingScroll(box, render) {
+  if (!box) return render();
+  const top = box.scrollTop, left = box.scrollLeft;
+  render();
+  box.scrollTop = top;
+  box.scrollLeft = left;
+}
 function select(id) {
   state.selected = id;
   renderDetail();
-  renderActiveView();
+  // The pane ids match the view names one-for-one, so this is the container being rebuilt.
+  keepingScroll($('#' + state.view), renderActiveView);
 }
 
 // --- v3 dependency graph: SVG layered DAG from authored edges ----------------
