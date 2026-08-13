@@ -7,8 +7,8 @@
 |---|---:|
 | backlog | 54 |
 | in-progress | 2 |
-| in-review | 2 |
-| done | 195 |
+| in-review | 0 |
+| done | 197 |
 | **total** | **253** |
 
 ## Hierarchies
@@ -250,8 +250,7 @@ _none_
 
 ## In-review
 
-- [#jfur4ky trck-html: selecting an issue resets the view pane's scroll position](items/jfur4ky-trck-html-selecting-an-issue-resets-the-view-pane-s-scroll-position.md) — _medium_ · [review](https://github.com/leonkacowicz/trck/pull/24)
-- [#r8cqzed trck-html: page is a few px taller than the viewport, causing a spurious body scroll](items/r8cqzed-trck-html-page-is-a-few-px-taller-than-the-viewport-causing-a-spurious-body-scroll.md) — _low_ [trck-html] · [review](https://github.com/leonkacowicz/trck/pull/25)
+_none_
 
 ## Done
 
@@ -295,6 +294,7 @@ _none_
 - [#gwcr9qd deps: shorter edges / fewer crossings in the graph layout](items/gwcr9qd-deps-shorter-edges-fewer-crossings-in-the-graph-layout.md) — _medium_ (closed 2026-06-12)
 - [#h4tu2h4 pay down the graph module](items/h4tu2h4-pay-down-the-graph-module.md) — _medium_ (closed 2026-08-08)
 - [#httj4xf Add labels/tags to issues](items/httj4xf-add-labels-tags-to-issues.md) — _medium_ [tracker-features] (closed 2026-06-06)
+- [#jfur4ky trck-html: selecting an issue resets the view pane's scroll position](items/jfur4ky-trck-html-selecting-an-issue-resets-the-view-pane-s-scroll-position.md) — _medium_ (closed 2026-08-13) · [review](https://github.com/leonkacowicz/trck/pull/24)
 - [#kd8ngqv Improve CLI output presentation (align/icons, color, show, SUMMARY)](items/kd8ngqv-improve-cli-output-presentation-align-icons-color-show-summary.md) — _medium_ (closed 2026-06-05)
 - [#nbjnx54 CI: skip the engine suites on issues- and docs-only pull requests](items/nbjnx54-ci-skip-the-engine-suites-on-issues-and-docs-only-pull-requests.md) — _medium_ (closed 2026-08-08) · [review](https://github.com/leonkacowicz/trck/pull/10)
 - [#nhscdux pay down the gutter renderer](items/nhscdux-pay-down-the-gutter-renderer.md) — _medium_ (closed 2026-08-07)
@@ -321,5 +321,6 @@ _none_
 - [#cggyyxc tests: test_an_id_prefix_resolves flakes when a 2-char id prefix collides](items/cggyyxc-tests-test-an-id-prefix-resolves-flakes-when-a-2-char-id-prefix-collides.md) — _low_ (closed 2026-08-01)
 - [#dkbmmrr Clean up minor lint and cruft in the engine](items/dkbmmrr-clean-up-minor-lint-and-cruft-in-the-engine.md) — _low_ (closed 2026-06-10)
 - [#g76mtuw validate: report one error per parent cycle, not one per node](items/g76mtuw-validate-report-one-error-per-parent-cycle-not-one-per-node.md) — _low_ (closed 2026-06-10)
+- [#r8cqzed trck-html: page is a few px taller than the viewport, causing a spurious body scroll](items/r8cqzed-trck-html-page-is-a-few-px-taller-than-the-viewport-causing-a-spurious-body-scroll.md) — _low_ [trck-html] (closed 2026-08-13) · [review](https://github.com/leonkacowicz/trck/pull/25)
 - [#xagqqgd deps: optimize node ordering to minimize edge span and crossings (local search)](items/xagqqgd-deps-optimize-node-ordering-to-minimize-edge-span-and-crossings-local-search.md) — _low_ (closed 2026-07-31)
 - [#xz43mwa trck-html: graph tab defaults to 'omit done' checked](items/xz43mwa-trck-html-graph-tab-defaults-to-omit-done-checked.md) — _low_ [trck-html] (closed 2026-08-12) · [review](https://github.com/leonkacowicz/trck/pull/23)
