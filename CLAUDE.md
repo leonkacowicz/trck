@@ -98,30 +98,24 @@ review — it gets pushed to `main` from a detached worktree. That is what lets 
 find without stopping what you are doing: your working branch is never touched, and no tracker
 change ever appears in a feature diff.
 
-```bash
-WT="$(git rev-parse --git-common-dir)/trck-wt"        # inside .git; discovery can't reach it
-git fetch origin main && git worktree add --detach "$WT" origin/main
+**The ritual itself lives in `skills/trck-worktree/SKILL.md`** — the commands, the push loop, and a
+recovery table. Follow it there rather than reconstructing it from memory; one copy is the point,
+because the last time this was written down twice only one of them got fixed. What follows is *why*
+it is shaped that way, which is what tells you whether a deviation is safe.
 
-./target/release/trck --dir "$WT/issues" new "title" --priority high
-#   … edit the body file it prints, for verbs that have one …
-./target/release/trck --dir "$WT/issues" check        # no PR, so this is the only gate
-
-git -C "$WT" add -A && git -C "$WT" commit -m "file: <title>"
-for _ in 1 2 3 4 5; do
-    git -C "$WT" push origin HEAD:main && break
-    git -C "$WT" fetch origin main && git -C "$WT" rebase origin/main
-done
-git worktree remove --force "$WT"
-```
-
-`--dir` is load-bearing. A bare `trck new` walks up to the nearest `trck.json`, finds your primary
-checkout, and lands the row on your feature branch — the coupling this exists to avoid.
-
-The push loop is optimistic concurrency: a rejection means `main` moved, and the rebase replays
-your one commit with the merge drivers resolving `index.jsonl` and regenerating `SUMMARY.md`. Those
-drivers are per-clone, so `trck repo setup-git` is a precondition rather than a nicety — without it
-a contended rebase does not conflict, it fails outright with `fatal: custom merge driver
-trck-index lacks command line.` Never `push --force`: a rejection means someone else's work landed.
+- **`--dir` is load-bearing.** A bare `trck new` walks up to the nearest `trck.json`, finds your
+  primary checkout, and lands the row on your feature branch — the coupling this exists to avoid.
+- **`trck repo setup-git` is a precondition, not a nicety.** The merge drivers are per-clone, so
+  without them a contended rebase does not conflict — it fails outright with `fatal: custom merge
+  driver trck-index lacks command line.`
+- **`trck check` runs before the push, not after.** There is no PR, so it is the only gate.
+- **The worktree path is per session.** Several agents may file in one clone at once, and a fixed
+  path means the second one's `worktree add` fails for as long as the first holds it — the whole
+  time an issue body is being written, not a narrow window. **Never remove a worktree you did not
+  create:** an existing path is a live session, not debris, and force-removing it destroys a body
+  someone is still writing.
+- **Never `push --force`.** A rejection means someone else's work landed. The loop rebases instead,
+  and the drivers resolve `index.jsonl` and regenerate `SUMMARY.md`.
 
 Read verbs — `list`, `tree`, `ready`, `next`, `deps`, `show`, `check`, `summary`, `diff` — need
 none of this. Run them in your checkout.
