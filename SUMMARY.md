@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 54 |
+| backlog | 55 |
 | in-progress | 2 |
 | in-review | 1 |
 | done | 195 |
-| **total** | **252** |
+| **total** | **253** |
 
 ## Hierarchies
 
@@ -234,6 +234,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#m3z2ywb summary: include foreign/unknown statuses in the counts table](items/m3z2ywb-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
 - [#mf7ue8j trck-html: timeline view over created/started/closed](items/mf7ue8j-trck-html-timeline-view-over-created-started-closed.md) — _low_ [dates trck-html]
 - [#mwdg3pv validate and issue each carry their own Python repr, and they disagree](items/mwdg3pv-validate-and-issue-each-carry-their-own-python-repr-and-they-disagree.md) — _low_
+- [#r8cqzed trck-html: page is a few px taller than the viewport, causing a spurious body scroll](items/r8cqzed-trck-html-page-is-a-few-px-taller-than-the-viewport-causing-a-spurious-body-scroll.md) — _low_ [trck-html]
 - [#s3d6xyz Add reconfigure verb to rename/reorder statuses](items/s3d6xyz-add-reconfigure-verb-to-rename-reorder-statuses.md) — _low_ [tracker-features]
 - [#tcm5s56 v7: trck serve — live process, edits write back to index.jsonl](items/tcm5s56-v7-trck-serve-live-process-edits-write-back-to-index-jsonl.md) — _low_
 - [#u833fh6 vocabulary: drop the 'ongoing' status alias](items/u833fh6-vocabulary-drop-the-ongoing-status-alias.md) — _low_ [tracker-features]
