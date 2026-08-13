@@ -258,4 +258,26 @@ mod tests {
     fn the_title_is_html_escaped() {
         assert_eq!(escape_html("a<b>&c"), "a&lt;b&gt;&amp;c");
     }
+
+    #[test]
+    fn the_shell_height_is_derived_rather_than_a_constant() {
+        // `main` was once `height: calc(100vh - 92px)`, where 92px was a hand-measured
+        // guess at the topbar plus the filter bar. Every way that guess can be wrong —
+        // a different font metric, a zoom level, a filter bar wrapping to two lines,
+        // a view that hides the facets — made the page taller or shorter than the
+        // window, which a reader saw as a document scrollbar that scrolled nothing.
+        //
+        // Nothing here can check layout: CSS is a string to this crate and there is no
+        // engine to lay it out. What it can check is that the constant has not come
+        // back, because the constant is the bug. A viewport-tall flex column with a
+        // shrinkable `main` is the shape that needs no number.
+        //
+        // Comments are stripped first, because the rule this guards is explained in one —
+        // and a stylesheet that merely *mentions* the old declaration is not the bug.
+        let rules: String = CSS.split("/*").map(|part| part.split_once("*/").map_or(part, |(_, tail)| tail)).collect();
+        assert!(!rules.contains("calc(100vh -") && !rules.contains("calc(100dvh -"), "the shell is subtracting a hardcoded chrome height again");
+        for needle in ["flex-direction: column", "height: 100dvh", "min-height: 0"] {
+            assert!(rules.contains(needle), "the viewport-tall column lost `{needle}`");
+        }
+    }
 }
