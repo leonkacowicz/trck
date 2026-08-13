@@ -18,22 +18,22 @@ class Trck < Formula
   on_macos do
     on_arm do
       url "https://github.com/leonkacowicz/trck/releases/download/v#{version}/trck-v#{version}-aarch64-apple-darwin.tar.gz"
-      sha256 "16cc6f05bce409f23c4829ec1e1a4610824e0047bb6ac2dfdd309ff7a4634713"
+      sha256 "1216fd3d5521c390a17e48a7372390564735172d46e69234530b2f1800778b31"
     end
     on_intel do
       url "https://github.com/leonkacowicz/trck/releases/download/v#{version}/trck-v#{version}-x86_64-apple-darwin.tar.gz"
-      sha256 "d6ae56d3ad04194517a07661a446d406add4192cf5b85630f36e7ea247a3c1f8"
+      sha256 "9b6b997dedae3c27b7d6be7aec72153cba90c56a78e51485d540b1586e157cf3"
     end
   end
 
   on_linux do
     on_arm do
       url "https://github.com/leonkacowicz/trck/releases/download/v#{version}/trck-v#{version}-aarch64-unknown-linux-musl.tar.gz"
-      sha256 "8a60fc7596ed42ac381432b5d71f7dee1ca6473e7b78f1ce4907b0227b8a8bb4"
+      sha256 "6be09ef8e8d4a7150a5be19a9201be5400cfd6e59ff609c71cc49a82916dccaa"
     end
     on_intel do
       url "https://github.com/leonkacowicz/trck/releases/download/v#{version}/trck-v#{version}-x86_64-unknown-linux-musl.tar.gz"
-      sha256 "d9fa0ab5064dc7678e2982d810a41cb9084281cd3407ac4a73ec1888ff82baa0"
+      sha256 "ffb446ba9bba2a8164836ed1f0bcd0909079f10dd301b5630059fb656b9be0f6"
     end
   end
 
