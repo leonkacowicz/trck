@@ -6,8 +6,8 @@
 | State | Count |
 |---|---:|
 | backlog | 54 |
-| in-progress | 3 |
-| in-review | 1 |
+| in-progress | 2 |
+| in-review | 2 |
 | done | 195 |
 | **total** | **253** |
 
@@ -246,11 +246,12 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## In-progress
 
-- [#r8cqzed trck-html: page is a few px taller than the viewport, causing a spurious body scroll](items/r8cqzed-trck-html-page-is-a-few-px-taller-than-the-viewport-causing-a-spurious-body-scroll.md) — _low_ [trck-html]
+_none_
 
 ## In-review
 
 - [#jfur4ky trck-html: selecting an issue resets the view pane's scroll position](items/jfur4ky-trck-html-selecting-an-issue-resets-the-view-pane-s-scroll-position.md) — _medium_ · [review](https://github.com/leonkacowicz/trck/pull/24)
+- [#r8cqzed trck-html: page is a few px taller than the viewport, causing a spurious body scroll](items/r8cqzed-trck-html-page-is-a-few-px-taller-than-the-viewport-causing-a-spurious-body-scroll.md) — _low_ [trck-html] · [review](https://github.com/leonkacowicz/trck/pull/25)
 
 ## Done
 
