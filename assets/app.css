@@ -25,8 +25,16 @@
    `display` (`.board`, `.filters`, …) would otherwise win: author rules outrank the UA's
    `[hidden] { display: none }` at any specificity. Keep this ahead of every layout rule. */
 [hidden] { display: none !important; }
+/* The shell is a viewport-tall column — topbar, filter bar, then `main` taking whatever is
+   left. `main` used to size itself as `calc(100vh - 92px)`, where 92px was a guess at the
+   height of the two bars above it; the guess is wrong the moment a font metric, a zoom level
+   or a wrapping filter bar disagrees, and being wrong by a few pixels gave the whole document
+   a scrollbar that scrolled nothing. Measuring by layout instead of naming a constant is what
+   makes that unfixable-by-tweaking. `dvh` tracks a mobile browser's retracting URL bar; the
+   plain `vh` ahead of it is the fallback for engines that don't know the unit. */
 body { margin: 0; font: 14px/1.5 var(--sans);
-       color: var(--fg); background: var(--bg); }
+       color: var(--fg); background: var(--bg);
+       display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
 .topbar { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap;
           padding: .7rem 1rem; border-bottom: 1px solid var(--line); }
 .topbar h1 { font-size: 1.05rem; margin: 0; }
@@ -50,9 +58,16 @@ body { margin: 0; font: 14px/1.5 var(--sans);
 .fbox { display: inline-flex; align-items: center; gap: .25rem; cursor: pointer;
         white-space: nowrap; }
 .fbox input { flex: none; margin: 0; }
+/* `min-height: 0` is what lets the panes inside scroll: without it a flex item refuses to
+   shrink below its content, so a long list would push `main` past the space left for it and
+   put the overflow back on the document. */
 main { display: grid; grid-template-columns: minmax(12rem, var(--leftw, 40%)) 6px minmax(16rem, 1fr);
-       gap: 0; height: calc(100vh - 92px); }
-@media (max-width: 720px) { main { grid-template-columns: 1fr; height: auto; } .divider { display: none; } }
+       gap: 0; flex: 1; min-height: 0; }
+/* Narrow: one column, and the page is meant to scroll as a document again. Returning `body`
+   to normal flow is the whole switch — `main` is no longer a flex item, so its `flex`/
+   `min-height` go inert and it sizes to its content. */
+@media (max-width: 720px) { body { display: block; height: auto; }
+                            main { grid-template-columns: 1fr; } .divider { display: none; } }
 .divider { background: var(--line); cursor: col-resize; }
 .divider:hover, .divider.drag { background: var(--accent); }
 .leftpane { overflow: hidden; }
