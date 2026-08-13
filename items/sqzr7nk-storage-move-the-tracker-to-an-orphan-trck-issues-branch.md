@@ -38,12 +38,14 @@ Escape hatch for a name collision, a monorepo with two trackers, and tests: `--r
 
 ### Discovery precedence
 
-`--dir` → `$TRCK_DIR` → `--ref`/`$TRCK_REF` → working-tree walk-up → `origin/trck-issues` →
-local `trck-issues`.
+`--dir` → `$TRCK_DIR` → `--ref`/`$TRCK_REF` → working-tree walk-up → the tracker ref.
 
 **A working-tree tracker beats the ref.** That keeps `trck init` unsurprising, and it makes the
 migration safe in stages: nothing changes behaviour until `issues/` is actually removed from
 `main`.
+
+Resolving "the tracker ref" is not simply `origin/trck-issues` — see **Reads** below, because a
+local branch holding unpushed work has to win.
 
 ### Reads
 
@@ -53,6 +55,17 @@ migration safe in stages: nothing changes behaviour until `issues/` is actually 
 The plumbing already exists — `diff.rs::git_snapshot` and `git_tracker_prefix` do exactly this
 today for `trck diff`. The tracker prefix becomes empty, since the tracker is at the branch root.
 
+**Which ref.** Not simply `origin/trck-issues` — a write that could not be pushed lives on the
+local branch, and reading past it would mean filing an issue offline and having `trck list` not
+show it. The rule:
+
+| local `trck-issues` vs `origin/trck-issues` | read |
+|---|---|
+| ahead, or equal | local |
+| behind (someone else pushed, you fetched) | fast-forward local, read local |
+| diverged (unpushed work *and* the remote moved) | local, **and say so** — the view is missing whatever landed remotely until `trck sync` |
+| absent (fresh clone, never written) | `origin/trck-issues` |
+
 **Freshness.** Reads must not auto-fetch: too slow, and it makes every read need the network.
 But a `trck next` planning against a week-old `origin/trck-issues` is the time-travel bug in a
 new costume. Reads should surface the ref's age when it is beyond some threshold, so staleness
@@ -60,23 +73,96 @@ is visible rather than silent.
 
 ### Writes — plumbing, no worktree
 
+What one write verb does, end to end:
+
 ```
-GIT_INDEX_FILE=$tmp git read-tree origin/trck-issues
-                     git hash-object -w <changed blobs>
-                     git update-index --add --cacheinfo ...
-                     git write-tree → git commit-tree → git push origin HEAD:trck-issues
+1. base = refs/heads/trck-issues if it exists, else refs/remotes/origin/trck-issues
+2. read index.jsonl + trck.json from base's tree            (cat-file, no checkout)
+3. apply the mutation in memory, validate, regenerate SUMMARY.md
+4. write blobs, build the tree                              (hash-object -w, temp index, write-tree)
+5. commit-tree with base as parent
+6. update refs/heads/trck-issues → new commit               (CAS on the old value)
+7. push <sha>:refs/heads/trck-issues                        (CAS on the remote value)
 ```
 
-Works from a dirty tree, on any branch, with nothing to check out and nothing to clean up.
+One commit per verb. Works from a dirty tree, on any branch, with nothing to check out and nothing
+to clean up. Uncontended cost is a single network round trip, at step 7.
 
-On push rejection the loop **re-executes the operation** against the new ref rather than merging
-two written files. Consequence worth noting: the write path never invokes `trck-index`, so the
-merge drivers become vestigial — needed only if a human manually merges two divergent copies of
-the branch, which should approach never.
+### The three refs
 
-**Offline writes still work**, which the current design does not manage: a write advances the
-*local* `trck-issues` ref and pushes opportunistically. A failed push leaves a local commit and a
-warning, not a lost issue.
+| ref | owned by | meaning |
+|---|---|---|
+| `refs/remotes/origin/trck-issues` | git (fetch/push) | last known remote state |
+| `refs/heads/trck-issues` | **trck** | local tip, never checked out |
+| the commit itself | — | anchored by the local branch, so it survives gc |
+
+The local branch is not a convenience, it is the **write-ahead log**. Without it a failed push
+leaves a dangling commit that gc eventually collects, and the issue just filed is gone.
+
+Docs need a warning: `git checkout trck-issues` in the primary checkout replaces the working tree
+with the tracker. Git refuses when dirty, but the surprise is real.
+
+### Why there is no fetch before a write
+
+Skipping the pre-write fetch looks unsafe — validating against a stale tree could reject a valid
+`dep add A B` because B was created remotely and has not been seen locally.
+
+It is safe, and the reason is the push CAS: **a commit whose parent is not the current remote tip
+cannot be pushed.** Either the base was current (push succeeds, so validation ran against current
+data) or it was not (push rejected, re-run against fresh data). There is no third case as long as
+nothing ever force-pushes. So fetch-on-rejection is strictly better than fetch-always: identical
+correctness, half the round trips.
+
+### Contention, and the op trailer
+
+Push rejected → fetch → re-apply the operation to the new tree → new commit → push again. Bounded
+retries, then report; never force.
+
+Re-execution is trivial when exactly **one** commit is pending — the verb just ran, the operation
+is still in hand. It is not trivial once commits **stack**: filed three issues offline, remote
+moved, and now three operations have to be replayed that are no longer in memory. So the operation
+is recorded in the commit as a trailer:
+
+```
+Trck-Op: done abc1234 --resolution fixed
+```
+
+Replay is then exact at any stacking depth, and the trailer doubles as the audit log. The failure
+mode is honest: a recorded op that is no longer valid against the new tree (it references an issue
+someone else closed differently) is a genuine conflict and surfaces to a human rather than being
+silently resolved.
+
+The alternative — 3-way merging the trees with `merge.rs` in-process — works without trailers but
+reintroduces exactly the dependency this design removes.
+
+**So the earlier claim needs qualifying:** the write path makes the `trck-index` merge driver
+vestigial *given the op trailer*. Without it, stacked pending commits fall back to tree merging.
+
+### Commit messages
+
+Engine-generated and structured, because `git log --oneline trck-issues` becomes the tracker's
+changelog:
+
+```
+new #sqzr7nk: storage: move the tracker to an orphan trck-issues branch
+done #abc1234 (fixed)
+set #abc1234 priority=high
+dep #abc1234 +#def5678
+```
+
+`commit-tree` needs an identity and a plumbing path does not inherit one as forgivingly as
+porcelain does. Unset `user.email` in a CI or sandbox context must produce a clear error.
+
+### Offline and pending state
+
+A failed push leaves the local branch ahead, the work safe, and the verb says so:
+
+```
+#abc1234 done  (2 unpushed changes — run `trck sync`)
+```
+
+`trck sync` flushes pending commits and reconciles. It is also the natural home for the fetch and
+fast-forward that reads deliberately do not do.
 
 ### Body input — `new` and `edit`
 
@@ -145,16 +231,29 @@ which is the reason a hosted backend was ruled out.
 
 ## Acceptance criteria
 - [ ] `discovery.rs` resolves a tracker from a git ref when no working-tree tracker is found;
-      order is `--dir` → `$TRCK_DIR` → `--ref`/`$TRCK_REF` → walk-up → `origin/trck-issues` →
-      `trck-issues`, and a working-tree tracker wins over the ref.
+      order is `--dir` → `$TRCK_DIR` → `--ref`/`$TRCK_REF` → walk-up → tracker ref, and a
+      working-tree tracker wins over the ref.
 - [ ] Every read verb (`list`, `tree`, `ready`, `next`, `deps`, `show`, `check`, `summary`,
       `html`) works from any branch with a dirty tree and no `issues/` directory.
+- [ ] Reads resolve local `trck-issues` over `origin/trck-issues` when it is ahead or equal,
+      fast-forward it when behind, and report the gap when diverged.
 - [ ] Reads never fetch; a ref older than a threshold is reported rather than silently used.
 - [ ] Write verbs (`new`, `start`, `review`, `done`, `set`, `dep`, `label`, `mv`) commit and push
       to the ref via plumbing, with no worktree and no checkout, from a dirty tree on any branch.
-- [ ] Push rejection retries by re-executing the operation against the refetched ref; converges
-      under a contended push (test as `ey2aruc`/`broken_pipe` do — two writers, one clone).
-- [ ] A failed push leaves the local ref advanced and warns; the issue is not lost.
+- [ ] A write does not fetch first; correctness rests on the push CAS, and a rejection is what
+      triggers the refetch.
+- [ ] Every commit carries a `Trck-Op:` trailer sufficient to replay the operation, and a
+      structured subject line (`new #id: title`, `done #id (fixed)`, `set #id k=v`, `dep #id +#id`).
+- [ ] Push rejection replays pending commits from their trailers against the refetched ref;
+      converges under a contended push, and at a stacking depth greater than one (test as
+      `ey2aruc`/`broken_pipe` do — two writers, one clone).
+- [ ] A replayed op that is no longer valid against the new tree surfaces as a conflict rather
+      than being silently resolved.
+- [ ] A failed push leaves `refs/heads/trck-issues` advanced — so the commit is gc-anchored — and
+      the verb reports the pending count; the issue is not lost.
+- [ ] `trck sync` flushes pending commits, fetches, and fast-forwards.
+- [ ] Missing git identity on the plumbing commit path produces a clear error, not a cryptic
+      `commit-tree` failure.
 - [ ] `new` accepts `--body TEXT`, `--body-file PATH` (`-` = stdin), and `--empty`; with none of
       them it opens `$EDITOR` on a TTY and errors naming the flags without one.
 - [ ] `$EDITOR` path validates on save, re-opens with the error on failure, and aborts on an
