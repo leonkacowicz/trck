@@ -10,7 +10,7 @@ use crate::config::Config;
 use crate::config::SUPPORTED_FORMAT;
 use std::path::{Path, PathBuf};
 
-mod content;
+pub(crate) mod content;
 mod source;
 
 pub(crate) use source::{Overrides, Source, resolve_tracker_source};

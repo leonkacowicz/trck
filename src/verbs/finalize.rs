@@ -1,29 +1,39 @@
-//! The single write path every mutating verb ends in.
+//! The single write path every mutating verb ends in — as a derivation, not as a write.
 //!
 //! Deriving here rather than in each verb is what makes the rollup uniform across `mv`,
 //! `start`, `done`, `new --parent` and re-parenting, with no per-command hooks. Two things are
 //! normalised, and both are consequences of a parent being the sum of its children: its
 //! `points` are reset, and its status is derived from theirs.
+//!
+//! Nothing here touches a filesystem. It returns a [`Changeset`] — the index text, the summary
+//! text, and whatever the verb does to a body file — and [`super::backend::DirBackend`] is
+//! what turns that into bytes on disk. That split is the seam a tracker living in a git ref
+//! slots into: same derivation, same changeset, a different `apply`.
 
+use super::changeset::{Changeset, Edit};
 use super::status::apply_status;
-use super::write::write_atomic;
 use crate::config;
-use crate::discovery::Ctx;
+use crate::discovery::content::{INDEX_NAME, SUMMARY_NAME};
 use crate::graph::Graph;
 use crate::index::render_index;
 use crate::issue::{DEFAULT_POINTS, Issue};
 use crate::summary::generate_summary;
 use std::collections::BTreeSet;
+use std::path::PathBuf;
 
-/// Persist, regenerate and derive.
-pub(crate) fn finalize(ctx: &Ctx, rows: Vec<Issue>) -> Result<Vec<Issue>, String> {
+/// Derive, render, and describe the change — without making it.
+///
+/// `body` is what the verb does to an issue's markdown, and it comes first because the
+/// generated files describe the state those edits leave behind: `new` creates a body and the
+/// index that mentions it, in that order, exactly as before.
+pub(crate) fn finalize(rows: Vec<Issue>, body: Vec<Edit>) -> Result<Changeset, String> {
     let mut g = Graph::new(rows);
     reset_parent_points(&mut g);
     derive_parent_statuses(&mut g)?;
-    write_atomic(&ctx.index_path(), &render_index(&g.rows))?;
-    write_atomic(&ctx.summary_path(), &generate_summary(&g))?;
-    report_inconsistencies(ctx, &g.rows);
-    Ok(g.rows)
+    let mut edits = body;
+    edits.push(Edit::Write { path: PathBuf::from(INDEX_NAME), contents: render_index(&g.rows) });
+    edits.push(Edit::Write { path: PathBuf::from(SUMMARY_NAME), contents: generate_summary(&g) });
+    Ok(Changeset::new(g.rows, edits))
 }
 
 /// `points` is a leaf-only input: a parent's weight is the sum of its leaves, so anything
@@ -109,27 +119,6 @@ fn push_subtree(g: &Graph, root: &str, seen: &mut BTreeSet<String>, out: &mut Ve
     }
 }
 
-/// Validate what was just written, reusing the rows rather than re-parsing.
-///
-/// A verb that leaves the tracker inconsistent still succeeds — it did what it was asked — but
-/// says so loudly, because the next thing that runs is usually a commit.
-fn report_inconsistencies(ctx: &Ctx, rows: &[Issue]) {
-    let Ok(report) = crate::validate::validate(ctx, rows) else {
-        return;
-    };
-    for w in &report.warnings {
-        eprintln!("warning: {w}");
-    }
-    if report.errors.is_empty() {
-        return;
-    }
-    eprintln!("\nINCONSISTENCIES after this operation:");
-    for e in &report.errors {
-        eprintln!("  error: {e}");
-    }
-    eprintln!("the tracker is now inconsistent — fix before committing.");
-}
-
 #[cfg(test)]
 mod tests {
     // Tests assert; that is their job. The crate denies unwrap/expect/panic because a
@@ -139,6 +128,43 @@ mod tests {
 
     use super::*;
     use crate::test_graph::graph;
+
+    fn written(cs: &Changeset, name: &str) -> Option<String> {
+        cs.edits.iter().find_map(|e| match e {
+            Edit::Write { path, contents } if path == &PathBuf::from(name) => Some(contents.clone()),
+            _ => None,
+        })
+    }
+
+    /// The two generated files are the changeset's whole output when the verb touches no
+    /// body — and they are named relative to the tracker, not to a directory on this machine.
+    #[test]
+    fn finalize_describes_the_index_and_the_summary() {
+        let cs = finalize(graph(&["root", "leaf:root"]).rows, Vec::new()).expect("derives");
+        assert_eq!(cs.edits.len(), 2, "{:?}", cs.edits);
+        assert_eq!(written(&cs, INDEX_NAME), Some(render_index(&cs.rows)));
+        assert!(written(&cs, SUMMARY_NAME).is_some(), "the summary is regenerated on every write");
+    }
+
+    /// A body edit comes first, because the generated files describe the state it leaves
+    /// behind: `new` creates the markdown and then the index that mentions it.
+    #[test]
+    fn a_body_edit_is_applied_before_the_generated_files() {
+        let body = Edit::Write { path: PathBuf::from("items/aaaaaaa-a.md"), contents: "# a\n".into() };
+        let cs = finalize(graph(&["aaaaaaa"]).rows, vec![body.clone()]).expect("derives");
+        assert_eq!(cs.edits.first(), Some(&body), "{:?}", cs.edits);
+    }
+
+    /// The derivation still happens, and the rendered index is the derived one — the whole
+    /// point of routing every verb through here rather than letting each write its own rows.
+    #[test]
+    fn the_rendered_index_carries_the_derived_rollup() {
+        let cs = finalize(graph(&["root #99", "leaf:root @done #4"]).rows, Vec::new()).expect("derives");
+        let root = cs.rows.iter().find(|r| r.id == "root").expect("root survives");
+        assert_eq!(root.status, config::DONE, "a parent follows its children");
+        assert_eq!(root.points, DEFAULT_POINTS, "and carries no points of its own");
+        assert!(written(&cs, INDEX_NAME).unwrap_or_default().contains(config::DONE));
+    }
 
     /// Children before parents, and a grandchild before its parent before the root.
     #[test]

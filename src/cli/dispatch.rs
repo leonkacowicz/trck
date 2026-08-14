@@ -36,7 +36,7 @@ fn dispatch_mutating(args: &Args) -> Option<Result<String, String>> {
             let rows = verbs::load_rows(&c)?;
             let g = crate::graph::Graph::new(rows);
             let n = g.rows.len();
-            verbs::write_file(&c.summary_path(), &crate::summary::generate_summary(&g))?;
+            verbs::write_summary(&c, &g)?;
             Ok(format!("wrote {} ({n} issues)", c.summary_path().display()))
         }),
         _ => return None,

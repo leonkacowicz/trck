@@ -5,7 +5,7 @@
 //! label means nothing to anything else, while a dependency edge can close a cycle — so
 //! `dep` guards against the candidate graph and `label` has nothing to guard.
 
-use super::super::{finalize, load_rows, resolve_ref};
+use super::super::{Op, commit, load_rows, resolve_ref};
 use crate::discovery::Ctx;
 use crate::graph::Graph;
 use crate::issue::Issue;
@@ -25,7 +25,8 @@ pub(crate) fn cmd_label(ctx: &Ctx, token: &str, add: &[&str], remove: &[&str]) -
     row.labels.retain(|l| !remove.contains(&l.as_str()));
     row.labels.sort();
     let shown = python_list(&row.labels);
-    finalize(ctx, rows)?;
+    let op = Op::new("label").operand(&iid).repeated("--add", add).repeated("--remove", remove);
+    commit(ctx, rows, Vec::new(), &op)?;
     Ok(format!("#{iid} labels={shown}"))
 }
 
@@ -38,9 +39,12 @@ pub(crate) fn cmd_dep(ctx: &Ctx, token: &str, add: Option<&str>, remove: Option<
     let Some(row) = rows.iter_mut().find(|r| r.id == iid) else {
         return Err(format!("no issue matching '{iid}'"));
     };
+    // The resolved ids, not the prefixes typed: a prefix is unique only against the tracker
+    // it was typed at.
+    let op = Op::new("dep").operand(&iid).flag("--add", add.as_deref()).flag("--remove", remove.as_deref());
     apply_edge(row, add, remove);
     let shown = python_list(&row.depends_on);
-    finalize(ctx, rows)?;
+    commit(ctx, rows, Vec::new(), &op)?;
     Ok(format!("#{iid} depends_on={shown}"))
 }
 
