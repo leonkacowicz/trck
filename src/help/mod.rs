@@ -31,9 +31,12 @@ struct VerbHelp {
     alias_of: &'static str,
 }
 
-/// `--dir` is accepted by every verb and explained once, in the global help, rather than
-/// repeated two dozen times in a list of options that are actually about the verb.
-const GLOBAL_OPTS: &[(&str, &str)] = &[("--dir DIR", "the tracker to act on, overriding discovery and $TRCK_DIR")];
+/// Accepted by every verb and explained once, in the global help, rather than repeated two
+/// dozen times in a list of options that are actually about the verb.
+const GLOBAL_OPTS: &[(&str, &str)] = &[
+    ("--dir DIR", "the tracker to act on, overriding discovery and $TRCK_DIR"),
+    ("--ref REF", "read the tracker from this git ref, overriding discovery and $TRCK_REF"),
+];
 
 mod edit;
 mod maintain;
@@ -170,7 +173,7 @@ mod tests {
             }
             for flag in *accepted {
                 // Explained once in the global section instead of two dozen times.
-                if *flag == "--dir" {
+                if crate::cli::opts::GLOBAL_FLAGS.contains(flag) {
                     continue;
                 }
                 assert!(documented.contains(flag), "`{verb}` accepts {flag} and does not document it");

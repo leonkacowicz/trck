@@ -6,9 +6,14 @@
 //! after all, a clone that never fetched the branch, a working tree that happened to be
 //! clean — would make those later tests pass for the wrong reason.
 //!
-//! So this file asserts the shape, and the two properties the shape is useless without:
-//! the tracker is reachable *only* through the ref, and the temp repositories go away
-//! however the test ends.
+//! So this file asserts the shape first — the branch arrives with `git clone`, the tracker
+//! is at its root, it is a genuine orphan, the working tree is dirty on another branch, and
+//! the temp repositories go away however the test ends.
+//!
+//! Then it asserts what resolution makes of that shape: the conventional ref is found
+//! without being named, an `issues/` directory still beats it, and `--ref` overrides it and
+//! refuses rather than falls back. Reading the resolved ref is a later task, so those
+//! assertions read the refusal to learn *which* tracker was chosen.
 
 // Tests assert; that is their job. The crate denies unwrap/expect/panic because a malformed
 // tracker must produce a diagnostic rather than a stack trace, but a test that cannot panic
@@ -17,7 +22,7 @@
 
 mod common;
 
-use common::{Scenario, TRACKER_BRANCH, TmpDir, WORK_BRANCH, git, have_git, trck};
+use common::{Scenario, TRACKER_BRANCH, TmpDir, WORK_BRANCH, git, have_git, trck, trck_must};
 
 #[test]
 fn the_clone_has_the_tracker_branch_and_its_root_is_the_tracker() {
@@ -61,18 +66,58 @@ fn the_working_tree_is_dirty_and_on_an_unrelated_branch() {
     assert!(!git(&s.work, &["status", "--porcelain"]).is_empty(), "working tree is clean");
 }
 
+/// The inversion this branch exists to cause.
+///
+/// Before the ref step, walking up from a checkout with no `issues/` found nothing and said
+/// so. Now the conventional ref is found without being named, from a dirty tree on an
+/// unrelated branch — which is the whole claim. Reading it is a later task, so what the
+/// refusal proves is *which tracker was resolved*, and that it was not the walk-up.
 #[test]
-fn the_tracker_is_not_reachable_from_the_working_tree() {
-    let Some(s) = Scenario::build("ref-unreachable") else {
+fn the_conventional_ref_is_resolved_without_being_named() {
+    let Some(s) = Scenario::build("ref-conventional") else {
         return;
     };
-    // Today's discovery walks up and finds nothing, which is exactly why the ref layer is
-    // needed. When `#3dv63bn` lands this assertion inverts — and that inversion is the
-    // point, so it is asserted rather than left implicit.
     let out = trck(&s.work, &["list"]);
-    assert!(!out.status.success(), "a tracker was found in a checkout that has none");
     let err = String::from_utf8_lossy(&out.stderr);
-    assert!(err.contains("no tracker found"), "unexpected refusal: {err}");
+    assert!(err.contains(TRACKER_BRANCH), "the conventional ref was not resolved: {err}");
+    assert!(!err.contains("no tracker found"), "fell back to the walk-up: {err}");
+}
+
+/// The staging rule: a checkout keeps behaving exactly as it did until its `issues/` goes
+/// away. Without this the epic could not land in pieces — every intermediate commit would
+/// change what an ordinary `trck list` does in this very repository.
+#[test]
+fn a_working_tree_tracker_beats_the_conventional_ref() {
+    let Some(s) = Scenario::build("ref-dir-wins") else {
+        return;
+    };
+    trck_must(&s.work, &["init", "issues"]);
+    trck_must(&s.work, &["--dir", "issues", "new", "Local", "--id", "ccccccc"]);
+
+    let out = trck(&s.work, &["list"]);
+    assert!(out.status.success(), "the working-tree tracker lost to the ref: {}", String::from_utf8_lossy(&out.stderr));
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(stdout.contains("ccccccc"), "listed something other than the working-tree tracker:\n{stdout}");
+    // The seeded ids live only on the branch; seeing one would mean the ref won.
+    assert!(!stdout.contains("aaaaaaa"), "read the ref instead of the directory:\n{stdout}");
+}
+
+/// `--ref` overrides the convention, and — like `--dir` — a name that does not resolve is
+/// an error rather than a quiet fall back to whatever discovery would have found.
+#[test]
+fn an_explicit_ref_overrides_the_convention_and_does_not_fall_back() {
+    let Some(s) = Scenario::build("ref-explicit") else {
+        return;
+    };
+    let named = trck(&s.work, &["--ref", &format!("origin/{TRACKER_BRANCH}"), "list"]);
+    let err = String::from_utf8_lossy(&named.stderr);
+    assert!(err.contains(&format!("origin/{TRACKER_BRANCH}")), "the named ref was not the one resolved: {err}");
+
+    let bogus = trck(&s.work, &["--ref", "no-such-ref", "list"]);
+    assert!(!bogus.status.success(), "a ref that does not exist was accepted");
+    let err = String::from_utf8_lossy(&bogus.stderr);
+    assert!(err.contains("no-such-ref"), "the refusal must name the ref: {err}");
+    assert!(!err.contains(TRACKER_BRANCH), "fell back to the convention: {err}");
 }
 
 #[test]
