@@ -44,12 +44,7 @@ pub(crate) struct Report {
 /// error: it makes "the file for #x" ambiguous, and every later check would be guessing.
 fn scan_files(ctx: &Ctx) -> Result<Files, String> {
     let mut found: Files = BTreeMap::new();
-    let Ok(entries) = std::fs::read_dir(ctx.items_dir()) else {
-        return Ok(found);
-    };
-    let mut names: Vec<String> = entries.flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect();
-    names.sort();
-    for name in names {
+    for name in ctx.list_items()? {
         let Some((id, slug)) = issue_filename(&name) else {
             continue;
         };

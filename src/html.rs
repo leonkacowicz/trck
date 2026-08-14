@@ -16,7 +16,6 @@ use crate::graph::Graph;
 use crate::issue::Issue;
 use crate::json::Json;
 use crate::render::unique_prefix_lens;
-use crate::verbs::issue_path;
 use crate::{config, summary};
 
 const CSS: &str = include_str!("../assets/app.css");
@@ -63,7 +62,9 @@ fn progress(g: &Graph, id: &str) -> Json {
 /// also exactly when no `↑priority` marker is warranted — so the client renders the
 /// marker if and only if the field is set, with no rank comparison of its own.
 fn issue_json(g: &Graph, ctx: &Ctx, r: &Issue) -> Json {
-    let body = std::fs::read_to_string(issue_path(ctx, r)).unwrap_or_default();
+    // A body that has gone missing is `check`'s finding to report, not the page's to
+    // refuse over: an issue with no prose still has a row worth rendering.
+    let body = ctx.read_body(r).unwrap_or_default();
     let demand: Vec<Json> = g.demand_vector(&r.id).into_iter().map(|n| num(i64::try_from(n).unwrap_or(0))).collect();
     Json::Object(vec![
         ("id".into(), s(&r.id)),

@@ -10,6 +10,8 @@ use crate::config::Config;
 use crate::config::SUPPORTED_FORMAT;
 use std::path::{Path, PathBuf};
 
+mod content;
+
 /// The file whose presence marks a directory as a tracker.
 pub(crate) const CONFIG_NAME: &str = "trck.json";
 
@@ -141,18 +143,6 @@ impl Ctx {
         }
         Ok(Ctx { dir, config })
     }
-
-    pub(crate) fn index_path(&self) -> PathBuf {
-        self.dir.join("index.jsonl")
-    }
-
-    pub(crate) fn items_dir(&self) -> PathBuf {
-        self.dir.join(ITEMS_DIR)
-    }
-
-    pub(crate) fn summary_path(&self) -> PathBuf {
-        self.dir.join("SUMMARY.md")
-    }
 }
 
 #[cfg(test)]
@@ -185,7 +175,7 @@ pub(crate) mod tests {
             &self.0
         }
 
-        fn tracker(&self, rel: &str) -> PathBuf {
+        pub(crate) fn tracker(&self, rel: &str) -> PathBuf {
             let d = self.0.join(rel);
             std::fs::create_dir_all(&d).expect("mkdir");
             std::fs::write(d.join(CONFIG_NAME), "{}").expect("write config");

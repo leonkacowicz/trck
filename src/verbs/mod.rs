@@ -49,11 +49,7 @@ pub(crate) fn issue_path(ctx: &Ctx, row: &Issue) -> PathBuf {
 }
 
 pub(crate) fn load_rows(ctx: &Ctx) -> Result<Vec<Issue>, String> {
-    let path = ctx.index_path();
-    match std::fs::read_to_string(&path) {
-        Ok(text) => parse_index(&text, "index.jsonl"),
-        Err(_) => Ok(Vec::new()),
-    }
+    parse_index(&ctx.read_index()?, "index.jsonl")
 }
 
 /// Resolve a CLI id token to exactly one issue: exact id, then unique prefix.

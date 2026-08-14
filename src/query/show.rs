@@ -8,7 +8,7 @@ use crate::graph::Graph;
 use crate::issue::{CANON_KEYS, Issue};
 use crate::json::Json;
 use crate::render::{field_value_raw, hl_id, paint, unique_prefix_lens};
-use crate::verbs::{issue_path, load_rows, resolve_ref};
+use crate::verbs::{load_rows, resolve_ref};
 
 /// `show --json`: one document with the body folded in.
 ///
@@ -36,11 +36,7 @@ fn show_parts(ctx: &Ctx, token: &str) -> Result<(Issue, String, bool), String> {
     let iid = resolve_ref(&rows, token)?;
     let g = Graph::new(rows);
     let row = g.get(&iid).ok_or_else(|| format!("no issue matching '{iid}'"))?.clone();
-    let path = issue_path(ctx, &row);
-    if !path.exists() {
-        return Err(format!("file missing for #{}: {}", row.id, path.display()));
-    }
-    let body = std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+    let body = ctx.read_body(&row)?;
     Ok((row, body, g.is_leaf(&iid)))
 }
 
@@ -75,14 +71,6 @@ pub(crate) fn cmd_show(ctx: &Ctx, token: &str) -> Result<String, String> {
     out.push(String::new());
     out.push("--- body ---".into());
     out.push(String::new());
-    // Same wording as the mutating verbs' guard: a row whose body has gone missing is one
-    // inconsistency, and it should read the same whichever verb runs into it. Passing the
-    // raw io error through instead would name the file but not the issue.
-    let path = issue_path(ctx, row);
-    if !path.exists() {
-        return Err(format!("file missing for #{}: {}", row.id, path.display()));
-    }
-    let body = std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
-    out.push(body);
+    out.push(ctx.read_body(row)?);
     Ok(out.join("\n"))
 }

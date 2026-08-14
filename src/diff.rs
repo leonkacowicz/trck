@@ -254,8 +254,7 @@ pub(crate) fn parse_rev_spec(spec: &str) -> Result<(String, Option<String>), Str
 /// working tree when unspecified.
 pub(crate) fn resolve_source(spec: Option<&str>, ctx: &Ctx) -> Result<Snapshot, String> {
     let Some(spec) = spec else {
-        let text = std::fs::read_to_string(ctx.index_path()).unwrap_or_default();
-        return Snapshot::from_text(&text, "working tree");
+        return Snapshot::from_text(&ctx.read_index()?, "working tree");
     };
     if spec == "-" {
         use std::io::Read as _;

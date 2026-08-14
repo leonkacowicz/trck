@@ -10,11 +10,11 @@
     "module_files": 20
   },
   "totals": {
-    "file_functions": 132,
-    "file_lines": 159,
+    "file_functions": 129,
+    "file_lines": 148,
     "function_args": 10,
     "function_cognitive": 44,
-    "function_cyclomatic": 144,
+    "function_cyclomatic": 142,
     "function_lines": 1,
     "module_files": 0
   },
@@ -24,7 +24,7 @@
       "src/cli/mod.rs": 9,
       "src/config.rs": 11,
       "src/diff.rs": 40,
-      "src/discovery.rs": 12,
+      "src/discovery/mod.rs": 9,
       "src/html.rs": 9,
       "src/merge.rs": 7,
       "src/query/deps.rs": 3,
@@ -33,8 +33,8 @@
     },
     "file_lines": {
       "src/cli/mod.rs": 80,
-      "src/diff.rs": 59,
-      "src/discovery.rs": 20
+      "src/diff.rs": 58,
+      "src/discovery/mod.rs": 10
     },
     "function_args": {
       "src/diff.rs::walk": 1,
@@ -71,7 +71,7 @@
       "src/diff.rs::compare": 6,
       "src/diff.rs::parse_since": 4,
       "src/diff.rs::render_changelog": 1,
-      "src/discovery.rs::find_tracker": 4,
+      "src/discovery/mod.rs::find_tracker": 4,
       "src/graph/cycles.rs::find_cycles": 1,
       "src/html.rs::build_model": 1,
       "src/init.rs::cmd_init": 7,
@@ -79,7 +79,7 @@
       "src/merge.rs::merge_rows": 1,
       "src/query/list.rs::cmd_list": 7,
       "src/query/list.rs::keeps": 10,
-      "src/query/show.rs::cmd_show": 9,
+      "src/query/show.rs::cmd_show": 7,
       "src/render/colour.rs::ansi": 6,
       "src/summary.rs::hierarchies_section": 1,
       "src/summary.rs::status_sections": 1,
