@@ -22,6 +22,7 @@ mod cli;
 mod config;
 mod diff;
 mod discovery;
+mod git;
 mod graph;
 mod gutter;
 mod help;

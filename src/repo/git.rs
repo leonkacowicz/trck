@@ -1,14 +1,14 @@
-//! Talking to git: running it, and naming ourselves to it.
+//! Talking to git: running it in the tracker, and naming ourselves to it.
 
 use crate::discovery::Ctx;
 
 /// Run a git command in the tracker directory, returning its trimmed stdout.
+///
+/// The tracker directory is the only thing this adds over [`crate::git::stdout`]; the
+/// primitives themselves live there, since `diff` and the ref-backed source want them
+/// against a path rather than a loaded tracker.
 pub(super) fn git(ctx: &Ctx, args: &[&str]) -> Result<String, String> {
-    let out = std::process::Command::new("git").args(args).current_dir(&ctx.dir).output().map_err(|e| format!("running git: {e}"))?;
-    if !out.status.success() {
-        return Err(format!("git {}: {}", args.join(" "), String::from_utf8_lossy(&out.stderr).trim()));
-    }
-    Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
+    crate::git::stdout(&ctx.dir, args)
 }
 
 /// Assert we are inside a git repository, answering with the given git query.

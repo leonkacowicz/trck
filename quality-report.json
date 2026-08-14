@@ -11,7 +11,7 @@
   },
   "totals": {
     "file_functions": 132,
-    "file_lines": 164,
+    "file_lines": 159,
     "function_args": 10,
     "function_cognitive": 44,
     "function_cyclomatic": 144,
@@ -33,7 +33,7 @@
     },
     "file_lines": {
       "src/cli/mod.rs": 80,
-      "src/diff.rs": 64,
+      "src/diff.rs": 59,
       "src/discovery.rs": 20
     },
     "function_args": {

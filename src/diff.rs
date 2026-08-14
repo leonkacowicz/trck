@@ -198,22 +198,20 @@ pub(crate) fn change_summary(c: &Change) -> String {
 
 const USE_FROM: &str = "use --from/--to with file paths instead";
 
-fn git_run(args: &[&str], cwd: &Path) -> Result<std::process::Output, String> {
-    std::process::Command::new("git")
-        .args(args)
-        .current_dir(cwd)
-        .output()
-        .map_err(|_| format!("git is not on PATH, so revision specs are unavailable; {USE_FROM}"))
+/// Why a git failure is not fatal to `diff` itself: the file-based sources still work, and
+/// saying so is more use than reporting that a spawn failed.
+///
+/// The [`crate::git`] primitives are deliberately unphrased, so the sentence is added here —
+/// only this caller knows that `--from`/`--to` is the way around it.
+fn unavailable(_: String) -> String {
+    format!("git is not on PATH, so revision specs are unavailable; {USE_FROM}")
 }
 
 /// The tracker dir as a repo-relative prefix, the way `git show <rev>:<path>` wants it.
 /// A tracker dir that *is* the repo root yields an empty prefix.
 fn git_tracker_prefix(ctx: &Ctx) -> Result<String, String> {
-    let out = git_run(&["rev-parse", "--show-toplevel"], &ctx.dir)?;
-    if !out.status.success() {
-        return Err(format!("not a git repository, so revision specs are unavailable; {USE_FROM}"));
-    }
-    let root = Path::new(String::from_utf8_lossy(&out.stdout).trim()).to_path_buf();
+    let root =
+        crate::git::repo_root(&ctx.dir).map_err(unavailable)?.ok_or_else(|| format!("not a git repository, so revision specs are unavailable; {USE_FROM}"))?;
     let dir = ctx.dir.canonicalize().unwrap_or_else(|_| ctx.dir.clone());
     let root = root.canonicalize().unwrap_or(root);
     let rel = dir.strip_prefix(&root).map_err(|_| format!("tracker dir {} is not inside the git repo at {}", ctx.dir.display(), root.display()))?;
@@ -228,14 +226,11 @@ fn git_tracker_prefix(ctx: &Ctx) -> Result<String, String> {
 /// issue is new". An unresolvable revision *is* an error, reported separately, so "you
 /// typo'd the branch" stays distinguishable from "the tracker did not exist yet".
 pub(crate) fn git_snapshot(ctx: &Ctx, rev: &str) -> Result<Snapshot, String> {
-    let verify = git_run(&["rev-parse", "--verify", "--quiet", &format!("{rev}^{{commit}}")], &ctx.dir)?;
-    if !verify.status.success() {
+    if crate::git::rev_parse(&ctx.dir, rev).map_err(unavailable)?.is_none() {
         return Err(format!("unknown revision '{rev}'"));
     }
     let prefix = git_tracker_prefix(ctx)?;
-    let path = format!("{prefix}index.jsonl");
-    let out = git_run(&["show", &format!("{rev}:{path}")], &ctx.dir)?;
-    let text = if out.status.success() { String::from_utf8_lossy(&out.stdout).into_owned() } else { String::new() };
+    let text = crate::git::show(&ctx.dir, rev, &format!("{prefix}index.jsonl")).map_err(unavailable)?.unwrap_or_default();
     Snapshot::from_text(&text, rev)
 }
 
