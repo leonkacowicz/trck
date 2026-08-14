@@ -5,12 +5,12 @@
 //! used to be one pass, safe only because nothing was persisted until it returned, which is a
 //! much weaker guarantee than not being able to fail.
 
-use super::super::{check_slug, finalize, issue_path, load_rows, resolve_ref, write_atomic};
+use super::super::{Op, check_slug, commit, load_rows, resolve_ref};
+use super::body;
 use crate::config;
 use crate::discovery::Ctx;
 use crate::graph::Graph;
 use crate::issue::{Issue, check_field_key};
-use std::path::Path;
 
 /// Options `set` accepts. `Option<&str>` throughout, because "not given" and "given as
 /// `none`" mean different things: the first leaves a field alone, the second clears it.
@@ -33,19 +33,39 @@ pub(crate) fn cmd_set(ctx: &Ctx, token: &str, opts: &SetOpts) -> Result<String, 
     let iid = resolve_ref(&rows, token)?;
     let (is_leaf, parent) = graph_context(&mut rows, &iid, opts.parent)?;
 
-    let missing = || format!("no issue matching '{iid}'");
-    let old_path = body_path(ctx, &rows, &iid).ok_or_else(missing)?;
-    let row = rows.iter_mut().find(|r| r.id == iid).ok_or_else(missing)?;
+    // Captured before the row is touched: once `--slug` lands, the row no longer says where
+    // its own file is.
+    let was = body::before(ctx, &rows, &iid, opts)?;
+    let op = op_for(&iid, opts, parent.as_deref());
+
+    let row = rows.iter_mut().find(|r| r.id == iid).ok_or_else(|| format!("no issue matching '{iid}'"))?;
     check_scalar_edits(row, opts, is_leaf)?;
     apply_scalar_edits(row, opts, parent);
-    let new_path = body_path(ctx, &rows, &iid).unwrap_or_else(|| old_path.clone());
-
     if opts.parent.is_some() {
         guard_reparent(&mut rows)?;
     }
-    follow_row(&old_path, &new_path, opts.title)?;
-    finalize(ctx, rows)?;
+    let edits = body::edits(&was, &rows, &iid, opts.title);
+    commit(ctx, rows, edits, &op)?;
     Ok(format!("#{iid} updated"))
+}
+
+/// The op that would make this edit again.
+///
+/// `--parent` is recorded as what it resolved to, or the literal `none` that clears it — the
+/// prefix the user typed is unique only against the tracker they typed it at.
+fn op_for(iid: &str, opts: &SetOpts, parent: Option<&str>) -> Op {
+    Op::new("set")
+        .operand(iid)
+        .switch("--auto", opts.auto)
+        .flag("--priority", opts.priority)
+        .flag("--points", opts.points.map(|p| p.to_string()).as_deref())
+        .flag("--parent", opts.parent.map(|_| parent.unwrap_or("none")))
+        .flag("--spec", opts.spec)
+        .flag("--review-url", opts.review_url)
+        .flag("--title", opts.title)
+        .flag("--slug", opts.slug)
+        .repeated("--field", &opts.fields)
+        .repeated("--unset", &opts.unset)
 }
 
 /// The two things `set` can only learn from the graph: whether the row is a leaf — points
@@ -57,12 +77,6 @@ fn graph_context(rows: &mut Vec<Issue>, iid: &str, parent: Option<&str>) -> Resu
     let resolved = parent.filter(|p| *p != "none").map(|p| resolve_ref(&g.rows, p)).transpose();
     *rows = g.rows;
     Ok((is_leaf, resolved?))
-}
-
-/// Where the row's body file lives — a function of its slug, and so something `set` can
-/// move out from under itself.
-fn body_path(ctx: &Ctx, rows: &[Issue], iid: &str) -> Option<std::path::PathBuf> {
-    rows.iter().find(|r| r.id == iid).map(|r| issue_path(ctx, r))
 }
 
 /// Refuse every illegal edit before the first legal one lands, in the order `set` applies
@@ -183,31 +197,4 @@ fn guard_reparent(rows: &mut Vec<Issue>) -> Result<(), String> {
     );
     *rows = g.rows;
     refusal.map_or(Ok(()), Err)
-}
-
-/// Bring the body file back in line with the row it belongs to: renamed when the slug moved,
-/// re-headed when the title did.
-fn follow_row(old: &Path, new: &Path, title: Option<&str>) -> Result<(), String> {
-    if old != new {
-        std::fs::rename(old, new).map_err(|e| format!("{} -> {}: {e}", old.display(), new.display()))?;
-    }
-    match title {
-        Some(title) => retitle_body(new, title),
-        None => Ok(()),
-    }
-}
-
-/// Rewrite the body's first heading, so the file does not contradict the index. Only
-/// the first line, and only when it is a heading — the rest is hand-authored prose.
-fn retitle_body(path: &Path, title: &str) -> Result<(), String> {
-    let Ok(text) = std::fs::read_to_string(path) else {
-        return Ok(()); // a missing body is `check`'s business, not this verb's
-    };
-    let rewritten: Vec<String> =
-        text.lines().enumerate().map(|(i, line)| if i == 0 && line.starts_with("# ") { format!("# {title}") } else { line.to_string() }).collect();
-    let mut body = rewritten.join("\n");
-    if text.ends_with('\n') {
-        body.push('\n');
-    }
-    write_atomic(path, &body)
 }

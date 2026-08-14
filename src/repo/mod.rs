@@ -29,9 +29,8 @@ pub(crate) use setup::cmd_setup_git;
 /// No data change: it re-serialises through the same write path every verb ends in, which
 /// also regenerates the summary and re-derives what is derived.
 pub(crate) fn cmd_normalize(ctx: &Ctx) -> Result<String, String> {
-    let text = std::fs::read_to_string(ctx.index_path()).unwrap_or_default();
-    let rows = parse_index(&text, "index.jsonl")?;
+    let rows = parse_index(&ctx.read_index()?, "index.jsonl")?;
     let n = rows.len();
-    crate::verbs::finalize(ctx, rows)?;
+    crate::verbs::commit(ctx, rows, Vec::new(), &crate::verbs::Op::new("normalize"))?;
     Ok(format!("normalized {} ({n} issues)", ctx.index_path().display()))
 }

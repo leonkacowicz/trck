@@ -3,7 +3,7 @@
 //! Everything it derives — id, slug, priority, points — has a default and a rule the tracker
 //! would enforce later anyway, so each is checked here, before the row exists to hold it.
 
-use super::super::{TEMPLATE, check_slug, finalize, issue_path, load_rows, now_utc, resolve_ref, slugify, write_atomic};
+use super::super::{Edit, Op, TEMPLATE, body_rel_path, check_slug, commit, issue_path, load_rows, now_utc, resolve_ref, slugify};
 use crate::config;
 use crate::discovery::Ctx;
 use crate::graph::Graph;
@@ -34,6 +34,8 @@ pub(crate) fn cmd_new(ctx: &Ctx, opts: &NewOpts) -> Result<String, String> {
     if path.exists() {
         return Err(format!("{} already exists", path.display()));
     }
+    let body = vec![Edit::Write { path: body_rel_path(&row), contents: TEMPLATE.replace("{title}", &opts.title) }];
+    let op = op_for(&row);
     rows.push(row);
 
     // Guard the new node's edges against the candidate graph — its parent is already
@@ -44,10 +46,27 @@ pub(crate) fn cmd_new(ctx: &Ctx, opts: &NewOpts) -> Result<String, String> {
             return Err(msg);
         }
     }
-    let rows = g.rows;
-    write_atomic(&path, &TEMPLATE.replace("{title}", &opts.title))?;
-    finalize(ctx, rows)?;
+    commit(ctx, g.rows, body, &op)?;
     Ok(path.display().to_string())
+}
+
+/// The op that would create this row again.
+///
+/// Built from the row rather than from `opts`, and that is the whole point: the id is random,
+/// the slug is derived and the priority and points are defaulted, so an op echoing what the
+/// user typed would replay as a *different* issue. The four fields that always have a value
+/// are always recorded, for the same reason.
+fn op_for(row: &Issue) -> Op {
+    Op::new("new")
+        .operand(&row.title)
+        .flag("--id", Some(&row.id))
+        .flag("--slug", Some(&row.slug))
+        .flag("--priority", Some(&row.priority))
+        .flag("--points", Some(&row.points.to_string()))
+        .flag("--parent", row.parent.as_deref())
+        .flag("--spec", row.spec.as_deref())
+        .flag("--review-url", row.review_url.as_deref())
+        .repeated("--requires", &row.depends_on)
 }
 
 /// The candidate row: every field defaulted, resolved and validated, but nothing written.

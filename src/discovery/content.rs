@@ -12,9 +12,14 @@ use super::{Ctx, ITEMS_DIR};
 use crate::issue::Issue;
 use std::path::PathBuf;
 
+/// The two generated files, named once. A changeset addresses them by these names and the
+/// path accessors below join the same ones, so a backend and a directory cannot disagree.
+pub(crate) const INDEX_NAME: &str = "index.jsonl";
+pub(crate) const SUMMARY_NAME: &str = "SUMMARY.md";
+
 impl Ctx {
     pub(crate) fn index_path(&self) -> PathBuf {
-        self.dir.join("index.jsonl")
+        self.dir.join(INDEX_NAME)
     }
 
     pub(crate) fn items_dir(&self) -> PathBuf {
@@ -22,7 +27,7 @@ impl Ctx {
     }
 
     pub(crate) fn summary_path(&self) -> PathBuf {
-        self.dir.join("SUMMARY.md")
+        self.dir.join(SUMMARY_NAME)
     }
 
     /// The raw `index.jsonl`.

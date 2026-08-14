@@ -5,7 +5,7 @@
 //! move that disagrees with them has to *pin* the row — and a move that agrees with them has
 //! to leave it unpinned, or the next child to move would be ignored.
 
-use super::super::{apply_status, finalize, issue_path, load_rows, resolve_ref};
+use super::super::{Op, apply_status, commit, issue_path, load_rows, resolve_ref};
 use crate::config::{self, is_terminal};
 use crate::discovery::Ctx;
 use crate::graph::Graph;
@@ -32,7 +32,10 @@ pub(crate) fn cmd_mv(ctx: &Ctx, token: &str, opts: &MvOpts) -> Result<String, St
     if let Some(row) = rows.iter_mut().find(|r| r.id == iid) {
         apply_move(row, opts, &kid_statuses)?;
     }
-    finalize(ctx, rows)?;
+    // Canonical `mv`, never the alias: `start`/`review`/`done` are spellings of a status, and
+    // recording the spelling would make replay depend on the vocabulary of whoever typed it.
+    let op = Op::new("mv").operand(&iid).operand(opts.status).flag("--resolution", opts.resolution).flag("--review-url", opts.review_url);
+    commit(ctx, rows, Vec::new(), &op)?;
     Ok(path.display().to_string())
 }
 
