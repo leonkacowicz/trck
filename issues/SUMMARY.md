@@ -6,9 +6,9 @@
 | State | Count |
 |---|---:|
 | backlog | 71 |
-| in-progress | 4 |
+| in-progress | 3 |
 | in-review | 1 |
-| done | 200 |
+| done | 201 |
 | **total** | **276** |
 
 ## Hierarchies
@@ -192,11 +192,11 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#uq2zc2p conformance: convert the deps gutter tests](items/uq2zc2p-conformance-convert-the-deps-gutter-tests.md)
 - [x] [#xm6h2qn conformance: convert the command-output tests](items/xm6h2qn-conformance-convert-the-command-output-tests.md)
 
-### [#sqzr7nk storage: move the tracker to an orphan trck-issues branch](items/sqzr7nk-storage-move-the-tracker-to-an-orphan-trck-issues-branch.md) — 17% (9/52 pts · 3/22 done) · _high_ · in-progress
+### [#sqzr7nk storage: move the tracker to an orphan trck-issues branch](items/sqzr7nk-storage-move-the-tracker-to-an-orphan-trck-issues-branch.md) — 21% (11/52 pts · 4/22 done) · _high_ · in-progress
 
 - [ ] [#2ybw758 reads: resolve index, bodies and trck.json from a git ref](items/2ybw758-reads-resolve-index-bodies-and-trck-json-from-a-git-ref.md) _(backlog)_
 - [x] [#32gyghs tests: a harness for a ref-backed tracker in a temp git repo](items/32gyghs-tests-a-harness-for-a-ref-backed-tracker-in-a-temp-git-repo.md) · [review](https://github.com/leonkacowicz/trck/pull/32)
-- [ ] [#3dv63bn discovery: --ref/$TRCK_REF and the tracker-ref resolution order](items/3dv63bn-discovery-ref-trck-ref-and-the-tracker-ref-resolution-order.md) _(in-progress)_
+- [x] [#3dv63bn discovery: --ref/$TRCK_REF and the tracker-ref resolution order](items/3dv63bn-discovery-ref-trck-ref-and-the-tracker-ref-resolution-order.md) · [review](https://github.com/leonkacowicz/trck/pull/33)
 - [ ] [#5w9d7sq writes: push with CAS, refetch on rejection, replay the pending commit](items/5w9d7sq-writes-push-with-cas-refetch-on-rejection-replay-the-pending-commit.md) _(backlog)_
 - [ ] [#8d22h6x main: remove issues/ — the flip](items/8d22h6x-main-remove-issues-the-flip.md) _(backlog)_
 - [ ] [#93zhqbd writes: structured commit subjects and a replayable Trck-Op trailer](items/93zhqbd-writes-structured-commit-subjects-and-a-replayable-trck-op-trailer.md) _(backlog)_
