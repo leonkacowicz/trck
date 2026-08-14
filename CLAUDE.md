@@ -67,6 +67,15 @@ with it.** The pre-commit hook says so rather than letting CI be the one to tell
 threshold itself needs to move, that is its own commit: ratchet refuses a threshold edit in
 the same change as a new violation.
 
+**`compare`'s baseline is measured, not read.** `scripts/ratchet_baseline.sh` checks the base
+revision out into a temp directory and runs `ratchet generate` over it with the same binary
+that measured the head, then compares the two files. Reading the base commit's committed report
+instead — `compare --base` — only works while both sides were written by the same ratchet, and
+the day the tool's own metrics change every file reads as a large regression on a change that
+touched nothing. **Ratchet is pinned in the workflow, and your machine's copy will drift from
+it.** When `ratchet check` starts failing on a clean checkout, compare `ratchet --version`
+against the pin in `.github/workflows/ci.yml` before believing the numbers.
+
 **Enable the pre-commit guard once per clone:** `git config core.hooksPath scripts/hooks`. It
 runs `trck check` before commits, preferring the binary in `target/` over an installed one — in
 this repo the engine under change is the one that should answer.
