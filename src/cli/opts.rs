@@ -4,7 +4,7 @@
 //! run, but what that command was asked for. Each builder mirrors one verb's flags
 //! one-to-one, which is why they are flat and repetitive — the shape is the point.
 
-use super::Args;
+use super::{Args, KNOWN_FLAGS};
 use crate::init;
 use crate::query::{DepsOpts, ListOpts};
 use crate::verbs::{MvOpts, NewOpts, SetOpts};
@@ -103,4 +103,20 @@ pub(super) fn init_from_args(args: &Args) -> Result<String, String> {
         return Err("cannot combine a positional dir with --dir".to_string());
     }
     init::cmd_init(&init::InitOpts { target: positional.or(flag), force: args.has("--force"), hook: args.has("--hook") })
+}
+
+/// Flags every verb accepts, so they are not repeated two dozen times in [`KNOWN_FLAGS`].
+///
+/// `--dir` is still listed there as well, because the help test reads that table to check
+/// that what is documented is what is accepted; the duplication is harmless and removing it
+/// is a separate change.
+pub(crate) const GLOBAL_FLAGS: &[&str] = &["--dir", "--ref"];
+
+/// The first option this verb does not accept, if any.
+///
+/// Its own function because `usage_error` is a list of guards and this is the only one that
+/// has to consult two tables: the verb's own flags, and the ones every verb takes.
+pub(super) fn unrecognized_flag(args: &Args) -> Option<&str> {
+    let (_, _, flags) = KNOWN_FLAGS.iter().find(|(verb, ..)| *verb == args.verb)?;
+    args.options.iter().map(|(n, _)| n.as_str()).find(|n| !flags.contains(n) && !GLOBAL_FLAGS.contains(n))
 }

@@ -10,21 +10,21 @@
     "module_files": 20
   },
   "totals": {
-    "file_functions": 129,
-    "file_lines": 148,
+    "file_functions": 117,
+    "file_lines": 127,
     "function_args": 10,
     "function_cognitive": 44,
-    "function_cyclomatic": 142,
+    "function_cyclomatic": 138,
     "function_lines": 1,
     "module_files": 0
   },
   "violations": {
     "file_functions": {
       "src/cli/dispatch.rs": 9,
-      "src/cli/mod.rs": 9,
+      "src/cli/mod.rs": 2,
       "src/config.rs": 11,
       "src/diff.rs": 40,
-      "src/discovery/mod.rs": 9,
+      "src/discovery/mod.rs": 4,
       "src/html.rs": 9,
       "src/merge.rs": 7,
       "src/query/deps.rs": 3,
@@ -32,9 +32,8 @@
       "src/verbs/edit/set.rs": 7
     },
     "file_lines": {
-      "src/cli/mod.rs": 80,
-      "src/diff.rs": 58,
-      "src/discovery/mod.rs": 10
+      "src/cli/mod.rs": 69,
+      "src/diff.rs": 58
     },
     "function_args": {
       "src/diff.rs::walk": 1,
@@ -65,7 +64,7 @@
       "src/cli/dispatch.rs::dispatch_query": 7,
       "src/cli/dispatch.rs::dispatch_repo": 10,
       "src/cli/mod.rs::main": 6,
-      "src/cli/mod.rs::usage_error": 8,
+      "src/cli/mod.rs::usage_error": 4,
       "src/cli/reports.rs::cmd_diff": 11,
       "src/config.rs::check_format": 3,
       "src/diff.rs::compare": 6,

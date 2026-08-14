@@ -11,11 +11,13 @@
 //! subcommand list can still grow.
 
 mod dispatch;
-mod opts;
+pub(crate) mod opts;
 mod reports;
+mod tracker;
 use dispatch::dispatch;
+use opts::unrecognized_flag;
+use tracker::{context, tracker_dir};
 
-use crate::discovery::Ctx;
 use crate::help;
 
 /// Everything this binary offers. It began as a list of what the Python engine had, so
@@ -60,6 +62,7 @@ struct Args {
 /// `trck list --flat --json` parses without the flags swallowing each other.
 const VALUED: &[&str] = &[
     "--dir",
+    "--ref",
     "--id",
     "--slug",
     "--priority",
@@ -260,9 +263,7 @@ fn usage_error(args: &Args) -> Option<String> {
     if args.has("--json") && !JSON_VERBS.contains(&args.verb.as_str()) {
         return Some(format!("{}: --json is not implemented in this engine yet", args.verb));
     }
-    if let Some((_, _, flags)) = KNOWN_FLAGS.iter().find(|(verb, ..)| *verb == args.verb)
-        && let Some(n) = args.options.iter().map(|(n, _)| n.as_str()).find(|n| !flags.contains(n))
-    {
+    if let Some(n) = unrecognized_flag(args) {
         return Some(format!("{}: unrecognized argument {n}", args.verb));
     }
     if let Some((_, want, what)) = MIN_POSITIONAL.iter().find(|(verb, ..)| *verb == args.verb)
@@ -293,18 +294,6 @@ fn usage() -> String {
 }
 
 /// Resolve the tracker and load it, applying the format guard.
-/// Where the tracker is, without loading it. Split out for `migrate-layout`, which must
-/// reach a tracker the guards in `Ctx::load` would refuse.
-fn tracker_dir(args: &Args) -> Result<std::path::PathBuf, String> {
-    let cwd = std::env::current_dir().map_err(|e| format!("cannot read the working directory: {e}"))?;
-    let env_dir = std::env::var("TRCK_DIR").ok().filter(|v| !v.is_empty());
-    crate::discovery::resolve_tracker_dir(args.opt("--dir"), env_dir.as_deref(), &cwd)
-}
-
-fn context(args: &Args) -> Result<Ctx, String> {
-    Ctx::load(tracker_dir(args)?, true)
-}
-
 /// Whether a write to stdout failed because nobody is reading any more.
 ///
 /// `trck list | head` closes the pipe while the engine still has output. That is the shell
