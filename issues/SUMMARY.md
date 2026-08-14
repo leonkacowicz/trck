@@ -6,8 +6,8 @@
 | State | Count |
 |---|---:|
 | backlog | 75 |
-| in-progress | 4 |
-| in-review | 0 |
+| in-progress | 3 |
+| in-review | 1 |
 | done | 197 |
 | **total** | **276** |
 
@@ -206,7 +206,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#c3uzxka diff: resolve revisions on the tracker branch](items/c3uzxka-diff-resolve-revisions-on-the-tracker-branch.md) _(backlog)_
 - [ ] [#dak2sjq trck sync, and the pending-changes report on every write verb](items/dak2sjq-trck-sync-and-the-pending-changes-report-on-every-write-verb.md) _(backlog)_
 - [ ] [#jgf9ktx writes: blobs to tree to commit-tree, then CAS the local ref](items/jgf9ktx-writes-blobs-to-tree-to-commit-tree-then-cas-the-local-ref.md) _(backlog)_
-- [ ] [#kdbb9ms git: one plumbing module for the ref read and write primitives](items/kdbb9ms-git-one-plumbing-module-for-the-ref-read-and-write-primitives.md) _(in-progress)_
+- [ ] [#kdbb9ms git: one plumbing module for the ref read and write primitives](items/kdbb9ms-git-one-plumbing-module-for-the-ref-read-and-write-primitives.md) _(in-review)_ · [review](https://github.com/leonkacowicz/trck/pull/30)
 - [ ] [#nabxbdk new: $EDITOR on the template, validating like visudo](items/nabxbdk-new-editor-on-the-template-validating-like-visudo.md) _(backlog)_
 - [ ] [#nuemwhc reads: report a stale tracker ref instead of silently using it](items/nuemwhc-reads-report-a-stale-tracker-ref-instead-of-silently-using-it.md) _(backlog)_
 - [ ] [#p95aabv new: --body, --body-file (- is stdin) and --empty; error without a TTY](items/p95aabv-new-body-body-file-is-stdin-and-empty-error-without-a-tty.md) _(backlog)_
