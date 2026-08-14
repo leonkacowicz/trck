@@ -6,8 +6,8 @@
 | State | Count |
 |---|---:|
 | backlog | 71 |
-| in-progress | 5 |
-| in-review | 0 |
+| in-progress | 4 |
+| in-review | 1 |
 | done | 200 |
 | **total** | **276** |
 
@@ -214,7 +214,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#u3s6y7h CI: check on the tracker branch, and ci_changed drops its issues/ case](items/u3s6y7h-ci-check-on-the-tracker-branch-and-ci-changed-drops-its-issues-case.md) _(backlog)_
 - [ ] [#usc2cxg migration: split issues/ onto an orphan trck-issues branch, history intact](items/usc2cxg-migration-split-issues-onto-an-orphan-trck-issues-branch-history-intact.md) _(backlog)_
 - [ ] [#wzg85n6 docs: delete the worktree skill, rewrite both CLAUDE.md files, repoint README](items/wzg85n6-docs-delete-the-worktree-skill-rewrite-both-claude-md-files-repoint-readme.md) _(backlog)_
-- [ ] [#yuj6azz finalize: return a changeset and an Op instead of writing files](items/yuj6azz-finalize-return-a-changeset-and-an-op-instead-of-writing-files.md) _(in-progress)_
+- [ ] [#yuj6azz finalize: return a changeset and an Op instead of writing files](items/yuj6azz-finalize-return-a-changeset-and-an-op-instead-of-writing-files.md) _(in-review)_ · [review](https://github.com/leonkacowicz/trck/pull/34)
 - [ ] [#zxz9vu2 trck edit <id>: edit an existing body through the same path](items/zxz9vu2-trck-edit-id-edit-an-existing-body-through-the-same-path.md) _(backlog)_
 
 ### [#u5fc5vm trck diff: semantic diff of tracker state between revisions](items/u5fc5vm-trck-diff-semantic-diff-of-tracker-state-between-revisions.md) — 29% (5/17 pts · 2/8 done) · _medium_ · in-progress
