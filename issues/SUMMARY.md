@@ -6,8 +6,8 @@
 | State | Count |
 |---|---:|
 | backlog | 74 |
-| in-progress | 4 |
-| in-review | 0 |
+| in-progress | 3 |
+| in-review | 1 |
 | done | 198 |
 | **total** | **276** |
 
@@ -202,7 +202,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#93zhqbd writes: structured commit subjects and a replayable Trck-Op trailer](items/93zhqbd-writes-structured-commit-subjects-and-a-replayable-trck-op-trailer.md) _(backlog)_
 - [ ] [#9gxktnk writes: replay stacked pending commits, and surface an op that no longer applies](items/9gxktnk-writes-replay-stacked-pending-commits-and-surface-an-op-that-no-longer-applies.md) _(backlog)_
 - [ ] [#abynj5c reads: prefer the local ref over origin, fast-forward when behind, report divergence](items/abynj5c-reads-prefer-the-local-ref-over-origin-fast-forward-when-behind-report-divergence.md) _(backlog)_
-- [ ] [#ahgehpa discovery: reads go through Ctx content accessors, not paths](items/ahgehpa-discovery-reads-go-through-ctx-content-accessors-not-paths.md) _(in-progress)_
+- [ ] [#ahgehpa discovery: reads go through Ctx content accessors, not paths](items/ahgehpa-discovery-reads-go-through-ctx-content-accessors-not-paths.md) _(in-review)_ · [review](https://github.com/leonkacowicz/trck/pull/31)
 - [ ] [#c3uzxka diff: resolve revisions on the tracker branch](items/c3uzxka-diff-resolve-revisions-on-the-tracker-branch.md) _(backlog)_
 - [ ] [#dak2sjq trck sync, and the pending-changes report on every write verb](items/dak2sjq-trck-sync-and-the-pending-changes-report-on-every-write-verb.md) _(backlog)_
 - [ ] [#jgf9ktx writes: blobs to tree to commit-tree, then CAS the local ref](items/jgf9ktx-writes-blobs-to-tree-to-commit-tree-then-cas-the-local-ref.md) _(backlog)_
