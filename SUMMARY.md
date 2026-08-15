@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 66 |
+| backlog | 71 |
 | in-progress | 5 |
 | in-review | 0 |
 | done | 206 |
-| **total** | **277** |
+| **total** | **282** |
 
 ## Hierarchies
 
@@ -217,6 +217,14 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#yuj6azz finalize: return a changeset and an Op instead of writing files](items/yuj6azz-finalize-return-a-changeset-and-an-op-instead-of-writing-files.md) · [review](https://github.com/leonkacowicz/trck/pull/34)
 - [ ] [#zxz9vu2 trck edit <id>: edit an existing body through the same path](items/zxz9vu2-trck-edit-id-edit-an-existing-body-through-the-same-path.md) _(in-progress)_
 
+### [#tcm5s56 serve: a live process over the tracker ref, with writes from the page](items/tcm5s56-v7-trck-serve-live-process-edits-write-back-to-index-jsonl.md) — 0% (0/5 pts · 0/5 done) · _low_ · backlog
+
+- [ ] [#ba48fnw serve: the HTTP layer — loopback listener, compiled-in assets, clean shutdown](items/ba48fnw-serve-the-http-layer-loopback-listener-compiled-in-assets-clean-shutdown.md) _(backlog)_
+- [ ] [#eemua4s serve: poll and fast-forward the tracker ref on a timer](items/eemua4s-serve-poll-and-fast-forward-the-tracker-ref-on-a-timer.md) _(backlog)_
+- [ ] [#mcmfmca serve: POST to Op — the page's staged edits become in-process write verbs](items/mcmfmca-serve-post-to-op-the-page-s-staged-edits-become-in-process-write-verbs.md) _(backlog)_
+- [ ] [#us8fenh serve: SSE re-render — ref movement pushes to open pages](items/us8fenh-serve-sse-re-render-ref-movement-pushes-to-open-pages.md) _(backlog)_
+- [ ] [#zd9jqav serve: pending and sync in the UI — unpushed commits visible and flushable](items/zd9jqav-serve-pending-and-sync-in-the-ui-unpushed-commits-visible-and-flushable.md) _(backlog)_
+
 ### [#u5fc5vm trck diff: semantic diff of tracker state between revisions](items/u5fc5vm-trck-diff-semantic-diff-of-tracker-state-between-revisions.md) — 29% (5/17 pts · 2/8 done) · _medium_ · in-progress
 
 - [ ] [#6xcseef diff: body-file edits — flag with a ± line count, --body to inline the real git diff](items/6xcseef-diff-body-file-edits-flag-with-a-line-count-body-to-inline-the-real-git-diff.md) _(backlog)_
@@ -261,7 +269,6 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#mf7ue8j trck-html: timeline view over created/started/closed](items/mf7ue8j-trck-html-timeline-view-over-created-started-closed.md) — _low_ [dates trck-html]
 - [#mwdg3pv validate and issue each carry their own Python repr, and they disagree](items/mwdg3pv-validate-and-issue-each-carry-their-own-python-repr-and-they-disagree.md) — _low_
 - [#s3d6xyz Add reconfigure verb to rename/reorder statuses](items/s3d6xyz-add-reconfigure-verb-to-rename-reorder-statuses.md) — _low_ [tracker-features]
-- [#tcm5s56 v7: trck serve — live process, edits write back to index.jsonl](items/tcm5s56-v7-trck-serve-live-process-edits-write-back-to-index-jsonl.md) — _low_
 - [#u833fh6 vocabulary: drop the 'ongoing' status alias](items/u833fh6-vocabulary-drop-the-ongoing-status-alias.md) — _low_ [tracker-features]
 - [#ut9bqm4 dates: time-in-status and per-status cycle time reporting](items/ut9bqm4-dates-time-in-status-and-per-status-cycle-time-reporting.md) — _low_ [dates]
 - [#v9nyy42 Part C: curses TUI for browsing and quick actions](items/v9nyy42-part-c-curses-tui-for-browsing-and-quick-actions.md) — _low_
