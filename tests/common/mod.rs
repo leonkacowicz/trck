@@ -112,6 +112,34 @@ fn run_git(dir: &Path, args: &[&str]) -> Output {
         .unwrap_or_else(|e| panic!("git {args:?}: {e}"))
 }
 
+/// Give a clone a commit identity of its own.
+///
+/// In the clone's config rather than in this helper's environment: everything here commits
+/// through [`git_must`], which supplies one by env, but the binary under test spawns its
+/// *own* git and inherits none of that. Without this a ref-backed write fails on a machine
+/// with no global identity — every CI runner and no developer laptop, which is the worst way
+/// round to find out.
+pub(crate) fn identify(clone: &Path) {
+    git_must(clone, &["config", "user.email", "trck@example.invalid"]);
+    git_must(clone, &["config", "user.name", "trck tests"]);
+}
+
+/// Clone `origin` into `root/name`, ready to write through.
+///
+/// Cloning and identifying together, because a clone a test writes through needs both and
+/// remembering the second one separately is what this exists to stop.
+pub(crate) fn clone_of(root: &Path, origin: &Path, name: &str, extra: &[&str]) -> PathBuf {
+    let mut args = vec!["clone", "-q"];
+    args.extend_from_slice(extra);
+    let url = origin.display().to_string();
+    args.push(&url);
+    args.push(name);
+    git_must(root, &args);
+    let at = root.join(name);
+    identify(&at);
+    at
+}
+
 /// Run the binary under test, from `dir`.
 pub(crate) fn trck(dir: &Path, args: &[&str]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_trck"))
@@ -222,8 +250,7 @@ impl Scenario {
         // env — but the binary under test spawns its *own* git, which inherits none of that.
         // Without this the ref-backed write path fails on a machine with no global identity,
         // which is every CI runner and no developer laptop: the worst way round to find out.
-        git_must(&work, &["config", "user.email", "trck@example.invalid"]);
-        git_must(&work, &["config", "user.name", "trck tests"]);
+        identify(&work);
 
         Some(Scenario { _root: root, origin, work })
     }

@@ -20,8 +20,7 @@ use std::path::{Path, PathBuf};
 /// A clone of the fixture's origin that fetches `main` and nothing else.
 fn narrow_clone(s: &Scenario, name: &str) -> PathBuf {
     let root = s.work.parent().expect("the scenario root");
-    let at = root.join(name);
-    git_must(root, &["clone", "-q", "--single-branch", "--branch", "main", &s.origin.display().to_string(), name]);
+    let at = common::clone_of(root, &s.origin, name, &["--single-branch", "--branch", "main"]);
     // A narrow clone has no `issues/` either — the flip is what makes this reachable, and a
     // fixture that still had one would be testing the staging rule instead.
     let _ = std::fs::remove_dir_all(at.join("issues"));

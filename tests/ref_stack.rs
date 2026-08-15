@@ -39,8 +39,8 @@ fn stack_offline(work: &Path, ids: &[&str]) {
 
 /// Someone else's work lands on the branch while this clone was offline.
 fn remote_moves(s: &Scenario, id: &str) {
-    let other = s.work.parent().expect("root").join(format!("other-{id}"));
-    git_must(s.work.parent().expect("root"), &["clone", "-q", &s.origin.display().to_string(), &format!("other-{id}")]);
+    let root = s.work.parent().expect("root");
+    let other = common::clone_of(root, &s.origin, &format!("other-{id}"), &[]);
     trck_must(&other, &["new", &format!("Filed elsewhere {id}"), "--id", id, "--empty"]);
     let _ = std::fs::remove_dir_all(&other);
 }
