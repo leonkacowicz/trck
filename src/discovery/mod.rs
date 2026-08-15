@@ -12,10 +12,11 @@ use std::path::{Path, PathBuf};
 
 pub(crate) mod content;
 mod load;
+pub(crate) mod refspec;
 mod source;
 pub(crate) mod standing;
 
-pub(crate) use source::{Overrides, Source, resolve_tracker_source};
+pub(crate) use source::{Overrides, Source, TRACKER_REF, resolve_tracker_source};
 
 /// The file whose presence marks a directory as a tracker.
 pub(crate) const CONFIG_NAME: &str = "trck.json";

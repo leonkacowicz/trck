@@ -17,6 +17,7 @@ pub(crate) fn cmd_setup_git(ctx: &Ctx) -> Result<String, String> {
     let mut out: Vec<String> = vec![declare(ctx)?];
     register(ctx)?;
     out.push("registered merge drivers in this clone (trck-index, trck-summary)".into());
+    out.push(widen_refspec(ctx)?);
     out.push(
         "note: .gitattributes is shared, but the driver commands are per-clone — every \
          clone must run `trck repo setup-git` for auto-resolution to apply."
@@ -35,6 +36,24 @@ fn declare(ctx: &Ctx) -> Result<String, String> {
     };
     write_atomic(&path, &(lines.join("\n") + "\n"))?;
     Ok(format!("wrote {}", path.display()))
+}
+
+/// Make sure this clone actually fetches the tracker branch.
+///
+/// The same per-clone problem as the drivers, and the same verb solves it: a shallow or
+/// single-branch clone fetches one branch, so `origin/trck-issues` never arrives and the
+/// tracker reads as absent. Idempotent, because the check is whether the configured
+/// refspecs already cover the branch rather than whether this ever ran.
+fn widen_refspec(ctx: &Ctx) -> Result<String, String> {
+    use crate::discovery::refspec::{configured, covered, tracker_refspec};
+    let cwd = ctx.git_cwd();
+    let branch = crate::discovery::TRACKER_REF;
+    if covered(&configured(cwd, "origin"), branch) {
+        return Ok(format!("this clone already fetches {branch}"));
+    }
+    let spec = tracker_refspec(branch);
+    git(ctx, &["config", "--add", "remote.origin.fetch", &spec])?;
+    Ok(format!("added `{spec}` to remote.origin.fetch — run `git fetch` to bring the branch in"))
 }
 
 /// The per-clone half: define what the named drivers actually run.
