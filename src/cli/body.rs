@@ -78,7 +78,7 @@ pub(super) fn resolve(spec: &BodySpec, title: &str, interactive: bool) -> Result
 /// means a script, and a script that meant to write a body and forgot must be told.
 fn unsaid(title: &str, interactive: bool) -> Result<String, String> {
     if interactive {
-        return Ok(crate::verbs::TEMPLATE.replace("{title}", title));
+        return super::editor::edit(title);
     }
     Err(format!("new: nobody is at a terminal, so there is nothing to fill in a body; pass {FLAGS}"))
 }
@@ -174,15 +174,6 @@ mod tests {
         for flag in ["--body", "--body-file", "--empty"] {
             assert!(err.contains(flag), "the refusal must name {flag}: {err}");
         }
-    }
-
-    /// A human at a terminal still gets the template to fill in, which is what `#nabxbdk`
-    /// replaces with an editor.
-    #[test]
-    fn no_flag_at_a_terminal_is_still_the_template() {
-        let body = resolve(&BodySpec::Unsaid, "T", true).expect("body");
-        assert!(body.starts_with("# T\n"), "{body}");
-        assert!(body.contains("## Acceptance criteria"), "{body}");
     }
 
     #[test]

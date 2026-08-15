@@ -128,6 +128,10 @@ pub(super) const LIST_FLAGS: &[&str] = &[
     "--json",
 ];
 
+/// Verbs whose `--json` is implemented. The rest still refuse the flag: accepted-and-ignored
+/// returns human text with exit 0, and a caller piping into `jq` finds out far from the cause.
+pub(super) const JSON_VERBS: &[&str] = &["list", "tree", "show", "ready", "next", "deps"];
+
 /// Flags every verb accepts, so they are not repeated two dozen times in [`KNOWN_FLAGS`].
 ///
 /// `--dir` is still listed there as well, because the help test reads that table to check
