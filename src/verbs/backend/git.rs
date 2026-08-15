@@ -16,7 +16,7 @@
 
 use super::super::op::Op;
 use super::message::message;
-use super::{Changeset, Edit, git_path};
+use super::{Changeset, Edit, git_path, local_ref, release};
 use crate::git::refs::update_ref;
 use crate::git::write::{commit_tree, hash_object, write_tree};
 use crate::git::{rev_parse, tree_blobs};
@@ -45,15 +45,16 @@ impl<'a> RefBackend<'a> {
         // local branch holds, which on that same clone is nothing — so the first write there
         // creates the branch at a commit whose parent is the remote's tip.
         let held = rev_parse(self.cwd, &target)?;
-        let parent = match &held {
-            Some(sha) => Some(sha.clone()),
-            None => rev_parse(self.cwd, self.rev)?,
-        };
+        let parent = base(self.cwd, held.as_deref(), rev_parse(self.cwd, self.rev)?.as_deref())?;
         let entries = self.plan_tree(parent.as_deref(), cs)?;
         let listed: Vec<(&str, &str)> = entries.iter().map(|(p, sha)| (p.as_str(), sha.as_str())).collect();
         let tree = write_tree(self.cwd, &listed)?;
         let parents: Vec<&str> = parent.as_deref().into_iter().collect();
         let commit = commit_tree(self.cwd, &tree, &parents, &message(op)).map_err(explain_identity)?;
+        // Anyone with the branch checked out is detached first, at the commit they are already
+        // on: git will not refuse this move on their behalf, and a branch moved under a
+        // checkout leaves it reporting the write inverted. See [`crate::git::worktree`].
+        release(self.cwd, &target)?;
         update_ref(self.cwd, &target, &commit, held.as_deref())
     }
 
@@ -106,24 +107,23 @@ fn plan(mut base: BTreeMap<String, String>, edits: &[Edit], blobs: &[Option<Stri
     base
 }
 
-/// The local branch a revision writes to.
+/// The commit the new one is built on.
 ///
-/// Writes always land on `refs/heads/`, whatever the tracker was *read* from: a
-/// remote-tracking ref is a copy of someone else's branch and moving it locally would make
-/// this clone disagree with the remote it is named after. Stripping `origin/` is what turns a
-/// fresh clone's only ref into the branch this write should create.
-pub(crate) fn local_ref(rev: &str) -> String {
-    format!("refs/heads/{}", local_branch(rev))
-}
-
-/// The same branch, spelled the way a revision is read and printed.
+/// The local branch, but not when what was actually *read* is ahead of it. That happens when a
+/// read declined to fast-forward a branch somebody had checked out (`crate::discovery::standing`):
+/// building on the branch then would derive a tree from content the verb never saw and drop
+/// the commits it did see. Building on what was read — with the branch's own value still the
+/// compare-and-swap expectation — lands the fast-forward and the write as one commit.
 ///
-/// [`local_ref`] answers in the form `update-ref` demands. Anything that *reads* the branch
-/// back or *shows* it to someone wants the short name — which is also what a clone that
-/// already has the branch resolves to, so the first write and the second one name a body the
-/// same way rather than the first one shouting `refs/heads/`.
-pub(crate) fn local_branch(rev: &str) -> &str {
-    rev.strip_prefix("refs/heads/").or_else(|| rev.strip_prefix("origin/")).unwrap_or(rev)
+/// Only ever forwards. A local branch that is *ahead* of the revision read, which is what
+/// `--ref origin/trck-issues` over unpushed work gives, keeps its own tip as the parent; the
+/// alternative would leave those commits unreachable.
+fn base(cwd: &Path, held: Option<&str>, read: Option<&str>) -> Result<Option<String>, String> {
+    match (held, read) {
+        (Some(here), Some(there)) if here != there && crate::git::is_ancestor(cwd, here, there)? => Ok(Some(there.to_string())),
+        (Some(here), _) => Ok(Some(here.to_string())),
+        (None, there) => Ok(there.map(str::to_string)),
+    }
 }
 
 /// Turn `commit-tree`'s identity refusal into one that names the remedy.
@@ -212,24 +212,6 @@ mod tests {
         let out = plan(BTreeMap::new(), &edits, &[Some("i1".to_string())]);
         assert_eq!(out.len(), 1);
         assert_eq!(out.get("index.jsonl"), Some(&"i1".to_string()));
-    }
-
-    /// Writes land on `refs/heads/` whatever they were read from — a remote-tracking ref is
-    /// a copy of someone else's branch, and moving it locally makes this clone lie about it.
-    #[test]
-    fn a_write_targets_the_local_branch() {
-        assert_eq!(local_ref("trck-issues"), "refs/heads/trck-issues");
-        assert_eq!(local_ref("origin/trck-issues"), "refs/heads/trck-issues");
-        assert_eq!(local_ref("refs/heads/trck-issues"), "refs/heads/trck-issues");
-    }
-
-    /// The same branch, in the spelling a revision is read and shown in — so a clone naming a
-    /// body before it has the branch says what a clone that already has it says.
-    #[test]
-    fn the_branch_is_named_without_its_ref_prefix() {
-        assert_eq!(local_branch("trck-issues"), "trck-issues");
-        assert_eq!(local_branch("origin/trck-issues"), "trck-issues");
-        assert_eq!(local_branch("refs/heads/trck-issues"), "trck-issues");
     }
 
     /// git's own refusal is aimed at someone committing by hand and ends in "unable to
