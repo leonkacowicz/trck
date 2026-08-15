@@ -113,8 +113,17 @@ fn plan(mut base: BTreeMap<String, String>, edits: &[Edit], blobs: &[Option<Stri
 /// this clone disagree with the remote it is named after. Stripping `origin/` is what turns a
 /// fresh clone's only ref into the branch this write should create.
 pub(crate) fn local_ref(rev: &str) -> String {
-    let name = rev.strip_prefix("refs/heads/").or_else(|| rev.strip_prefix("origin/")).unwrap_or(rev);
-    format!("refs/heads/{name}")
+    format!("refs/heads/{}", local_branch(rev))
+}
+
+/// The same branch, spelled the way a revision is read and printed.
+///
+/// [`local_ref`] answers in the form `update-ref` demands. Anything that *reads* the branch
+/// back or *shows* it to someone wants the short name — which is also what a clone that
+/// already has the branch resolves to, so the first write and the second one name a body the
+/// same way rather than the first one shouting `refs/heads/`.
+pub(crate) fn local_branch(rev: &str) -> &str {
+    rev.strip_prefix("refs/heads/").or_else(|| rev.strip_prefix("origin/")).unwrap_or(rev)
 }
 
 /// Turn `commit-tree`'s identity refusal into one that names the remedy.
@@ -212,6 +221,15 @@ mod tests {
         assert_eq!(local_ref("trck-issues"), "refs/heads/trck-issues");
         assert_eq!(local_ref("origin/trck-issues"), "refs/heads/trck-issues");
         assert_eq!(local_ref("refs/heads/trck-issues"), "refs/heads/trck-issues");
+    }
+
+    /// The same branch, in the spelling a revision is read and shown in — so a clone naming a
+    /// body before it has the branch says what a clone that already has it says.
+    #[test]
+    fn the_branch_is_named_without_its_ref_prefix() {
+        assert_eq!(local_branch("trck-issues"), "trck-issues");
+        assert_eq!(local_branch("origin/trck-issues"), "trck-issues");
+        assert_eq!(local_branch("refs/heads/trck-issues"), "trck-issues");
     }
 
     /// git's own refusal is aimed at someone committing by hand and ends in "unable to

@@ -5,7 +5,7 @@
 //! move that disagrees with them has to *pin* the row — and a move that agrees with them has
 //! to leave it unpinned, or the next child to move would be ignored.
 
-use super::super::{Op, apply_status, body_location, commit, load_rows, resolve_ref};
+use super::super::{Op, apply_status, body_location, commit, landed, load_rows, resolve_ref};
 use crate::config::{self, is_terminal};
 use crate::discovery::Ctx;
 use crate::graph::Graph;
@@ -61,9 +61,14 @@ fn check_mv_opts(opts: &MvOpts) -> Result<(), String> {
 ///
 /// Takes the rows by `&mut` and hands them back because the answer comes from the graph's
 /// view of the row, and the graph owns them while it exists.
+///
+/// Read through `ctx`, named through [`landed`]: the body is read from the tracker as it
+/// stands, and reported at the revision the move is about to land on — which for a clone
+/// whose only tracker ref is the remote-tracking one is a branch that does not exist yet.
+/// `mv` never renames a body, so the two differ in nothing but the revision.
 fn body_where(ctx: &Ctx, rows: &mut Vec<Issue>, iid: &str) -> Result<String, String> {
     let g = Graph::new(std::mem::take(rows));
-    let found = g.get(iid).map(|r| ctx.read_body(r).map(|_| body_location(ctx, r)));
+    let found = g.get(iid).map(|r| ctx.read_body(r).map(|_| body_location(&landed(ctx), r)));
     *rows = g.rows;
     found.ok_or_else(|| format!("no issue matching '{iid}'"))?
 }

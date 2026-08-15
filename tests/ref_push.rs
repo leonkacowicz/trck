@@ -103,6 +103,25 @@ fn a_contended_write_converges_with_both_commits_present() {
     assert_eq!(log.get(1).map(String::as_str), Some("new #ddddddd: Theirs"), "{log:?}");
 }
 
+/// A rebuild re-runs the verb, and the verb reports what it left behind. Once, not per attempt.
+///
+/// The report is the operator's, not the retry loop's: how many times the engine had to rebuild
+/// before the push took is its own business, and printing a consistency verdict per attempt
+/// turns an ordinary contended write into two paragraphs of alarm about a tracker that is fine.
+#[test]
+fn a_rebuilt_write_reports_its_consistency_once() {
+    let Some(s) = Scenario::build("push-report-once") else { return };
+    let other = second_clone(&s);
+
+    trck_must(&other, &["new", "Theirs", "--id", "ddddddd", "--body", "Their prose."]);
+    let out = trck(&s.work, &["new", "Ours", "--id", "ccccccc", "--body", "Our prose."]);
+
+    assert!(out.status.success(), "the contended write still succeeds");
+    let err = String::from_utf8_lossy(&out.stderr);
+    assert_eq!(err.matches("INCONSISTENCIES").count(), 0, "nothing is inconsistent here: {err}");
+    assert!(!err.contains("no markdown file"), "{err}");
+}
+
 /// A rebuilt operation is re-*derived*, not re-applied as text. The rollup a verb produces
 /// depends on the rows it runs against, so an operation replayed onto someone else's commit has
 /// to see their rows — which a textual merge of `index.jsonl` could never arrange.

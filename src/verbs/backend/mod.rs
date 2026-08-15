@@ -26,7 +26,7 @@ mod message;
 
 pub(crate) use dir::DirBackend;
 pub(crate) use git::RefBackend;
-pub(crate) use git::local_ref;
+pub(crate) use git::{local_branch, local_ref};
 pub(crate) use sync::sync;
 
 /// A changeset path as git spells it.

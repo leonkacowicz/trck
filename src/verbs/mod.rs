@@ -54,9 +54,26 @@ use std::sync::atomic::{AtomicBool, Ordering};
 pub(crate) fn commit(ctx: &Ctx, rows: Vec<Issue>, body: Vec<Edit>, op: &Op) -> Result<Vec<Issue>, String> {
     let cs = finalize(rows, body)?;
     apply(ctx, &cs, op)?;
-    report_inconsistencies(ctx, &cs.rows);
+    report_inconsistencies(&landed(ctx), &cs.rows);
     share(ctx, op)?;
     Ok(cs.rows)
+}
+
+/// The tracker as [`apply`] just left it, which is not always where it was read from.
+///
+/// A clone that has never written resolves the tracker through `origin/trck-issues` — the
+/// only tracker ref it has — and the write lands on the local branch, per [`local_ref`].
+/// Validating `ctx` afterwards would inspect the tree the write *started from*, which cannot
+/// hold what was just written: every first write in a fresh clone reported the body it had
+/// this moment created as missing.
+///
+/// A directory is its own answer: it is where the write went as well as where it came from.
+pub(crate) fn landed(ctx: &Ctx) -> Ctx {
+    let source = match &ctx.source {
+        Source::Dir(dir) => Source::Dir(dir.clone()),
+        Source::Ref { rev, cwd } => Source::Ref { rev: backend::local_branch(rev).to_string(), cwd: cwd.clone() },
+    };
+    Ctx { source, config: ctx.config.clone() }
 }
 
 /// Set while a rejected write is being rebuilt.
@@ -113,7 +130,14 @@ pub(crate) fn write_summary(ctx: &Ctx, g: &crate::graph::Graph) -> Result<(), St
 ///
 /// A verb that leaves the tracker inconsistent still succeeds — it did what it was asked — but
 /// says so loudly, because the next thing that runs is usually a commit.
+///
+/// Once per invocation, so not while rebuilding: a rejected push re-runs the verb, and how
+/// many attempts it took to land is the retry loop's business rather than the operator's.
+/// Reporting per attempt turned an ordinary contended write into two paragraphs of alarm.
 fn report_inconsistencies(ctx: &Ctx, rows: &[Issue]) {
+    if REBUILDING.load(Ordering::Relaxed) {
+        return;
+    }
     let Ok(report) = crate::validate::validate(ctx, rows) else {
         return;
     };
