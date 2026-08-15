@@ -10,10 +10,10 @@
     "module_files": 20
   },
   "totals": {
-    "file_functions": 112,
-    "file_lines": 127,
+    "file_functions": 265,
+    "file_lines": 710,
     "function_args": 10,
-    "function_cognitive": 44,
+    "function_cognitive": 45,
     "function_cyclomatic": 136,
     "function_lines": 1,
     "module_files": 0
@@ -21,19 +21,36 @@
   "violations": {
     "file_functions": {
       "src/cli/dispatch.rs": 9,
-      "src/cli/mod.rs": 2,
-      "src/config.rs": 11,
-      "src/diff.rs": 40,
+      "src/cli/mod.rs": 18,
+      "src/config.rs": 33,
+      "src/diff.rs": 55,
       "src/discovery/mod.rs": 4,
-      "src/html.rs": 9,
-      "src/merge.rs": 7,
+      "src/graph/demand.rs": 8,
+      "src/gutter/shorten.rs": 4,
+      "src/html.rs": 16,
+      "src/issue/read.rs": 8,
+      "src/json/render.rs": 2,
+      "src/json/scan.rs": 3,
+      "src/merge.rs": 23,
       "src/query/deps.rs": 3,
-      "src/query/list.rs": 25,
-      "src/verbs/edit/set.rs": 2
+      "src/query/list.rs": 28,
+      "src/query/paths.rs": 4,
+      "src/query/rank.rs": 13,
+      "src/render/annotate.rs": 2,
+      "src/render/rows.rs": 7,
+      "src/repo/attributes.rs": 2,
+      "src/summary.rs": 9,
+      "src/validate/row.rs": 2,
+      "src/verbs/edit/set.rs": 2,
+      "src/verbs/finalize.rs": 10
     },
     "file_lines": {
-      "src/cli/mod.rs": 69,
-      "src/diff.rs": 58
+      "src/cli/mod.rs": 234,
+      "src/config.rs": 155,
+      "src/diff.rs": 183,
+      "src/issue/read.rs": 14,
+      "src/merge.rs": 96,
+      "src/query/list.rs": 28
     },
     "function_args": {
       "src/diff.rs::walk": 1,
@@ -51,6 +68,7 @@
       "src/diff.rs::compare": 1,
       "src/diff.rs::parse_since": 2,
       "src/graph/cycles.rs::find_cycles": 9,
+      "src/help/mod.rs::documented_options_are_exactly_the_accepted_ones": 1,
       "src/merge.rs::merge_one": 10,
       "src/merge.rs::merge_rows": 3,
       "src/summary.rs::hierarchies_section": 7,

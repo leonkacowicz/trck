@@ -103,27 +103,39 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # `compare` resolves its baseline with `git show <base>:quality-report.json`,
-          # which a shallow checkout cannot answer.
+          # The baseline is built from the base commit's tree, which a shallow checkout
+          # cannot produce.
           fetch-depth: 0
 
-      - uses: leonkacowicz/ratchet@v0.1.1
+      - uses: leonkacowicz/ratchet@v0.2.0
 
       # The report must describe the code as it is, or the ratchet measures fiction.
       - name: Report is fresh
         run: ratchet check --root .
 
+      # The baseline is **measured**, not read out of the base commit's report.
+      #
+      # `--base` resolves it with `git show <base>:quality-report.json`, so the comparison
+      # is only meaningful while both sides were written by the same ratchet. They are
+      # not, the day the tool's own metrics change: 0.2.0 began counting test code, which
+      # made every file in this repository read as a large regression against a 0.1.1
+      # baseline, on a change that touched no code at all. Re-measuring the base tree with
+      # the ratchet in this job compares like with like, and goes on doing so across every
+      # future version bump instead of needing a one-off exemption each time.
+      #
+      # Each side keeps its own `ratchet.json`, so a threshold edit still reaches
+      # `compare` and is still refused when it arrives alongside new violations.
       - name: No quality regression vs the base branch
         if: github.event_name == 'pull_request'
         run: |
           git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
-          ratchet compare --root . --base "origin/${{ github.base_ref }}"
+          ./scripts/ratchet_baseline.sh "origin/${{ github.base_ref }}"
 
       # A branch's first push reports an all-zero "before" and has nothing to compare
       # against; ratchet's own bootstrap mode covers a baseline with no report yet.
       - name: No quality regression vs the previous commit
         if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
-        run: ratchet compare --root . --base "${{ github.event.before }}"
+        run: ./scripts/ratchet_baseline.sh "${{ github.event.before }}"
 
   # The installer, on the platform it was broken on.
   #
