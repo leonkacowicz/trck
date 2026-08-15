@@ -148,7 +148,7 @@ mod tests {
     /// gains help nobody can reach is as useless as one with none.
     #[test]
     fn every_verb_the_binary_offers_has_help() {
-        for verb in crate::cli::VERBS {
+        for verb in crate::cli::tables::VERBS {
             assert!(for_verb(verb).is_some(), "`{verb}` has no help");
         }
     }
@@ -173,7 +173,7 @@ mod tests {
             }
             for flag in *accepted {
                 // Explained once in the global section instead of two dozen times.
-                if crate::cli::opts::GLOBAL_FLAGS.contains(flag) {
+                if crate::cli::tables::GLOBAL_FLAGS.contains(flag) {
                     continue;
                 }
                 assert!(documented.contains(flag), "`{verb}` accepts {flag} and does not document it");
@@ -195,7 +195,7 @@ mod tests {
     /// column is as wide as the widest flag.
     #[test]
     fn nothing_renders_wider_than_it_should() {
-        for verb in crate::cli::VERBS {
+        for verb in crate::cli::tables::VERBS {
             let text = for_verb(verb).expect("help");
             for line in text.lines() {
                 assert!(line.chars().count() <= 100, "`{verb}` renders a {}-column line: {line}", line.chars().count());

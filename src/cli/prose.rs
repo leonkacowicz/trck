@@ -46,9 +46,10 @@ pub(super) const EDIT_FLAGS: &[&str] = &["--body", "--body-file", "--empty"];
 /// to change about a row, but where its words come from — and both reach the same flags,
 /// the same editor and the same abort rules to answer it.
 pub(super) fn dispatch_prose(args: &Args) -> Option<Result<String, String>> {
-    Some(match args.verb.as_str() {
+    let done = match args.verb.as_str() {
         "new" => super::context(args).and_then(|c| super::opts::new_opts(args).and_then(|o| crate::verbs::cmd_new(&c, &o))),
         "edit" => super::context(args).and_then(|c| cmd_edit(&c, args)),
         _ => return None,
-    })
+    };
+    Some(super::dispatch::noting_pending(args, done))
 }

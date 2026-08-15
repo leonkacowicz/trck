@@ -10,8 +10,8 @@
     "module_files": 20
   },
   "totals": {
-    "file_functions": 258,
-    "file_lines": 665,
+    "file_functions": 257,
+    "file_lines": 636,
     "function_args": 10,
     "function_cognitive": 45,
     "function_cyclomatic": 136,
@@ -21,7 +21,7 @@
   "violations": {
     "file_functions": {
       "src/cli/body.rs": 1,
-      "src/cli/dispatch.rs": 7,
+      "src/cli/dispatch.rs": 6,
       "src/cli/mod.rs": 18,
       "src/config.rs": 33,
       "src/diff.rs": 52,
@@ -46,7 +46,7 @@
       "src/verbs/finalize.rs": 10
     },
     "file_lines": {
-      "src/cli/mod.rs": 201,
+      "src/cli/mod.rs": 172,
       "src/config.rs": 155,
       "src/diff.rs": 171,
       "src/issue/read.rs": 14,

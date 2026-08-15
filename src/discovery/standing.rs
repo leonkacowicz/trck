@@ -8,6 +8,25 @@
 use super::source::TRACKER_REF;
 use std::path::Path;
 
+/// How many local commits the remote has not got.
+///
+/// Zero when everything is shared, when there is no local branch, and when there is no
+/// remote-tracking ref to be ahead of — the last because a tracker with no remote is not
+/// *pending*, it is simply local, and telling someone to `trck sync` a repository with
+/// nowhere to sync to is noise.
+pub(crate) fn pending(cwd: &Path) -> Result<usize, String> {
+    let (Some(_), Some(_)) = (crate::git::rev_parse(cwd, TRACKER_REF)?, crate::git::rev_parse(cwd, &tracking())?) else {
+        return Ok(0);
+    };
+    let range = format!("{}..{TRACKER_REF}", tracking());
+    crate::git::stdout(cwd, &["rev-list", "--count", &range])?.trim().parse().map_err(|e| format!("counting unpushed commits: {e}"))
+}
+
+/// The remote-tracking ref for the tracker branch.
+pub(crate) fn tracking() -> String {
+    format!("origin/{TRACKER_REF}")
+}
+
 /// Bring the local branch into a state worth reading, or say why it is not.
 ///
 /// Local is what gets read either way — it is the only one that can hold work nobody else

@@ -37,6 +37,19 @@ pub(super) const VERBS: &[VerbHelp] = &[
         example: "trck html --out docs/issues.html",
     },
     VerbHelp {
+        verb: "sync",
+        tagline: "share local tracker commits, and pick up what landed elsewhere",
+        usage: "trck sync [options]",
+        blurb: "Push what is waiting on the local tracker branch, then fetch. Reads never touch \
+                the network, and a write that cannot reach the remote still succeeds because its \
+                commit is anchored locally — so this is the one verb whose job is the network, and \
+                the remedy every pending-changes note names. Nothing waiting and nothing new says so.",
+        args: &[],
+        opts: &[],
+        alias_of: "",
+        example: "trck sync",
+    },
+    VerbHelp {
         verb: "repo",
         tagline: "tracker maintenance (normalize, install-hook, …)",
         usage: "trck repo <subcommand> [options]",
