@@ -14,4 +14,10 @@ the real gate, and it runs on the only commits that can break the tracker.
 - [ ] `CONTRIBUTING.md`/`CLAUDE.md`'s `git config core.hooksPath scripts/hooks` instruction is still accurate.
 
 ## Notes
-Small, but it has to be in before the flip or the first post-flip commit fails its own hook.
+Small, but it has to be in before the flip. Not the first commit *after* the flip — the flip
+commit itself: `git rm -r issues/` is a tracker change, so the hook runs, and it runs
+`trck check` against a directory that commit is removing.
+
+Rehearsed in another repo (2026-08-15) rather than reasoned about: `git rm -rq issues && git
+commit` aborted with `trck inconsistent — aborting commit`. An earlier dependency edit had this
+issue depending on the flip; that was wrong, and it is back the other way round.
