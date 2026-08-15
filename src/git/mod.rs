@@ -7,8 +7,9 @@
 //!
 //! The primitives are deliberately thin and deliberately *not* about trackers: they answer
 //! "what does this revision hold" and "make this commit", and the layer above decides what
-//! that means. Reads are in this file; the write half — blobs, trees, commits, refs — is in
-//! [`write`], because a tracker that only reads never touches it.
+//! that means. This file is only the spawn: [`read`] asks the questions, and the write half —
+//! blobs, trees, commits, refs — is in [`write`], because a tracker that only reads never
+//! touches it.
 //!
 //! **Errors are unphrased on purpose.** A failed spawn says `git is not on PATH` and nothing
 //! else; `diff` turns that into a sentence about revision specs being unavailable, because
@@ -16,14 +17,17 @@
 //! guessed would make every caller's diagnostic slightly wrong.
 
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::{Command, Output, Stdio};
 
 // Reached as `git::write::hash_object` rather than re-exported flat: the read primitives are
 // what most callers want, and the qualifier is a reminder that the other four mutate the
 // object store. Nothing calls them yet — the write path (`#jgf9ktx`) is the first consumer —
 // which is what the crate-level `dead_code` expectation is for.
+mod read;
 pub(crate) mod write;
+
+pub(crate) use read::{ls_tree, repo_root, rev_parse, show, tree_blobs};
 
 /// What a failed spawn says. Callers add the context; see the module note.
 const NO_GIT: &str = "git is not on PATH";
@@ -86,59 +90,6 @@ pub(crate) fn stdout(cwd: &Path, args: &[&str]) -> Result<String, String> {
     Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
 }
 
-/// The commit `rev` names, or `None` when it names nothing.
-///
-/// `^{commit}` rather than a bare resolve, so a tag or a tree answers with the commit or not
-/// at all — a caller asking for a revision wants something it can read a tree out of.
-pub(crate) fn rev_parse(cwd: &Path, rev: &str) -> Result<Option<String>, String> {
-    let out = run(cwd, &["rev-parse", "--verify", "--quiet", &format!("{rev}^{{commit}}")])?;
-    if !out.status.success() {
-        return Ok(None);
-    }
-    Ok(Some(String::from_utf8_lossy(&out.stdout).trim().to_string()))
-}
-
-/// The contents of `path` at `rev`, or `None` when the revision does not hold it.
-///
-/// Untrimmed, unlike [`stdout`]: this is file content, and a tracker's `index.jsonl` is
-/// newline-terminated by definition. Absence is `None` rather than an error because it is
-/// a legitimate answer — a revision from before the tracker existed holds no index, and
-/// that means "everything is new", not "something went wrong".
-pub(crate) fn show(cwd: &Path, rev: &str, path: &str) -> Result<Option<String>, String> {
-    let out = run(cwd, &["show", &format!("{rev}:{path}")])?;
-    if !out.status.success() {
-        return Ok(None);
-    }
-    Ok(Some(String::from_utf8_lossy(&out.stdout).into_owned()))
-}
-
-/// The names directly inside `rev:dir`, sorted, or `None` when the revision has no such
-/// directory.
-///
-/// `--name-only` and no `-r`, so this answers with one level the way `read_dir` does rather
-/// than the whole subtree. Absence is `None` for the same reason it is in [`show`]: a
-/// tracker whose `items/` has not been created yet is empty, not broken.
-pub(crate) fn ls_tree(cwd: &Path, rev: &str, dir: &str) -> Result<Option<Vec<String>>, String> {
-    let out = run(cwd, &["ls-tree", "--name-only", "-z", &format!("{rev}:{dir}")])?;
-    if !out.status.success() {
-        return Ok(None);
-    }
-    // NUL-separated: a name git would otherwise quote and escape comes back verbatim, and
-    // an issue slug is not guaranteed to be free of anything git considers unusual.
-    let mut names: Vec<String> = String::from_utf8_lossy(&out.stdout).split('\0').filter(|n| !n.is_empty()).map(str::to_string).collect();
-    names.sort();
-    Ok(Some(names))
-}
-
-/// The working tree's root, or `None` when `cwd` is not inside a repository.
-pub(crate) fn repo_root(cwd: &Path) -> Result<Option<PathBuf>, String> {
-    let out = run(cwd, &["rev-parse", "--show-toplevel"])?;
-    if !out.status.success() {
-        return Ok(None);
-    }
-    Ok(Some(PathBuf::from(String::from_utf8_lossy(&out.stdout).trim())))
-}
-
 #[cfg(test)]
 pub(crate) mod tests {
     // Tests assert; that is their job. See the note in `discovery::tests`.
@@ -146,6 +97,7 @@ pub(crate) mod tests {
 
     use super::*;
     use crate::discovery::tests::Tmp;
+    use std::path::PathBuf;
 
     /// A throwaway repository with an identity, or `None` where git is not installed.
     ///
@@ -174,42 +126,12 @@ pub(crate) mod tests {
         stdout(dir, &["rev-parse", "HEAD"]).expect("head")
     }
 
-    #[test]
-    fn rev_parse_answers_with_the_commit_and_with_none_for_an_unknown_revision() {
-        let Some((_tmp, dir)) = repo("git-revparse") else { return };
-        let head = commit_file(&dir, "a.txt", "one\n");
-        assert_eq!(rev_parse(&dir, "HEAD").unwrap(), Some(head));
-        assert_eq!(rev_parse(&dir, "no-such-branch").unwrap(), None);
-    }
-
-    #[test]
-    fn show_reads_content_untrimmed_and_answers_none_for_a_path_the_revision_lacks() {
-        let Some((_tmp, dir)) = repo("git-show") else { return };
-        commit_file(&dir, "index.jsonl", "{\"id\": \"a\"}\n");
-        assert_eq!(show(&dir, "HEAD", "index.jsonl").unwrap(), Some("{\"id\": \"a\"}\n".to_string()));
-        assert_eq!(show(&dir, "HEAD", "items/nope.md").unwrap(), None);
-    }
-
+    /// What this file is responsible for: the spawn, and reporting a failure with what ran
+    /// and what git said. What was *asked* is [`super::read`]'s and [`super::write`]'s.
     #[test]
     fn a_failing_invocation_is_reported_with_what_ran_and_what_git_said() {
         let Some((_tmp, dir)) = repo("git-failure") else { return };
         let err = stdout(&dir, &["rev-parse", "--verify", "nope"]).expect_err("unknown revision");
         assert!(err.starts_with("git rev-parse --verify nope:"), "{err}");
-    }
-
-    #[test]
-    fn repo_root_finds_the_top_level_and_answers_none_outside_a_repository() {
-        let Some((tmp, dir)) = repo("git-root") else { return };
-        commit_file(&dir, "a.txt", "one\n");
-        let nested = dir.join("sub");
-        std::fs::create_dir_all(&nested).expect("mkdir");
-        let root = repo_root(&nested).unwrap().expect("inside a repo");
-        assert_eq!(root.canonicalize().ok(), dir.canonicalize().ok());
-        // `Tmp`'s own root is a plain directory: the repository is the one made inside it.
-        let outside = tmp.path().parent().expect("temp dir has a parent").to_path_buf();
-        if repo_root(&outside).unwrap().is_some() {
-            return; // the system temp dir is itself inside a repository; nothing to assert.
-        }
-        assert_eq!(repo_root(&outside).unwrap(), None);
     }
 }

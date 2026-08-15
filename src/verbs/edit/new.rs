@@ -3,7 +3,7 @@
 //! Everything it derives — id, slug, priority, points — has a default and a rule the tracker
 //! would enforce later anyway, so each is checked here, before the row exists to hold it.
 
-use super::super::{Edit, Op, body_rel_path, check_slug, commit, issue_path, load_rows, now_utc, resolve_ref, slugify};
+use super::super::{Edit, Op, body_location, body_rel_path, body_taken, check_slug, commit, load_rows, now_utc, resolve_ref, slugify};
 use crate::config;
 use crate::discovery::Ctx;
 use crate::graph::Graph;
@@ -32,9 +32,9 @@ pub(crate) fn cmd_new(ctx: &Ctx, opts: &NewOpts) -> Result<String, String> {
     let mut rows = load_rows(ctx)?;
     let row = build_row(ctx, &rows, opts)?;
     let (iid, depends) = (row.id.clone(), row.depends_on.clone());
-    let path = issue_path(ctx, &row)?;
-    if path.exists() {
-        return Err(format!("{} already exists", path.display()));
+    let where_ = body_location(ctx, &row);
+    if body_taken(ctx, &row) {
+        return Err(format!("{where_} already exists"));
     }
     let body = vec![Edit::Write { path: body_rel_path(&row), contents: opts.body.clone() }];
     let op = op_for(&row);
@@ -49,7 +49,7 @@ pub(crate) fn cmd_new(ctx: &Ctx, opts: &NewOpts) -> Result<String, String> {
         }
     }
     commit(ctx, g.rows, body, &op)?;
-    Ok(path.display().to_string())
+    Ok(where_)
 }
 
 /// The op that would create this row again.

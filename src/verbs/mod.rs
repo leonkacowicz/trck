@@ -24,7 +24,7 @@ mod slug;
 mod status;
 mod write;
 
-pub(crate) use backend::DirBackend;
+pub(crate) use backend::{DirBackend, RefBackend};
 pub(crate) use changeset::{Changeset, Edit, Op};
 pub(crate) use clock::now_utc;
 pub(crate) use edit::{MvOpts, NewOpts, SetOpts, cmd_dep, cmd_label, cmd_mv, cmd_new, cmd_set};
@@ -34,7 +34,7 @@ pub(crate) use status::apply_status;
 pub(crate) use write::{write_atomic, write_file};
 
 use crate::discovery::content::SUMMARY_NAME;
-use crate::discovery::{Ctx, ITEMS_DIR};
+use crate::discovery::{Ctx, ITEMS_DIR, Source};
 use crate::index::parse_index;
 use crate::issue::Issue;
 use crate::summary::filename;
@@ -48,9 +48,21 @@ use std::path::PathBuf;
 /// through the one `apply` below it.
 pub(crate) fn commit(ctx: &Ctx, rows: Vec<Issue>, body: Vec<Edit>, op: &Op) -> Result<Vec<Issue>, String> {
     let cs = finalize(rows, body)?;
-    DirBackend::new(ctx.dir()?).apply(&cs, op)?;
+    apply(ctx, &cs, op)?;
     report_inconsistencies(ctx, &cs.rows);
     Ok(cs.rows)
+}
+
+/// Hand the changeset to whichever backend this tracker is.
+///
+/// The one place the two kinds of tracker are told apart. Every verb above it works on values
+/// and never learns which it was operating on, which is what kept adding the second one from
+/// being a rewrite of the verbs.
+fn apply(ctx: &Ctx, cs: &Changeset, op: &Op) -> Result<(), String> {
+    match &ctx.source {
+        Source::Dir(dir) => DirBackend::new(dir).apply(cs, op),
+        Source::Ref { rev, cwd } => RefBackend::new(cwd, rev).apply(cs, op),
+    }
 }
 
 /// Regenerate `SUMMARY.md` alone.
@@ -63,7 +75,7 @@ pub(crate) fn commit(ctx: &Ctx, rows: Vec<Issue>, body: Vec<Edit>, op: &Op) -> R
 pub(crate) fn write_summary(ctx: &Ctx, g: &crate::graph::Graph) -> Result<(), String> {
     let contents = crate::summary::generate_summary(g);
     let cs = Changeset::new(Vec::new(), vec![Edit::Write { path: PathBuf::from(SUMMARY_NAME), contents }]);
-    DirBackend::new(ctx.dir()?).apply(&cs, &Op::new("summary"))
+    apply(ctx, &cs, &Op::new("summary"))
 }
 
 /// Validate what was just written, reusing the rows rather than re-parsing.
@@ -115,6 +127,29 @@ pub(super) const TEMPLATE: &str = r"# {title}
 /// answer that is wrong.
 pub(crate) fn issue_path(ctx: &Ctx, row: &Issue) -> Result<PathBuf, String> {
     Ok(ctx.items_dir()?.join(filename(row)))
+}
+
+/// How a verb names an issue's body back to whoever ran it.
+///
+/// A directory tracker answers with the file to open. A ref-backed one has no such file, so
+/// it answers the way git spells the same thing — `<rev>:items/<id>-<slug>.md`. Deliberately
+/// not a bare relative path: that reads as real, resolves against whatever directory the
+/// caller happens to be in, and is not there — the trap already refused for `trck path`.
+pub(crate) fn body_location(ctx: &Ctx, row: &Issue) -> String {
+    let name = filename(row);
+    match &ctx.source {
+        Source::Dir(dir) => dir.join(ITEMS_DIR).join(name).display().to_string(),
+        Source::Ref { rev, .. } => format!("{rev}:{ITEMS_DIR}/{name}"),
+    }
+}
+
+/// Does the tracker already hold a body under this name?
+///
+/// Asked of the tracker rather than of a filesystem, so `new`'s collision guard holds for a
+/// ref-backed tracker too — where the "file" is a tree entry and `exists()` would be a
+/// question about the caller's working directory instead.
+pub(crate) fn body_taken(ctx: &Ctx, row: &Issue) -> bool {
+    ctx.list_items().is_ok_and(|names| names.contains(&filename(row)))
 }
 
 pub(crate) fn load_rows(ctx: &Ctx) -> Result<Vec<Issue>, String> {
