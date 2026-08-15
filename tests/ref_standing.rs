@@ -39,6 +39,20 @@ fn point_local_at(work: &Path, rev: &str) {
     git_must(work, &["update-ref", &format!("refs/heads/{TRACKER_BRANCH}"), &target]);
 }
 
+/// File an issue with the remote out of reach — what "filed offline" actually takes.
+///
+/// A write pushes now, so a local branch only gets *ahead* of the remote when the push cannot
+/// happen. The command fails, and should: the work did not reach the shared tracker and
+/// reporting success would be a lie. What it leaves behind is the point — the commit is on the
+/// local branch, which is the state every test below is about.
+fn file_offline(work: &Path, args: &[&str]) {
+    let url = git_must(work, &["remote", "get-url", "origin"]);
+    git_must(work, &["remote", "set-url", "origin", "/trck-no-such-remote.git"]);
+    let out = trck(work, args);
+    assert!(!out.status.success(), "an unreachable remote must not report success: {out:?}");
+    git_must(work, &["remote", "set-url", "origin", &url]);
+}
+
 #[test]
 fn with_no_local_branch_the_remote_tracking_ref_answers() {
     let Some(s) = Scenario::build("standing-absent") else {
@@ -70,7 +84,7 @@ fn a_local_branch_that_is_ahead_answers() {
     };
     point_local_at(&s.work, &format!("origin/{TRACKER_BRANCH}"));
     // A write to the local ref — exactly what an unpushed `trck new` leaves behind.
-    trck_must(&s.work, &["--ref", TRACKER_BRANCH, "new", "Filed offline", "--id", "ccccccc", "--empty"]);
+    file_offline(&s.work, &["--ref", TRACKER_BRANCH, "new", "Filed offline", "--id", "ccccccc", "--empty"]);
     let ahead = sha(&s.work, TRACKER_BRANCH);
     assert_ne!(ahead, sha(&s.work, &format!("origin/{TRACKER_BRANCH}")), "the write did not advance the local ref");
 
@@ -103,7 +117,7 @@ fn a_diverged_local_branch_answers_and_says_so() {
         return;
     };
     point_local_at(&s.work, &format!("origin/{TRACKER_BRANCH}~1"));
-    trck_must(&s.work, &["--ref", TRACKER_BRANCH, "new", "Filed offline", "--id", "ccccccc", "--empty"]);
+    file_offline(&s.work, &["--ref", TRACKER_BRANCH, "new", "Filed offline", "--id", "ccccccc", "--empty"]);
     let local = sha(&s.work, TRACKER_BRANCH);
 
     let out = trck(&s.work, &["list"]);

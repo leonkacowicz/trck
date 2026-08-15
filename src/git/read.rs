@@ -88,6 +88,19 @@ pub(crate) fn is_ancestor(cwd: &Path, ancestor: &str, descendant: &str) -> Resul
     Ok(super::run(cwd, &["merge-base", "--is-ancestor", ancestor, descendant])?.status.success())
 }
 
+/// The paths `rev` changed against its first parent.
+///
+/// The replay path uses this to find the body a pending commit wrote: an op names the issue it
+/// acted on but not always the file, and the commit itself is the one thing that always knows
+/// — including when the row's slug has since moved under it.
+pub(crate) fn changed_paths(cwd: &Path, rev: &str) -> Result<Vec<String>, String> {
+    let out = run(cwd, &["diff-tree", "--no-commit-id", "--name-only", "-r", "-z", "--root", rev])?;
+    if !out.status.success() {
+        return Err(format!("git diff-tree {rev}: {}", String::from_utf8_lossy(&out.stderr).trim()));
+    }
+    Ok(String::from_utf8_lossy(&out.stdout).split('\0').filter(|p| !p.is_empty()).map(str::to_string).collect())
+}
+
 /// The working tree's root, or `None` when `cwd` is not inside a repository.
 pub(crate) fn repo_root(cwd: &Path) -> Result<Option<PathBuf>, String> {
     let out = run(cwd, &["rev-parse", "--show-toplevel"])?;

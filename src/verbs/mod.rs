@@ -21,6 +21,7 @@ mod clock;
 mod edit;
 mod finalize;
 mod op;
+mod replay;
 mod slug;
 mod status;
 mod write;
@@ -31,6 +32,7 @@ pub(crate) use clock::now_utc;
 pub(crate) use edit::{MvOpts, NewOpts, SetOpts, cmd_dep, cmd_label, cmd_mv, cmd_new, cmd_set};
 pub(crate) use finalize::finalize;
 pub(crate) use op::Op;
+pub(crate) use replay::replay;
 pub(crate) use slug::{check_slug, slugify};
 pub(crate) use status::apply_status;
 pub(crate) use write::{write_atomic, write_file};
@@ -41,6 +43,7 @@ use crate::index::parse_index;
 use crate::issue::Issue;
 use crate::summary::filename;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 /// Derive, apply, and say so if the result is inconsistent — the tail every mutating verb
 /// shares.
@@ -52,7 +55,33 @@ pub(crate) fn commit(ctx: &Ctx, rows: Vec<Issue>, body: Vec<Edit>, op: &Op) -> R
     let cs = finalize(rows, body)?;
     apply(ctx, &cs, op)?;
     report_inconsistencies(ctx, &cs.rows);
+    share(ctx, op)?;
     Ok(cs.rows)
+}
+
+/// Set while a rejected write is being rebuilt.
+///
+/// Rebuilding re-runs the verb, which lands back in [`commit`] — and a nested push loop would
+/// have every rejection start another one, each retrying the last. The outer loop is the only
+/// one that should push: the inner run's job is to *build* the commit on the new base, and the
+/// loop that asked for it pushes what it produced.
+static REBUILDING: AtomicBool = AtomicBool::new(false);
+
+/// Get the commit onto the remote, rebuilding onto whatever landed first if it moved.
+///
+/// A directory tracker has no remote of its own — it is files in someone's checkout, shared by
+/// whatever commits that checkout — so this is the ref backend's alone.
+fn share(ctx: &Ctx, op: &Op) -> Result<(), String> {
+    let Source::Ref { rev, cwd } = &ctx.source else {
+        return Ok(());
+    };
+    if REBUILDING.load(Ordering::Relaxed) {
+        return Ok(());
+    }
+    REBUILDING.store(true, Ordering::Relaxed);
+    let result = backend::sync(cwd, &backend::local_ref(rev), op, &|op, pending| replay(ctx, op, pending));
+    REBUILDING.store(false, Ordering::Relaxed);
+    result
 }
 
 /// Hand the changeset to whichever backend this tracker is.

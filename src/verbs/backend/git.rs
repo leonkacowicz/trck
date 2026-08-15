@@ -17,7 +17,8 @@
 use super::super::op::Op;
 use super::message::message;
 use super::{Changeset, Edit, git_path};
-use crate::git::write::{commit_tree, hash_object, update_ref, write_tree};
+use crate::git::refs::update_ref;
+use crate::git::write::{commit_tree, hash_object, write_tree};
 use crate::git::{rev_parse, tree_blobs};
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -111,7 +112,7 @@ fn plan(mut base: BTreeMap<String, String>, edits: &[Edit], blobs: &[Option<Stri
 /// remote-tracking ref is a copy of someone else's branch and moving it locally would make
 /// this clone disagree with the remote it is named after. Stripping `origin/` is what turns a
 /// fresh clone's only ref into the branch this write should create.
-fn local_ref(rev: &str) -> String {
+pub(crate) fn local_ref(rev: &str) -> String {
     let name = rev.strip_prefix("refs/heads/").or_else(|| rev.strip_prefix("origin/")).unwrap_or(rev);
     format!("refs/heads/{name}")
 }

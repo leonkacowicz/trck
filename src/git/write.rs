@@ -1,19 +1,14 @@
-//! Building objects and moving refs, without a checkout.
+//! Building objects, without a checkout.
 //!
 //! The shape a caller assembles from these is always the same: hash each file into a blob,
-//! build a tree out of the blobs, commit the tree, then move a ref onto the commit under a
-//! compare-and-swap. Nothing here touches the working tree or the caller's index, which is
-//! the point — a tracker write must not disturb whatever the operator was doing, and must
-//! work from a dirty tree on an unrelated branch.
+//! build a tree out of the blobs, commit the tree. Nothing here touches the working tree or
+//! the caller's index, which is the point — a tracker write must not disturb whatever the
+//! operator was doing, and must work from a dirty tree on an unrelated branch.
 //!
-//! **Every ref move is a compare-and-swap.** `update_ref` takes the value the caller
-//! believes the ref currently holds and git refuses the move if it holds anything else;
-//! `push` moves a remote ref only when the move is a fast-forward, which is the same
-//! guarantee enforced by the remote. There is no unconditional form of either, and no
-//! `--force` anywhere in this module: a rejection means someone else's work landed, and the
-//! answer to that is to re-read and retry, never to overwrite.
+//! Only objects are made here. Moving a ref onto one of them — locally or on a remote, always
+//! under a compare-and-swap — is [`super::refs`].
 
-use super::{exec, stdout};
+use super::exec;
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 use std::process::Output;
@@ -97,31 +92,13 @@ pub(crate) fn commit_tree(cwd: &Path, tree: &str, parents: &[&str], message: &st
     succeeded(&out, "commit-tree")
 }
 
-/// Move `name` to `new`, but only if it currently holds `old`.
-///
-/// `None` means the ref must not exist yet — the first write to a tracker branch. There is
-/// deliberately no "move it regardless" form: every caller knows what it read, and a move
-/// from an unread value is a lost write.
-pub(crate) fn update_ref(cwd: &Path, name: &str, new: &str, old: Option<&str>) -> Result<(), String> {
-    stdout(cwd, &["update-ref", name, new, old.unwrap_or("")]).map(|_| ())
-}
-
-/// Push `sha` to `refname` on `remote`.
-///
-/// No refspec `+`, no `--force`, no `--force-with-lease`: a plain push of a sha to a branch
-/// ref is already a compare-and-swap, since the remote rejects anything that is not a
-/// fast-forward of what it holds. That rejection is the whole concurrency control — it is
-/// what makes it safe to build a commit against a possibly-stale base, because a commit
-/// whose parent is not the current remote tip cannot land.
-pub(crate) fn push(cwd: &Path, remote: &str, sha: &str, refname: &str) -> Result<(), String> {
-    stdout(cwd, &["push", remote, &format!("{sha}:{refname}")]).map(|_| ())
-}
-
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
     use super::*;
+    use crate::git::refs::update_ref;
+    use crate::git::stdout;
     use crate::git::tests::{commit_file, repo};
     use crate::git::{rev_parse, show};
 
@@ -172,47 +149,5 @@ mod tests {
         let second = commit_tree(&dir, &tree, &[&first], "done #a (fixed)\n").expect("commit");
         update_ref(&dir, "refs/heads/trck-issues", &second, Some(&first)).expect("advance");
         assert_eq!(stdout(&dir, &["rev-list", "--count", "refs/heads/trck-issues"]).unwrap(), "2");
-    }
-
-    #[test]
-    fn a_ref_move_from_a_value_the_ref_no_longer_holds_is_refused() {
-        let Some((_tmp, dir)) = repo("git-cas") else { return };
-        let first = commit_tracker(&dir, "refs/heads/trck-issues", "{\"id\": \"a\"}\n");
-        let blob = hash_object(&dir, "{\"id\": \"b\"}\n").expect("blob");
-        let tree = write_tree(&dir, &[("index.jsonl", &blob)]).expect("tree");
-        let second = commit_tree(&dir, &tree, &[&first], "set #a\n").expect("commit");
-        let stale = "0".repeat(40);
-        update_ref(&dir, "refs/heads/trck-issues", &second, Some(&stale)).expect_err("stale expectation");
-        // Refused, not partially applied: the ref still holds what it held.
-        assert_eq!(rev_parse(&dir, "refs/heads/trck-issues").unwrap(), Some(first));
-    }
-
-    #[test]
-    fn creating_a_ref_that_already_exists_is_refused() {
-        let Some((_tmp, dir)) = repo("git-create") else { return };
-        let first = commit_tracker(&dir, "refs/heads/trck-issues", "{\"id\": \"a\"}\n");
-        let blob = hash_object(&dir, "{\"id\": \"b\"}\n").expect("blob");
-        let tree = write_tree(&dir, &[("index.jsonl", &blob)]).expect("tree");
-        let second = commit_tree(&dir, &tree, &[&first], "set #a\n").expect("commit");
-        update_ref(&dir, "refs/heads/trck-issues", &second, None).expect_err("already exists");
-    }
-
-    #[test]
-    fn a_push_lands_a_fast_forward_and_is_rejected_otherwise() {
-        let Some((tmp, dir)) = repo("git-push") else { return };
-        let remote = tmp.path().join("remote.git");
-        let Some(remote_path) = remote.to_str() else { return };
-        stdout(&dir, &["init", "-q", "--bare", remote_path]).expect("bare remote");
-        let first = commit_tracker(&dir, "refs/heads/trck-issues", "{\"id\": \"a\"}\n");
-        push(&dir, remote_path, &first, "refs/heads/trck-issues").expect("first push");
-        assert_eq!(stdout(&remote, &["rev-parse", "refs/heads/trck-issues"]).unwrap(), first);
-
-        // A commit built against no parent is not a fast-forward of what the remote holds:
-        // exactly the shape of a write that raced someone else's.
-        let blob = hash_object(&dir, "{\"id\": \"b\"}\n").expect("blob");
-        let tree = write_tree(&dir, &[("index.jsonl", &blob)]).expect("tree");
-        let unrelated = commit_tree(&dir, &tree, &[], "new #b: b\n").expect("commit");
-        push(&dir, remote_path, &unrelated, "refs/heads/trck-issues").expect_err("non-fast-forward");
-        assert_eq!(stdout(&remote, &["rev-parse", "refs/heads/trck-issues"]).unwrap(), first);
     }
 }
