@@ -7,9 +7,9 @@
 |---|---:|
 | backlog | 66 |
 | in-progress | 4 |
-| in-review | 0 |
+| in-review | 1 |
 | done | 213 |
-| **total** | **283** |
+| **total** | **284** |
 
 ## Hierarchies
 
@@ -250,7 +250,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 - [#38qfknm restore the coverage the deleted suite carried: hooks, setup-git, git-revision diff](items/38qfknm-restore-the-coverage-the-deleted-suite-carried-hooks-setup-git-git-revision-diff.md) — _high_
 - [#jcdynvv check: warn when this clone's registered merge drivers no longer resolve](items/jcdynvv-check-warn-when-this-clone-s-registered-merge-drivers-no-longer-resolve.md) — _high_ [conflict-resolution]
-- [#jvk5637 tests: a tracker under /tmp makes three discovery tests fail](items/jvk5637-tests-a-tracker-under-tmp-makes-three-discovery-tests-fail.md) — _high_
+- [#bxfg4vk discovery: should the walk up be bounded, or can it adopt a stranger's tracker](items/bxfg4vk-discovery-should-the-walk-up-be-bounded-or-can-it-adopt-a-stranger-s-tracker.md) — _medium_
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](items/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#jkvexgs docs: record a terminal demo of the next-driven loop for the README](items/jkvexgs-docs-record-a-terminal-demo-of-the-next-driven-loop-for-the-readme.md) — _medium_
 - [#k6g7kvf CI: a consistency check a consumer repo can drop in](items/k6g7kvf-ci-a-consistency-check-a-consumer-repo-can-drop-in.md) — _medium_
@@ -284,7 +284,7 @@ _none_
 
 ## In-review
 
-_none_
+- [#jvk5637 tests: a tracker under /tmp makes three discovery tests fail](items/jvk5637-tests-a-tracker-under-tmp-makes-three-discovery-tests-fail.md) — _high_ · [review](https://github.com/leonkacowicz/trck/pull/47)
 
 ## Done
 

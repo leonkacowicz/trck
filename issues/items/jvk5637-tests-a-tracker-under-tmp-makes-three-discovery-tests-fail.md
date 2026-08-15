@@ -28,10 +28,10 @@ CI has been green because a fresh runner's `/tmp` is empty when the unit tests h
 first. That is scheduling luck, not isolation.
 
 ## Acceptance criteria
-- [ ] `cargo test --all` passes with an unrelated tracker directory sitting at `/tmp/<name>`.
-- [ ] The three tests no longer depend on what else is under the fixture's ancestors.
-- [ ] `tests/git_hooks.rs` keeps whatever it was demonstrating by living at the root level, or the reason it no longer needs to is written down.
-- [ ] The fix is a test-isolation fix: `find_tracker`'s sibling scan is behaviour users rely on and does not change here.
+- [x] No fixture in this repository puts a `trck.json` at the temp directory's top level, so `cargo test --all` no longer races itself. *(Was: "passes with an unrelated tracker directory sitting at `/tmp/<name>`" — see the note below for why that moved to #bxfg4vk.)*
+- [x] The three tests no longer depend on what **this repository's** fixtures put beside them.
+- [x] `tests/git_hooks.rs` keeps whatever it was demonstrating by living at the root level, or the reason it no longer needs to is written down.
+- [x] The fix is a test-isolation fix: `find_tracker`'s sibling scan is behaviour users rely on and does not change here.
 
 ## Notes
 Found while working #jgf9ktx, where a tracker another session had left at `/tmp/p95t` made all
@@ -44,5 +44,28 @@ the fixture's siblings are only ever other fixtures; or have the three tests ass
 they fully control rather than one with real ancestors. Note that nesting `Tmp` alone does not fix
 it if `git_hooks` keeps writing a sibling *of the nest* — both halves have to agree on where test
 trackers live.
+
+---
+
+Fixed in PR #47, and the fix is smaller than either shape above: the scan looks at a directory's
+**direct children** only, so a tracker one level further down is already invisible. Nothing needed a
+nested root — the two offenders just had to stop putting `trck.json` at their own root. Both came
+from `tests/git_hooks.rs`, whose repository now lives one level inside its throwaway root, so it is
+still a tracker at a repo root without being a tracker at `/tmp`'s. `Tmp` moved to
+`src/discovery/fixture.rs` so the rule has somewhere to live, and a new test asserts the mechanism
+instead of assuming it.
+
+Measured with a sampler watching `<temp>/*/trck.json` through a full run: two on `origin/main`
+(`trck-hooks-rootlevel` and `trck-hooks-nogit`, the second of which reading the code had not turned
+up), none afterwards.
+
+**AC 1 was reworded, and the original went to #bxfg4vk.** A tracker left at `/tmp/<name>` by
+anything else cannot be defended against by test isolation — and it turns out to break far more than
+the three tests named here. It hijacks the whole ref-backed integration suite, whose fixtures depend
+on discovery walking up, finding nothing, and falling through to the conventional ref;
+`tests/ref_diff.rs` fails with `unknown revision`. A skip-guard on the three emptiness tests was
+tried and backed out, because it would have to cover nearly every ref test and partial immunity that
+looks total is worse than none. The real question — whether the walk should be bounded at all — is
+behaviour users see, which AC 4 keeps out of this issue, so it is #bxfg4vk's.
 
 That `#jgf9ktx` had to be committed with `--no-verify` is the cost being paid here.
