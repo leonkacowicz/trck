@@ -116,15 +116,23 @@ fn resolve_ref(cwd: &Path, rev: &str) -> Result<Option<Source>, String> {
 /// Both are tried by name because a bare `trck-issues` does not reach
 /// `refs/remotes/origin/trck-issues` — git's revision lookup would want
 /// `refs/remotes/trck-issues`. So a fresh clone, which has only the remote-tracking ref,
-/// needs the second attempt. Which of the two *should* win once both exist, and what to say
-/// when they have diverged, is `#abynj5c`.
+/// needs the second attempt. Which of the two wins once both exist, and what to say when
+/// they have diverged, is [`super::standing`].
 fn conventional_ref(cwd: &Path) -> Result<Option<Source>, String> {
-    for rev in [TRACKER_REF.to_string(), format!("origin/{TRACKER_REF}")] {
-        if let Some(found) = resolve_ref(cwd, &rev)? {
-            return Ok(Some(found));
-        }
-    }
-    Ok(None)
+    let local = crate::git::rev_parse(cwd, TRACKER_REF)?;
+    let remote_name = format!("origin/{TRACKER_REF}");
+    let remote = crate::git::rev_parse(cwd, &remote_name)?;
+
+    let (Some(local_sha), Some(remote_sha)) = (local.as_deref(), remote.as_deref()) else {
+        // Only one of them exists, or neither. A fresh clone has just the remote-tracking
+        // ref; a tracker made locally and never pushed has just the branch.
+        let only = local.map(|_| TRACKER_REF.to_string()).or(remote.map(|_| remote_name));
+        return Ok(only.map(|rev| Source::Ref { rev, cwd: cwd.to_path_buf() }));
+    };
+
+    // Local answers in every remaining case. What differs is what has to happen first.
+    super::standing::reconcile(cwd, local_sha, remote_sha)?;
+    Ok(Some(Source::Ref { rev: TRACKER_REF.to_string(), cwd: cwd.to_path_buf() }))
 }
 
 #[cfg(test)]

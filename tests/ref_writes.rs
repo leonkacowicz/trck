@@ -83,12 +83,13 @@ fn the_first_write_creates_the_local_branch_on_top_of_the_remote() {
     let Some(s) = Scenario::build("refwrite-first") else { return };
     assert!(!git_ok_ref(&s.work, LOCAL_REF), "the fixture must start without a local tracker branch");
     let remote_tip = git_must(&s.work, &["rev-parse", &format!("origin/{TRACKER_BRANCH}")]);
+    let seeded = commits(&s, &format!("origin/{TRACKER_BRANCH}"));
 
     trck_must(&s.work, &["new", "Filed from a ref", "--id", "ccccccc", "--body", "Filed against a ref."]);
 
     assert!(git_ok_ref(&s.work, LOCAL_REF), "the write must anchor its commit on a ref");
     assert_eq!(git_must(&s.work, &["rev-parse", &format!("{LOCAL_REF}^")]), remote_tip, "and descend from what the remote held");
-    assert_eq!(git_must(&s.work, &["rev-list", "--count", LOCAL_REF]), "2", "one new commit on top of the seeded one");
+    assert_eq!(commits(&s, LOCAL_REF), seeded + 1, "one new commit on top of what the remote held");
 }
 
 /// One verb, one commit — and the commit says what the verb was asked to do.
@@ -190,6 +191,12 @@ fn the_commit_tree_is_what_the_directory_backend_would_have_written() {
     }
 }
 
+/// How many commits `rev` has. Counted rather than written down: the fixture's own history
+/// is its business, and an absolute number here breaks the day it gains a commit.
+fn commits(s: &Scenario, rev: &str) -> usize {
+    git_must(&s.work, &["rev-list", "--count", rev]).parse().expect("a count")
+}
+
 /// Every write reads the ref it is about to move, and builds on what it finds *now*.
 ///
 /// The compare-and-swap that makes a concurrent write lose cleanly rather than clobber is
@@ -208,10 +215,11 @@ fn a_write_builds_on_the_ref_as_it_stands_now() {
     let theirs = git_must(&s.work, &["commit-tree", &format!("{LOCAL_REF}^{{tree}}"), "-p", &ours, "-m", "someone else"]);
     git_must(&s.work, &["update-ref", LOCAL_REF, &theirs, &ours]);
 
+    let before = commits(&s, LOCAL_REF);
     trck_must(&s.work, &["new", "Second", "--id", "ddddddd", "--empty"]);
 
     assert_eq!(git_must(&s.work, &["rev-parse", &format!("{LOCAL_REF}^")]), theirs, "the next write descends from their commit, not ours");
-    assert_eq!(git_must(&s.work, &["rev-list", "--count", LOCAL_REF]), "4", "and the history stayed linear");
+    assert_eq!(commits(&s, LOCAL_REF), before + 1, "and the history stayed linear");
 }
 
 /// A tracker write must not be something you have to be ready for. The fixture's clone is

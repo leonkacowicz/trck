@@ -79,6 +79,15 @@ fn parse_ls_tree_record(record: &str) -> Option<(String, String)> {
     (kind == "blob").then(|| (path.to_string(), sha.to_string()))
 }
 
+/// Is `ancestor` reachable from `descendant`?
+///
+/// `merge-base --is-ancestor` answers by exit status, so `false` here is an answer rather
+/// than a failure — which is why it reads the status instead of going through [`super::stdout`].
+/// A revision is its own ancestor; callers that care about equality check it first.
+pub(crate) fn is_ancestor(cwd: &Path, ancestor: &str, descendant: &str) -> Result<bool, String> {
+    Ok(super::run(cwd, &["merge-base", "--is-ancestor", ancestor, descendant])?.status.success())
+}
+
 /// The working tree's root, or `None` when `cwd` is not inside a repository.
 pub(crate) fn repo_root(cwd: &Path) -> Result<Option<PathBuf>, String> {
     let out = run(cwd, &["rev-parse", "--show-toplevel"])?;

@@ -27,7 +27,7 @@ use std::process::{Command, Output, Stdio};
 mod read;
 pub(crate) mod write;
 
-pub(crate) use read::{ls_tree, repo_root, rev_parse, show, tree_blobs};
+pub(crate) use read::{is_ancestor, ls_tree, repo_root, rev_parse, show, tree_blobs};
 
 /// What a failed spawn says. Callers add the context; see the module note.
 const NO_GIT: &str = "git is not on PATH";
