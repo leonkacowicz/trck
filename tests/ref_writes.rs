@@ -15,7 +15,7 @@
 
 mod common;
 
-use common::{SEEDED_BODY, Scenario, TRACKER_BRANCH, TmpDir, WORK_BRANCH, git, git_must, trck_must};
+use common::{HOLED_BRANCH, SEEDED_BODY, Scenario, TRACKER_BRANCH, TmpDir, WORK_BRANCH, git, git_must, git_ok, trck, trck_must};
 use std::path::Path;
 use std::process::{Command, Output};
 
@@ -258,6 +258,87 @@ fn an_unset_git_identity_is_reported_with_the_config_to_set() {
     assert!(err.contains("user.name"), "{err}");
     assert!(!err.contains("auto-detect"), "git's own wording is replaced, not passed through: {err}");
     assert!(!git_ok_ref(&s.work, LOCAL_REF), "and nothing was anchored");
+}
+
+/// The write is validated against where it landed, not against where it was read from.
+///
+/// A clone that has never written to the tracker resolves it through `origin/trck-issues`,
+/// the only tracker ref it has; the commit goes to the local branch. Validating the source
+/// ref afterwards therefore inspects the tree the write *started from*, which of course does
+/// not hold the body just written — so every first write in every fresh clone announced that
+/// the tracker was inconsistent, having just made it consistently.
+///
+/// On stderr, while the verb still succeeded, which is why no test caught it: a caller
+/// reading stdout and a status code saw nothing wrong. So this asserts on stderr.
+#[test]
+fn the_first_write_in_a_clone_does_not_claim_the_tracker_is_inconsistent() {
+    let Some(s) = Scenario::build("refwrite-firstclean") else { return };
+    assert!(!git_ok_ref(&s.work, LOCAL_REF), "the fixture must start with no local tracker branch");
+
+    let out = trck(&s.work, &["new", "Filed from a fresh clone", "--id", "ccccccc", "--body", "Prose."]);
+
+    assert!(out.status.success(), "the write itself must succeed");
+    let err = String::from_utf8_lossy(&out.stderr);
+    assert!(!err.contains("INCONSISTENCIES"), "a first write reported the tracker as broken: {err}");
+    assert!(!err.contains("no markdown file"), "{err}");
+    // And the tracker really is consistent, so the claim was false rather than early.
+    trck_must(&s.work, &["check"]);
+}
+
+/// And the path it prints is where the body *is*, for the same reason.
+///
+/// The same source resolved before the branch existed also names the body back to the caller,
+/// so a fresh clone answered `origin/trck-issues:items/…` — a revision whose tree does not hold
+/// what was just written. It resolves anyway once the push lands, which is what hid this; with
+/// no reachable remote it is simply a path that is not there, the trap `trck path` already
+/// refuses to print.
+#[test]
+fn a_first_write_names_the_branch_it_landed_on() {
+    let Some(s) = Scenario::build("refwrite-firstwhere") else { return };
+    // An unreachable remote rather than no remote: the push must fail, so that nothing updates
+    // `origin/trck-issues` behind the answer and makes a wrong one resolve anyway — but the
+    // remote-tracking ref has to stay, because it is the only tracker this clone can find.
+    git_must(&s.work, &["remote", "set-url", "origin", &s.work.join("nowhere.git").display().to_string()]);
+
+    let out = trck_must(&s.work, &["new", "Filed from a fresh clone", "--id", "ccccccc", "--body", "Prose."]);
+
+    let (where_, _) = out.trim().split_once("  ").unwrap_or((out.trim(), ""));
+    assert_eq!(where_, "trck-issues:items/ccccccc-filed-from-a-fresh-clone.md", "the location must name the branch written, not the ref read");
+    assert!(git_ok(&s.work, &["cat-file", "-e", where_]), "and it must resolve: {where_}");
+}
+
+/// `mv` names it the same way, and it is a different code path: `new` knows the row it built,
+/// `mv` looks one up and confirms its body is there before moving it.
+#[test]
+fn a_first_move_names_the_branch_it_landed_on() {
+    let Some(s) = Scenario::build("refwrite-firstmove") else { return };
+    git_must(&s.work, &["remote", "set-url", "origin", &s.work.join("nowhere.git").display().to_string()]);
+
+    let out = trck_must(&s.work, &["start", "aaaaaaa"]);
+
+    let (where_, _) = out.trim().split_once("  ").unwrap_or((out.trim(), ""));
+    assert_eq!(where_, "trck-issues:items/aaaaaaa-seeded-issue.md", "the location must name the branch written, not the ref read");
+    assert!(git_ok(&s.work, &["cat-file", "-e", where_]), "and it must resolve: {where_}");
+}
+
+/// The check still fires — validating the right tree is not the same as not validating.
+///
+/// The fixture's holed branch is a tracker whose index lists a body its tree does not hold,
+/// which no verb can produce and a hand-edit or a bad merge can. A write onto it inherits the
+/// hole, and saying so is the whole point of the report.
+#[test]
+fn a_write_onto_a_holed_tracker_still_reports_it() {
+    let Some(s) = Scenario::build("refwrite-holed") else { return };
+    let holed = format!("origin/{HOLED_BRANCH}");
+
+    let out = trck(&s.work, &["--ref", &holed, "new", "Filed onto a hole", "--id", "ccccccc", "--body", "Prose."]);
+
+    assert!(out.status.success(), "an inconsistent tracker does not fail the verb, it warns");
+    let err = String::from_utf8_lossy(&out.stderr);
+    assert!(err.contains("#bbbbbbb in index but no markdown file"), "the pre-existing hole must be named: {err}");
+    // The row this very verb wrote is not the one missing — that was the false alarm.
+    assert!(!err.contains("#ccccccc"), "the row just written must not be reported missing: {err}");
+    assert_eq!(err.matches("INCONSISTENCIES").count(), 1, "one report per invocation: {err}");
 }
 
 /// Does the ref resolve? `git()` rather than `git_must()`, because "no" is the answer in

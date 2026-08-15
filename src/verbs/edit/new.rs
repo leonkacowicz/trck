@@ -3,7 +3,7 @@
 //! Everything it derives — id, slug, priority, points — has a default and a rule the tracker
 //! would enforce later anyway, so each is checked here, before the row exists to hold it.
 
-use super::super::{Edit, Op, body_location, body_rel_path, body_taken, check_slug, commit, load_rows, now_utc, resolve_ref, slugify};
+use super::super::{Edit, Op, body_location, body_rel_path, body_taken, check_slug, commit, landed, load_rows, now_utc, resolve_ref, slugify};
 use crate::config;
 use crate::discovery::Ctx;
 use crate::graph::Graph;
@@ -48,8 +48,13 @@ pub(crate) fn cmd_new(ctx: &Ctx, opts: &NewOpts) -> Result<String, String> {
             return Err(msg);
         }
     }
-    commit(ctx, g.rows, body, &op)?;
-    Ok(where_)
+    let rows = commit(ctx, g.rows, body, &op)?;
+    // Recomputed, not the `where_` above: that one answers "is this body already taken", a
+    // question about the tracker as it stood. This one answers "where is the body now", and
+    // for a clone whose only tracker ref was the remote-tracking one those are two different
+    // revisions — the write is what created the local branch.
+    let row = rows.iter().find(|r| r.id == iid).ok_or("the row just written is not in the index")?;
+    Ok(body_location(&landed(ctx), row))
 }
 
 /// The op that would create this row again.
