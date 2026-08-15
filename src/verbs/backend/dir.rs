@@ -1,12 +1,10 @@
-//! Where a [`Changeset`] lands.
+//! A tracker that is a directory: the changeset applied as file operations.
 //!
-//! This is the only place in the write path that touches a filesystem. Everything upstream of
-//! it — deriving the rollup, rendering the index, working out which body file moved — happens
-//! on values, so the second backend (`#sqzr7nk`, a tracker in a git ref) is another `apply`
-//! rather than another copy of the verbs.
+//! This is the only place in the engine that writes a tracker's files. The ref-backed
+//! counterpart is [`super::git`], and neither knows the other exists.
 
-use super::changeset::{Changeset, Edit, Op};
-use super::write::write_atomic;
+use super::super::write::write_atomic;
+use super::{Changeset, Edit, Op};
 use std::path::Path;
 
 /// A tracker that is a directory on disk.

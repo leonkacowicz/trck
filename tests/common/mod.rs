@@ -211,6 +211,14 @@ impl Scenario {
         git_must(&work, &["checkout", "-q", "-b", WORK_BRANCH]);
         std::fs::write(work.join("README.md"), "# fixture, edited and not committed\n").expect("write");
 
+        // A commit identity, in the clone's own config rather than in this helper's
+        // environment. Everything above commits through `git_must`, which supplies one by
+        // env — but the binary under test spawns its *own* git, which inherits none of that.
+        // Without this the ref-backed write path fails on a machine with no global identity,
+        // which is every CI runner and no developer laptop: the worst way round to find out.
+        git_must(&work, &["config", "user.email", "trck@example.invalid"]);
+        git_must(&work, &["config", "user.name", "trck tests"]);
+
         Some(Scenario { _root: root, origin, work })
     }
 
