@@ -40,12 +40,14 @@ git fetch origin main
 git worktree add --detach "$WT" origin/main
 
 # ALWAYS --dir. Without it trck walks up and writes to your feature branch.
-path=$(trck --dir "$WT/issues" new "title" --priority high)
+# Write the body first, then hand it over: with no body flag and no terminal, `new` refuses
+# rather than filing prose nobody wrote. Use `--empty` for a deliberately title-only issue.
+printf '%s\n' '# title' '' '## Summary' '…' > "$WT/body.md"
+path=$(trck --dir "$WT/issues" new "title" --priority high --body-file "$WT/body.md")
 ```
 
-Now edit the body at `$path` — Summary / Acceptance criteria / Notes. That file is inside the
-worktree, so the commit below picks it up. Metadata verbs (`done`, `set`, `dep`, …) have no body
-step; go straight on.
+`--body TEXT` and `--body-file -` (stdin) work too, and are the same three spellings `git commit`
+uses. Metadata verbs (`done`, `set`, `dep`, …) have no body step; go straight on.
 
 ```bash
 trck --dir "$WT/issues" check          # gate before pushing; there is no PR to catch this

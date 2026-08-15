@@ -12,6 +12,7 @@
 
 mod body;
 mod dispatch;
+mod editor;
 pub(crate) mod opts;
 mod reports;
 mod tracker;
@@ -205,10 +206,6 @@ const MIN_POSITIONAL: &[(&str, usize, &str)] = &[
 /// Options a verb cannot run without.
 const REQUIRED_OPTS: &[(&str, &str)] = &[("changelog", "--since")];
 
-/// Verbs whose `--json` is implemented. The rest still refuse the flag: accepted-and-ignored
-/// returns human text with exit 0, and a caller piping into `jq` finds out far from the cause.
-const JSON_VERBS: &[&str] = &["list", "tree", "show", "ready", "next", "deps"];
-
 /// Everything wrong with the *shape* of the invocation, as opposed to what it asks for.
 ///
 /// Kept separate because it exits 2, not 1. That is argparse's convention and it is a
@@ -244,7 +241,7 @@ fn usage_error(args: &Args) -> Option<String> {
     // engine's do, but no verb honours it yet. Refusing it is the whole point: a flag that is
     // accepted and ignored returns human text with exit 0, and a caller piping into `jq` finds
     // out far from the cause. Drop this once the read verbs emit JSON.
-    if args.has("--json") && !JSON_VERBS.contains(&args.verb.as_str()) {
+    if args.has("--json") && !opts::JSON_VERBS.contains(&args.verb.as_str()) {
         return Some(format!("{}: --json is not implemented in this engine yet", args.verb));
     }
     if let Some(n) = unrecognized_flag(args) {
