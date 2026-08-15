@@ -41,25 +41,40 @@ pub(crate) fn sync(cwd: &Path, target: &str, op: &Op, replay: &dyn Fn(&Op, &str)
     if !has_remote(cwd, REMOTE) {
         return Ok(()); // a local tracker: the local ref is the whole of it
     }
-    // *Every* way this fails is wrapped, not just running out of attempts. An unreachable
-    // remote fails at the fetch with git's own words, and those words say nothing about the
-    // issue that was just filed — which is committed, safe, and the entire reason the local
-    // ref is written first. A user told only "could not read from remote repository" has no
-    // way to know their work survived.
-    attempts(cwd, target, op, replay).map_err(|reason| unshared(target, op, &reason))
+    // Not being able to reach the remote is not a failed write: the commit is on the local
+    // branch — which is why it is written first — so the verb succeeds and its caller reports
+    // what is pending (`#dak2sjq`). A replay that failed is the one case where something
+    // could actually be lost, because `rebuild` has already moved the local ref to the
+    // remote's tip and the pending commit is unreferenced. That one is an error, and it says
+    // where the commit is.
+    match attempts(cwd, target, op, replay) {
+        Err(Unshared::Fatal(reason)) => Err(unshared(target, op, &reason)),
+        Ok(()) | Err(Unshared::Unreachable(_)) => Ok(()),
+    }
+}
+
+/// Why a push did not land, split by whether anything is at risk.
+enum Unshared {
+    /// The remote could not be reached, or would not take it. The local branch still holds
+    /// everything; nothing is lost and nothing needs saying beyond "not shared yet".
+    Unreachable(String),
+    /// Something went wrong that leaves work needing a human. See [`sync`].
+    Fatal(String),
 }
 
 /// Push, and rebuild onto whatever landed first, until one of them works or the tries run out.
-fn attempts(cwd: &Path, target: &str, op: &Op, replay: &dyn Fn(&Op, &str) -> Result<(), String>) -> Result<(), String> {
+fn attempts(cwd: &Path, target: &str, op: &Op, replay: &dyn Fn(&Op, &str) -> Result<(), String>) -> Result<(), Unshared> {
     for attempt in 1..=ATTEMPTS {
-        let Some(sha) = rev_parse(cwd, target)? else {
-            return Err(format!("{target} does not exist, so there is nothing to push"));
+        let sha = match rev_parse(cwd, target) {
+            Ok(Some(sha)) => sha,
+            Ok(None) => return Err(Unshared::Fatal(format!("{target} does not exist, so there is nothing to push"))),
+            Err(e) => return Err(Unshared::Fatal(e)),
         };
         let Err(rejected) = push(cwd, REMOTE, &sha, target) else {
             return Ok(());
         };
         if attempt == ATTEMPTS {
-            return Err(format!("rejected {ATTEMPTS} times, last: {rejected}"));
+            return Err(Unshared::Unreachable(format!("rejected {ATTEMPTS} times, last: {rejected}")));
         }
         rebuild(cwd, target, op, replay)?;
     }
@@ -71,23 +86,23 @@ fn attempts(cwd: &Path, target: &str, op: &Op, replay: &dyn Fn(&Op, &str) -> Res
 /// The pending commit is not discarded by the reset — it is still whole in the object store,
 /// and its tree is where a replayed body comes from. What is discarded is its *position*, which
 /// was on a base that no longer exists as a tip.
-fn rebuild(cwd: &Path, target: &str, op: &Op, replay: &dyn Fn(&Op, &str) -> Result<(), String>) -> Result<(), String> {
-    fetch(cwd, REMOTE, target)?;
+fn rebuild(cwd: &Path, target: &str, op: &Op, replay: &dyn Fn(&Op, &str) -> Result<(), String>) -> Result<(), Unshared> {
+    fetch(cwd, REMOTE, target).map_err(Unshared::Unreachable)?;
     let tracking = format!("refs/remotes/{REMOTE}/{}", target.trim_start_matches("refs/heads/"));
-    let Some(theirs) = rev_parse(cwd, &tracking)? else {
+    let Some(theirs) = rev_parse(cwd, &tracking).map_err(Unshared::Fatal)? else {
         // The remote refused a push and has no such branch: not contention, and re-running
         // would loop against a wall. Whatever went wrong, the push error said it.
-        return Err(format!("{REMOTE} rejected the push but has no {tracking} to rebuild onto"));
+        return Err(Unshared::Unreachable(format!("{REMOTE} rejected the push but has no {tracking} to rebuild onto")));
     };
     // The pending commit's sha is kept, not just discarded with its position: its tree is
     // where a replayed body comes from, and after the reset nothing else points at it.
-    let ours = rev_parse(cwd, target)?;
-    update_ref(cwd, target, &theirs, ours.as_deref())?;
+    let ours = rev_parse(cwd, target).map_err(Unshared::Fatal)?;
+    update_ref(cwd, target, &theirs, ours.as_deref()).map_err(Unshared::Fatal)?;
     match &ours {
-        Some(pending) => replay(op, pending),
+        Some(pending) => replay(op, pending).map_err(Unshared::Fatal),
         // Nothing local to replay: the branch did not exist, so the push failed for a reason
         // that rebuilding cannot address.
-        None => Err(format!("{target} holds nothing to replay")),
+        None => Err(Unshared::Fatal(format!("{target} holds nothing to replay"))),
     }
 }
 

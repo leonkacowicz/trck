@@ -16,44 +16,14 @@ mod editor;
 pub(crate) mod opts;
 mod prose;
 mod reports;
+mod sync;
+pub(crate) mod tables;
 mod tracker;
 use dispatch::dispatch;
-use opts::unrecognized_flag;
+use tables::unrecognized_flag;
 use tracker::{context, tracker_dir};
 
 use crate::help;
-
-/// Everything this binary offers. It began as a list of what the Python engine had, so
-/// `--help` could be honest about what was missing; it is now simply the verb list.
-pub(crate) const VERBS: &[&str] = &[
-    "new",
-    "edit",
-    "mv",
-    "start",
-    "review",
-    "done",
-    "set",
-    "dep",
-    "label",
-    "show",
-    "path",
-    "which",
-    "list",
-    "tree",
-    "ready",
-    "next",
-    "deps",
-    "changelog",
-    "diff",
-    "check",
-    "summary",
-    // `html` has no Python counterpart: it is `tools/trck-html`, folded in. The verb
-    // list is what this binary offers, not a mirror of the old CLI.
-    "html",
-    "repo",
-    "init",
-    "version",
-];
 
 /// Parsed argv: the verb, its positionals, and its options.
 struct Args {
@@ -164,6 +134,7 @@ impl Args {
 pub(crate) const KNOWN_FLAGS: &[(&str, usize, &[&str])] = &[
     ("new", 0, &["--dir", "--id", "--slug", "--priority", "--points", "--parent", "--requires", "--spec", "--review-url", "--body", "--body-file", "--empty"]),
     ("edit", 0, prose::EDIT_FLAGS),
+    ("sync", 0, &["--dir"]),
     ("mv", 0, &["--dir", "--resolution", "--review-url"]),
     ("start", 0, &["--dir"]),
     ("review", 0, &["--dir", "--review-url"]),
@@ -171,10 +142,10 @@ pub(crate) const KNOWN_FLAGS: &[(&str, usize, &[&str])] = &[
     ("set", 0, &["--dir", "--auto", "--priority", "--points", "--parent", "--spec", "--review-url", "--title", "--slug", "--field", "--unset"]),
     ("dep", 0, &["--dir", "--add", "--remove"]),
     ("label", 0, &["--dir", "--add", "--remove"]),
-    ("list", 0, opts::LIST_FLAGS),
+    ("list", 0, tables::LIST_FLAGS),
     // Named once rather than repeated: `tree` is an alias, so a flag either verb accepted
     // alone would be a flag the other silently refused.
-    ("tree", 0, opts::LIST_FLAGS),
+    ("tree", 0, tables::LIST_FLAGS),
     ("show", 0, &["--dir", "--json"]),
     ("path", 0, &["--dir"]),
     ("which", 0, &["--dir", "--ids"]),
@@ -220,25 +191,25 @@ fn usage_error(args: &Args) -> Option<String> {
                 .to_string(),
         );
     }
-    if !args.verb.is_empty() && !VERBS.contains(&args.verb.as_str()) {
+    if !args.verb.is_empty() && !tables::VERBS.contains(&args.verb.as_str()) {
         return Some(format!("unknown verb `{}`", args.verb));
     }
     // `--json` is in the known-flag tables so the read verbs keep parsing the way the Python
     // engine's do, but no verb honours it yet. Refusing it is the whole point: a flag that is
     // accepted and ignored returns human text with exit 0, and a caller piping into `jq` finds
     // out far from the cause. Drop this once the read verbs emit JSON.
-    if args.has("--json") && !opts::JSON_VERBS.contains(&args.verb.as_str()) {
+    if args.has("--json") && !tables::JSON_VERBS.contains(&args.verb.as_str()) {
         return Some(format!("{}: --json is not implemented in this engine yet", args.verb));
     }
     if let Some(n) = unrecognized_flag(args) {
         return Some(format!("{}: unrecognized argument {n}", args.verb));
     }
-    if let Some((_, want, what)) = opts::MIN_POSITIONAL.iter().find(|(verb, ..)| *verb == args.verb)
+    if let Some((_, want, what)) = tables::MIN_POSITIONAL.iter().find(|(verb, ..)| *verb == args.verb)
         && args.positional.len() < *want
     {
         return Some(format!("{}: missing {what}", args.verb));
     }
-    if let Some((_, opt)) = opts::REQUIRED_OPTS.iter().find(|(verb, _)| *verb == args.verb)
+    if let Some((_, opt)) = tables::REQUIRED_OPTS.iter().find(|(verb, _)| *verb == args.verb)
         && args.opt(opt).is_none()
     {
         return Some(format!("{}: the following arguments are required: {opt}", args.verb));
@@ -256,7 +227,7 @@ fn usage() -> String {
          \n\
          Verbs: {}\n",
         env!("CARGO_PKG_VERSION"),
-        VERBS.join(", ")
+        tables::VERBS.join(", ")
     )
 }
 
@@ -490,12 +461,12 @@ mod tests {
     /// wiring it, this test — not a user — is what finds out.
     #[test]
     fn every_advertised_verb_is_wired_to_something() {
-        for verb in VERBS {
+        for verb in tables::VERBS {
             // Dispatching would run them; the frontier is a property of the match arms, so
             // read it off the message the catch-all would produce instead.
             let orphan = format!("`{verb}` is not implemented yet in the Rust engine");
             assert!(!usage().contains(&orphan), "the help advertises an unported verb: {verb}");
         }
-        assert!(VERBS.contains(&"init"), "init dropped out of the verb list");
+        assert!(tables::VERBS.contains(&"init"), "init dropped out of the verb list");
     }
 }

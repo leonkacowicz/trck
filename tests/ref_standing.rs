@@ -42,14 +42,17 @@ fn point_local_at(work: &Path, rev: &str) {
 /// File an issue with the remote out of reach — what "filed offline" actually takes.
 ///
 /// A write pushes now, so a local branch only gets *ahead* of the remote when the push cannot
-/// happen. The command fails, and should: the work did not reach the shared tracker and
-/// reporting success would be a lie. What it leaves behind is the point — the commit is on the
-/// local branch, which is the state every test below is about.
+/// happen. The write still succeeds — its commit is anchored on the local branch before the
+/// push is attempted, which is the whole reason that order was chosen — and says what it left
+/// unshared. What it leaves behind is the point: that state is what every test below is about.
 fn file_offline(work: &Path, args: &[&str]) {
     let url = git_must(work, &["remote", "get-url", "origin"]);
     git_must(work, &["remote", "set-url", "origin", "/trck-no-such-remote.git"]);
     let out = trck(work, args);
-    assert!(!out.status.success(), "an unreachable remote must not report success: {out:?}");
+    assert!(out.status.success(), "an unshared write is not a failed write: {out:?}");
+    let said = String::from_utf8_lossy(&out.stdout);
+    assert!(said.contains("unpushed"), "the write did not say what it left unshared: {said}");
+    assert!(said.contains("trck sync"), "and did not name the remedy: {said}");
     git_must(work, &["remote", "set-url", "origin", &url]);
 }
 

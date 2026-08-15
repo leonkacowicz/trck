@@ -7,33 +7,50 @@
 
 use super::opts::{deps_opts, init_from_args, list_opts, mv_opts, set_opts};
 use super::reports::{cmd_changelog, cmd_check, cmd_diff, cmd_summary};
-use super::{Args, VERBS, context, parse_args, tracker_dir};
+use super::tables::{VERBS, id_operand};
+use super::{Args, context, parse_args, tracker_dir};
 use crate::discovery::Ctx;
 use crate::query;
 use crate::repo;
 use crate::verbs;
-
-/// The nth positional as an issue id, or the missing-operand error naming the verb.
-///
-/// One function rather than the same closure rebuilt in each dispatcher: three copies of a
-/// message is three chances for them to drift apart.
-fn id_operand(args: &Args, n: usize) -> Result<&str, String> {
-    args.positional_at(n).ok_or_else(|| format!("{}: missing an issue id", args.verb))
-}
 
 /// The verbs that write. Returns `None` when the verb is not one of them, so `dispatch`
 /// can fall through to the read side — the split is by what they do to the tracker, which
 /// is also the split in how much can go wrong.
 fn dispatch_mutating(args: &Args) -> Option<Result<String, String>> {
     let ctx = || context(args);
-    Some(match args.verb.as_str() {
+    let done = match args.verb.as_str() {
         verb @ ("mv" | "start" | "review" | "done") => ctx().and_then(|c| mv_opts(args, verb).and_then(|o| verbs::cmd_mv(&c, id_operand(args, 0)?, &o))),
         "set" => ctx().and_then(|c| set_opts(args).and_then(|o| verbs::cmd_set(&c, id_operand(args, 0)?, &o))),
         "label" => ctx().and_then(|c| verbs::cmd_label(&c, id_operand(args, 0)?, &args.all("--add"), &args.all("--remove"))),
         "dep" => ctx().and_then(|c| verbs::cmd_dep(&c, id_operand(args, 0)?, args.opt("--add"), args.opt("--remove"))),
         "summary" => ctx().and_then(|c| cmd_summary(&c)),
         _ => return None,
-    })
+    };
+    Some(noting_pending(args, done))
+}
+
+/// Append what a write left unshared, if anything.
+///
+/// A write that could not reach the remote succeeds — the commit is anchored on the local
+/// branch, which is why it is written first — so the only thing left is to say so. Without
+/// this the offline story is silent, and a silent unshared write is indistinguishable from a
+/// shared one right up until someone else cannot see the issue.
+///
+/// Never on `--json`: that output has one consumer and it is a parser.
+pub(super) fn noting_pending(args: &Args, done: Result<String, String>) -> Result<String, String> {
+    let out = done?;
+    if args.has("--json") {
+        return Ok(out);
+    }
+    let Ok(crate::discovery::Source::Ref { cwd, .. }) = super::tracker::tracker_source(args) else {
+        return Ok(out);
+    };
+    // A count that cannot be taken is not worth failing a completed write over.
+    match crate::discovery::standing::pending(&cwd) {
+        Ok(0) | Err(_) => Ok(out),
+        Ok(n) => Ok(format!("{out}  ({n} unpushed change{} — run `trck sync`)", if n == 1 { "" } else { "s" })),
+    }
 }
 
 /// Run the command described by `argv` (without the program name), returning what to
@@ -112,7 +129,7 @@ pub(super) fn dispatch(raw: &[String]) -> Result<String, String> {
     let args = parse_args(raw);
     // In order, first to claim the verb wins. A loop rather than a chain of `if let`s so
     // that adding a group is a line in the list rather than a change to the control flow.
-    for stage in [super::prose::dispatch_prose, dispatch_mutating, dispatch_query] {
+    for stage in [super::prose::dispatch_prose, super::sync::dispatch_sync, dispatch_mutating, dispatch_query] {
         if let Some(result) = stage(&args) {
             return result;
         }

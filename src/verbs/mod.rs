@@ -15,7 +15,7 @@
 //! interrupted run leaves the previous index intact rather than half a line, which
 //! matters because the index is the tracker's only source of truth.
 
-mod backend;
+pub(crate) mod backend;
 mod changeset;
 mod clock;
 mod edit;

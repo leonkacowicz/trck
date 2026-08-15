@@ -4,7 +4,7 @@
 //! run, but what that command was asked for. Each builder mirrors one verb's flags
 //! one-to-one, which is why they are flat and repetitive — the shape is the point.
 
-use super::{Args, KNOWN_FLAGS};
+use super::Args;
 use crate::init;
 use crate::query::{DepsOpts, ListOpts};
 use crate::verbs::{MvOpts, NewOpts, SetOpts};
@@ -107,59 +107,4 @@ pub(super) fn init_from_args(args: &Args) -> Result<String, String> {
         return Err("cannot combine a positional dir with --dir".to_string());
     }
     init::cmd_init(&init::InitOpts { target: positional.or(flag), force: args.has("--force"), hook: args.has("--hook") })
-}
-
-/// `list` and its `tree` alias take exactly the same options, named once.
-pub(super) const LIST_FLAGS: &[&str] = &[
-    "--dir",
-    "--status",
-    "--priority",
-    "--label",
-    "--parent",
-    "--match",
-    "--field",
-    "--show-field",
-    "--sort",
-    "--blocked",
-    "--orphan",
-    "--all",
-    "--flat",
-    "--paths",
-    "--json",
-];
-
-/// Verbs whose `--json` is implemented. The rest still refuse the flag: accepted-and-ignored
-/// returns human text with exit 0, and a caller piping into `jq` finds out far from the cause.
-pub(super) const JSON_VERBS: &[&str] = &["list", "tree", "show", "ready", "next", "deps"];
-
-pub(super) const MIN_POSITIONAL: &[(&str, usize, &str)] = &[
-    ("new", 1, "a title"),
-    ("mv", 2, "an issue id and a target status"),
-    ("start", 1, "an issue id"),
-    ("review", 1, "an issue id"),
-    ("done", 1, "an issue id"),
-    ("set", 1, "an issue id"),
-    ("dep", 1, "an issue id"),
-    ("label", 1, "an issue id"),
-    ("show", 1, "an issue id"),
-    ("path", 1, "an issue id"),
-];
-
-/// Options a verb cannot run without.
-pub(super) const REQUIRED_OPTS: &[(&str, &str)] = &[("changelog", "--since")];
-
-/// Flags every verb accepts, so they are not repeated two dozen times in [`KNOWN_FLAGS`].
-///
-/// `--dir` is still listed there as well, because the help test reads that table to check
-/// that what is documented is what is accepted; the duplication is harmless and removing it
-/// is a separate change.
-pub(crate) const GLOBAL_FLAGS: &[&str] = &["--dir", "--ref"];
-
-/// The first option this verb does not accept, if any.
-///
-/// Its own function because `usage_error` is a list of guards and this is the only one that
-/// has to consult two tables: the verb's own flags, and the ones every verb takes.
-pub(super) fn unrecognized_flag(args: &Args) -> Option<&str> {
-    let (_, _, flags) = KNOWN_FLAGS.iter().find(|(verb, ..)| *verb == args.verb)?;
-    args.options.iter().map(|(n, _)| n.as_str()).find(|n| !flags.contains(n) && !GLOBAL_FLAGS.contains(n))
 }
