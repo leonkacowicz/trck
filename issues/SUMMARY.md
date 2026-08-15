@@ -5,8 +5,8 @@
 
 | State | Count |
 |---|---:|
-| backlog | 69 |
-| in-progress | 3 |
+| backlog | 68 |
+| in-progress | 4 |
 | in-review | 0 |
 | done | 211 |
 | **total** | **283** |
@@ -204,7 +204,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#abynj5c reads: prefer the local ref over origin, fast-forward when behind, report divergence](items/abynj5c-reads-prefer-the-local-ref-over-origin-fast-forward-when-behind-report-divergence.md) · [review](https://github.com/leonkacowicz/trck/pull/42)
 - [x] [#ahgehpa discovery: reads go through Ctx content accessors, not paths](items/ahgehpa-discovery-reads-go-through-ctx-content-accessors-not-paths.md) · [review](https://github.com/leonkacowicz/trck/pull/31)
 - [ ] [#c3uzxka diff: resolve revisions on the tracker branch](items/c3uzxka-diff-resolve-revisions-on-the-tracker-branch.md) _(backlog)_
-- [ ] [#dak2sjq trck sync, and the pending-changes report on every write verb](items/dak2sjq-trck-sync-and-the-pending-changes-report-on-every-write-verb.md) _(backlog)_
+- [ ] [#dak2sjq trck sync, and the pending-changes report on every write verb](items/dak2sjq-trck-sync-and-the-pending-changes-report-on-every-write-verb.md) _(in-progress)_
 - [x] [#jgf9ktx writes: blobs to tree to commit-tree, then CAS the local ref](items/jgf9ktx-writes-blobs-to-tree-to-commit-tree-then-cas-the-local-ref.md) · [review](https://github.com/leonkacowicz/trck/pull/39)
 - [x] [#kdbb9ms git: one plumbing module for the ref read and write primitives](items/kdbb9ms-git-one-plumbing-module-for-the-ref-read-and-write-primitives.md) · [review](https://github.com/leonkacowicz/trck/pull/30)
 - [x] [#nabxbdk new: $EDITOR on the template, validating like visudo](items/nabxbdk-new-editor-on-the-template-validating-like-visudo.md) · [review](https://github.com/leonkacowicz/trck/pull/38)
