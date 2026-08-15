@@ -62,7 +62,7 @@ fn check_mv_opts(opts: &MvOpts) -> Result<(), String> {
 /// comes from the graph's view of the row, and the graph owns them while it exists.
 fn body_path(ctx: &Ctx, rows: &mut Vec<Issue>, iid: &str) -> Result<PathBuf, String> {
     let g = Graph::new(std::mem::take(rows));
-    let path = g.get(iid).map(|r| issue_path(ctx, r));
+    let path = g.get(iid).map(|r| issue_path(ctx, r)).transpose()?;
     *rows = g.rows;
     path.ok_or_else(|| format!("no issue matching '{iid}'"))
 }

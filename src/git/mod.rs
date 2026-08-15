@@ -112,6 +112,24 @@ pub(crate) fn show(cwd: &Path, rev: &str, path: &str) -> Result<Option<String>, 
     Ok(Some(String::from_utf8_lossy(&out.stdout).into_owned()))
 }
 
+/// The names directly inside `rev:dir`, sorted, or `None` when the revision has no such
+/// directory.
+///
+/// `--name-only` and no `-r`, so this answers with one level the way `read_dir` does rather
+/// than the whole subtree. Absence is `None` for the same reason it is in [`show`]: a
+/// tracker whose `items/` has not been created yet is empty, not broken.
+pub(crate) fn ls_tree(cwd: &Path, rev: &str, dir: &str) -> Result<Option<Vec<String>>, String> {
+    let out = run(cwd, &["ls-tree", "--name-only", "-z", &format!("{rev}:{dir}")])?;
+    if !out.status.success() {
+        return Ok(None);
+    }
+    // NUL-separated: a name git would otherwise quote and escape comes back verbatim, and
+    // an issue slug is not guaranteed to be free of anything git considers unusual.
+    let mut names: Vec<String> = String::from_utf8_lossy(&out.stdout).split('\0').filter(|n| !n.is_empty()).map(str::to_string).collect();
+    names.sort();
+    Ok(Some(names))
+}
+
 /// The working tree's root, or `None` when `cwd` is not inside a repository.
 pub(crate) fn repo_root(cwd: &Path) -> Result<Option<PathBuf>, String> {
     let out = run(cwd, &["rev-parse", "--show-toplevel"])?;

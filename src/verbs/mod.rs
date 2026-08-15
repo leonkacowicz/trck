@@ -48,7 +48,7 @@ use std::path::PathBuf;
 /// through the one `apply` below it.
 pub(crate) fn commit(ctx: &Ctx, rows: Vec<Issue>, body: Vec<Edit>, op: &Op) -> Result<Vec<Issue>, String> {
     let cs = finalize(rows, body)?;
-    DirBackend::new(&ctx.dir).apply(&cs, op)?;
+    DirBackend::new(ctx.dir()?).apply(&cs, op)?;
     report_inconsistencies(ctx, &cs.rows);
     Ok(cs.rows)
 }
@@ -63,7 +63,7 @@ pub(crate) fn commit(ctx: &Ctx, rows: Vec<Issue>, body: Vec<Edit>, op: &Op) -> R
 pub(crate) fn write_summary(ctx: &Ctx, g: &crate::graph::Graph) -> Result<(), String> {
     let contents = crate::summary::generate_summary(g);
     let cs = Changeset::new(Vec::new(), vec![Edit::Write { path: PathBuf::from(SUMMARY_NAME), contents }]);
-    DirBackend::new(&ctx.dir).apply(&cs, &Op::new("summary"))
+    DirBackend::new(ctx.dir()?).apply(&cs, &Op::new("summary"))
 }
 
 /// Validate what was just written, reusing the rows rather than re-parsing.
@@ -108,8 +108,13 @@ pub(super) const TEMPLATE: &str = r"# {title}
 <!-- Context, links to files/commits, open questions, decisions. -->
 ";
 
-pub(crate) fn issue_path(ctx: &Ctx, row: &Issue) -> PathBuf {
-    ctx.items_dir().join(filename(row))
+/// Where an issue's body lives on disk.
+///
+/// Fallible because a ref-backed tracker has no such place, and the alternative — a
+/// relative path that resolves against the caller's working directory — is a plausible
+/// answer that is wrong.
+pub(crate) fn issue_path(ctx: &Ctx, row: &Issue) -> Result<PathBuf, String> {
+    Ok(ctx.items_dir()?.join(filename(row)))
 }
 
 pub(crate) fn load_rows(ctx: &Ctx) -> Result<Vec<Issue>, String> {

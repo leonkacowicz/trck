@@ -66,21 +66,18 @@ fn the_working_tree_is_dirty_and_on_an_unrelated_branch() {
     assert!(!git(&s.work, &["status", "--porcelain"]).is_empty(), "working tree is clean");
 }
 
-/// The inversion this branch exists to cause.
-///
-/// Before the ref step, walking up from a checkout with no `issues/` found nothing and said
-/// so. Now the conventional ref is found without being named, from a dirty tree on an
-/// unrelated branch — which is the whole claim. Reading it is a later task, so what the
-/// refusal proves is *which tracker was resolved*, and that it was not the walk-up.
+/// The conventional ref is found without being named, from a dirty tree on an unrelated
+/// branch. What the *reads* are is `tests/ref_reads.rs`; what this asserts is that nobody
+/// had to say where the tracker was.
 #[test]
 fn the_conventional_ref_is_resolved_without_being_named() {
     let Some(s) = Scenario::build("ref-conventional") else {
         return;
     };
     let out = trck(&s.work, &["list"]);
-    let err = String::from_utf8_lossy(&out.stderr);
-    assert!(err.contains(TRACKER_BRANCH), "the conventional ref was not resolved: {err}");
-    assert!(!err.contains("no tracker found"), "fell back to the walk-up: {err}");
+    assert!(out.status.success(), "the conventional ref was not resolved: {}", String::from_utf8_lossy(&out.stderr));
+    let listed = String::from_utf8_lossy(&out.stdout);
+    assert!(listed.contains("aaaaaaa"), "resolved something other than the tracker branch:\n{listed}");
 }
 
 /// The staging rule: a checkout keeps behaving exactly as it did until its `issues/` goes
@@ -104,14 +101,21 @@ fn a_working_tree_tracker_beats_the_conventional_ref() {
 
 /// `--ref` overrides the convention, and — like `--dir` — a name that does not resolve is
 /// an error rather than a quiet fall back to whatever discovery would have found.
+///
+/// Both halves are asserted through refusals, because a refusal is the one output that says
+/// *which* ref was used: a success would look the same whichever branch answered.
 #[test]
 fn an_explicit_ref_overrides_the_convention_and_does_not_fall_back() {
     let Some(s) = Scenario::build("ref-explicit") else {
         return;
     };
-    let named = trck(&s.work, &["--ref", &format!("origin/{TRACKER_BRANCH}"), "list"]);
+    // A ref that resolves but is not a tracker. The conventional branch is right there and
+    // would have worked, so the refusal proves the explicit name won.
+    let named = trck(&s.work, &["--ref", "origin/main", "list"]);
+    assert!(!named.status.success(), "the convention was used despite an explicit --ref");
     let err = String::from_utf8_lossy(&named.stderr);
-    assert!(err.contains(&format!("origin/{TRACKER_BRANCH}")), "the named ref was not the one resolved: {err}");
+    assert!(err.contains("origin/main"), "the named ref was not the one resolved: {err}");
+    assert!(!err.contains(TRACKER_BRANCH), "fell back to the convention: {err}");
 
     let bogus = trck(&s.work, &["--ref", "no-such-ref", "list"]);
     assert!(!bogus.status.success(), "a ref that does not exist was accepted");

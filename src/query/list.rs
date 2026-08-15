@@ -154,7 +154,7 @@ pub(crate) fn cmd_list(ctx: &Ctx, opts: &ListOpts) -> Result<String, String> {
         if opts.json {
             return Err("--paths and --json are different output modes; pick one".into());
         }
-        return Ok(super::paths::paths_of(ctx, &g, &selected(&g, &keep, &mut sorted)));
+        return super::paths::paths_of(ctx, &g, &selected(&g, &keep, &mut sorted));
     }
     if opts.json {
         return Ok(list_json(&g, opts, &keep, &mut sorted, root.as_deref()));

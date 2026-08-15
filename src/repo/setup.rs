@@ -27,7 +27,7 @@ pub(crate) fn cmd_setup_git(ctx: &Ctx) -> Result<String, String> {
 
 /// The shared half: name the drivers in the committed `.gitattributes`.
 fn declare(ctx: &Ctx) -> Result<String, String> {
-    let path = ctx.dir.join(".gitattributes");
+    let path = ctx.dir()?.join(".gitattributes");
     let existing = std::fs::read_to_string(&path).unwrap_or_default();
     let have: Vec<&str> = existing.lines().collect();
     let Some(lines) = gitattributes_update(&have) else {

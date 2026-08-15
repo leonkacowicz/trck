@@ -207,18 +207,6 @@ fn unavailable(_: String) -> String {
     format!("git is not on PATH, so revision specs are unavailable; {USE_FROM}")
 }
 
-/// The tracker dir as a repo-relative prefix, the way `git show <rev>:<path>` wants it.
-/// A tracker dir that *is* the repo root yields an empty prefix.
-fn git_tracker_prefix(ctx: &Ctx) -> Result<String, String> {
-    let root =
-        crate::git::repo_root(&ctx.dir).map_err(unavailable)?.ok_or_else(|| format!("not a git repository, so revision specs are unavailable; {USE_FROM}"))?;
-    let dir = ctx.dir.canonicalize().unwrap_or_else(|_| ctx.dir.clone());
-    let root = root.canonicalize().unwrap_or(root);
-    let rel = dir.strip_prefix(&root).map_err(|_| format!("tracker dir {} is not inside the git repo at {}", ctx.dir.display(), root.display()))?;
-    let rel = rel.to_string_lossy().replace('\\', "/");
-    Ok(if rel.is_empty() || rel == "." { String::new() } else { format!("{rel}/") })
-}
-
 /// The tracker as of `rev`.
 ///
 /// A tracker dir absent at that revision is **not** an error: comparing against a commit
@@ -226,11 +214,11 @@ fn git_tracker_prefix(ctx: &Ctx) -> Result<String, String> {
 /// issue is new". An unresolvable revision *is* an error, reported separately, so "you
 /// typo'd the branch" stays distinguishable from "the tracker did not exist yet".
 pub(crate) fn git_snapshot(ctx: &Ctx, rev: &str) -> Result<Snapshot, String> {
-    if crate::git::rev_parse(&ctx.dir, rev).map_err(unavailable)?.is_none() {
+    if crate::git::rev_parse(ctx.git_cwd(), rev).map_err(unavailable)?.is_none() {
         return Err(format!("unknown revision '{rev}'"));
     }
-    let prefix = git_tracker_prefix(ctx)?;
-    let text = crate::git::show(&ctx.dir, rev, &format!("{prefix}index.jsonl")).map_err(unavailable)?.unwrap_or_default();
+    let prefix = ctx.tracker_prefix().map_err(unavailable)?.ok_or_else(|| format!("not a git repository, so revision specs are unavailable; {USE_FROM}"))?;
+    let text = crate::git::show(ctx.git_cwd(), rev, &format!("{prefix}index.jsonl")).map_err(unavailable)?.unwrap_or_default();
     Snapshot::from_text(&text, rev)
 }
 

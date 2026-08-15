@@ -85,3 +85,19 @@ pub(super) fn cmd_check(ctx: &Ctx) -> Result<String, String> {
     }
     Err(String::new())
 }
+
+/// `summary`: regenerate the committed rollup.
+///
+/// It writes — except when there is nowhere to write to. A ref-backed tracker has no file
+/// beside its index, and refusing there would make the one verb whose entire output *is*
+/// the rollup the one verb that cannot show it. So it prints instead: same bytes, different
+/// destination.
+pub(crate) fn cmd_summary(ctx: &Ctx) -> Result<String, String> {
+    let g = crate::graph::Graph::new(verbs::load_rows(ctx)?);
+    if ctx.dir().is_err() {
+        return Ok(crate::summary::generate_summary(&g));
+    }
+    let n = g.rows.len();
+    verbs::write_summary(ctx, &g)?;
+    Ok(format!("wrote {} ({n} issues)", ctx.summary_path()?.display()))
+}

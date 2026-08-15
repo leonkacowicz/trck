@@ -11,6 +11,7 @@ use crate::config::SUPPORTED_FORMAT;
 use std::path::{Path, PathBuf};
 
 pub(crate) mod content;
+mod load;
 mod source;
 
 pub(crate) use source::{Overrides, Source, resolve_tracker_source};
@@ -63,10 +64,14 @@ pub(crate) fn find_tracker(start: &Path) -> Result<PathBuf, String> {
     }
 }
 
-/// A resolved invocation: the tracker directory and its config.
+/// A resolved invocation: where the tracker's bytes come from, and its config.
+///
+/// The source, not a directory. A tracker read out of a git ref has no directory at all,
+/// so anything that genuinely needs one asks [`Ctx::dir`] and handles being told no — which
+/// is every write verb and every `repo` verb, and none of the read verbs.
 #[derive(Debug)]
 pub(crate) struct Ctx {
-    pub(crate) dir: PathBuf,
+    pub(crate) source: Source,
     pub(crate) config: Config,
 }
 
@@ -103,27 +108,6 @@ fn check_layout(dir: &Path) -> Option<String> {
         stale.len(),
         folders.join(", ")
     ))
-}
-
-impl Ctx {
-    /// Load the tracker at `dir`, applying the format guard.
-    ///
-    /// The guard lives here because every verb builds a `Ctx`, so there is no call site
-    /// left to forget it. `guard_format = false` is for `update`: it is the remedy the
-    /// refusal names, so guarding it would leave no way to get an engine that
-    /// understands the tracker.
-    pub(crate) fn load(dir: PathBuf, guard_format: bool) -> Result<Ctx, String> {
-        let path = dir.join(CONFIG_NAME);
-        let text = std::fs::read_to_string(&path).unwrap_or_default();
-        let config = Config::parse(&text, &path.display().to_string())?;
-        if guard_format && let Some(msg) = config.check_format() {
-            return Err(msg);
-        }
-        if guard_format && let Some(msg) = check_layout(&dir) {
-            return Err(msg);
-        }
-        Ok(Ctx { dir, config })
-    }
 }
 
 #[cfg(test)]
@@ -226,10 +210,10 @@ pub(crate) mod tests {
         let tmp = Tmp::new("guard");
         let d = tmp.tracker("issues");
         std::fs::write(d.join(CONFIG_NAME), r#"{"format": 99}"#).expect("write");
-        let err = Ctx::load(d.clone(), true).expect_err("refused");
+        let err = Ctx::load(Source::Dir(d.clone()), true).expect_err("refused");
         assert!(err.contains("newer than this engine"), "{err}");
         // `update` is the remedy the refusal names, so it must survive the thing it fixes.
-        assert!(Ctx::load(d, false).is_ok());
+        assert!(Ctx::load(Source::Dir(d), false).is_ok());
     }
 
     /// Load every `trck.json` committed in this repo.
@@ -245,7 +229,7 @@ pub(crate) mod tests {
             if !dir.join(CONFIG_NAME).is_file() {
                 continue; // a consumer of this crate need not have the tracker
             }
-            let ctx = Ctx::load(dir, true).unwrap_or_else(|e| panic!("{rel}: {e}"));
+            let ctx = Ctx::load(Source::Dir(dir), true).unwrap_or_else(|e| panic!("{rel}: {e}"));
             assert_eq!(ctx.config.format, Some(SUPPORTED_FORMAT), "{rel}");
             assert!(crate::config::vestigial_warnings(&ctx.config).is_empty(), "{rel} still carries a vocabulary key");
             checked += 1;
@@ -258,7 +242,7 @@ pub(crate) mod tests {
         // Discovery guarantees the file exists, but a race or a half-made tracker
         // should give defaults rather than a panic.
         let tmp = Tmp::new("missing");
-        let ctx = Ctx::load(tmp.0.clone(), true).expect("loads");
+        let ctx = Ctx::load(Source::Dir(tmp.0.clone()), true).expect("loads");
         assert_eq!(ctx.config.update_repo(), crate::config::DEFAULT_UPDATE_REPO);
     }
 }

@@ -30,7 +30,7 @@ pub(crate) fn cmd_new(ctx: &Ctx, opts: &NewOpts) -> Result<String, String> {
     let mut rows = load_rows(ctx)?;
     let row = build_row(ctx, &rows, opts)?;
     let (iid, depends) = (row.id.clone(), row.depends_on.clone());
-    let path = issue_path(ctx, &row);
+    let path = issue_path(ctx, &row)?;
     if path.exists() {
         return Err(format!("{} already exists", path.display()));
     }
@@ -137,14 +137,11 @@ fn new_id(ctx: &Ctx, rows: &[Issue], want: Option<&str>) -> Result<String, Strin
 /// reintroduce the collision random ids exist to prevent.
 fn taken_ids(ctx: &Ctx, rows: &[Issue]) -> BTreeSet<String> {
     let mut ids: BTreeSet<String> = rows.iter().map(|r| r.id.clone()).collect();
-    if let Ok(entries) = std::fs::read_dir(ctx.items_dir()) {
-        for e in entries.flatten() {
-            let name = e.file_name().to_string_lossy().into_owned();
-            if let Some(stem) = name.strip_suffix(".md")
-                && let Some((id, _)) = stem.split_once('-')
-            {
-                ids.insert(id.to_string());
-            }
+    for name in ctx.list_items().unwrap_or_default() {
+        if let Some(stem) = name.strip_suffix(".md")
+            && let Some((id, _)) = stem.split_once('-')
+        {
+            ids.insert(id.to_string());
         }
     }
     ids

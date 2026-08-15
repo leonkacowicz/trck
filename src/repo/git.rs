@@ -8,7 +8,7 @@ use crate::discovery::Ctx;
 /// primitives themselves live there, since `diff` and the ref-backed source want them
 /// against a path rather than a loaded tracker.
 pub(super) fn git(ctx: &Ctx, args: &[&str]) -> Result<String, String> {
-    crate::git::stdout(&ctx.dir, args)
+    crate::git::stdout(ctx.dir()?, args)
 }
 
 /// Assert we are inside a git repository, answering with the given git query.

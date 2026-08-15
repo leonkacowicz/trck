@@ -48,7 +48,15 @@ pub(crate) enum Source {
     Dir(PathBuf),
     /// A revision git can resolve — `trck-issues`, `origin/trck-issues`, or whatever
     /// `--ref` named.
-    Ref(String),
+    ///
+    /// `cwd` travels with it because reading the ref means running git, and git has to be
+    /// run from inside the repository that holds it. Carrying it here keeps the source
+    /// self-readable instead of making every caller remember to pass a directory
+    /// alongside.
+    Ref {
+        rev: String,
+        cwd: PathBuf,
+    },
 }
 
 /// What the invocation said, before discovery gets a turn.
@@ -100,7 +108,7 @@ pub(crate) fn resolve_tracker_source(over: &Overrides, cwd: &Path) -> Result<Sou
 /// "this machine has no git" want different sentences, and only the first one should ever
 /// read as "you typed the name wrong".
 fn resolve_ref(cwd: &Path, rev: &str) -> Result<Option<Source>, String> {
-    Ok(crate::git::rev_parse(cwd, rev)?.map(|_| Source::Ref(rev.to_string())))
+    Ok(crate::git::rev_parse(cwd, rev)?.map(|_| Source::Ref { rev: rev.to_string(), cwd: cwd.to_path_buf() }))
 }
 
 /// [`TRACKER_REF`] as git resolves it here: the local branch, else the remote-tracking one.

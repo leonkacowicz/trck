@@ -11,13 +11,13 @@ use crate::issue::Issue;
 use std::path::{Path, PathBuf};
 
 pub(crate) fn cmd_migrate_layout(ctx: &Ctx, dry_run: bool) -> Result<String, String> {
-    let stale = crate::discovery::legacy_layout_files(&ctx.dir);
+    let stale = crate::discovery::legacy_layout_files(ctx.dir()?);
     if stale.is_empty() {
         return Ok(format!("migrate-layout: nothing to migrate (already flat in {ITEMS_DIR}/)"));
     }
-    let text = std::fs::read_to_string(ctx.index_path()).unwrap_or_default();
+    let text = std::fs::read_to_string(ctx.index_path()?).unwrap_or_default();
     let rows = parse_index(&text, "index.jsonl")?;
-    let dest_dir = ctx.items_dir();
+    let dest_dir = ctx.items_dir()?;
 
     let plan = Plan::new(&stale, &rows, &dest_dir);
     plan.refuse()?;

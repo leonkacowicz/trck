@@ -82,7 +82,7 @@ pub(crate) fn cmd_init(opts: &InitOpts) -> Result<String, String> {
     if opts.hook {
         // Reported before the headline: the hook is a side effect the user asked for, and
         // burying its path under "initialized" would make a failure to find it puzzling.
-        let ctx = crate::discovery::Ctx::load(target.clone(), false)?;
+        let ctx = crate::discovery::Ctx::load(crate::discovery::Source::Dir(target.clone()), false)?;
         out.push(crate::repo::cmd_install_hook(&ctx)?);
     }
     out.push(format!("initialized tracker at {}", target.display()));

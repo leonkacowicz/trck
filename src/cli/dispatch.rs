@@ -6,7 +6,7 @@
 //! something, maintain the repository) are the seams the verbs already fall along.
 
 use super::opts::{deps_opts, init_from_args, list_opts, mv_opts, new_opts, set_opts};
-use super::reports::{cmd_changelog, cmd_check, cmd_diff};
+use super::reports::{cmd_changelog, cmd_check, cmd_diff, cmd_summary};
 use super::{Args, VERBS, context, parse_args, tracker_dir};
 use crate::discovery::Ctx;
 use crate::query;
@@ -32,13 +32,7 @@ fn dispatch_mutating(args: &Args) -> Option<Result<String, String>> {
         "set" => ctx().and_then(|c| set_opts(args).and_then(|o| verbs::cmd_set(&c, id_operand(args, 0)?, &o))),
         "label" => ctx().and_then(|c| verbs::cmd_label(&c, id_operand(args, 0)?, &args.all("--add"), &args.all("--remove"))),
         "dep" => ctx().and_then(|c| verbs::cmd_dep(&c, id_operand(args, 0)?, args.opt("--add"), args.opt("--remove"))),
-        "summary" => ctx().and_then(|c| {
-            let rows = verbs::load_rows(&c)?;
-            let g = crate::graph::Graph::new(rows);
-            let n = g.rows.len();
-            verbs::write_summary(&c, &g)?;
-            Ok(format!("wrote {} ({n} issues)", c.summary_path().display()))
-        }),
+        "summary" => ctx().and_then(|c| cmd_summary(&c)),
         _ => return None,
     })
 }
@@ -109,7 +103,7 @@ fn dispatch_repo(args: &Args) -> Result<String, String> {
         "normalize" => repo::cmd_normalize(&context(args)?),
         // The one verb whose whole job is to operate on a legacy tracker, so it resolves
         // the context without the layout guard that refuses one.
-        "migrate-layout" => repo::cmd_migrate_layout(&Ctx::load(tracker_dir(args)?, false)?, args.has("--dry-run")),
+        "migrate-layout" => repo::cmd_migrate_layout(&Ctx::load(crate::discovery::Source::Dir(tracker_dir(args)?), false)?, args.has("--dry-run")),
         "" => Err("repo: missing a subcommand".into()),
         other => Err(format!("repo: `{other}` is not implemented yet in the Rust engine")),
     }

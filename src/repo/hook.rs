@@ -19,7 +19,7 @@ pub(crate) fn cmd_install_hook(ctx: &Ctx) -> Result<String, String> {
 /// shared hooks directory rather than one of its own that git would never consult.
 fn hooks_dir(ctx: &Ctx) -> Result<PathBuf, String> {
     let common = require_repo(ctx, "--git-common-dir")?;
-    let hooks = ctx.dir.join(&common);
+    let hooks = ctx.dir()?.join(&common);
     Ok(hooks.canonicalize().unwrap_or(hooks).join("hooks"))
 }
 
@@ -28,8 +28,9 @@ fn hooks_dir(ctx: &Ctx) -> Result<PathBuf, String> {
 fn tracker_rel(ctx: &Ctx) -> Result<String, String> {
     let toplevel = require_repo(ctx, "--show-toplevel")?;
     let root = Path::new(&toplevel).canonicalize().map_err(|e| format!("{toplevel}: {e}"))?;
-    let dir = ctx.dir.canonicalize().map_err(|e| format!("{}: {e}", ctx.dir.display()))?;
-    let rel = dir.strip_prefix(&root).map_err(|_| format!("tracker dir {} is not inside the git repo at {}", ctx.dir.display(), root.display()))?;
+    let tracker = ctx.dir()?;
+    let dir = tracker.canonicalize().map_err(|e| format!("{}: {e}", tracker.display()))?;
+    let rel = dir.strip_prefix(&root).map_err(|_| format!("tracker dir {} is not inside the git repo at {}", tracker.display(), root.display()))?;
     Ok(if rel.as_os_str().is_empty() { ".".to_string() } else { rel.to_string_lossy().replace('\\', "/") })
 }
 

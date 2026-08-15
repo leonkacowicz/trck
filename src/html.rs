@@ -116,8 +116,7 @@ pub(crate) fn build_model(ctx: &Ctx, g: &Graph, cmd: Option<&str>) -> Json {
     // The project the tracker belongs to: the directory holding it. Deliberately not
     // `update.repo` — that is the engine's release channel, and it would title every
     // consumer's page with trck's own upstream slug.
-    let repo = ctx.dir.parent().and_then(|p| p.file_name()).map_or_else(String::new, |n| n.to_string_lossy().into_owned());
-    let tracker = ctx.dir.file_name().map_or_else(String::new, |n| n.to_string_lossy().into_owned());
+    let (repo, tracker) = ctx.labels();
 
     // Each id's shortest-unique-prefix length, computed with the helper the CLI uses so
     // the page's highlight matches `trck list` exactly.
@@ -197,7 +196,12 @@ pub(crate) fn cmd_html(ctx: &Ctx, out: Option<&str>, cmd: Option<&str>) -> Resul
     let rows = crate::verbs::load_rows(ctx)?;
     let g = Graph::new(rows);
     let html = render_html(ctx, &g, cmd);
-    let path = out.map_or_else(|| ctx.dir.join("issues.html"), std::path::PathBuf::from);
+    // Beside the index when there is one. A ref-backed tracker has no directory to sit
+    // beside, so the page lands where the command was run instead of nowhere.
+    let path = match out {
+        Some(spec) => std::path::PathBuf::from(spec),
+        None => ctx.dir().map_or_else(|_| std::path::PathBuf::from("issues.html"), |d| d.join("issues.html")),
+    };
     if path.as_os_str() == "-" {
         return Ok(html);
     }
