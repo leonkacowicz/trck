@@ -6,9 +6,9 @@
 | State | Count |
 |---|---:|
 | backlog | 68 |
-| in-progress | 5 |
+| in-progress | 4 |
 | in-review | 0 |
-| done | 204 |
+| done | 205 |
 | **total** | **277** |
 
 ## Hierarchies
@@ -192,7 +192,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#uq2zc2p conformance: convert the deps gutter tests](items/uq2zc2p-conformance-convert-the-deps-gutter-tests.md)
 - [x] [#xm6h2qn conformance: convert the command-output tests](items/xm6h2qn-conformance-convert-the-command-output-tests.md)
 
-### [#sqzr7nk storage: move the tracker to an orphan trck-issues branch](items/sqzr7nk-storage-move-the-tracker-to-an-orphan-trck-issues-branch.md) — 37% (19/52 pts · 7/22 done) · _high_ · in-progress
+### [#sqzr7nk storage: move the tracker to an orphan trck-issues branch](items/sqzr7nk-storage-move-the-tracker-to-an-orphan-trck-issues-branch.md) — 40% (21/52 pts · 8/22 done) · _high_ · in-progress
 
 - [x] [#2ybw758 reads: resolve index, bodies and trck.json from a git ref](items/2ybw758-reads-resolve-index-bodies-and-trck-json-from-a-git-ref.md) · [review](https://github.com/leonkacowicz/trck/pull/36)
 - [x] [#32gyghs tests: a harness for a ref-backed tracker in a temp git repo](items/32gyghs-tests-a-harness-for-a-ref-backed-tracker-in-a-temp-git-repo.md) · [review](https://github.com/leonkacowicz/trck/pull/32)
@@ -207,7 +207,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#dak2sjq trck sync, and the pending-changes report on every write verb](items/dak2sjq-trck-sync-and-the-pending-changes-report-on-every-write-verb.md) _(backlog)_
 - [ ] [#jgf9ktx writes: blobs to tree to commit-tree, then CAS the local ref](items/jgf9ktx-writes-blobs-to-tree-to-commit-tree-then-cas-the-local-ref.md) _(in-progress)_
 - [x] [#kdbb9ms git: one plumbing module for the ref read and write primitives](items/kdbb9ms-git-one-plumbing-module-for-the-ref-read-and-write-primitives.md) · [review](https://github.com/leonkacowicz/trck/pull/30)
-- [ ] [#nabxbdk new: $EDITOR on the template, validating like visudo](items/nabxbdk-new-editor-on-the-template-validating-like-visudo.md) _(in-progress)_
+- [x] [#nabxbdk new: $EDITOR on the template, validating like visudo](items/nabxbdk-new-editor-on-the-template-validating-like-visudo.md) · [review](https://github.com/leonkacowicz/trck/pull/38)
 - [ ] [#nuemwhc reads: report a stale tracker ref instead of silently using it](items/nuemwhc-reads-report-a-stale-tracker-ref-instead-of-silently-using-it.md) _(backlog)_
 - [x] [#p95aabv new: --body, --body-file (- is stdin) and --empty; error without a TTY](items/p95aabv-new-body-body-file-is-stdin-and-empty-error-without-a-tty.md) · [review](https://github.com/leonkacowicz/trck/pull/37)
 - [ ] [#tkhcgv6 hooks: the pre-commit guard stops running trck check on main](items/tkhcgv6-hooks-the-pre-commit-guard-stops-running-trck-check-on-main.md) _(backlog)_
