@@ -35,6 +35,9 @@ pub(crate) const TRACKER_BRANCH: &str = "trck-issues";
 /// branch you are on" is the claim under test.
 pub(crate) const WORK_BRANCH: &str = "feature";
 
+/// A tracker branch whose index lists an issue the tree no longer holds a body for.
+pub(crate) const HOLED_BRANCH: &str = "trck-issues-holed";
+
 /// Is git usable at all? Tests skip rather than fail without it, the way `app_js.rs` skips
 /// without node — a contributor who has not got it should not be blocked, only uncovered.
 pub(crate) fn have_git() -> bool {
@@ -176,6 +179,22 @@ impl Scenario {
         git_must(&seed, &["add", "-A"]);
         git_must(&seed, &["commit", "-qm", "tracker"]);
         git_must(&seed, &["push", "-q", "origin", TRACKER_BRANCH]);
+
+        // A second branch whose index still lists `bbbbbbb` but whose tree no longer holds
+        // its body. A tracker can only reach this state through something outside the
+        // verbs — a bad merge, a hand-edit — and what matters is that reading it out of a
+        // ref reports the same inconsistency reading it off disk does.
+        git_must(&seed, &["checkout", "-q", "-b", HOLED_BRANCH]);
+        let holed = std::fs::read_dir(seed.join("items"))
+            .expect("items")
+            .flatten()
+            .map(|e| e.path())
+            .find(|p| p.file_name().is_some_and(|n| n.to_string_lossy().starts_with("bbbbbbb")))
+            .expect("the seeded body");
+        std::fs::remove_file(&holed).expect("rm body");
+        git_must(&seed, &["add", "-A"]);
+        git_must(&seed, &["commit", "-qm", "drop a body"]);
+        git_must(&seed, &["push", "-q", "origin", HOLED_BRANCH]);
 
         // The seed has served its purpose, and it is a tracker directory sitting beside
         // the clone: left in place, discovery walks up from `work` and finds *it*, which

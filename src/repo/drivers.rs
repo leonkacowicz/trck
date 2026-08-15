@@ -37,7 +37,7 @@ pub(crate) fn cmd_merge_index(ctx: Option<&Ctx>, base: &str, current: &str, othe
         write_atomic(dest, &render_index(&rows))?;
         if let Some(ctx) = ctx {
             let g = Graph::new(rows);
-            write_atomic(&ctx.summary_path(), &generate_summary(&g))?;
+            write_atomic(&ctx.summary_path()?, &generate_summary(&g))?;
         }
         return Ok(String::new());
     }
@@ -108,7 +108,7 @@ pub(crate) fn cmd_merge_summary(ctx: Option<&Ctx>, current: &str) -> Result<Stri
         // success here would tell git a merge resolved when nothing was written.
         return Err("merge-summary: no tracker found to regenerate from".into());
     };
-    let text = std::fs::read_to_string(ctx.index_path()).unwrap_or_default();
+    let text = std::fs::read_to_string(ctx.index_path()?).unwrap_or_default();
     let rows = parse_index(&text, "index.jsonl")?;
     let g = Graph::new(rows);
     write_atomic(Path::new(current), &generate_summary(&g))?;

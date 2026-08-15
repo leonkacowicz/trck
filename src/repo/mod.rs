@@ -32,5 +32,5 @@ pub(crate) fn cmd_normalize(ctx: &Ctx) -> Result<String, String> {
     let rows = parse_index(&ctx.read_index()?, "index.jsonl")?;
     let n = rows.len();
     crate::verbs::commit(ctx, rows, Vec::new(), &crate::verbs::Op::new("normalize"))?;
-    Ok(format!("normalized {} ({n} issues)", ctx.index_path().display()))
+    Ok(format!("normalized {} ({n} issues)", ctx.index_path()?.display()))
 }
