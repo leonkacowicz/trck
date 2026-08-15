@@ -11,18 +11,18 @@ Matching is a plain substring by default, case-insensitive, with an optional
 
 ## Acceptance criteria
 - [ ] `trck search <query>` matches against title + body text and lists hits.
-- [ ] Case-insensitive substring by default; `--regex` opts into regex (stdlib `re`).
+- [ ] Case-insensitive substring by default; `--regex` opts into regex.
 - [ ] Honors metadata filters (at least `--status`) to narrow the search set.
 - [ ] Prints in the same one-line-per-issue format as `list`; empty result prints nothing.
 - [ ] Tests cover: body hit, title hit, no hit, regex match, filter intersection.
 
 ## Notes
-Read body text from the issue markdown files. Keep it stdlib-only — no external
-grep dependency.
+Read body text from the issue markdown files. No external grep binary at run time — the
+matching happens in-process.
 
 ## Resolution
 Resolved by **composition**, not a built-in `search`/`grep` verb. The matching
-primitive (substring/regex) is already the stdlib; the value `trck` uniquely adds is
+primitive (substring/regex) is commodity; the value `trck` uniquely adds is
 mapping a hit back to an issue record. So instead of a search engine, three small,
 addressable primitives were added — let `rg`/`grep`/`fzf` do the searching:
 
@@ -40,8 +40,8 @@ Acceptance criteria, mapped to the composition:
 - title + body hit → `rg`/`grep` over `$(trck list --paths)` (the body file includes
   the `# Title` heading); hits rendered as rows by `trck which`.
 - case-insensitive default / regex → delegated to `rg -i` / `rg` regex (strictly more
-  capable than the proposed stdlib matcher); the engine stays free of a search verb.
+  capable than the proposed built-in matcher); the engine stays free of a search verb.
 - honors metadata filters → `list --paths` inherits every `cmd_list` filter.
 - same one-line-per-issue format / empty prints nothing → `trck which` uses `print_rows`.
-- still stdlib-only, no runtime dependency on an external tool — the user brings their
+- the engine gains no runtime dependency on an external tool — the user brings their
   own `rg`/`fzf`; nothing is shelled out internally.
