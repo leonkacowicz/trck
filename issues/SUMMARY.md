@@ -6,9 +6,9 @@
 | State | Count |
 |---|---:|
 | backlog | 70 |
-| in-progress | 4 |
+| in-progress | 3 |
 | in-review | 0 |
-| done | 208 |
+| done | 209 |
 | **total** | **282** |
 
 ## Hierarchies
@@ -192,7 +192,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#uq2zc2p conformance: convert the deps gutter tests](items/uq2zc2p-conformance-convert-the-deps-gutter-tests.md)
 - [x] [#xm6h2qn conformance: convert the command-output tests](items/xm6h2qn-conformance-convert-the-command-output-tests.md)
 
-### [#sqzr7nk storage: move the tracker to an orphan trck-issues branch](items/sqzr7nk-storage-move-the-tracker-to-an-orphan-trck-issues-branch.md) — 54% (28/52 pts · 11/22 done) · _high_ · in-progress
+### [#sqzr7nk storage: move the tracker to an orphan trck-issues branch](items/sqzr7nk-storage-move-the-tracker-to-an-orphan-trck-issues-branch.md) — 58% (30/52 pts · 12/22 done) · _high_ · in-progress
 
 - [x] [#2ybw758 reads: resolve index, bodies and trck.json from a git ref](items/2ybw758-reads-resolve-index-bodies-and-trck-json-from-a-git-ref.md) · [review](https://github.com/leonkacowicz/trck/pull/36)
 - [x] [#32gyghs tests: a harness for a ref-backed tracker in a temp git repo](items/32gyghs-tests-a-harness-for-a-ref-backed-tracker-in-a-temp-git-repo.md) · [review](https://github.com/leonkacowicz/trck/pull/32)
@@ -201,7 +201,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#8d22h6x main: remove issues/ — the flip](items/8d22h6x-main-remove-issues-the-flip.md) _(backlog)_
 - [x] [#93zhqbd writes: structured commit subjects and a replayable Trck-Op trailer](items/93zhqbd-writes-structured-commit-subjects-and-a-replayable-trck-op-trailer.md) · [review](https://github.com/leonkacowicz/trck/pull/41)
 - [ ] [#9gxktnk writes: replay stacked pending commits, and surface an op that no longer applies](items/9gxktnk-writes-replay-stacked-pending-commits-and-surface-an-op-that-no-longer-applies.md) _(backlog)_
-- [ ] [#abynj5c reads: prefer the local ref over origin, fast-forward when behind, report divergence](items/abynj5c-reads-prefer-the-local-ref-over-origin-fast-forward-when-behind-report-divergence.md) _(in-progress)_
+- [x] [#abynj5c reads: prefer the local ref over origin, fast-forward when behind, report divergence](items/abynj5c-reads-prefer-the-local-ref-over-origin-fast-forward-when-behind-report-divergence.md) · [review](https://github.com/leonkacowicz/trck/pull/42)
 - [x] [#ahgehpa discovery: reads go through Ctx content accessors, not paths](items/ahgehpa-discovery-reads-go-through-ctx-content-accessors-not-paths.md) · [review](https://github.com/leonkacowicz/trck/pull/31)
 - [ ] [#c3uzxka diff: resolve revisions on the tracker branch](items/c3uzxka-diff-resolve-revisions-on-the-tracker-branch.md) _(backlog)_
 - [ ] [#dak2sjq trck sync, and the pending-changes report on every write verb](items/dak2sjq-trck-sync-and-the-pending-changes-report-on-every-write-verb.md) _(backlog)_
