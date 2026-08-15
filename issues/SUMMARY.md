@@ -5,8 +5,8 @@
 
 | State | Count |
 |---|---:|
-| backlog | 67 |
-| in-progress | 4 |
+| backlog | 66 |
+| in-progress | 5 |
 | in-review | 0 |
 | done | 206 |
 | **total** | **277** |
@@ -215,7 +215,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#usc2cxg migration: split issues/ onto an orphan trck-issues branch, history intact](items/usc2cxg-migration-split-issues-onto-an-orphan-trck-issues-branch-history-intact.md) _(backlog)_
 - [ ] [#wzg85n6 docs: delete the worktree skill, rewrite both CLAUDE.md files, repoint README](items/wzg85n6-docs-delete-the-worktree-skill-rewrite-both-claude-md-files-repoint-readme.md) _(backlog)_
 - [x] [#yuj6azz finalize: return a changeset and an Op instead of writing files](items/yuj6azz-finalize-return-a-changeset-and-an-op-instead-of-writing-files.md) · [review](https://github.com/leonkacowicz/trck/pull/34)
-- [ ] [#zxz9vu2 trck edit <id>: edit an existing body through the same path](items/zxz9vu2-trck-edit-id-edit-an-existing-body-through-the-same-path.md) _(backlog)_
+- [ ] [#zxz9vu2 trck edit <id>: edit an existing body through the same path](items/zxz9vu2-trck-edit-id-edit-an-existing-body-through-the-same-path.md) _(in-progress)_
 
 ### [#u5fc5vm trck diff: semantic diff of tracker state between revisions](items/u5fc5vm-trck-diff-semantic-diff-of-tracker-state-between-revisions.md) — 29% (5/17 pts · 2/8 done) · _medium_ · in-progress
 
