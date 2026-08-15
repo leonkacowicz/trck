@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 65 |
+| backlog | 67 |
 | in-progress | 3 |
 | in-review | 0 |
 | done | 216 |
-| **total** | **284** |
+| **total** | **286** |
 
 ## Hierarchies
 
@@ -192,7 +192,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#uq2zc2p conformance: convert the deps gutter tests](items/uq2zc2p-conformance-convert-the-deps-gutter-tests.md)
 - [x] [#xm6h2qn conformance: convert the command-output tests](items/xm6h2qn-conformance-convert-the-command-output-tests.md)
 
-### [#sqzr7nk storage: move the tracker to an orphan trck-issues branch](items/sqzr7nk-storage-move-the-tracker-to-an-orphan-trck-issues-branch.md) — 81% (44/54 pts · 18/23 done) · _high_ · in-progress
+### [#sqzr7nk storage: move the tracker to an orphan trck-issues branch](items/sqzr7nk-storage-move-the-tracker-to-an-orphan-trck-issues-branch.md) — 79% (44/56 pts · 18/25 done) · _high_ · in-progress
 
 - [x] [#2ybw758 reads: resolve index, bodies and trck.json from a git ref](items/2ybw758-reads-resolve-index-bodies-and-trck-json-from-a-git-ref.md) · [review](https://github.com/leonkacowicz/trck/pull/36)
 - [x] [#32gyghs tests: a harness for a ref-backed tracker in a temp git repo](items/32gyghs-tests-a-harness-for-a-ref-backed-tracker-in-a-temp-git-repo.md) · [review](https://github.com/leonkacowicz/trck/pull/32)
@@ -204,12 +204,14 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#abynj5c reads: prefer the local ref over origin, fast-forward when behind, report divergence](items/abynj5c-reads-prefer-the-local-ref-over-origin-fast-forward-when-behind-report-divergence.md) · [review](https://github.com/leonkacowicz/trck/pull/42)
 - [x] [#ahgehpa discovery: reads go through Ctx content accessors, not paths](items/ahgehpa-discovery-reads-go-through-ctx-content-accessors-not-paths.md) · [review](https://github.com/leonkacowicz/trck/pull/31)
 - [x] [#c3uzxka diff: resolve revisions on the tracker branch](items/c3uzxka-diff-resolve-revisions-on-the-tracker-branch.md) · [review](https://github.com/leonkacowicz/trck/pull/46)
+- [ ] [#ch5furb diff: says 'working tree' when the tracker is a ref and there is none](items/ch5furb-diff-says-working-tree-when-the-tracker-is-a-ref-and-there-is-none.md) _(backlog)_
 - [x] [#dak2sjq trck sync, and the pending-changes report on every write verb](items/dak2sjq-trck-sync-and-the-pending-changes-report-on-every-write-verb.md) · [review](https://github.com/leonkacowicz/trck/pull/44)
 - [x] [#jgf9ktx writes: blobs to tree to commit-tree, then CAS the local ref](items/jgf9ktx-writes-blobs-to-tree-to-commit-tree-then-cas-the-local-ref.md) · [review](https://github.com/leonkacowicz/trck/pull/39)
 - [x] [#kdbb9ms git: one plumbing module for the ref read and write primitives](items/kdbb9ms-git-one-plumbing-module-for-the-ref-read-and-write-primitives.md) · [review](https://github.com/leonkacowicz/trck/pull/30)
 - [x] [#nabxbdk new: $EDITOR on the template, validating like visudo](items/nabxbdk-new-editor-on-the-template-validating-like-visudo.md) · [review](https://github.com/leonkacowicz/trck/pull/38)
 - [x] [#nuemwhc reads: report a stale tracker ref instead of silently using it](items/nuemwhc-reads-report-a-stale-tracker-ref-instead-of-silently-using-it.md)
 - [x] [#p95aabv new: --body, --body-file (- is stdin) and --empty; error without a TTY](items/p95aabv-new-body-body-file-is-stdin-and-empty-error-without-a-tty.md) · [review](https://github.com/leonkacowicz/trck/pull/37)
+- [ ] [#tdrcfss ref: a fresh clone's first write reports the tracker as inconsistent](items/tdrcfss-ref-a-fresh-clone-s-first-write-reports-the-tracker-as-inconsistent.md) _(backlog)_
 - [ ] [#tkhcgv6 hooks: the pre-commit guard stops running trck check on main](items/tkhcgv6-hooks-the-pre-commit-guard-stops-running-trck-check-on-main.md) _(backlog)_
 - [ ] [#u3s6y7h CI: check on the tracker branch, and ci_changed drops its issues/ case](items/u3s6y7h-ci-check-on-the-tracker-branch-and-ci-changed-drops-its-issues-case.md) _(backlog)_
 - [ ] [#usc2cxg migration: split issues/ onto an orphan trck-issues branch, history intact](items/usc2cxg-migration-split-issues-onto-an-orphan-trck-issues-branch-history-intact.md) _(backlog)_
