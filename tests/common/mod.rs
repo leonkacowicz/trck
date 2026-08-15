@@ -180,9 +180,15 @@ impl Scenario {
         // Real prose on one of them, so a test can tell a body read out of the ref from a
         // heading the engine would have generated either way.
         trck_must(&seed, &["--dir", ".", "new", "Seeded issue", "--id", "aaaaaaa", "--body", SEEDED_BODY]);
-        trck_must(&seed, &["--dir", ".", "new", "Second issue", "--id", "bbbbbbb", "--empty"]);
         git_must(&seed, &["add", "-A"]);
         git_must(&seed, &["commit", "-qm", "tracker"]);
+
+        // A second commit rather than a second issue in the first one, so that
+        // `origin/trck-issues~1` names a real earlier state. That is what lets a test put a
+        // local branch *behind* the remote without inventing history of its own.
+        trck_must(&seed, &["--dir", ".", "new", "Second issue", "--id", "bbbbbbb", "--empty"]);
+        git_must(&seed, &["add", "-A"]);
+        git_must(&seed, &["commit", "-qm", "a second issue"]);
         git_must(&seed, &["push", "-q", "origin", TRACKER_BRANCH]);
 
         // A second branch whose index still lists `bbbbbbb` but whose tree no longer holds

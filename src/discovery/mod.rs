@@ -13,6 +13,7 @@ use std::path::{Path, PathBuf};
 pub(crate) mod content;
 mod load;
 mod source;
+mod standing;
 
 pub(crate) use source::{Overrides, Source, resolve_tracker_source};
 
