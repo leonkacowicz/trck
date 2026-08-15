@@ -127,3 +127,38 @@ fn summary_prints_the_rollup_when_there_is_nowhere_to_write_it() {
     assert!(out.contains("Seeded issue"), "the rollup did not come from the ref:\n{out}");
     assert!(!out.starts_with("wrote "), "claimed to write a file for a tracker with no directory:\n{out}");
 }
+
+/// `edit` against a ref-backed tracker, end to end: the body is read out of the ref, the
+/// new one is committed back to it, and the next read sees it.
+///
+/// Nothing in `edit` knows which kind of tracker it has — it reads through the content
+/// accessors and writes through a changeset — so this is the assertion that the two halves
+/// actually meet.
+#[test]
+fn edit_reads_from_the_ref_and_writes_back_to_it() {
+    let Some(s) = Scenario::build("reads-edit") else {
+        return;
+    };
+    let out = trck_must(&s.work, &["edit", "aaaaaaa", "--body", "revised prose."]);
+    assert!(out.contains("edited"), "{out}");
+
+    let shown = trck_must(&s.work, &["show", "aaaaaaa"]);
+    assert!(shown.contains("revised prose."), "the edit did not reach the ref:\n{shown}");
+    assert!(!shown.contains(SEEDED_BODY), "the old body is still there:\n{shown}");
+
+    // Nothing was written to the checkout: the tracker is still only on the branch.
+    assert!(!s.work.join("issues").exists(), "a tracker directory appeared in the working tree");
+}
+
+/// The no-op rule holds for a ref-backed tracker too — and it matters more there, since an
+/// empty commit on a shared branch is something everyone else has to rebase over.
+#[test]
+fn an_edit_that_changes_nothing_commits_nothing_to_the_ref() {
+    let Some(s) = Scenario::build("reads-edit-noop") else {
+        return;
+    };
+    let before = git_must(&s.work, &["rev-parse", &format!("origin/{TRACKER_BRANCH}")]);
+    let out = trck_must(&s.work, &["edit", "aaaaaaa", "--body", SEEDED_BODY]);
+    assert!(out.contains("unchanged"), "{out}");
+    assert_eq!(git_must(&s.work, &["rev-parse", &format!("origin/{TRACKER_BRANCH}")]), before, "the ref moved for a no-op");
+}
