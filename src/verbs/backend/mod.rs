@@ -18,6 +18,7 @@ use super::op::Op;
 
 mod dir;
 mod git;
+mod sync;
 // Writing a message is [`git`]'s; reading one back is nobody's yet. The replay path
 // (`#5w9d7sq`) is `op_of`'s first consumer, and re-exporting it from here is that change's to
 // make — which is what the crate-level `dead_code` expectation covers in the meantime.
@@ -25,6 +26,8 @@ mod message;
 
 pub(crate) use dir::DirBackend;
 pub(crate) use git::RefBackend;
+pub(crate) use git::local_ref;
+pub(crate) use sync::sync;
 
 /// A changeset path as git spells it.
 ///

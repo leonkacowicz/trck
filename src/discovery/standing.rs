@@ -19,7 +19,7 @@ pub(super) fn reconcile(cwd: &Path, local: &str, remote: &str) -> Result<(), Str
         // A fast-forward and nothing else: the compare-and-swap names the value just read,
         // so a concurrent write between the read and the move is refused rather than
         // overwritten. This is the only ref move a *read* is allowed to make.
-        Standing::Behind => crate::git::write::update_ref(cwd, &format!("refs/heads/{TRACKER_REF}"), remote, Some(local)),
+        Standing::Behind => crate::git::refs::update_ref(cwd, &format!("refs/heads/{TRACKER_REF}"), remote, Some(local)),
         Standing::Diverged => {
             // Local wins, because it holds work that exists nowhere else. Saying so is the
             // whole point: the alternative is a listing quietly missing whatever landed
