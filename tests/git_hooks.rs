@@ -47,11 +47,21 @@ fn have_git() -> bool {
 
 /// A fresh directory nobody else is using, removed first so a crashed run cannot poison the
 /// next one.
+/// A throwaway repository, one level inside its own throwaway root.
+///
+/// The repository is a *child* of that root, never the root itself. One of these fixtures puts
+/// the tracker at the repo root on purpose — that is the case the hook's guard special-cases —
+/// and if the repo root were the temp directory's own child, that `trck.json` would sit
+/// directly in the system temp directory. Discovery looks one level down from **every**
+/// ancestor, so `/tmp` would become a tracker to anything else running there, and the
+/// `discovery` tests would start finding it instead of the nothing they assert. Two levels
+/// down, the scan of `/tmp` never sees it.
 fn scratch(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("trck-hooks-{name}"));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).expect("mkdir");
-    dir
+    let root = std::env::temp_dir().join(format!("trck-hooks-{name}"));
+    let _ = std::fs::remove_dir_all(&root);
+    let repo = root.join("repo");
+    std::fs::create_dir_all(&repo).expect("mkdir");
+    repo
 }
 
 /// A git repo with a tracker at `rel` holding one issue. `rel` of "." puts the tracker at the

@@ -10,7 +10,7 @@
     "module_files": 20
   },
   "totals": {
-    "file_functions": 247,
+    "file_functions": 244,
     "file_lines": 554,
     "function_args": 10,
     "function_cognitive": 45,
@@ -25,7 +25,6 @@
       "src/cli/mod.rs": 18,
       "src/config.rs": 33,
       "src/diff/mod.rs": 42,
-      "src/discovery/mod.rs": 3,
       "src/graph/demand.rs": 8,
       "src/gutter/shorten.rs": 4,
       "src/html.rs": 14,

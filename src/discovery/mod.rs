@@ -11,6 +11,8 @@ use crate::config::SUPPORTED_FORMAT;
 use std::path::{Path, PathBuf};
 
 pub(crate) mod content;
+#[cfg(test)]
+pub(crate) mod fixture;
 mod load;
 pub(crate) mod refspec;
 mod source;
@@ -121,40 +123,7 @@ pub(crate) mod tests {
 
     use super::*;
 
-    /// A throwaway directory tree. `std::env::temp_dir` plus a counter rather than a
-    /// crate — the engine takes no dependencies, and its tests should not either.
-    pub(crate) struct Tmp(PathBuf);
-
-    impl Tmp {
-        pub(crate) fn new(tag: &str) -> Tmp {
-            use std::sync::atomic::{AtomicUsize, Ordering};
-            static N: AtomicUsize = AtomicUsize::new(0);
-            let n = N.fetch_add(1, Ordering::Relaxed);
-            let p = std::env::temp_dir().join(format!("trck-test-{tag}-{}-{n}", std::process::id()));
-            let _ = std::fs::remove_dir_all(&p);
-            std::fs::create_dir_all(&p).expect("temp dir");
-            Tmp(p)
-        }
-
-        /// The root of the throwaway tree, for a test that wants to place its own
-        /// directories inside it rather than a ready-made tracker.
-        pub(crate) fn path(&self) -> &Path {
-            &self.0
-        }
-
-        pub(crate) fn tracker(&self, rel: &str) -> PathBuf {
-            let d = self.0.join(rel);
-            std::fs::create_dir_all(&d).expect("mkdir");
-            std::fs::write(d.join(CONFIG_NAME), "{}").expect("write config");
-            d.canonicalize().unwrap_or(d)
-        }
-    }
-
-    impl Drop for Tmp {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.0);
-        }
-    }
+    pub(crate) use super::fixture::Tmp;
 
     #[test]
     fn finds_a_tracker_in_the_current_directory() {
@@ -187,6 +156,29 @@ pub(crate) mod tests {
     fn no_tracker_anywhere_says_how_to_make_one() {
         let tmp = Tmp::new("none");
         let err = find_tracker(&tmp.0).expect_err("not found");
+        assert_eq!(err, "no tracker found here; run `trck init`");
+    }
+
+    /// **The rule every fixture in this repository obeys**, asserted rather than assumed: a
+    /// tracker two directories down is invisible to a scan of the one above it.
+    ///
+    /// The scan looks at a directory's *direct* children only. So a fixture that puts
+    /// `trck.json` at its own root turns the shared temp directory into a tracker for every
+    /// other test running there — and the three "nothing to find" assertions above start
+    /// finding it. Two levels down, they do not. That is why `Tmp::tracker` takes a relative
+    /// path, why `git_hooks` builds its repository *inside* its throwaway root, and why
+    /// `new_body_stdin` says the same thing in its own words.
+    #[test]
+    fn a_tracker_two_levels_down_is_invisible_to_the_scan_above_it() {
+        let holder = Tmp::new("nested-holder");
+        let looker = Tmp::new("nested-looker");
+        // The legal shape: `<holder>/issues/trck.json`, never `<holder>/trck.json`.
+        holder.tracker("issues");
+        // Both fixtures are children of the same temp directory, which is what makes them
+        // each other's siblings — the arrangement that bites when the rule is broken.
+        assert_eq!(holder.0.parent(), looker.0.parent(), "the fixtures must share a parent for this to prove anything");
+
+        let err = find_tracker(&looker.0).expect_err("a sibling's nested tracker must stay invisible");
         assert_eq!(err, "no tracker found here; run `trck init`");
     }
 
