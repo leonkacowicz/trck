@@ -40,8 +40,9 @@ The engine is **`src/`** — one package at the repo root, no workspace. Build i
   downstream tool would notice belongs there**; internals stay in unit tests. `--min-pass` is a
   ratchet that only moves up.
 - `python3 -m unittest discover -s scripts/tests` — the helper scripts under `scripts/`: the
-  installer, a timestamp backfill, an id converter, the CI path classifier. None is part of the
-  engine, which is why they are a separate suite rather than something gating every engine change.
+  installer, a timestamp backfill, an id converter, the CI path classifier, the pre-commit hook.
+  None is part of the engine, which is why they are a separate suite rather than something gating
+  every engine change.
 
 Add a test for every change (TDD), in whichever of the three it belongs to.
 
@@ -82,8 +83,11 @@ it.** When `ratchet check` starts failing on a clean checkout, compare `ratchet 
 against the pin in `.github/workflows/ci.yml` before believing the numbers.
 
 **Enable the pre-commit guard once per clone:** `git config core.hooksPath scripts/hooks`. It
-runs `trck check` before commits, preferring the binary in `target/` over an installed one — in
-this repo the engine under change is the one that should answer.
+runs `ratchet check`, and nothing else. It deliberately does **not** run `trck check`: once the
+tracker moves onto the `trck-issues` ref no commit in this working tree can make it inconsistent,
+and until then the check is a duplicate of the one the tracker-write ritual already runs before
+pushing. `scripts/tests/test_pre_commit.py` asserts the absence, because a guard that grows a
+tracker check back would refuse the flip commit itself.
 
 The vocabulary is **fixed in code**, not configured — `backlog → in-progress → in-review → done`,
 five priorities, three resolutions, all constants in `src/config.rs`. It used to come
