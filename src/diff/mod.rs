@@ -10,14 +10,14 @@
 //! them into "these keys differ" would lose the one thing a reader wants — whether a
 //! `done -> in-progress` move is a reopen or a start.
 
+pub(crate) mod revisions;
+
 use crate::config::{self, is_terminal};
-use crate::discovery::Ctx;
 use crate::graph::Graph;
 use crate::index::parse_index;
 use crate::issue::{CANON_KEYS, Issue};
 use crate::render::field_value;
 use std::collections::{BTreeMap, BTreeSet};
-use std::path::Path;
 
 const TIMESTAMP_FIELDS: &[&str] = &["created", "started", "closed"];
 const SET_FIELDS: &[&str] = &["labels", "depends_on"];
@@ -196,79 +196,6 @@ pub(crate) fn change_summary(c: &Change) -> String {
 // sources
 // --------------------------------------------------------------------------- //
 
-const USE_FROM: &str = "use --from/--to with file paths instead";
-
-/// Why a git failure is not fatal to `diff` itself: the file-based sources still work, and
-/// saying so is more use than reporting that a spawn failed.
-///
-/// The [`crate::git`] primitives are deliberately unphrased, so the sentence is added here —
-/// only this caller knows that `--from`/`--to` is the way around it.
-fn unavailable(_: String) -> String {
-    format!("git is not on PATH, so revision specs are unavailable; {USE_FROM}")
-}
-
-/// The tracker as of `rev`.
-///
-/// A tracker dir absent at that revision is **not** an error: comparing against a commit
-/// from before the tracker existed is a legitimate question, and the answer is "every
-/// issue is new". An unresolvable revision *is* an error, reported separately, so "you
-/// typo'd the branch" stays distinguishable from "the tracker did not exist yet".
-pub(crate) fn git_snapshot(ctx: &Ctx, rev: &str) -> Result<Snapshot, String> {
-    if crate::git::rev_parse(ctx.git_cwd(), rev).map_err(unavailable)?.is_none() {
-        return Err(format!("unknown revision '{rev}'"));
-    }
-    let prefix = ctx.tracker_prefix().map_err(unavailable)?.ok_or_else(|| format!("not a git repository, so revision specs are unavailable; {USE_FROM}"))?;
-    let text = crate::git::show(ctx.git_cwd(), rev, &format!("{prefix}index.jsonl")).map_err(unavailable)?.unwrap_or_default();
-    Snapshot::from_text(&text, rev)
-}
-
-/// Split a revision spec into `(old, new)`; a `None` new side means the working tree.
-pub(crate) fn parse_rev_spec(spec: &str) -> Result<(String, Option<String>), String> {
-    if spec.contains("...") {
-        return Err("three-dot (merge-base) revision specs are not supported; \
-                    use `a..b` to compare two revisions directly"
-            .to_string());
-    }
-    let Some((old, new)) = spec.split_once("..") else {
-        return Ok((spec.to_string(), None));
-    };
-    if old.is_empty() || new.is_empty() {
-        return Err(format!("incomplete revision range '{spec}'; both sides of `..` are required"));
-    }
-    Ok((old.to_string(), Some(new.to_string())))
-}
-
-/// Resolve a `--from`/`--to` spec: a file, a directory holding one, `-` for stdin, or the
-/// working tree when unspecified.
-pub(crate) fn resolve_source(spec: Option<&str>, ctx: &Ctx) -> Result<Snapshot, String> {
-    let Some(spec) = spec else {
-        return Snapshot::from_text(&ctx.read_index()?, "working tree");
-    };
-    if spec == "-" {
-        use std::io::Read as _;
-        let mut text = String::new();
-        std::io::stdin().read_to_string(&mut text).map_err(|e| format!("stdin: {e}"))?;
-        return Snapshot::from_text(&text, "stdin");
-    }
-    let path = Path::new(spec);
-    // The label is the file's own name, not the spec that named it: a long relative path
-    // buries the one word that identifies the side being compared.
-    let label = path.file_name().map_or_else(|| spec.to_string(), |n| n.to_string_lossy().into_owned());
-    if path.is_dir() {
-        // A tracker dir with no index is an empty snapshot, not an error: the tracker
-        // not existing on one side is a legitimate comparison, and everything on the
-        // other side reads as added.
-        let text = std::fs::read_to_string(path.join("index.jsonl")).unwrap_or_default();
-        return Snapshot::from_text(&text, &label);
-    }
-    let text = std::fs::read_to_string(path).map_err(|_| format!("no such file: {spec}"))?;
-    Snapshot::from_text(&text, &label)
-}
-
-// --------------------------------------------------------------------------- //
-// changelog
-// --------------------------------------------------------------------------- //
-
 /// Validate a `--since` cutoff: a bare date or a full UTC timestamp.
 pub(crate) fn parse_since(value: &str) -> Result<String, String> {
     let date_ok = value.len() >= 10 && value.as_bytes()[..10].iter().enumerate().all(|(i, b)| if i == 4 || i == 7 { *b == b'-' } else { b.is_ascii_digit() });
@@ -427,15 +354,6 @@ mod tests {
         // Joined by id, and reported in id order: aaaaaaa (gone) before bbbbbbb (new).
         let seen: Vec<(&str, &str)> = changes.iter().map(|c| (c.id.as_str(), c.kind)).collect();
         assert_eq!(seen, [("aaaaaaa", "removed"), ("bbbbbbb", "added")]);
-    }
-
-    #[test]
-    fn a_revision_range_names_both_sides() {
-        assert_eq!(parse_rev_spec("HEAD").expect("ok"), ("HEAD".into(), None));
-        assert_eq!(parse_rev_spec("a..b").expect("ok"), ("a".to_string(), Some("b".to_string())));
-        assert!(parse_rev_spec("a...b").is_err(), "merge-base specs are refused");
-        assert!(parse_rev_spec("a..").is_err());
-        assert!(parse_rev_spec("..b").is_err());
     }
 
     #[test]

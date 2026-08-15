@@ -28,17 +28,17 @@ pub(super) fn cmd_changelog(ctx: &Ctx, args: &Args) -> Result<String, String> {
 /// are separate issues in the Python engine and are not ported ahead of it: see #2w5panf.
 pub(super) fn cmd_diff(ctx: &Ctx, args: &Args) -> Result<String, String> {
     let (old, new) = if let Some(rev) = args.positional_at(0) {
-        let (old_rev, new_rev) = crate::diff::parse_rev_spec(rev)?;
-        let old = crate::diff::git_snapshot(ctx, &old_rev)?;
+        let (old_rev, new_rev) = crate::diff::revisions::parse_rev_spec(rev)?;
+        let old = crate::diff::revisions::git_snapshot(ctx, &old_rev)?;
         let new = match new_rev {
-            Some(r) => crate::diff::git_snapshot(ctx, &r)?,
-            None => crate::diff::resolve_source(args.opt("--to"), ctx)?,
+            Some(r) => crate::diff::revisions::git_snapshot(ctx, &r)?,
+            None => crate::diff::revisions::resolve_source(args.opt("--to"), ctx)?,
         };
         (old, new)
     } else if let Some(from) = args.opt("--from") {
-        (crate::diff::resolve_source(Some(from), ctx)?, crate::diff::resolve_source(args.opt("--to"), ctx)?)
+        (crate::diff::revisions::resolve_source(Some(from), ctx)?, crate::diff::revisions::resolve_source(args.opt("--to"), ctx)?)
     } else {
-        (crate::diff::git_snapshot(ctx, "HEAD")?, crate::diff::resolve_source(args.opt("--to"), ctx)?)
+        (crate::diff::revisions::git_snapshot(ctx, "HEAD")?, crate::diff::revisions::resolve_source(args.opt("--to"), ctx)?)
     };
     let changes = crate::diff::diff_snapshots(&old, &new);
     let mut out = vec![format!("{} → {}", old.label, new.label)];
