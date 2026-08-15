@@ -68,10 +68,11 @@ jobs:
           echo "code=$code" >> "$GITHUB_OUTPUT"
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
-  # The helper scripts: a timestamp backfill, an id converter, and the installer. None of
-  # them is part of the engine, and they run as their own suite for that reason — a
-  # one-shot nobody will run again should not gate every engine change. Two of them do
-  # reach for a built binary, and skip cleanly when there isn't one.
+  # The helper scripts: a timestamp backfill, an id converter, the installer, this
+  # workflow's own path classifier, and the pre-commit hook. None of them is part of the
+  # engine, and they run as their own suite for that reason — a one-shot nobody will run
+  # again should not gate every engine change. Two of them do reach for a built binary,
+  # and skip cleanly when there isn't one.
   scripts:
     needs: changes
     if: needs.changes.outputs.code == 'true'

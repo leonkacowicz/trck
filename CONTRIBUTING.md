@@ -74,7 +74,8 @@ Existing debt is grandfathered and may only shrink, so a change under `src/` nee
 move, that is its own commit: ratchet refuses a threshold edit in the same change as a new
 violation.
 
-Enable the pre-commit guard once per clone with `git config core.hooksPath scripts/hooks`.
+Enable the pre-commit guard once per clone with `git config core.hooksPath scripts/hooks`. That
+is all it checks — the tracker is validated by the verbs that write it, not by a hook here.
 
 ## Dogfooding
 

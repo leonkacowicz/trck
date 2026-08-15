@@ -1,42 +1,24 @@
 #!/usr/bin/env bash
 #
-# Pre-commit guard for the trck dev repo. Two independent checks:
-#
-#   1. the issue tracker under `issues/` is consistent;
-#   2. `quality-report.json` still describes the code as it stands.
+# Pre-commit guard for the trck dev repo: it checks that `quality-report.json` still
+# describes the code as it stands.
 #
 # Enable it once per clone:  git config core.hooksPath scripts/hooks
 #
-# Both are conveniences, not gates — `--no-verify` skips them, and each does nothing
-# when its tool is absent. The checks that bind run in CI. They are kept independent on
-# purpose: an unbuilt engine must not silently take the quality check down with it.
+# A convenience, not a gate — `--no-verify` skips it, and it does nothing on a machine
+# without ratchet. The checks that bind run in CI.
+#
+# It used to run `trck check` too, and that had to go before the tracker could move onto
+# the `trck-issues` ref (#8d22h6x). Two reasons, in order of how much they hurt. The flip
+# commit is `git rm -r issues/`, which is a tracker change, so the hook fires — and refuses,
+# because the directory it wants to check is the one being removed. And once the flip has
+# landed, no commit in this working tree can make the tracker inconsistent at all: the write
+# verbs commit to the ref through git plumbing, validating as they go, and never pass through
+# a pre-commit hook. What is left for a tracker change to break here is nothing.
 set -euo pipefail
 
 root="$(git rev-parse --show-toplevel)"
 cd "$root"
-
-fail=0
-
-# The build tree first: in this repo the engine under change is the one that should
-# answer, and an installed trck would speak for a different version without saying so.
-if [ -x target/release/trck ]; then
-    engine=target/release/trck
-elif [ -x target/debug/trck ]; then
-    engine=target/debug/trck
-elif command -v trck >/dev/null 2>&1; then
-    engine=trck
-else
-    engine=""
-    echo "pre-commit: no trck found — skipping the tracker check." >&2
-    echo "            build one with 'cargo build --release' to enable it." >&2
-fi
-
-if [ -n "$engine" ]; then
-    "$engine" check || {
-        echo "pre-commit: trck tracker is inconsistent — aborting commit." >&2
-        fail=1
-    }
-fi
 
 # The report has to describe the code as it stands, or the ratchet in CI measures fiction.
 # Caught here because the fix is one command, and learning that from a red build five
@@ -44,10 +26,8 @@ fi
 if command -v ratchet >/dev/null 2>&1; then
     ratchet check --root . || {
         echo "pre-commit: quality-report.json is stale — run 'ratchet generate' and stage it." >&2
-        fail=1
+        exit 1
     }
 else
     echo "pre-commit: no ratchet found — skipping the quality check." >&2
 fi
-
-exit "$fail"
