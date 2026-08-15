@@ -47,7 +47,7 @@ fn setup(root: &Path) {
     assert!(git_ok(root, &["init", "-q"]), "git init");
     git(root, &["config", "user.email", "t@example.test"]);
     git(root, &["config", "user.name", "trck test"]);
-    let r = trck(root, &["--dir", "issues", "new", "Shared", "--id", "aaaaaaa"]);
+    let r = trck(root, &["--dir", "issues", "new", "Shared", "--id", "aaaaaaa", "--empty"]);
     assert!(r.status.success(), "seed: {}", String::from_utf8_lossy(&r.stderr));
     git(root, &["add", "-A"]);
     git(root, &["commit", "-qm", "init"]);
@@ -81,10 +81,10 @@ fn git_auto_resolves_disjoint_creations_through_the_driver() {
     let main = current_branch(&tmp);
 
     on_branch(&tmp, "feature", &main, || {
-        trck(&tmp, &["--dir", "issues", "new", "From feature", "--id", "bbbbbbb"]);
+        trck(&tmp, &["--dir", "issues", "new", "From feature", "--id", "bbbbbbb", "--empty"]);
     });
     git(&tmp, &["checkout", "-q", &main]);
-    trck(&tmp, &["--dir", "issues", "new", "From main", "--id", "ccccccc"]);
+    trck(&tmp, &["--dir", "issues", "new", "From main", "--id", "ccccccc", "--empty"]);
     git(&tmp, &["add", "-A"]);
     git(&tmp, &["commit", "-qm", "main"]);
 

@@ -1,5 +1,5 @@
 # The blocker sorts above what it blocks, even though every tie-break available —
 # created, then id — would have put it second.
-new "Blocked" --id aaaaaaa
-new "Blocker" --id bbbbbbb
+new "Blocked" --id aaaaaaa --empty
+new "Blocker" --id bbbbbbb --empty
 dep aaaaaaa --add bbbbbbb

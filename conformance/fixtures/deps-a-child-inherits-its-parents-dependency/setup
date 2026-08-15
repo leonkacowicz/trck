@@ -1,5 +1,5 @@
 # The epic depends on a blocker; its child inherits that dependency, so the blocker
 # reaches the whole family.
-new "Blocker" --id aaaaaaa
-new "Epic" --id bbbbbbb --requires aaaaaaa
-new "Kid" --id ccccccc --parent bbbbbbb
+new "Blocker" --id aaaaaaa --empty
+new "Epic" --id bbbbbbb --requires aaaaaaa --empty
+new "Kid" --id ccccccc --parent bbbbbbb --empty

@@ -1,1 +1,1 @@
-new "Documented" --id aaaaaaa --points 2 --spec docs/x.md
+new "Documented" --id aaaaaaa --points 2 --spec docs/x.md --body "What it is, and why it matters."

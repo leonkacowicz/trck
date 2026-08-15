@@ -1,4 +1,4 @@
 # --auto drops the pin, and the status falls back to what the children imply.
-new "Epic" --id aaaaaaa
-new "Kid" --id bbbbbbb --parent aaaaaaa
+new "Epic" --id aaaaaaa --empty
+new "Kid" --id bbbbbbb --parent aaaaaaa --empty
 mv aaaaaaa in-progress

@@ -1,5 +1,5 @@
 # Dropping out of `ready` is not dropping out of the tracker: a started issue is still
 # listed, and still blocks what waits on it.
-new "Blocker" --id aaaaaaa
-new "Dependent" --id bbbbbbb --requires aaaaaaa
+new "Blocker" --id aaaaaaa --empty
+new "Dependent" --id bbbbbbb --requires aaaaaaa --empty
 start aaaaaaa

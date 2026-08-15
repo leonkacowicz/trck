@@ -1,7 +1,7 @@
 # Blocking one high outranks blocking any number of mediums: demand never trades a level for
 # a count. The high-blocker ranks first despite the other blocking more tasks.
-new "Blocks two mediums" --id aaaaaaa --priority lowest
-new "Blocks one high" --id bbbbbbb --priority lowest
-new "Medium 1" --id ccccccc --priority medium --requires aaaaaaa
-new "Medium 2" --id ddddddd --priority medium --requires aaaaaaa
-new "High 1" --id eeeeeee --priority high --requires bbbbbbb
+new "Blocks two mediums" --id aaaaaaa --priority lowest --empty
+new "Blocks one high" --id bbbbbbb --priority lowest --empty
+new "Medium 1" --id ccccccc --priority medium --requires aaaaaaa --empty
+new "Medium 2" --id ddddddd --priority medium --requires aaaaaaa --empty
+new "High 1" --id eeeeeee --priority high --requires bbbbbbb --empty

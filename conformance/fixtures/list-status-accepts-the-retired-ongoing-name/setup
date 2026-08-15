@@ -1,4 +1,4 @@
 # A filter spelled with the retired name selects the status it became.
-new "Backlog" --id aaaaaaa
-new "In-progress" --id bbbbbbb
+new "Backlog" --id aaaaaaa --empty
+new "In-progress" --id bbbbbbb --empty
 start bbbbbbb

@@ -1,2 +1,2 @@
 # Two different output modes; picking silently would be a guess.
-new "Solo" --id aaaaaaa
+new "Solo" --id aaaaaaa --empty

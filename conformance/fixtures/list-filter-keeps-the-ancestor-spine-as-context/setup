@@ -1,4 +1,4 @@
 # A filter selects the matches; their ancestor spine is kept so a match is never shown
 # floating without the epic it belongs to. The non-matching ancestor is context, not a hit.
-new "Epic" --id aaaaaaa
-new "Child" --id bbbbbbb --parent aaaaaaa
+new "Epic" --id aaaaaaa --empty
+new "Child" --id bbbbbbb --parent aaaaaaa --empty

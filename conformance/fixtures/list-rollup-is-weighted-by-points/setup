@@ -1,5 +1,5 @@
 # The percent is points-weighted, not a count: finishing the light child is 25%, not 50%.
-new "Epic" --id aaaaaaa
-new "light" --id bbbbbbb --parent aaaaaaa --points 1
-new "heavy" --id ccccccc --parent aaaaaaa --points 3
+new "Epic" --id aaaaaaa --empty
+new "light" --id bbbbbbb --parent aaaaaaa --points 1 --empty
+new "heavy" --id ccccccc --parent aaaaaaa --points 3 --empty
 done bbbbbbb

@@ -1,2 +1,2 @@
 # An issue with no edges either way prints a "(no dependencies)" line, not a gutter.
-new "Lonely" --id aaaaaaa
+new "Lonely" --id aaaaaaa --empty

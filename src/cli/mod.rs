@@ -10,6 +10,7 @@
 //! conformance pass rate an honest number. The guard remains for `repo`, whose
 //! subcommand list can still grow.
 
+mod body;
 mod dispatch;
 pub(crate) mod opts;
 mod reports;
@@ -62,6 +63,8 @@ struct Args {
 /// `trck list --flat --json` parses without the flags swallowing each other.
 const VALUED: &[&str] = &[
     "--dir",
+    "--body",
+    "--body-file",
     "--ref",
     "--id",
     "--slug",
@@ -149,25 +152,6 @@ impl Args {
     }
 }
 
-/// `list` and its `tree` alias take exactly the same options, named once.
-const LIST_FLAGS: &[&str] = &[
-    "--dir",
-    "--status",
-    "--priority",
-    "--label",
-    "--parent",
-    "--match",
-    "--field",
-    "--show-field",
-    "--sort",
-    "--blocked",
-    "--orphan",
-    "--all",
-    "--flat",
-    "--paths",
-    "--json",
-];
-
 /// The flags each verb accepts, so a typo is refused rather than ignored.
 ///
 /// Silently dropping an unrecognised option is the worst of both worlds: `list
@@ -175,7 +159,7 @@ const LIST_FLAGS: &[&str] = &[
 /// argparse rejects it; so does this, though the message differs — argparse prints its
 /// own usage block, and reproducing that is pinning argparse rather than trck.
 pub(crate) const KNOWN_FLAGS: &[(&str, usize, &[&str])] = &[
-    ("new", 0, &["--dir", "--id", "--slug", "--priority", "--points", "--parent", "--requires", "--spec", "--review-url"]),
+    ("new", 0, &["--dir", "--id", "--slug", "--priority", "--points", "--parent", "--requires", "--spec", "--review-url", "--body", "--body-file", "--empty"]),
     ("mv", 0, &["--dir", "--resolution", "--review-url"]),
     ("start", 0, &["--dir"]),
     ("review", 0, &["--dir", "--review-url"]),
@@ -183,10 +167,10 @@ pub(crate) const KNOWN_FLAGS: &[(&str, usize, &[&str])] = &[
     ("set", 0, &["--dir", "--auto", "--priority", "--points", "--parent", "--spec", "--review-url", "--title", "--slug", "--field", "--unset"]),
     ("dep", 0, &["--dir", "--add", "--remove"]),
     ("label", 0, &["--dir", "--add", "--remove"]),
-    ("list", 0, LIST_FLAGS),
+    ("list", 0, opts::LIST_FLAGS),
     // Named once rather than repeated: `tree` is an alias, so a flag either verb accepted
     // alone would be a flag the other silently refused.
-    ("tree", 0, LIST_FLAGS),
+    ("tree", 0, opts::LIST_FLAGS),
     ("show", 0, &["--dir", "--json"]),
     ("path", 0, &["--dir"]),
     ("which", 0, &["--dir", "--ids"]),

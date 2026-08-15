@@ -15,5 +15,5 @@
   "closed": null,
   "resolution": null,
   "manual_status": false,
-  "body": "# Café — naïve résumé\n\n## Summary\n<!-- What needs doing and why. For an epic, link the spec instead of re-narrating it. -->\n\n## Acceptance criteria\n- [ ]\n\n## Notes\n<!-- Context, links to files/commits, open questions, decisions. -->\n"
+  "body": "# Café — naïve résumé\n"
 }

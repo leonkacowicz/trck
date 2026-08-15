@@ -1,3 +1,3 @@
-new "Tagged" --id aaaaaaa
-new "Untagged" --id bbbbbbb
+new "Tagged" --id aaaaaaa --empty
+new "Untagged" --id bbbbbbb --empty
 label aaaaaaa --add backend

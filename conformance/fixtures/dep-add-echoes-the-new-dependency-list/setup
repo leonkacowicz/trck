@@ -1,2 +1,2 @@
-new "Blocker" --id aaaaaaa
-new "Dependent" --id bbbbbbb
+new "Blocker" --id aaaaaaa --empty
+new "Dependent" --id bbbbbbb --empty

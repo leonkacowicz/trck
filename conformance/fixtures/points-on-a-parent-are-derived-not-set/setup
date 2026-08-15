@@ -1,2 +1,2 @@
-new "Epic" --id aaaaaaa
-new "Kid" --id bbbbbbb --parent aaaaaaa --points 5
+new "Epic" --id aaaaaaa --empty
+new "Kid" --id bbbbbbb --parent aaaaaaa --points 5 --empty

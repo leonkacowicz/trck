@@ -1,4 +1,4 @@
 # A done task blocks nothing: both sides of the edge go quiet.
-new "Dep" --id aaaaaaa
-new "Blocked" --id bbbbbbb --requires aaaaaaa
+new "Dep" --id aaaaaaa --empty
+new "Blocked" --id bbbbbbb --requires aaaaaaa --empty
 done aaaaaaa

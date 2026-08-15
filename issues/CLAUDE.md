@@ -29,7 +29,10 @@ tracker that still has them is unreadable by this engine.
 Run from anywhere in the repo — `trck` finds the tracker by walking up to the folder
 holding `trck.json` (override with `--dir PATH` or `$TRCK_DIR`).
 
-- `trck new "<title>" [--priority …] [--parent ID] [--requires a,b] [--id ID]`
+- `trck new "<title>" (--body TEXT | --body-file PATH | --empty) [--priority …] [--parent ID] [--requires a,b] [--id ID]`
+  — say where the prose comes from: inline, from a file (`-` reads stdin), or `--empty` for a
+  title-only issue. With none of them and no terminal, `new` refuses rather than filing a body
+  nobody wrote, so a script or an agent finds out at the point of the mistake.
 - `trck mv ID <status>`; `trck start ID` / `trck review ID [URL]` / `trck done ID [--resolution …]` (aliases)
 - `trck set ID [--priority …] [--parent …|none] [--title …] [--review-url URL|none] [--field k=v] [--unset k]`
 - `trck dep ID --add ID2 | --remove ID2`

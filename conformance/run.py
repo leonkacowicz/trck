@@ -67,8 +67,12 @@ def run_trck(binary, tracker, argv, env_extra=None):
     # name a file inside it. Resolved to match what `normalise` strips from the output.
     root = str(Path(tracker).resolve())
     argv = [a.replace("{DIR}", root) for a in argv]
+    # stdin is closed, not inherited. Two verbs read it — `which` with no operands, and
+    # `new --body-file -` — and one asks whether it is a terminal, so a fixture run from a
+    # shell would behave differently from the same fixture in CI, or block outright.
     return subprocess.run([str(binary), "--dir", str(tracker), *argv],
-                          capture_output=True, text=True, env=env)
+                          capture_output=True, text=True, env=env,
+                          stdin=subprocess.DEVNULL)
 
 
 def normalise(text, tracker):

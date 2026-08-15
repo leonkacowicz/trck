@@ -1,5 +1,5 @@
 # A parent/child pair with no authored edges. Rendering the epic's graph draws an
 # inferred containment edge, but it is display-only: the index must be byte-identical
 # afterwards — no depends_on appears on the parent.
-new "Epic" --id aaaaaaa
-new "Kid" --id bbbbbbb --parent aaaaaaa
+new "Epic" --id aaaaaaa --empty
+new "Kid" --id bbbbbbb --parent aaaaaaa --empty

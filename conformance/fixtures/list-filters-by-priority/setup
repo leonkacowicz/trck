@@ -1,2 +1,2 @@
-new "High one" --id aaaaaaa --priority high
-new "Low one" --id bbbbbbb --priority low
+new "High one" --id aaaaaaa --priority high --empty
+new "Low one" --id bbbbbbb --priority low --empty

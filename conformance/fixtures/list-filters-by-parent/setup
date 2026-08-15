@@ -1,4 +1,4 @@
 # --parent lists the children of one epic.
-new "Epic" --id aaaaaaa
-new "Kid" --id bbbbbbb --parent aaaaaaa
-new "Outsider" --id ccccccc
+new "Epic" --id aaaaaaa --empty
+new "Kid" --id bbbbbbb --parent aaaaaaa --empty
+new "Outsider" --id ccccccc --empty

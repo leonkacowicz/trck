@@ -1,2 +1,2 @@
 # The same resolution failure every id-taking verb reports, so a script sees one wording.
-new "Alpha" --id aaaaaaa
+new "Alpha" --id aaaaaaa --empty

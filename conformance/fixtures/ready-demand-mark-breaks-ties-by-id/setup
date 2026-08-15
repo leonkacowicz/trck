@@ -1,4 +1,4 @@
 # Two urgent dependents lift the blocker equally; the mark names the lower id.
-new "Medium blocker" --id aaaaaaa --priority medium
-new "Urgent B" --id bbbbbbb --priority urgent --requires aaaaaaa
-new "Urgent C" --id ccccccc --priority urgent --requires aaaaaaa
+new "Medium blocker" --id aaaaaaa --priority medium --empty
+new "Urgent B" --id bbbbbbb --priority urgent --requires aaaaaaa --empty
+new "Urgent C" --id ccccccc --priority urgent --requires aaaaaaa --empty

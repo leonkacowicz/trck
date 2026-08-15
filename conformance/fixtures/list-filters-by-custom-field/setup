@@ -1,4 +1,4 @@
-new "Mine" --id aaaaaaa
-new "Theirs" --id bbbbbbb
+new "Mine" --id aaaaaaa --empty
+new "Theirs" --id bbbbbbb --empty
 set aaaaaaa --field area=core
 set bbbbbbb --field area=docs

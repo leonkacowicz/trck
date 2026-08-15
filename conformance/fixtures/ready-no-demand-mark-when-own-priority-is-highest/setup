@@ -1,3 +1,3 @@
 # The blocker already outranks everything waiting on it, so no ↑ mark is added.
-new "Urgent blocker" --id aaaaaaa --priority urgent
-new "High dependent" --id bbbbbbb --priority high --requires aaaaaaa
+new "Urgent blocker" --id aaaaaaa --priority urgent --empty
+new "High dependent" --id bbbbbbb --priority high --requires aaaaaaa --empty

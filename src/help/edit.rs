@@ -8,11 +8,16 @@ use super::VerbHelp;
 pub(super) const VERBS: &[VerbHelp] = &[
     VerbHelp {
         verb: "new",
-        tagline: "create a new issue (then edit its prose)",
+        tagline: "create a new issue, body and all",
         usage: "trck new <title> [options]",
-        blurb: "Create an issue: write its markdown file from a prose template and add it to the index; prints the new path.",
+        blurb: "Create an issue: write its markdown body and add it to the index; prints the new path. \
+                Say where the body comes from with --body, --body-file or --empty; with none of them and \
+                no terminal to type at, it refuses rather than filing prose nobody wrote.",
         args: &[("title", "short title (also derives the slug)")],
         opts: &[
+            ("--body TEXT", "the issue's prose, inline"),
+            ("--body-file PATH", "the issue's prose, from a file; `-` reads standard input"),
+            ("--empty", "no prose: the title is the whole issue"),
             ("--priority PRIORITY", "urgent, high, medium, low or lowest (default: medium)"),
             ("--points POINTS", "leaf weight for rollups (default 1)"),
             ("--parent PARENT", "id of the epic to nest this under"),
@@ -23,7 +28,7 @@ pub(super) const VERBS: &[VerbHelp] = &[
             ("--id ID", "use this id instead of generating one (for importing issues from another tracker, or restoring one)"),
         ],
         alias_of: "",
-        example: "trck new \"Add CSV export\" --priority high --parent 4 --requires 5,6",
+        example: "trck new \"Add CSV export\" --priority high --body-file spec.md",
     },
     VerbHelp {
         verb: "mv",

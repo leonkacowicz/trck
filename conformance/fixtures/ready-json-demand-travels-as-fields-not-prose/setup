@@ -1,4 +1,4 @@
 # What the human view renders as `↑urgent(#bbbbbbb)` travels as demand_priority and
 # demand_source, so it is queryable rather than a coloured string to be parsed.
-new "Blocker" --id aaaaaaa --priority medium
-new "Urgent thing" --id bbbbbbb --priority urgent --requires aaaaaaa
+new "Blocker" --id aaaaaaa --priority medium --empty
+new "Urgent thing" --id bbbbbbb --priority urgent --requires aaaaaaa --empty

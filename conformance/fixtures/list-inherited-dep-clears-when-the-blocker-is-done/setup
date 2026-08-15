@@ -1,4 +1,4 @@
-new "Dep" --id aaaaaaa
-new "Parent epic" --id bbbbbbb --requires aaaaaaa
-new "Child leaf" --id ccccccc --parent bbbbbbb
+new "Dep" --id aaaaaaa --empty
+new "Parent epic" --id bbbbbbb --requires aaaaaaa --empty
+new "Child leaf" --id ccccccc --parent bbbbbbb --empty
 done aaaaaaa

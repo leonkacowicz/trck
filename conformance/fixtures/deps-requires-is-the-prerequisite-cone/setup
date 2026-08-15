@@ -1,4 +1,4 @@
 # Chain A<-B<-C. --requires on C is the upward (prerequisite) cone: what C needs.
-new "A" --id aaaaaaa
-new "B" --id bbbbbbb --requires aaaaaaa
-new "C" --id ccccccc --requires bbbbbbb
+new "A" --id aaaaaaa --empty
+new "B" --id bbbbbbb --requires aaaaaaa --empty
+new "C" --id ccccccc --requires bbbbbbb --empty

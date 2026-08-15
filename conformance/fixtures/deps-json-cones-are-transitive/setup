@@ -1,5 +1,5 @@
 # Both cones reach the whole chain, not just the adjacent hop.
-new "Base" --id aaaaaaa
-new "Second" --id bbbbbbb --requires aaaaaaa
-new "Third" --id ccccccc --requires bbbbbbb
-new "Fourth" --id ddddddd --requires ccccccc
+new "Base" --id aaaaaaa --empty
+new "Second" --id bbbbbbb --requires aaaaaaa --empty
+new "Third" --id ccccccc --requires bbbbbbb --empty
+new "Fourth" --id ddddddd --requires ccccccc --empty

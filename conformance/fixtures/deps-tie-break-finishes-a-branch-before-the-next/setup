@@ -1,7 +1,7 @@
 # 1 forks to two independent chains 1->2->4 and 1->3->5. Locality finishes one chain
 # (1,2,4) before starting the other (3,5) rather than interleaving by id.
-new "Root" --id aaaaaaa
-new "A1" --id bbbbbbb --requires aaaaaaa
-new "B1" --id ccccccc --requires aaaaaaa
-new "A2" --id ddddddd --requires bbbbbbb
-new "B2" --id eeeeeee --requires ccccccc
+new "Root" --id aaaaaaa --empty
+new "A1" --id bbbbbbb --requires aaaaaaa --empty
+new "B1" --id ccccccc --requires aaaaaaa --empty
+new "A2" --id ddddddd --requires bbbbbbb --empty
+new "B2" --id eeeeeee --requires ccccccc --empty

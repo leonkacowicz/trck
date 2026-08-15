@@ -1,4 +1,4 @@
 # The encoder contract every --json path shares: non-ASCII travels as itself rather than as a
 # \u escape (ensure_ascii=False), the document is indented two spaces, and it ends with a
 # newline so it appends cleanly and reads well in a terminal.
-new "Café — naïve résumé" --id aaaaaaa
+new "Café — naïve résumé" --id aaaaaaa --empty

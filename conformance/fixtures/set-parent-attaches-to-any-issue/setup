@@ -1,2 +1,2 @@
-new "Epic" --id aaaaaaa
-new "Loose" --id bbbbbbb
+new "Epic" --id aaaaaaa --empty
+new "Loose" --id bbbbbbb --empty

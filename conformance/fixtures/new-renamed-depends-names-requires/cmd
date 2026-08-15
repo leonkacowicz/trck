@@ -1,3 +1,3 @@
 # The flag was renamed to sit beside `deps --requires`. A bare "unrecognized argument"
 # would be correct and useless, so the old spelling names the new one.
-new "Second" --depends aaaaaaa
+new "Second" --depends aaaaaaa --empty

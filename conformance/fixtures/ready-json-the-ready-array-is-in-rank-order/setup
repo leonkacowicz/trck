@@ -1,5 +1,5 @@
 # The order is the answer, so it is the contract. A medium blocker of an urgent task
 # outranks a high task that blocks nothing.
-new "Blocker" --id aaaaaaa --priority medium
-new "Urgent thing" --id bbbbbbb --priority urgent --requires aaaaaaa
-new "High, blocks nothing" --id ccccccc --priority high
+new "Blocker" --id aaaaaaa --priority medium --empty
+new "Urgent thing" --id bbbbbbb --priority urgent --requires aaaaaaa --empty
+new "High, blocks nothing" --id ccccccc --priority high --empty

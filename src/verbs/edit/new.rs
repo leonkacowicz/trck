@@ -3,7 +3,7 @@
 //! Everything it derives — id, slug, priority, points — has a default and a rule the tracker
 //! would enforce later anyway, so each is checked here, before the row exists to hold it.
 
-use super::super::{Edit, Op, TEMPLATE, body_rel_path, check_slug, commit, issue_path, load_rows, now_utc, resolve_ref, slugify};
+use super::super::{Edit, Op, body_rel_path, check_slug, commit, issue_path, load_rows, now_utc, resolve_ref, slugify};
 use crate::config;
 use crate::discovery::Ctx;
 use crate::graph::Graph;
@@ -24,6 +24,8 @@ pub(crate) struct NewOpts {
     pub(crate) depends: Vec<String>,
     pub(crate) spec: Option<String>,
     pub(crate) review_url: Option<String>,
+    /// The prose, already resolved from `--body`/`--body-file`/`--empty` by the CLI.
+    pub(crate) body: String,
 }
 
 pub(crate) fn cmd_new(ctx: &Ctx, opts: &NewOpts) -> Result<String, String> {
@@ -34,7 +36,7 @@ pub(crate) fn cmd_new(ctx: &Ctx, opts: &NewOpts) -> Result<String, String> {
     if path.exists() {
         return Err(format!("{} already exists", path.display()));
     }
-    let body = vec![Edit::Write { path: body_rel_path(&row), contents: TEMPLATE.replace("{title}", &opts.title) }];
+    let body = vec![Edit::Write { path: body_rel_path(&row), contents: opts.body.clone() }];
     let op = op_for(&row);
     rows.push(row);
 

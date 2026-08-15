@@ -1,6 +1,6 @@
 # The rollup weights by points: finishing the small child is less progress than the
 # large one would be.
-new "Epic" --id aaaaaaa
-new "Small" --id bbbbbbb --parent aaaaaaa --points 1
-new "Large" --id ccccccc --parent aaaaaaa --points 9
+new "Epic" --id aaaaaaa --empty
+new "Small" --id bbbbbbb --parent aaaaaaa --points 1 --empty
+new "Large" --id ccccccc --parent aaaaaaa --points 9 --empty
 done bbbbbbb

@@ -35,6 +35,9 @@ pub(crate) const TRACKER_BRANCH: &str = "trck-issues";
 /// branch you are on" is the claim under test.
 pub(crate) const WORK_BRANCH: &str = "feature";
 
+/// The prose on the seeded issue, so a body read out of the ref is recognisable.
+pub(crate) const SEEDED_BODY: &str = "Prose that lives only on the tracker branch.";
+
 /// A tracker branch whose index lists an issue the tree no longer holds a body for.
 pub(crate) const HOLED_BRANCH: &str = "trck-issues-holed";
 
@@ -174,8 +177,10 @@ impl Scenario {
         git_must(&seed, &["rm", "-rq", "--cached", "."]);
         std::fs::remove_file(seed.join("README.md")).expect("rm");
         trck_must(&seed, &["init", "."]);
-        trck_must(&seed, &["--dir", ".", "new", "Seeded issue", "--id", "aaaaaaa"]);
-        trck_must(&seed, &["--dir", ".", "new", "Second issue", "--id", "bbbbbbb"]);
+        // Real prose on one of them, so a test can tell a body read out of the ref from a
+        // heading the engine would have generated either way.
+        trck_must(&seed, &["--dir", ".", "new", "Seeded issue", "--id", "aaaaaaa", "--body", SEEDED_BODY]);
+        trck_must(&seed, &["--dir", ".", "new", "Second issue", "--id", "bbbbbbb", "--empty"]);
         git_must(&seed, &["add", "-A"]);
         git_must(&seed, &["commit", "-qm", "tracker"]);
         git_must(&seed, &["push", "-q", "origin", TRACKER_BRANCH]);
