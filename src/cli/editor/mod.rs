@@ -15,19 +15,22 @@ use buffer::{annotated, complaint, is_abort, strip_banner};
 use scratch::Scratch;
 use std::path::Path;
 
-/// What to run when neither `$EDITOR` nor `$VISUAL` says.
+/// What to run when neither `$VISUAL` nor `$EDITOR` says.
 ///
 /// `vi` because POSIX requires it to exist; a machine that has neither the variables nor
 /// `vi` gets the spawn failure, which names what it tried.
 pub(super) const FALLBACK_EDITOR: &str = "vi";
 
-/// The editor command, in the order the issue specifies.
+/// The editor command: `$VISUAL`, then `$EDITOR`, then [`FALLBACK_EDITOR`].
 ///
-/// Note this is `$EDITOR` first and `$VISUAL` second, which is the reverse of the usual
-/// convention — most tools prefer `$VISUAL` and fall back to `$EDITOR`.
-pub(super) fn choose<'a>(editor: Option<&'a str>, visual: Option<&'a str>) -> &'a str {
+/// `$VISUAL` first is the convention every other tool follows — `git`, `crontab`, `visudo`
+/// — and it exists because the two variables mean different things: `$EDITOR` may be a line
+/// editor for a terminal that cannot do better, while `$VISUAL` is the full-screen one to
+/// use when the terminal can. Preferring `$EDITOR` would hand someone `ed` on a machine
+/// perfectly capable of running their real editor.
+pub(super) fn choose<'a>(visual: Option<&'a str>, editor: Option<&'a str>) -> &'a str {
     let set = |v: Option<&'a str>| v.map(str::trim).filter(|s| !s.is_empty());
-    set(editor).or_else(|| set(visual)).unwrap_or(FALLBACK_EDITOR)
+    set(visual).or_else(|| set(editor)).unwrap_or(FALLBACK_EDITOR)
 }
 
 /// Open the template in the operator's editor and hand back what they wrote.
@@ -35,8 +38,8 @@ pub(super) fn choose<'a>(editor: Option<&'a str>, visual: Option<&'a str>) -> &'
 /// Loops on a complaint rather than giving up: the work stays in the buffer, and the two
 /// ways out — empty it, or leave the editor non-zero — are both under the operator's hand.
 pub(super) fn edit(title: &str) -> Result<String, String> {
-    let (editor, visual) = (std::env::var("EDITOR").ok(), std::env::var("VISUAL").ok());
-    edit_with(title, choose(editor.as_deref(), visual.as_deref()))
+    let (visual, editor) = (std::env::var("VISUAL").ok(), std::env::var("EDITOR").ok());
+    edit_with(title, choose(visual.as_deref(), editor.as_deref()))
 }
 
 /// The loop itself, with the editor named rather than looked up.
@@ -88,10 +91,12 @@ mod tests {
 
     use super::*;
 
+    /// `$VISUAL` wins, which is what every other tool does: `$EDITOR` may be a line editor
+    /// for a terminal that cannot do better, and `$VISUAL` is the one to use when it can.
     #[test]
-    fn editor_is_preferred_then_visual_then_the_fallback() {
-        assert_eq!(choose(Some("ed"), Some("vim")), "ed");
-        assert_eq!(choose(None, Some("vim")), "vim");
+    fn visual_is_preferred_then_editor_then_the_fallback() {
+        assert_eq!(choose(Some("vim"), Some("ed")), "vim");
+        assert_eq!(choose(None, Some("ed")), "ed");
         assert_eq!(choose(None, None), FALLBACK_EDITOR);
     }
 
@@ -99,7 +104,7 @@ mod tests {
     /// empty string as a program would fail with something unrecognisable.
     #[test]
     fn a_blank_variable_is_treated_as_unset() {
-        assert_eq!(choose(Some("  "), Some("vim")), "vim");
+        assert_eq!(choose(Some("  "), Some("ed")), "ed");
         assert_eq!(choose(Some(""), None), FALLBACK_EDITOR);
     }
 

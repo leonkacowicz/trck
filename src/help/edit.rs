@@ -12,7 +12,7 @@ pub(super) const VERBS: &[VerbHelp] = &[
         usage: "trck new <title> [options]",
         blurb: "Create an issue: write its markdown body and add it to the index; prints the new path. \
                 Say where the body comes from with --body, --body-file or --empty. With none of them it \
-                opens $EDITOR on a template and checks what comes back, re-opening the buffer with the \
+                opens $VISUAL or $EDITOR on a template and checks what comes back, re-opening the buffer with the \
                 complaint rather than discarding your work; an empty or unchanged buffer files nothing. \
                 With no terminal to open an editor on, it refuses rather than filing prose nobody wrote.",
         args: &[("title", "short title (also derives the slug)")],
