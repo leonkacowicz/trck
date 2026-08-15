@@ -37,10 +37,12 @@ wins, so a squash that stacks messages still reports what this commit did.
 The subject fallback names the issue an op acted on rather than printing the verb alone — `edit`
 arrived from #zxz9vu2 mid-flight and would otherwise have silently lost its id.
 
-**Open question for #5w9d7sq:** neither `new`'s op nor `edit`'s records the body, so an op replayed
-on its own produces an issue with no prose. Nothing is lost today because the bytes are in the
-changeset, but replay should decide whether the trailer needs to carry it — putting a body in every
-such commit message has a real size cost.
+**Resolved:** neither `new`'s op nor `edit`'s records the body, and neither needs to. A replayer
+reads the prose out of the pending commit's own tree — `new`'s trailer carries `--id` and `--slug`
+so the path is derivable from it, and `edit`'s commit names the path it changed. The trailer records
+intent, the tree records content, and keeping them apart avoids two sources of truth for the same
+bytes while letting replay reuse the existing content-addressed blob. Written up in #5w9d7sq, which
+is where it is acted on.
 
 Not covered: a title with a *leading* dash cannot be typed, because the CLI has no `--` separator.
 `Op` handles it and is tested for it; the CLI gap is real but is not this issue's.
