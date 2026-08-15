@@ -7,8 +7,8 @@
 |---|---:|
 | backlog | 66 |
 | in-progress | 4 |
-| in-review | 1 |
-| done | 213 |
+| in-review | 0 |
+| done | 214 |
 | **total** | **284** |
 
 ## Hierarchies
@@ -284,7 +284,7 @@ _none_
 
 ## In-review
 
-- [#jvk5637 tests: a tracker under /tmp makes three discovery tests fail](items/jvk5637-tests-a-tracker-under-tmp-makes-three-discovery-tests-fail.md) — _high_ · [review](https://github.com/leonkacowicz/trck/pull/47)
+_none_
 
 ## Done
 
@@ -293,6 +293,7 @@ _none_
 - [#2ngp4y4 trck <verb> --help explains the verb, not the program](items/2ngp4y4-trck-verb-help-explains-the-verb-not-the-program.md) — _high_ (closed 2026-08-06)
 - [#dqmp5c5 Cut v0.1.0 release](items/dqmp5c5-cut-v0-1-0-release.md) — _high_ (closed 2026-06-05)
 - [#ejcxwmz pre-commit hook never runs check when trck.json is at repo root](items/ejcxwmz-pre-commit-hook-never-runs-check-when-trck-json-is-at-repo-root.md) — _high_ (closed 2026-06-09)
+- [#jvk5637 tests: a tracker under /tmp makes three discovery tests fail](items/jvk5637-tests-a-tracker-under-tmp-makes-three-discovery-tests-fail.md) — _high_ (closed 2026-08-15) · [review](https://github.com/leonkacowicz/trck/pull/47)
 - [#mur7gwd Crash instead of clean error when no tracker is found](items/mur7gwd-crash-instead-of-clean-error-when-no-tracker-is-found.md) — _high_ (closed 2026-06-10)
 - [#nhanp8c Strip null/empty fields from index.jsonl rows to reduce noise](items/nhanp8c-strip-null-empty-fields-from-index-jsonl-rows-to-reduce-noise.md) — _high_ (closed 2026-06-06)
 - [#nuf3t68 check: reject a non-terminal issue carrying resolution or closed](items/nuf3t68-check-reject-a-non-terminal-issue-carrying-resolution-or-closed.md) — _high_ [conflict-resolution] (closed 2026-07-30)
