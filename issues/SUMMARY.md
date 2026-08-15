@@ -5,8 +5,8 @@
 
 | State | Count |
 |---|---:|
-| backlog | 71 |
-| in-progress | 3 |
+| backlog | 70 |
+| in-progress | 4 |
 | in-review | 0 |
 | done | 202 |
 | **total** | **276** |
@@ -194,7 +194,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ### [#sqzr7nk storage: move the tracker to an orphan trck-issues branch](items/sqzr7nk-storage-move-the-tracker-to-an-orphan-trck-issues-branch.md) — 27% (14/52 pts · 5/22 done) · _high_ · in-progress
 
-- [ ] [#2ybw758 reads: resolve index, bodies and trck.json from a git ref](items/2ybw758-reads-resolve-index-bodies-and-trck-json-from-a-git-ref.md) _(backlog)_
+- [ ] [#2ybw758 reads: resolve index, bodies and trck.json from a git ref](items/2ybw758-reads-resolve-index-bodies-and-trck-json-from-a-git-ref.md) _(in-progress)_
 - [x] [#32gyghs tests: a harness for a ref-backed tracker in a temp git repo](items/32gyghs-tests-a-harness-for-a-ref-backed-tracker-in-a-temp-git-repo.md) · [review](https://github.com/leonkacowicz/trck/pull/32)
 - [x] [#3dv63bn discovery: --ref/$TRCK_REF and the tracker-ref resolution order](items/3dv63bn-discovery-ref-trck-ref-and-the-tracker-ref-resolution-order.md) · [review](https://github.com/leonkacowicz/trck/pull/33)
 - [ ] [#5w9d7sq writes: push with CAS, refetch on rejection, replay the pending commit](items/5w9d7sq-writes-push-with-cas-refetch-on-rejection-replay-the-pending-commit.md) _(backlog)_
