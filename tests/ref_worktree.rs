@@ -66,14 +66,20 @@ fn said(out: &std::process::Output) -> String {
 
 /// Does this diagnostic name that worktree?
 ///
-/// Separators normalised and case folded, because the two sides spell a Windows path
-/// differently: `git worktree list` answers `C:/Users/…` and `Path::display` writes
-/// `C:\Users\…`. The engine repeats git's spelling rather than inventing one of its own —
-/// that is the string an operator can paste straight back into a shell — so it is the *test*
-/// that has to meet it, not the message.
+/// Three spellings of one path have to be reconciled, and none of them is wrong. The engine
+/// repeats what `git worktree list` answered, because that is the string an operator can paste
+/// straight back into a shell. On Windows git writes `C:/Users/runneradmin/…` while
+/// `std::env::temp_dir` — where the fixture lives — hands back the 8.3 form
+/// `C:\Users\RUNNER~1\…`, which differs by separator, by case and by name. So the comparison
+/// normalises separators, folds case, and accepts the canonicalised path as well as the literal
+/// one: canonicalising is what turns the short name long, and `\\?\` is the verbatim prefix it
+/// comes back with. It is not done unconditionally, because on macOS canonicalising a temp path
+/// resolves `/var` to `/private/var` and git reports the unresolved one.
 fn names(said: &str, path: &Path) -> bool {
-    let flat = |s: &str| s.replace('\\', "/").to_lowercase();
-    flat(said).contains(&flat(&path.display().to_string()))
+    let flat = |s: &str| s.replace('\\', "/").trim_start_matches("//?/").to_lowercase();
+    let said = flat(said);
+    let canonical = path.canonicalize().ok().map(|p| flat(&p.display().to_string()));
+    said.contains(&flat(&path.display().to_string())) || canonical.is_some_and(|p| said.contains(&p))
 }
 
 /// The core of it: the branch moves, and the checkout that held it is left where it was.
@@ -95,7 +101,7 @@ fn a_write_detaches_a_worktree_that_holds_the_tracker_branch() {
 
     let err = said(&out);
     assert!(err.contains("detached"), "the detach was silent: {err}");
-    assert!(names(&err, &held), "the note does not name the worktree: {err}");
+    assert!(names(&err, &held), "the note does not name the worktree {}: {err}", held.display());
 }
 
 /// Detaching is a symref rewrite and nothing else. Half-written prose in that worktree is
@@ -185,7 +191,7 @@ fn a_worktree_with_a_merge_in_progress_refuses_the_write() {
     let out = trck(&s.work, &["new", "Filed onto a busy worktree", "--id", "ccccccc", "--empty"]);
     assert!(!out.status.success(), "the write should have been refused");
     let err = said(&out);
-    assert!(names(&err, &held), "the refusal does not name the worktree: {err}");
+    assert!(names(&err, &held), "the refusal does not name the worktree {}: {err}", held.display());
     assert!(err.contains("merge"), "the refusal does not say what is in progress: {err}");
     assert_eq!(sha(&s.work, TRACKER_BRANCH), was, "refused, and yet the branch moved");
 }
@@ -210,7 +216,7 @@ fn a_locked_worktree_is_warned_about_and_the_write_lands() {
     assert!(attached(&held), "a locked worktree was detached anyway");
     let err = said(&out);
     assert!(err.contains("locked"), "the desync was silent: {err}");
-    assert!(names(&err, &held), "the warning does not name the worktree: {err}");
+    assert!(names(&err, &held), "the warning does not name the worktree {}: {err}", held.display());
 }
 
 /// A worktree whose directory is gone cannot commit anything, so there is nothing to protect
