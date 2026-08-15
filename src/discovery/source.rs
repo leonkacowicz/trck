@@ -97,8 +97,12 @@ pub(crate) fn resolve_tracker_source(over: &Overrides, cwd: &Path) -> Result<Sou
     match find_tracker(cwd) {
         Ok(dir) => Ok(Source::Dir(dir)),
         // The walk-up's wording is what someone who has simply not made a tracker yet
-        // should read, so it survives whenever the ref is not there either.
-        Err(not_found) => conventional_ref(cwd)?.ok_or(not_found),
+        // should read, so it survives whenever the ref is not there either — unless the
+        // ref is missing for a reason this clone can do something about.
+        Err(not_found) => match conventional_ref(cwd)? {
+            Some(source) => Ok(source),
+            None => Err(super::refspec::why_invisible(cwd, TRACKER_REF).unwrap_or(not_found)),
+        },
     }
 }
 
