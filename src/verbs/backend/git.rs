@@ -14,7 +14,8 @@
 //! changeset names the handful of files a verb touched; everything else the base commit held
 //! has to be carried forward explicitly, which is what [`plan`] does.
 
-use super::super::changeset::Op;
+use super::super::op::Op;
+use super::message::message;
 use super::{Changeset, Edit, git_path};
 use crate::git::write::{commit_tree, hash_object, update_ref, write_tree};
 use crate::git::{rev_parse, tree_blobs};
@@ -113,15 +114,6 @@ fn plan(mut base: BTreeMap<String, String>, edits: &[Edit], blobs: &[Option<Stri
 fn local_ref(rev: &str) -> String {
     let name = rev.strip_prefix("refs/heads/").or_else(|| rev.strip_prefix("origin/")).unwrap_or(rev);
     format!("refs/heads/{name}")
-}
-
-/// The commit message.
-///
-/// The op's own rendering, which is enough to say what happened and to replay it. The subject
-/// convention and the `Trck-Op` trailer that makes replay machine-readable are `#93zhqbd`;
-/// this is deliberately the smallest thing that produces a legible history in the meantime.
-fn message(op: &Op) -> String {
-    format!("{}\n", op.render())
 }
 
 /// Turn `commit-tree`'s identity refusal into one that names the remedy.
