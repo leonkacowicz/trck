@@ -5,8 +5,8 @@
 
 | State | Count |
 |---|---:|
-| backlog | 71 |
-| in-progress | 4 |
+| backlog | 70 |
+| in-progress | 5 |
 | in-review | 0 |
 | done | 207 |
 | **total** | **282** |
@@ -201,7 +201,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#8d22h6x main: remove issues/ — the flip](items/8d22h6x-main-remove-issues-the-flip.md) _(backlog)_
 - [ ] [#93zhqbd writes: structured commit subjects and a replayable Trck-Op trailer](items/93zhqbd-writes-structured-commit-subjects-and-a-replayable-trck-op-trailer.md) _(in-progress)_
 - [ ] [#9gxktnk writes: replay stacked pending commits, and surface an op that no longer applies](items/9gxktnk-writes-replay-stacked-pending-commits-and-surface-an-op-that-no-longer-applies.md) _(backlog)_
-- [ ] [#abynj5c reads: prefer the local ref over origin, fast-forward when behind, report divergence](items/abynj5c-reads-prefer-the-local-ref-over-origin-fast-forward-when-behind-report-divergence.md) _(backlog)_
+- [ ] [#abynj5c reads: prefer the local ref over origin, fast-forward when behind, report divergence](items/abynj5c-reads-prefer-the-local-ref-over-origin-fast-forward-when-behind-report-divergence.md) _(in-progress)_
 - [x] [#ahgehpa discovery: reads go through Ctx content accessors, not paths](items/ahgehpa-discovery-reads-go-through-ctx-content-accessors-not-paths.md) · [review](https://github.com/leonkacowicz/trck/pull/31)
 - [ ] [#c3uzxka diff: resolve revisions on the tracker branch](items/c3uzxka-diff-resolve-revisions-on-the-tracker-branch.md) _(backlog)_
 - [ ] [#dak2sjq trck sync, and the pending-changes report on every write verb](items/dak2sjq-trck-sync-and-the-pending-changes-report-on-every-write-verb.md) _(backlog)_
