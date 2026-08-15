@@ -1,3 +1,3 @@
 # An explicit --status is a deliberate request, so it overrides the settled-work prune.
-new "Old task" --id aaaaaaa
+new "Old task" --id aaaaaaa --empty
 done aaaaaaa

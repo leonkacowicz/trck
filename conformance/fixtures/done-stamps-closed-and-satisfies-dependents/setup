@@ -1,2 +1,2 @@
-new "Blocker" --id aaaaaaa
-new "Waiting on it" --id bbbbbbb --requires aaaaaaa
+new "Blocker" --id aaaaaaa --empty
+new "Waiting on it" --id bbbbbbb --requires aaaaaaa --empty

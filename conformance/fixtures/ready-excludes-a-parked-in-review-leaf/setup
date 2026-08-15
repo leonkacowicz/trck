@@ -1,5 +1,5 @@
 # An in-review leaf is parked — nothing to pick up — so ready skips it even though it is an
 # unblocked leaf; it still blocks its dependents until done.
-new "In review" --id aaaaaaa
-new "Backlog" --id bbbbbbb
+new "In review" --id aaaaaaa --empty
+new "Backlog" --id bbbbbbb --empty
 review aaaaaaa https://example.test/pr/1

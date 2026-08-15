@@ -1,5 +1,5 @@
 # A parent row carries the rolled-up %-complete over its leaf descendants: one of two done.
-new "Epic" --id aaaaaaa
-new "Kid one" --id bbbbbbb --parent aaaaaaa
-new "Kid two" --id ccccccc --parent aaaaaaa
+new "Epic" --id aaaaaaa --empty
+new "Kid one" --id bbbbbbb --parent aaaaaaa --empty
+new "Kid two" --id ccccccc --parent aaaaaaa --empty
 done bbbbbbb

@@ -1,5 +1,5 @@
 # Depending on a parent depends on its whole subtree: while the epic's kid is open, the
 # dependent waits. The kid itself is the only actionable leaf.
-new "Epic" --id aaaaaaa
-new "Kid" --id bbbbbbb --parent aaaaaaa
-new "Waits on the epic" --id ccccccc --requires aaaaaaa
+new "Epic" --id aaaaaaa --empty
+new "Kid" --id bbbbbbb --parent aaaaaaa --empty
+new "Waits on the epic" --id ccccccc --requires aaaaaaa --empty

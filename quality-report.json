@@ -11,7 +11,7 @@
   },
   "totals": {
     "file_functions": 261,
-    "file_lines": 698,
+    "file_lines": 682,
     "function_args": 10,
     "function_cognitive": 45,
     "function_cyclomatic": 136,
@@ -46,7 +46,7 @@
       "src/verbs/finalize.rs": 10
     },
     "file_lines": {
-      "src/cli/mod.rs": 234,
+      "src/cli/mod.rs": 218,
       "src/config.rs": 155,
       "src/diff.rs": 171,
       "src/issue/read.rs": 14,

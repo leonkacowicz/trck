@@ -1,2 +1,2 @@
 # Called wrong, not failed: exit 2 like every other missing operand.
-new "Alpha" --id aaaaaaa
+new "Alpha" --id aaaaaaa --empty

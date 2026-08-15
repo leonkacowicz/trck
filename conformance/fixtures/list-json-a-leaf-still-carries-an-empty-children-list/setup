@@ -1,2 +1,2 @@
 # The key is always present, so a consumer can recurse without checking for it first.
-new "Solo" --id aaaaaaa
+new "Solo" --id aaaaaaa --empty

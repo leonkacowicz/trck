@@ -1,2 +1,2 @@
 # The guard applies at creation too, not only to `dep --add`.
-new "Epic" --id aaaaaaa
+new "Epic" --id aaaaaaa --empty

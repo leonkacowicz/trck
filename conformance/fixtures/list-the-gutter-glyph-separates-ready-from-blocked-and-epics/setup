@@ -1,9 +1,9 @@
 # One of each: a ready leaf, a leaf waiting on it, an epic (never ready — you pick up
 # leaves), a started leaf and a finished one.
-new "Epic" --id aaaaaaa
-new "Ready leaf" --id bbbbbbb --parent aaaaaaa
-new "Blocked leaf" --id ccccccc --parent aaaaaaa --requires bbbbbbb
-new "Started" --id ddddddd
-new "Finished" --id eeeeeee
+new "Epic" --id aaaaaaa --empty
+new "Ready leaf" --id bbbbbbb --parent aaaaaaa --empty
+new "Blocked leaf" --id ccccccc --parent aaaaaaa --requires bbbbbbb --empty
+new "Started" --id ddddddd --empty
+new "Finished" --id eeeeeee --empty
 start ddddddd
 done eeeeeee

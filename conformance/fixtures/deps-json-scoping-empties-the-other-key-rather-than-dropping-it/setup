@@ -1,4 +1,4 @@
 # --requires still emits `blocks`, as an empty array. A consumer indexes both keys
 # unconditionally; dropping one would make the shape depend on the flags.
-new "Base" --id aaaaaaa
-new "Top" --id bbbbbbb --requires aaaaaaa
+new "Base" --id aaaaaaa --empty
+new "Top" --id bbbbbbb --requires aaaaaaa --empty

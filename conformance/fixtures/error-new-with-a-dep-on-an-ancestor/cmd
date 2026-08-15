@@ -1,1 +1,1 @@
-new "Kid" --id bbbbbbb --parent aaaaaaa --requires aaaaaaa
+new "Kid" --id bbbbbbb --parent aaaaaaa --requires aaaaaaa --empty

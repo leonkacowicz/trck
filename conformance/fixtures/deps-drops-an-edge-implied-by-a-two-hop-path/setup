@@ -1,6 +1,6 @@
 # A needs B and C; B needs C. The A->C edge is implied by A->B->C and is not drawn;
 # it still costs no lane. The authored edge remains in the index (only dep --remove
 # deletes it).
-new "C" --id ccccccc
-new "B" --id bbbbbbb --requires ccccccc
-new "A" --id aaaaaaa --requires bbbbbbb,ccccccc
+new "C" --id ccccccc --empty
+new "B" --id bbbbbbb --requires ccccccc --empty
+new "A" --id aaaaaaa --requires bbbbbbb,ccccccc --empty

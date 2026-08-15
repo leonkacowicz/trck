@@ -1,6 +1,6 @@
 # The sort reaches every sibling group, not just the top level: the grandchildren are
 # ordered too.
-new "Epic" --id aaaaaaa
-new "Mid" --id bbbbbbb --parent aaaaaaa
-new "Low grand" --id ccccccc --parent bbbbbbb --priority low
-new "High grand" --id ddddddd --parent bbbbbbb --priority high
+new "Epic" --id aaaaaaa --empty
+new "Mid" --id bbbbbbb --parent aaaaaaa --empty
+new "Low grand" --id ccccccc --parent bbbbbbb --priority low --empty
+new "High grand" --id ddddddd --parent bbbbbbb --priority high --empty

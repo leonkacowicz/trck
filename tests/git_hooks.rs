@@ -64,7 +64,7 @@ fn repo_with_tracker(name: &str, rel: &str) -> PathBuf {
     assert!(git(&root, &["init", "-q"]).status.success(), "git init");
     git(&root, &["config", "user.email", "t@example.test"]);
     git(&root, &["config", "user.name", "trck test"]);
-    ok(&root, &["--dir", rel, "new", "One", "--id", "aaaaaaa"]);
+    ok(&root, &["--dir", rel, "new", "One", "--id", "aaaaaaa", "--empty"]);
     root
 }
 

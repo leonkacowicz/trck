@@ -1,0 +1,1 @@
+error: new: --body, --body-file or --empty are different ways to give a body; pick one

@@ -1,6 +1,6 @@
 # --status comma-lists alternatives; a leading ! negates. Here: everything but done.
-new "Backlog" --id aaaaaaa
-new "In-progress" --id bbbbbbb
-new "Done" --id ccccccc
+new "Backlog" --id aaaaaaa --empty
+new "In-progress" --id bbbbbbb --empty
+new "Done" --id ccccccc --empty
 start bbbbbbb
 done ccccccc

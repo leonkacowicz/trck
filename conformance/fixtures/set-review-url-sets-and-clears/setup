@@ -1,2 +1,2 @@
 # `none` clears the link without touching the status.
-new "Alpha" --id aaaaaaa --review-url https://example.test/pr/1
+new "Alpha" --id aaaaaaa --review-url https://example.test/pr/1 --empty

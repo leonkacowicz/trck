@@ -1,3 +1,3 @@
 # `tree` and `list` are the same command; the nested forest is list's default.
-new "Epic" --id aaaaaaa
-new "Kid" --id bbbbbbb --parent aaaaaaa
+new "Epic" --id aaaaaaa --empty
+new "Kid" --id bbbbbbb --parent aaaaaaa --empty

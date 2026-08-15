@@ -1,6 +1,6 @@
 # The context travels as whole rows, so a caller can render "who holds what" without a
 # second call to resolve the ids — and it travels on `ready` too, where the human view
 # prints no such line: a caller that does not want it ignores a key.
-new "Free" --id aaaaaaa --priority urgent
-new "Taken" --id bbbbbbb --priority high
+new "Free" --id aaaaaaa --priority urgent --empty
+new "Taken" --id bbbbbbb --priority high --empty
 review bbbbbbb https://example.com/pr/1

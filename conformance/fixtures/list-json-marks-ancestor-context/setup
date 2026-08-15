@@ -1,4 +1,4 @@
 # A filtered forest keeps the ancestor spine so a match never floats free. Those rows are
 # marked `context: true` — the machine-readable form of what the human view dims.
-new "Epic" --id aaaaaaa
-new "Kid" --id bbbbbbb --parent aaaaaaa
+new "Epic" --id aaaaaaa --empty
+new "Kid" --id bbbbbbb --parent aaaaaaa --empty

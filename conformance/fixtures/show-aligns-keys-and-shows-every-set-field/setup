@@ -1,7 +1,7 @@
 # The metadata block is a right-aligned key column, two spaces, then the value. Only fields
 # that are actually set appear — an unset one is skipped rather than printed empty.
-new "Epic" --id eeeeeee
-new "Rich issue" --id aaaaaaa --parent eeeeeee --points 3 --review-url https://example.test/pr/7
+new "Epic" --id eeeeeee --empty
+new "Rich issue" --id aaaaaaa --parent eeeeeee --points 3 --review-url https://example.test/pr/7 --empty
 label aaaaaaa --add backend --add urgent
 set aaaaaaa --field area=core
 start aaaaaaa

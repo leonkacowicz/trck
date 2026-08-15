@@ -1,2 +1,2 @@
 # Every `set` echoes the same one-line confirmation, whatever it changed.
-new "Alpha" --id aaaaaaa
+new "Alpha" --id aaaaaaa --empty

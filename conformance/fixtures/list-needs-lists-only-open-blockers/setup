@@ -1,5 +1,5 @@
 # Two blockers, one finished: only the open one is still advertised.
-new "DepA" --id aaaaaaa
-new "DepB" --id bbbbbbb
-new "Blocked" --id ccccccc --requires aaaaaaa,bbbbbbb
+new "DepA" --id aaaaaaa --empty
+new "DepB" --id bbbbbbb --empty
+new "Blocked" --id ccccccc --requires aaaaaaa,bbbbbbb --empty
 done aaaaaaa

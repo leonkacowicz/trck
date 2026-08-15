@@ -1,2 +1,2 @@
-new "Alpha" --id aaaaaaa
+new "Alpha" --id aaaaaaa --empty
 label aaaaaaa --add alpha --add zeta

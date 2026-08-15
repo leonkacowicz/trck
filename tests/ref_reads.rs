@@ -16,7 +16,7 @@
 
 mod common;
 
-use common::{HOLED_BRANCH, Scenario, TRACKER_BRANCH, git_must, trck, trck_must};
+use common::{HOLED_BRANCH, SEEDED_BODY, Scenario, TRACKER_BRANCH, git_must, trck, trck_must};
 
 /// The headline: nine verbs, one fixture, no directory.
 #[test]
@@ -54,8 +54,8 @@ fn show_prints_a_body_read_from_the_ref() {
         return;
     };
     let out = trck_must(&s.work, &["show", "aaaaaaa"]);
-    assert!(out.contains("Seeded issue"), "no body in:\n{out}");
-    assert!(out.contains("## Summary"), "body looks truncated:\n{out}");
+    assert!(out.contains("Seeded issue"), "the row is missing:\n{out}");
+    assert!(out.contains(SEEDED_BODY), "the body did not come out of the ref:\n{out}");
 }
 
 /// The same inconsistency, reported the same way, whichever source it came from. A

@@ -1,3 +1,3 @@
 # An equal-priority dependent does not lift the blocker: demand only marks a strict raise.
-new "High blocker" --id aaaaaaa --priority high
-new "High dependent" --id bbbbbbb --priority high --requires aaaaaaa
+new "High blocker" --id aaaaaaa --priority high --empty
+new "High dependent" --id bbbbbbb --priority high --requires aaaaaaa --empty

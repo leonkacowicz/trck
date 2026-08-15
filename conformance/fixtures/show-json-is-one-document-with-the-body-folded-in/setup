@@ -1,3 +1,3 @@
 # Metadata and body in one document, not metadata plus a `--- body ---` trailer: the obvious
 # way to consume this is json.loads(stdout), which a trailer would break.
-new "Documented" --id aaaaaaa --points 2 --spec docs/x.md
+new "Documented" --id aaaaaaa --points 2 --spec docs/x.md --empty

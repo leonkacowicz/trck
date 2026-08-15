@@ -1,2 +1,2 @@
 # Still a document, still parseable, still exit 0.
-new "Solo" --id aaaaaaa
+new "Solo" --id aaaaaaa --empty

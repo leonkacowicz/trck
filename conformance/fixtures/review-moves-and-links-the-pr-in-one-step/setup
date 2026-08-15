@@ -1,3 +1,3 @@
 # `review ID URL` is the two-step move-and-link collapsed into one: the status becomes the
 # waiting status and review_url is recorded together.
-new "Alpha" --id aaaaaaa
+new "Alpha" --id aaaaaaa --empty

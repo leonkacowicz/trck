@@ -1,6 +1,6 @@
 # A done blocker constrains nothing: the `needs` note has cleared, and the order agrees
 # rather than going on reflecting a dependency that is already satisfied.
-new "Waiting" --id aaaaaaa
-new "Blocker" --id bbbbbbb
+new "Waiting" --id aaaaaaa --empty
+new "Blocker" --id bbbbbbb --empty
 dep aaaaaaa --add bbbbbbb
 done bbbbbbb

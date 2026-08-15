@@ -1,6 +1,6 @@
 # Pure hierarchy is what list is for; a family appears in deps only once something in
 # it is ordered. The lone epic and kid are dropped; the authored chain stays.
-new "Lone epic" --id aaaaaaa
-new "Lone kid" --id bbbbbbb --parent aaaaaaa
-new "Base" --id ccccccc
-new "Top" --id ddddddd --requires ccccccc
+new "Lone epic" --id aaaaaaa --empty
+new "Lone kid" --id bbbbbbb --parent aaaaaaa --empty
+new "Base" --id ccccccc --empty
+new "Top" --id ddddddd --requires ccccccc --empty

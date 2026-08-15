@@ -1,4 +1,4 @@
 # The inverse of points-are-stripped-when-an-issue-gains-a-child: losing its last child makes
 # the issue a leaf again, so points become an input again and return to the default.
-new "Epic" --id aaaaaaa
-new "Kid" --id bbbbbbb --parent aaaaaaa
+new "Epic" --id aaaaaaa --empty
+new "Kid" --id bbbbbbb --parent aaaaaaa --empty

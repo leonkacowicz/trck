@@ -1,3 +1,3 @@
-new "Open" --id aaaaaaa
-new "Settled" --id bbbbbbb
+new "Open" --id aaaaaaa --empty
+new "Settled" --id bbbbbbb --empty
 done bbbbbbb

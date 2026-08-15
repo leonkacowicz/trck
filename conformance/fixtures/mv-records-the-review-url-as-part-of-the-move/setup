@@ -1,2 +1,2 @@
 # The link can also ride along on a plain `mv`, not only the `review` alias.
-new "Alpha" --id aaaaaaa
+new "Alpha" --id aaaaaaa --empty

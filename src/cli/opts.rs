@@ -65,8 +65,12 @@ pub(super) fn list_opts(args: &Args) -> ListOpts<'_> {
 /// `new`'s options.
 pub(super) fn new_opts(args: &Args) -> Result<NewOpts, String> {
     let title = args.positional_at(0).ok_or_else(|| "new: missing a title".to_string())?;
+    // Resolved here rather than in the verb: stdin, and whether anyone is at a terminal, are
+    // facts about this invocation rather than about the tracker.
+    let body = super::body::resolve(&super::body::body_spec(args)?, title, std::io::IsTerminal::is_terminal(&std::io::stdin()))?;
     Ok(NewOpts {
         title: title.to_string(),
+        body,
         id: args.opt("--id").map(str::to_string),
         slug: args.opt("--slug").map(str::to_string),
         priority: args.opt("--priority").map(str::to_string),
@@ -104,6 +108,25 @@ pub(super) fn init_from_args(args: &Args) -> Result<String, String> {
     }
     init::cmd_init(&init::InitOpts { target: positional.or(flag), force: args.has("--force"), hook: args.has("--hook") })
 }
+
+/// `list` and its `tree` alias take exactly the same options, named once.
+pub(super) const LIST_FLAGS: &[&str] = &[
+    "--dir",
+    "--status",
+    "--priority",
+    "--label",
+    "--parent",
+    "--match",
+    "--field",
+    "--show-field",
+    "--sort",
+    "--blocked",
+    "--orphan",
+    "--all",
+    "--flat",
+    "--paths",
+    "--json",
+];
 
 /// Flags every verb accepts, so they are not repeated two dozen times in [`KNOWN_FLAGS`].
 ///

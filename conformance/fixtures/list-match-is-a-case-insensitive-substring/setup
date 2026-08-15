@@ -1,2 +1,2 @@
-new "Fix the Parser" --id aaaaaaa
-new "Something else" --id bbbbbbb
+new "Fix the Parser" --id aaaaaaa --empty
+new "Something else" --id bbbbbbb --empty

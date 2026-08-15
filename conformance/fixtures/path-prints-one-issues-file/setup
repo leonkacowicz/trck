@@ -1,4 +1,4 @@
 # `path` is the single-issue form of `list --paths`: one absolute body-file path,
 # for `$(trck path NNN)` into an editor or a grep.
-new "Alpha" --id aaaaaaa
-new "Beta" --id bbbbbbb
+new "Alpha" --id aaaaaaa --empty
+new "Beta" --id bbbbbbb --empty

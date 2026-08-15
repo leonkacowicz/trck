@@ -1,6 +1,6 @@
 # Filters AND together: only the in-progress issue whose title matches.
-new "Match in-progress" --id aaaaaaa --priority high
-new "Match backlog" --id bbbbbbb --priority high
-new "Other in-progress" --id ccccccc --priority high
+new "Match in-progress" --id aaaaaaa --priority high --empty
+new "Match backlog" --id bbbbbbb --priority high --empty
+new "Other in-progress" --id ccccccc --priority high --empty
 start aaaaaaa
 start ccccccc

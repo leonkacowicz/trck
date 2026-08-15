@@ -1,2 +1,2 @@
-new "Old task" --id aaaaaaa
+new "Old task" --id aaaaaaa --empty
 done aaaaaaa

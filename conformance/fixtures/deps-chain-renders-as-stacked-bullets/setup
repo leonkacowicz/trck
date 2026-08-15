@@ -1,4 +1,4 @@
 # 1 <- 2 <- 3: a single lane, prerequisites first, one bullet per row.
-new "Base" --id aaaaaaa
-new "Mid" --id bbbbbbb --requires aaaaaaa
-new "Top" --id ccccccc --requires bbbbbbb
+new "Base" --id aaaaaaa --empty
+new "Mid" --id bbbbbbb --requires aaaaaaa --empty
+new "Top" --id ccccccc --requires bbbbbbb --empty

@@ -89,7 +89,7 @@ fn a_working_tree_tracker_beats_the_conventional_ref() {
         return;
     };
     trck_must(&s.work, &["init", "issues"]);
-    trck_must(&s.work, &["--dir", "issues", "new", "Local", "--id", "ccccccc"]);
+    trck_must(&s.work, &["--dir", "issues", "new", "Local", "--id", "ccccccc", "--empty"]);
 
     let out = trck(&s.work, &["list"]);
     assert!(out.status.success(), "the working-tree tracker lost to the ref: {}", String::from_utf8_lossy(&out.stderr));

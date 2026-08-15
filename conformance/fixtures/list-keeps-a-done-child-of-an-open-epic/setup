@@ -1,5 +1,5 @@
 # A done child under a still-open epic is kept as progress context.
-new "Epic" --id aaaaaaa
-new "A" --id bbbbbbb --parent aaaaaaa
-new "B" --id ccccccc --parent aaaaaaa
+new "Epic" --id aaaaaaa --empty
+new "A" --id bbbbbbb --parent aaaaaaa --empty
+new "B" --id ccccccc --parent aaaaaaa --empty
 done bbbbbbb

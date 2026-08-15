@@ -1,6 +1,6 @@
 # An epic is in-progress because a child is; only the child says who holds what, so the
 # derived parent stays out of the line.
-new "Epic" --id aaaaaaa --priority high
-new "Child" --id bbbbbbb --parent aaaaaaa --priority high
-new "Loose" --id ccccccc --priority urgent
+new "Epic" --id aaaaaaa --priority high --empty
+new "Child" --id bbbbbbb --parent aaaaaaa --priority high --empty
+new "Loose" --id ccccccc --priority urgent --empty
 start bbbbbbb

@@ -1,8 +1,8 @@
 # 1 forks to 2,3,4; then 4 forks again to 5,6. The second fork reuses the gap nearest
 # the node, not the leftmost free column, so the graph does not widen.
-new "Root" --id aaaaaaa
-new "K1" --id bbbbbbb --requires aaaaaaa
-new "K2" --id ccccccc --requires aaaaaaa
-new "K3" --id ddddddd --requires aaaaaaa
-new "G1" --id eeeeeee --requires ddddddd
-new "G2" --id fffffff --requires ddddddd
+new "Root" --id aaaaaaa --empty
+new "K1" --id bbbbbbb --requires aaaaaaa --empty
+new "K2" --id ccccccc --requires aaaaaaa --empty
+new "K3" --id ddddddd --requires aaaaaaa --empty
+new "G1" --id eeeeeee --requires ddddddd --empty
+new "G2" --id fffffff --requires ddddddd --empty
