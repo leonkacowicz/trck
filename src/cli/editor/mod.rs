@@ -33,13 +33,17 @@ pub(super) fn choose<'a>(visual: Option<&'a str>, editor: Option<&'a str>) -> &'
     set(visual).or_else(|| set(editor)).unwrap_or(FALLBACK_EDITOR)
 }
 
-/// Open the template in the operator's editor and hand back what they wrote.
+/// Open `seed` in the operator's editor and hand back what they wrote.
+///
+/// `None` means they declined — an empty or unchanged buffer. What that *means* belongs to
+/// the caller: filing a new issue it is an abort, editing an existing one it is a no-op.
+/// Both are "leave it alone", and only the caller knows which sentence to say.
 ///
 /// Loops on a complaint rather than giving up: the work stays in the buffer, and the two
 /// ways out — empty it, or leave the editor non-zero — are both under the operator's hand.
-pub(super) fn edit(title: &str) -> Result<String, String> {
+pub(super) fn edit(title: &str, seed: &str) -> Result<Option<String>, String> {
     let (visual, editor) = (std::env::var("VISUAL").ok(), std::env::var("EDITOR").ok());
-    edit_with(title, choose(visual.as_deref(), editor.as_deref()))
+    edit_with(title, seed, choose(visual.as_deref(), editor.as_deref()))
 }
 
 /// The loop itself, with the editor named rather than looked up.
@@ -47,18 +51,18 @@ pub(super) fn edit(title: &str) -> Result<String, String> {
 /// Separated so the tests can drive it with a script that edits the buffer the way a person
 /// would. Testing it through the environment instead would need a terminal, which is the one
 /// thing a test harness cannot conjure.
-fn edit_with(title: &str, command: &str) -> Result<String, String> {
-    let mut offered = crate::verbs::TEMPLATE.replace("{title}", title);
+fn edit_with(title: &str, seed: &str, command: &str) -> Result<Option<String>, String> {
+    let mut offered = seed.to_string();
     let scratch = Scratch::new(&offered)?;
     loop {
         run(command, scratch.path())?;
 
         let buffer = scratch.read()?;
         if is_abort(&buffer, &offered) {
-            return Err("new: the buffer came back empty or unchanged, so nothing was filed".to_string());
+            return Ok(None);
         }
         let Some(why) = complaint(&buffer, title) else {
-            return Ok(strip_banner(&buffer));
+            return Ok(Some(strip_banner(&buffer)));
         };
         offered = annotated(&buffer, &why);
         scratch.write(&offered)?;
@@ -118,6 +122,9 @@ mod tests {
         use super::*;
         use std::path::PathBuf;
 
+        /// What the operator is shown before they type anything.
+        const SEED: &str = "# T\n\n## Summary\n";
+
         /// A script that stands in for the editor. `$1` is the buffer.
         struct Editor(PathBuf);
 
@@ -151,20 +158,19 @@ mod tests {
         #[test]
         fn a_written_buffer_becomes_the_body() {
             let ed = Editor::new("writes", "printf '# T\\n\\nwhat I typed.\\n' > \"$1\"");
-            assert_eq!(edit_with("T", &ed.command()).expect("body"), "# T\n\nwhat I typed.\n");
+            assert_eq!(edit_with("T", SEED, &ed.command()).expect("ran"), Some("# T\n\nwhat I typed.\n".to_string()));
         }
 
         #[test]
-        fn an_editor_that_saves_nothing_aborts() {
+        fn an_editor_that_saves_nothing_answers_with_nothing() {
             let ed = Editor::new("noop", "exit 0");
-            let err = edit_with("T", &ed.command()).expect_err("aborted");
-            assert!(err.contains("unchanged"), "{err}");
+            assert_eq!(edit_with("T", SEED, &ed.command()).expect("ran"), None, "an untouched buffer is not an answer");
         }
 
         #[test]
         fn an_editor_that_exits_non_zero_aborts() {
             let ed = Editor::new("angry", "exit 3");
-            let err = edit_with("T", &ed.command()).expect_err("aborted");
+            let err = edit_with("T", SEED, &ed.command()).expect_err("aborted");
             assert!(err.contains("without saving"), "{err}");
         }
 
@@ -184,7 +190,7 @@ mod tests {
                     "fi",
                 ),
             );
-            let body = edit_with("T", &ed.command()).expect("body");
+            let body = edit_with("T", SEED, &ed.command()).expect("ran").expect("a body");
             assert_eq!(body, "# T\n\nprose worth keeping.\n", "the second pass did not survive");
             assert!(!body.contains("trck:"), "the annotation was filed: {body}");
         }
@@ -196,7 +202,7 @@ mod tests {
             let seen = std::env::temp_dir().join(format!("trck-seen-{}.txt", std::process::id()));
             let _ = std::fs::remove_file(&seen);
             let ed = Editor::new("records", &format!("printf '%s' \"$1\" > {}; exit 1", seen.display()));
-            assert!(edit_with("T", &ed.command()).is_err(), "expected the abort");
+            assert!(edit_with("T", SEED, &ed.command()).is_err(), "expected the abort");
             let scratch = std::fs::read_to_string(&seen).expect("the script ran");
             let _ = std::fs::remove_file(&seen);
             assert!(!Path::new(&scratch).exists(), "scratch survived an abort: {scratch}");

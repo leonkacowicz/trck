@@ -14,6 +14,7 @@ mod body;
 mod dispatch;
 mod editor;
 pub(crate) mod opts;
+mod prose;
 mod reports;
 mod tracker;
 use dispatch::dispatch;
@@ -26,6 +27,7 @@ use crate::help;
 /// `--help` could be honest about what was missing; it is now simply the verb list.
 pub(crate) const VERBS: &[&str] = &[
     "new",
+    "edit",
     "mv",
     "start",
     "review",
@@ -161,6 +163,7 @@ impl Args {
 /// own usage block, and reproducing that is pinning argparse rather than trck.
 pub(crate) const KNOWN_FLAGS: &[(&str, usize, &[&str])] = &[
     ("new", 0, &["--dir", "--id", "--slug", "--priority", "--points", "--parent", "--requires", "--spec", "--review-url", "--body", "--body-file", "--empty"]),
+    ("edit", 0, prose::EDIT_FLAGS),
     ("mv", 0, &["--dir", "--resolution", "--review-url"]),
     ("start", 0, &["--dir"]),
     ("review", 0, &["--dir", "--review-url"]),
@@ -188,23 +191,6 @@ pub(crate) const KNOWN_FLAGS: &[(&str, usize, &[&str])] = &[
     // and script that learned to pass it keeps working. `init -h` says as much.
     ("init", 1, &["--dir", "--force", "--hook", "--no-vendor"]),
 ];
-
-/// How many positionals each verb requires.
-const MIN_POSITIONAL: &[(&str, usize, &str)] = &[
-    ("new", 1, "a title"),
-    ("mv", 2, "an issue id and a target status"),
-    ("start", 1, "an issue id"),
-    ("review", 1, "an issue id"),
-    ("done", 1, "an issue id"),
-    ("set", 1, "an issue id"),
-    ("dep", 1, "an issue id"),
-    ("label", 1, "an issue id"),
-    ("show", 1, "an issue id"),
-    ("path", 1, "an issue id"),
-];
-
-/// Options a verb cannot run without.
-const REQUIRED_OPTS: &[(&str, &str)] = &[("changelog", "--since")];
 
 /// Everything wrong with the *shape* of the invocation, as opposed to what it asks for.
 ///
@@ -247,12 +233,12 @@ fn usage_error(args: &Args) -> Option<String> {
     if let Some(n) = unrecognized_flag(args) {
         return Some(format!("{}: unrecognized argument {n}", args.verb));
     }
-    if let Some((_, want, what)) = MIN_POSITIONAL.iter().find(|(verb, ..)| *verb == args.verb)
+    if let Some((_, want, what)) = opts::MIN_POSITIONAL.iter().find(|(verb, ..)| *verb == args.verb)
         && args.positional.len() < *want
     {
         return Some(format!("{}: missing {what}", args.verb));
     }
-    if let Some((_, opt)) = REQUIRED_OPTS.iter().find(|(verb, _)| *verb == args.verb)
+    if let Some((_, opt)) = opts::REQUIRED_OPTS.iter().find(|(verb, _)| *verb == args.verb)
         && args.opt(opt).is_none()
     {
         return Some(format!("{}: the following arguments are required: {opt}", args.verb));

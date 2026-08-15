@@ -32,7 +32,10 @@ pub(super) enum BodySpec {
 const FLAGS: &str = "--body, --body-file or --empty";
 
 /// Which body source the arguments name, or the refusal for naming more than one.
-pub(super) fn body_spec(args: &Args) -> Result<BodySpec, String> {
+///
+/// `verb` prefixes the refusal, because `new` and `edit` take the same flags and a message
+/// naming the wrong one sends the reader to the wrong help page.
+pub(super) fn body_spec(verb: &str, args: &Args) -> Result<BodySpec, String> {
     // Collected rather than ranked, so "more than one" is a length and not a precedence
     // rule nobody wrote down.
     let mut said: Vec<BodySpec> = Vec::new();
@@ -48,7 +51,7 @@ pub(super) fn body_spec(args: &Args) -> Result<BodySpec, String> {
     match said.len() {
         0 => Ok(BodySpec::Unsaid),
         1 => Ok(said.remove(0)),
-        _ => Err(format!("new: {FLAGS} are different ways to give a body; pick one")),
+        _ => Err(format!("{verb}: {FLAGS} are different ways to give a body; pick one")),
     }
 }
 
@@ -58,17 +61,51 @@ pub(super) fn body_spec(args: &Args) -> Result<BodySpec, String> {
 /// rule is testable without one. It only matters for [`BodySpec::Unsaid`]: everything else
 /// means the caller already said what it wanted.
 pub(super) fn resolve(spec: &BodySpec, title: &str, interactive: bool) -> Result<String, String> {
+    let seed = crate::verbs::TEMPLATE.replace("{title}", title);
+    resolve_seeded(spec, &Prose { verb: "new", title, interactive, seed: &seed })?
+        .ok_or_else(|| "new: the buffer came back empty or unchanged, so nothing was filed".to_string())
+}
+
+/// Whether there is anyone at a terminal to type into an editor.
+pub(super) fn interactive() -> bool {
+    std::io::IsTerminal::is_terminal(&std::io::stdin())
+}
+
+/// Everything resolving a body needs beyond the flags themselves.
+///
+/// A struct because these travel together and mean nothing apart: which verb is asking (so
+/// its diagnostics say its own name), what the issue is called, whether anyone is at a
+/// terminal, and what an editor would open on.
+#[derive(Clone, Copy)]
+pub(super) struct Prose<'a> {
+    pub(super) verb: &'a str,
+    pub(super) title: &'a str,
+    pub(super) interactive: bool,
+    pub(super) seed: &'a str,
+}
+
+/// The body text itself, with `req.seed` as what an editor would open on.
+///
+/// `None` means the operator declined — only [`BodySpec::Unsaid`] can produce it, and only
+/// through the editor. `new` turns that into an abort; `edit` turns it into a no-op.
+pub(super) fn resolve_seeded(spec: &BodySpec, req: &Prose) -> Result<Option<String>, String> {
+    let Prose { verb, title, interactive, seed } = *req;
     let text = match spec {
         BodySpec::Text(t) => t.clone(),
-        BodySpec::File(p) => std::fs::read_to_string(p).map_err(|e| format!("new: {p}: {e}"))?,
-        BodySpec::Stdin => read_stdin()?,
+        BodySpec::File(p) => std::fs::read_to_string(p).map_err(|e| format!("{verb}: {p}: {e}"))?,
+        BodySpec::Stdin => read_stdin(verb)?,
         // The template's first line and nothing else. Derived from the template rather than
         // written out again, so the heading a title-only issue gets is the heading every
         // other issue gets.
         BodySpec::Empty => heading(title),
-        BodySpec::Unsaid => unsaid(title, interactive)?,
+        BodySpec::Unsaid => {
+            let Some(written) = unsaid(verb, title, interactive, seed)? else {
+                return Ok(None);
+            };
+            written
+        },
     };
-    Ok(terminated(&text))
+    Ok(Some(terminated(&text)))
 }
 
 /// What "no flag at all" means, which depends entirely on who is running the command.
@@ -76,16 +113,16 @@ pub(super) fn resolve(spec: &BodySpec, title: &str, interactive: bool) -> Result
 /// A terminal means a human, who gets the template to fill in — that is what `#nabxbdk`
 /// replaces with an editor, and until then it is exactly today's behaviour. No terminal
 /// means a script, and a script that meant to write a body and forgot must be told.
-fn unsaid(title: &str, interactive: bool) -> Result<String, String> {
+fn unsaid(verb: &str, title: &str, interactive: bool, seed: &str) -> Result<Option<String>, String> {
     if interactive {
-        return super::editor::edit(title);
+        return super::editor::edit(title, seed);
     }
-    Err(format!("new: nobody is at a terminal, so there is nothing to fill in a body; pass {FLAGS}"))
+    Err(format!("{verb}: nobody is at a terminal, so there is nothing to fill in a body; pass {FLAGS}"))
 }
 
-fn read_stdin() -> Result<String, String> {
+fn read_stdin(verb: &str) -> Result<String, String> {
     let mut buf = String::new();
-    std::io::Read::read_to_string(&mut std::io::stdin(), &mut buf).map_err(|e| format!("new: stdin: {e}"))?;
+    std::io::Read::read_to_string(&mut std::io::stdin(), &mut buf).map_err(|e| format!("{verb}: stdin: {e}"))?;
     Ok(buf)
 }
 
@@ -119,11 +156,11 @@ mod tests {
 
     #[test]
     fn each_flag_names_its_own_source() {
-        assert_eq!(body_spec(&args(&["new", "T", "--body", "hi"])).expect("spec"), BodySpec::Text("hi".into()));
-        assert_eq!(body_spec(&args(&["new", "T", "--body-file", "b.md"])).expect("spec"), BodySpec::File("b.md".into()));
-        assert_eq!(body_spec(&args(&["new", "T", "--body-file", "-"])).expect("spec"), BodySpec::Stdin);
-        assert_eq!(body_spec(&args(&["new", "T", "--empty"])).expect("spec"), BodySpec::Empty);
-        assert_eq!(body_spec(&args(&["new", "T"])).expect("spec"), BodySpec::Unsaid);
+        assert_eq!(body_spec("new", &args(&["new", "T", "--body", "hi"])).expect("spec"), BodySpec::Text("hi".into()));
+        assert_eq!(body_spec("new", &args(&["new", "T", "--body-file", "b.md"])).expect("spec"), BodySpec::File("b.md".into()));
+        assert_eq!(body_spec("new", &args(&["new", "T", "--body-file", "-"])).expect("spec"), BodySpec::Stdin);
+        assert_eq!(body_spec("new", &args(&["new", "T", "--empty"])).expect("spec"), BodySpec::Empty);
+        assert_eq!(body_spec("new", &args(&["new", "T"])).expect("spec"), BodySpec::Unsaid);
     }
 
     /// Two answers to one question. Preferring either silently files an issue whose prose
@@ -135,7 +172,7 @@ mod tests {
             vec!["new", "T", "--body", "hi", "--empty"],
             vec!["new", "T", "--body-file", "b.md", "--empty"],
         ] {
-            let err = body_spec(&args(&argv)).expect_err("refused");
+            let err = body_spec("new", &args(&argv)).expect_err("refused");
             assert!(err.contains("pick one"), "{err}");
         }
     }

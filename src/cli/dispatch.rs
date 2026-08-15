@@ -5,7 +5,7 @@
 //! function nobody can hold in their head. The three groups here (write something, read
 //! something, maintain the repository) are the seams the verbs already fall along.
 
-use super::opts::{deps_opts, init_from_args, list_opts, mv_opts, new_opts, set_opts};
+use super::opts::{deps_opts, init_from_args, list_opts, mv_opts, set_opts};
 use super::reports::{cmd_changelog, cmd_check, cmd_diff, cmd_summary};
 use super::{Args, VERBS, context, parse_args, tracker_dir};
 use crate::discovery::Ctx;
@@ -27,7 +27,6 @@ fn id_operand(args: &Args, n: usize) -> Result<&str, String> {
 fn dispatch_mutating(args: &Args) -> Option<Result<String, String>> {
     let ctx = || context(args);
     Some(match args.verb.as_str() {
-        "new" => ctx().and_then(|c| new_opts(args).and_then(|o| verbs::cmd_new(&c, &o))),
         verb @ ("mv" | "start" | "review" | "done") => ctx().and_then(|c| mv_opts(args, verb).and_then(|o| verbs::cmd_mv(&c, id_operand(args, 0)?, &o))),
         "set" => ctx().and_then(|c| set_opts(args).and_then(|o| verbs::cmd_set(&c, id_operand(args, 0)?, &o))),
         "label" => ctx().and_then(|c| verbs::cmd_label(&c, id_operand(args, 0)?, &args.all("--add"), &args.all("--remove"))),
@@ -111,11 +110,12 @@ fn dispatch_repo(args: &Args) -> Result<String, String> {
 
 pub(super) fn dispatch(raw: &[String]) -> Result<String, String> {
     let args = parse_args(raw);
-    if let Some(result) = dispatch_mutating(&args) {
-        return result;
-    }
-    if let Some(result) = dispatch_query(&args) {
-        return result;
+    // In order, first to claim the verb wins. A loop rather than a chain of `if let`s so
+    // that adding a group is a line in the list rather than a change to the control flow.
+    for stage in [super::prose::dispatch_prose, dispatch_mutating, dispatch_query] {
+        if let Some(result) = stage(&args) {
+            return result;
+        }
     }
     match args.verb.as_str() {
         "repo" => dispatch_repo(&args),

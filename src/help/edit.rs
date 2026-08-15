@@ -33,6 +33,24 @@ pub(super) const VERBS: &[VerbHelp] = &[
         example: "trck new \"Add CSV export\" --priority high --body-file spec.md",
     },
     VerbHelp {
+        verb: "edit",
+        tagline: "rewrite an issue's prose",
+        usage: "trck edit <id> [options]",
+        blurb: "Open an issue's markdown body, and file what comes back as one change. With no \
+                body flag it opens $VISUAL or $EDITOR on the current body and checks the result the \
+                way `new` does; a buffer that comes back unchanged is a no-op rather than an empty \
+                commit. This is how a body is edited once the tracker is not a directory you can \
+                open in an editor yourself.",
+        args: &[("id", "issue id")],
+        opts: &[
+            ("--body TEXT", "the new prose, inline"),
+            ("--body-file PATH", "the new prose, from a file; `-` reads standard input"),
+            ("--empty", "reduce the body to its heading"),
+        ],
+        alias_of: "",
+        example: "trck edit abc1234 --body-file revised.md",
+    },
+    VerbHelp {
         verb: "mv",
         tagline: "move an issue to a status",
         usage: "trck mv <id> <status> [options]",

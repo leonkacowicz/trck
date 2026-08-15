@@ -67,7 +67,7 @@ pub(super) fn new_opts(args: &Args) -> Result<NewOpts, String> {
     let title = args.positional_at(0).ok_or_else(|| "new: missing a title".to_string())?;
     // Resolved here rather than in the verb: stdin, and whether anyone is at a terminal, are
     // facts about this invocation rather than about the tracker.
-    let body = super::body::resolve(&super::body::body_spec(args)?, title, std::io::IsTerminal::is_terminal(&std::io::stdin()))?;
+    let body = super::body::resolve(&super::body::body_spec("new", args)?, title, std::io::IsTerminal::is_terminal(&std::io::stdin()))?;
     Ok(NewOpts {
         title: title.to_string(),
         body,
@@ -131,6 +131,22 @@ pub(super) const LIST_FLAGS: &[&str] = &[
 /// Verbs whose `--json` is implemented. The rest still refuse the flag: accepted-and-ignored
 /// returns human text with exit 0, and a caller piping into `jq` finds out far from the cause.
 pub(super) const JSON_VERBS: &[&str] = &["list", "tree", "show", "ready", "next", "deps"];
+
+pub(super) const MIN_POSITIONAL: &[(&str, usize, &str)] = &[
+    ("new", 1, "a title"),
+    ("mv", 2, "an issue id and a target status"),
+    ("start", 1, "an issue id"),
+    ("review", 1, "an issue id"),
+    ("done", 1, "an issue id"),
+    ("set", 1, "an issue id"),
+    ("dep", 1, "an issue id"),
+    ("label", 1, "an issue id"),
+    ("show", 1, "an issue id"),
+    ("path", 1, "an issue id"),
+];
+
+/// Options a verb cannot run without.
+pub(super) const REQUIRED_OPTS: &[(&str, &str)] = &[("changelog", "--since")];
 
 /// Flags every verb accepts, so they are not repeated two dozen times in [`KNOWN_FLAGS`].
 ///
