@@ -47,7 +47,7 @@ pub(crate) fn sync(cwd: &Path, target: &str, op: &Op, replay: &dyn Fn(&Op, &str)
     // could actually be lost, because `rebuild` has already moved the local ref to the
     // remote's tip and the pending commit is unreferenced. That one is an error, and it says
     // where the commit is.
-    match attempts(cwd, target, op, replay) {
+    match attempts(cwd, target, replay) {
         Err(Unshared::Fatal(reason)) => Err(unshared(target, op, &reason)),
         Ok(()) | Err(Unshared::Unreachable(_)) => Ok(()),
     }
@@ -63,7 +63,7 @@ enum Unshared {
 }
 
 /// Push, and rebuild onto whatever landed first, until one of them works or the tries run out.
-fn attempts(cwd: &Path, target: &str, op: &Op, replay: &dyn Fn(&Op, &str) -> Result<(), String>) -> Result<(), Unshared> {
+fn attempts(cwd: &Path, target: &str, replay: &dyn Fn(&Op, &str) -> Result<(), String>) -> Result<(), Unshared> {
     for attempt in 1..=ATTEMPTS {
         let sha = match rev_parse(cwd, target) {
             Ok(Some(sha)) => sha,
@@ -76,7 +76,7 @@ fn attempts(cwd: &Path, target: &str, op: &Op, replay: &dyn Fn(&Op, &str) -> Res
         if attempt == ATTEMPTS {
             return Err(Unshared::Unreachable(format!("rejected {ATTEMPTS} times, last: {rejected}")));
         }
-        rebuild(cwd, target, op, replay)?;
+        rebuild(cwd, target, replay)?;
     }
     Ok(())
 }
@@ -86,7 +86,7 @@ fn attempts(cwd: &Path, target: &str, op: &Op, replay: &dyn Fn(&Op, &str) -> Res
 /// The pending commit is not discarded by the reset — it is still whole in the object store,
 /// and its tree is where a replayed body comes from. What is discarded is its *position*, which
 /// was on a base that no longer exists as a tip.
-fn rebuild(cwd: &Path, target: &str, op: &Op, replay: &dyn Fn(&Op, &str) -> Result<(), String>) -> Result<(), Unshared> {
+fn rebuild(cwd: &Path, target: &str, replay: &dyn Fn(&Op, &str) -> Result<(), String>) -> Result<(), Unshared> {
     fetch(cwd, REMOTE, target).map_err(Unshared::Unreachable)?;
     let tracking = format!("refs/remotes/{REMOTE}/{}", target.trim_start_matches("refs/heads/"));
     let Some(theirs) = rev_parse(cwd, &tracking).map_err(Unshared::Fatal)? else {
@@ -94,16 +94,48 @@ fn rebuild(cwd: &Path, target: &str, op: &Op, replay: &dyn Fn(&Op, &str) -> Resu
         // would loop against a wall. Whatever went wrong, the push error said it.
         return Err(Unshared::Unreachable(format!("{REMOTE} rejected the push but has no {tracking} to rebuild onto")));
     };
-    // The pending commit's sha is kept, not just discarded with its position: its tree is
-    // where a replayed body comes from, and after the reset nothing else points at it.
-    let ours = rev_parse(cwd, target).map_err(Unshared::Fatal)?;
-    update_ref(cwd, target, &theirs, ours.as_deref()).map_err(Unshared::Fatal)?;
-    match &ours {
-        Some(pending) => replay(op, pending).map_err(Unshared::Fatal),
+    let Some(ours) = rev_parse(cwd, target).map_err(Unshared::Fatal)? else {
         // Nothing local to replay: the branch did not exist, so the push failed for a reason
-        // that rebuilding cannot address.
-        None => Err(Unshared::Fatal(format!("{target} holds nothing to replay"))),
+        // rebuilding cannot address.
+        return Err(Unshared::Fatal(format!("{target} holds nothing to replay")));
+    };
+
+    // Read *before* the reset. Each pending commit's sha is kept, not just discarded with its
+    // position: its tree is where that op's prose comes from, and after the reset nothing
+    // else points at it.
+    let stack = pending(cwd, &tracking, target).map_err(Unshared::Fatal)?;
+    update_ref(cwd, target, &theirs, Some(&ours)).map_err(Unshared::Fatal)?;
+
+    for (sha, op) in &stack {
+        let Err(why) = replay(op, sha) else { continue };
+        // No partial application. A half-replayed stack is a tracker holding some of what the
+        // operator did and none of the rest, with nothing saying which — so the branch goes
+        // back where it was and the operation that could not be replayed is named.
+        let reached = rev_parse(cwd, target).map_err(Unshared::Fatal)?;
+        update_ref(cwd, target, &ours, reached.as_deref()).map_err(Unshared::Fatal)?;
+        return Err(Unshared::Fatal(format!("`{}` no longer applies: {why}\n  nothing was replayed; {target} is unchanged", op.render())));
     }
+    Ok(())
+}
+
+/// The pending commits and the operation each one recorded, oldest first.
+///
+/// Order is the point: a later op may act on an issue an earlier one created, so replaying
+/// out of order fails on an id that does not exist yet.
+///
+/// A commit with no trailer cannot be replayed at all. That is someone having committed to
+/// the tracker branch by hand, and guessing at what they meant would be worse than saying so.
+fn pending(cwd: &Path, tracking: &str, target: &str) -> Result<Vec<(String, Op)>, String> {
+    crate::git::rev_list(cwd, &format!("{tracking}..{target}"))?
+        .into_iter()
+        .map(|sha| {
+            let message = crate::git::commit_message(cwd, &sha)?;
+            match super::message::op_of(&message)? {
+                Some(op) => Ok((sha, op)),
+                None => Err(format!("commit {} records no operation, so it cannot be replayed", &sha[..7.min(sha.len())])),
+            }
+        })
+        .collect()
 }
 
 /// What to say when the write could not be shared.
