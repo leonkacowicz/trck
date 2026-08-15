@@ -7,8 +7,8 @@
 |---|---:|
 | backlog | 71 |
 | in-progress | 3 |
-| in-review | 1 |
-| done | 201 |
+| in-review | 0 |
+| done | 202 |
 | **total** | **276** |
 
 ## Hierarchies
@@ -192,7 +192,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#uq2zc2p conformance: convert the deps gutter tests](items/uq2zc2p-conformance-convert-the-deps-gutter-tests.md)
 - [x] [#xm6h2qn conformance: convert the command-output tests](items/xm6h2qn-conformance-convert-the-command-output-tests.md)
 
-### [#sqzr7nk storage: move the tracker to an orphan trck-issues branch](items/sqzr7nk-storage-move-the-tracker-to-an-orphan-trck-issues-branch.md) — 21% (11/52 pts · 4/22 done) · _high_ · in-progress
+### [#sqzr7nk storage: move the tracker to an orphan trck-issues branch](items/sqzr7nk-storage-move-the-tracker-to-an-orphan-trck-issues-branch.md) — 27% (14/52 pts · 5/22 done) · _high_ · in-progress
 
 - [ ] [#2ybw758 reads: resolve index, bodies and trck.json from a git ref](items/2ybw758-reads-resolve-index-bodies-and-trck-json-from-a-git-ref.md) _(backlog)_
 - [x] [#32gyghs tests: a harness for a ref-backed tracker in a temp git repo](items/32gyghs-tests-a-harness-for-a-ref-backed-tracker-in-a-temp-git-repo.md) · [review](https://github.com/leonkacowicz/trck/pull/32)
@@ -214,7 +214,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [ ] [#u3s6y7h CI: check on the tracker branch, and ci_changed drops its issues/ case](items/u3s6y7h-ci-check-on-the-tracker-branch-and-ci-changed-drops-its-issues-case.md) _(backlog)_
 - [ ] [#usc2cxg migration: split issues/ onto an orphan trck-issues branch, history intact](items/usc2cxg-migration-split-issues-onto-an-orphan-trck-issues-branch-history-intact.md) _(backlog)_
 - [ ] [#wzg85n6 docs: delete the worktree skill, rewrite both CLAUDE.md files, repoint README](items/wzg85n6-docs-delete-the-worktree-skill-rewrite-both-claude-md-files-repoint-readme.md) _(backlog)_
-- [ ] [#yuj6azz finalize: return a changeset and an Op instead of writing files](items/yuj6azz-finalize-return-a-changeset-and-an-op-instead-of-writing-files.md) _(in-review)_ · [review](https://github.com/leonkacowicz/trck/pull/34)
+- [x] [#yuj6azz finalize: return a changeset and an Op instead of writing files](items/yuj6azz-finalize-return-a-changeset-and-an-op-instead-of-writing-files.md) · [review](https://github.com/leonkacowicz/trck/pull/34)
 - [ ] [#zxz9vu2 trck edit <id>: edit an existing body through the same path](items/zxz9vu2-trck-edit-id-edit-an-existing-body-through-the-same-path.md) _(backlog)_
 
 ### [#u5fc5vm trck diff: semantic diff of tracker state between revisions](items/u5fc5vm-trck-diff-semantic-diff-of-tracker-state-between-revisions.md) — 29% (5/17 pts · 2/8 done) · _medium_ · in-progress
