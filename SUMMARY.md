@@ -5,8 +5,8 @@
 
 | State | Count |
 |---|---:|
-| backlog | 69 |
-| in-progress | 4 |
+| backlog | 68 |
+| in-progress | 5 |
 | in-review | 0 |
 | done | 203 |
 | **total** | **276** |
@@ -209,7 +209,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#kdbb9ms git: one plumbing module for the ref read and write primitives](items/kdbb9ms-git-one-plumbing-module-for-the-ref-read-and-write-primitives.md) · [review](https://github.com/leonkacowicz/trck/pull/30)
 - [ ] [#nabxbdk new: $EDITOR on the template, validating like visudo](items/nabxbdk-new-editor-on-the-template-validating-like-visudo.md) _(backlog)_
 - [ ] [#nuemwhc reads: report a stale tracker ref instead of silently using it](items/nuemwhc-reads-report-a-stale-tracker-ref-instead-of-silently-using-it.md) _(backlog)_
-- [ ] [#p95aabv new: --body, --body-file (- is stdin) and --empty; error without a TTY](items/p95aabv-new-body-body-file-is-stdin-and-empty-error-without-a-tty.md) _(backlog)_
+- [ ] [#p95aabv new: --body, --body-file (- is stdin) and --empty; error without a TTY](items/p95aabv-new-body-body-file-is-stdin-and-empty-error-without-a-tty.md) _(in-progress)_
 - [ ] [#tkhcgv6 hooks: the pre-commit guard stops running trck check on main](items/tkhcgv6-hooks-the-pre-commit-guard-stops-running-trck-check-on-main.md) _(backlog)_
 - [ ] [#u3s6y7h CI: check on the tracker branch, and ci_changed drops its issues/ case](items/u3s6y7h-ci-check-on-the-tracker-branch-and-ci-changed-drops-its-issues-case.md) _(backlog)_
 - [ ] [#usc2cxg migration: split issues/ onto an orphan trck-issues branch, history intact](items/usc2cxg-migration-split-issues-onto-an-orphan-trck-issues-branch-history-intact.md) _(backlog)_
