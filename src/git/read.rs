@@ -101,6 +101,23 @@ pub(crate) fn changed_paths(cwd: &Path, rev: &str) -> Result<Vec<String>, String
     Ok(String::from_utf8_lossy(&out.stdout).split('\0').filter(|p| !p.is_empty()).map(str::to_string).collect())
 }
 
+/// The commits in `range`, oldest first.
+///
+/// `--reverse` because a stack of pending commits has to be replayed in the order it was
+/// made: a later op may act on an issue an earlier one created.
+pub(crate) fn rev_list(cwd: &Path, range: &str) -> Result<Vec<String>, String> {
+    Ok(super::stdout(cwd, &["rev-list", "--reverse", range])?.lines().map(str::trim).filter(|l| !l.is_empty()).map(str::to_string).collect())
+}
+
+/// One commit's whole message, subject and trailers alike.
+pub(crate) fn commit_message(cwd: &Path, sha: &str) -> Result<String, String> {
+    let out = super::run(cwd, &["log", "-1", "--format=%B", sha])?;
+    if !out.status.success() {
+        return Err(format!("git log {sha}: {}", String::from_utf8_lossy(&out.stderr).trim()));
+    }
+    Ok(String::from_utf8_lossy(&out.stdout).into_owned())
+}
+
 /// The working tree's root, or `None` when `cwd` is not inside a repository.
 pub(crate) fn repo_root(cwd: &Path) -> Result<Option<PathBuf>, String> {
     let out = run(cwd, &["rev-parse", "--show-toplevel"])?;
