@@ -1,4 +1,4 @@
-# v7: trck serve — live process, edits write back to index.jsonl
+# serve: a live process over the tracker ref, with writes from the page
 
 ## Summary
 `trck html` emits a static page — a JSON island plus the compiled-in `assets/app.js`,
