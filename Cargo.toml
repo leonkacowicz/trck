@@ -7,9 +7,11 @@ license = "MIT"
 repository = "https://github.com/leonkacowicz/trck"
 rust-version = "1.85"
 
-# No dependencies, and that is a design constraint rather than an accident of being early:
-# the binary is meant to be a single self-contained artifact that a repo can depend on for
-# years, and every dependency is a future reason it stops building.
+# Empty today, but not a rule. The constraint is that the binary stays a single self-contained
+# artifact a repo can depend on for years: a crate is fine if it links statically in, and what
+# is ruled out is anything the user's machine must supply at run time — a shared library, a
+# runtime, a package tree. `git` is the one exception, and definitional: the engine drives git
+# plumbing directly. Weigh each crate on build cost and supply-chain surface; std is the default.
 [dependencies]
 
 [lints.rust]

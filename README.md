@@ -4,8 +4,8 @@ A deterministic issue tracker that lives *inside* your repo. Every issue is a ma
 in `items/`; all metadata — status included — lives in `index.jsonl`; `SUMMARY.md` is
 generated; only issue *bodies* are hand-authored — so the tracker can't drift.
 
-- **One binary, zero dependencies.** Nothing to install alongside it, no runtime, no
-  package tree — a single executable your repo can depend on for years.
+- **One self-contained binary.** No runtime, no package tree, nothing to install alongside it
+  but `git` — a single executable your repo can depend on for years.
 - **Git-friendly & agent-friendly.** Plain text, line-oriented `index.jsonl`, generated
   `SUMMARY.md`, and a hand-edited markdown body per issue. Merge drivers resolve concurrent
   edits row by row instead of leaving conflict markers in your metadata.

@@ -12,9 +12,14 @@ tracks the work on it.
 The engine is **`src/`** — one package at the repo root, no workspace. Build it with
 `cargo build --release`; that binary is what every harness in this repo points at.
 
-- **No dependencies, ever.** The binary is a single artifact a repository depends on for years,
-  and every dependency is a future reason it stops building. The standard library is the whole
-  toolbox.
+- **One self-contained binary is the invariant — not an empty `[dependencies]`.** What a
+  repository depends on for years is a single artifact with nothing to install beside it, so a
+  crate is fine as long as it links statically in. What is ruled out is anything that has to be
+  *present on the user's machine* at run time: a shared library, a language runtime, a package
+  tree. The one exception is **`git`**, which is definitional rather than a choice — the tracker
+  lives in a git repository and the engine drives git plumbing directly (`src/git/`). Weigh a
+  crate on build cost and supply-chain surface like any other project; std is still the default,
+  it is just no longer the whole toolbox.
 - Lints deny `unsafe`, `unwrap`, `expect` and `panic`: a malformed tracker must produce a
   diagnostic, never a stack trace. `println!` once slipped underneath that — it unwraps its
   write, so a closed pipe panicked — which is why all output goes through one function in
