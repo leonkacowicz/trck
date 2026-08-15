@@ -20,15 +20,17 @@ mod changeset;
 mod clock;
 mod edit;
 mod finalize;
+mod op;
 mod slug;
 mod status;
 mod write;
 
 pub(crate) use backend::{DirBackend, RefBackend};
-pub(crate) use changeset::{Changeset, Edit, Op};
+pub(crate) use changeset::{Changeset, Edit};
 pub(crate) use clock::now_utc;
 pub(crate) use edit::{MvOpts, NewOpts, SetOpts, cmd_dep, cmd_label, cmd_mv, cmd_new, cmd_set};
 pub(crate) use finalize::finalize;
+pub(crate) use op::Op;
 pub(crate) use slug::{check_slug, slugify};
 pub(crate) use status::apply_status;
 pub(crate) use write::{write_atomic, write_file};

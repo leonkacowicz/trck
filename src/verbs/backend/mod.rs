@@ -13,10 +13,15 @@
 //! verb was asked to do and drops it; a commit carries it in the message, which is what makes
 //! the history replayable rather than merely diffable.
 
-use super::changeset::{Changeset, Edit, Op};
+use super::changeset::{Changeset, Edit};
+use super::op::Op;
 
 mod dir;
 mod git;
+// Writing a message is [`git`]'s; reading one back is nobody's yet. The replay path
+// (`#5w9d7sq`) is `op_of`'s first consumer, and re-exporting it from here is that change's to
+// make — which is what the crate-level `dead_code` expectation covers in the meantime.
+mod message;
 
 pub(crate) use dir::DirBackend;
 pub(crate) use git::RefBackend;

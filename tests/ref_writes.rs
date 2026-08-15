@@ -102,7 +102,54 @@ fn a_write_verb_produces_one_commit_that_names_the_operation() {
 
     assert_eq!(git_must(&s.work, &["rev-parse", &format!("{LOCAL_REF}^")]), before, "the second write chains onto the first");
     let subject = git_must(&s.work, &["log", "-1", "--format=%s", LOCAL_REF]);
-    assert_eq!(subject, "mv ccccccc in-progress", "the canonical operation, not the alias typed");
+    assert_eq!(subject, "in-progress #ccccccc", "the destination status leads, and the alias typed is not it");
+}
+
+/// `git log --oneline trck-issues` is the tracker's changelog, so each verb's subject is the
+/// documented shape rather than free text.
+#[test]
+fn each_verb_writes_its_documented_subject() {
+    let Some(s) = Scenario::build("refwrite-subjects") else { return };
+    let expected = [
+        (["new", "A filed issue", "--id", "ccccccc", "--empty"].as_slice(), "new #ccccccc: A filed issue"),
+        (["start", "ccccccc"].as_slice(), "in-progress #ccccccc"),
+        (["set", "ccccccc", "--priority", "high"].as_slice(), "set #ccccccc priority=high"),
+        (["label", "ccccccc", "--add", "infra"].as_slice(), "label #ccccccc +infra"),
+        (["dep", "ccccccc", "--add", "aaaaaaa"].as_slice(), "dep #ccccccc +#aaaaaaa"),
+        (["edit", "ccccccc", "--body", "Rewritten prose."].as_slice(), "edit #ccccccc"),
+        (["done", "ccccccc", "--resolution", "wontfix"].as_slice(), "done #ccccccc (wontfix)"),
+    ];
+    for (args, subject) in expected {
+        trck_must(&s.work, args);
+        assert_eq!(git_must(&s.work, &["log", "-1", "--format=%s", LOCAL_REF]), subject, "for {args:?}");
+    }
+}
+
+/// The load-bearing half. Every commit carries the operation that made it, on one line, in a
+/// form git's own trailer reader can pick out — which is what lets a pending commit be
+/// replayed against a tree it was not built on.
+#[test]
+fn every_commit_carries_a_single_line_trck_op_trailer() {
+    let Some(s) = Scenario::build("refwrite-trailer") else { return };
+    // A title with every character that would break a naive record: a newline that would end
+    // the trailer, a quote, a tab, and a backslash. (A *leading* dash is the fourth, and is
+    // covered where it belongs — `Op`'s own round trip — because this CLI has no `--`
+    // separator, so a title starting with one cannot be typed in the first place.)
+    let title = "has \"quotes\"\nsecond line\tand a tab \\ backslash";
+    trck_must(&s.work, &["new", title, "--id", "ccccccc", "--empty"]);
+
+    let trailers = git_must(&s.work, &["log", "-1", "--format=%(trailers:key=Trck-Op,valueonly)", LOCAL_REF]);
+    let trailer = trailers.trim();
+    assert!(!trailer.is_empty(), "git's own trailer reader must find it: {trailers:?}");
+    assert_eq!(trailer.lines().count(), 1, "a trailer spanning lines is half lost: {trailer:?}");
+    assert!(trailer.starts_with("new "), "{trailer}");
+    // The title survives in the record even though the subject could not carry it whole.
+    assert!(trailer.contains("second line"), "the newline was escaped, not dropped: {trailer}");
+    assert!(trailer.contains("--id ccccccc"), "the generated id is pinned: {trailer}");
+
+    let subject = git_must(&s.work, &["log", "-1", "--format=%s", LOCAL_REF]);
+    assert!(!subject.contains('\n'), "{subject:?}");
+    assert!(subject.starts_with("new #ccccccc: has \"quotes\" second line"), "{subject}");
 }
 
 /// The acceptance criterion this whole tranche turns on: the commit's tree is what the
