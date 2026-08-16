@@ -1,0 +1,11 @@
+# The header names both sides, and for a tracker that is a directory the right-hand one is the
+# working tree — the files as they stand, committed or not. That is the whole question `diff`
+# with no `--to` answers, so the label has to say it.
+#
+# Pinned because the other kind of tracker cannot say it: read out of a git ref there is no
+# working tree to compare against, and the label there is the ref. Two spellings of one line,
+# and this is the one a fixture can state — a ref-backed tracker needs a git repository, which
+# this suite deliberately does not build.
+#
+# `--from` rather than a bare `trck diff`: the default left side is `HEAD`, which invokes git,
+# and there is none here.
