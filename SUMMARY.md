@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 65 |
+| backlog | 66 |
 | in-progress | 3 |
 | in-review | 0 |
 | done | 228 |
-| **total** | **296** |
+| **total** | **297** |
 
 ## Hierarchies
 
@@ -192,7 +192,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#uq2zc2p conformance: convert the deps gutter tests](items/uq2zc2p-conformance-convert-the-deps-gutter-tests.md)
 - [x] [#xm6h2qn conformance: convert the command-output tests](items/xm6h2qn-conformance-convert-the-command-output-tests.md)
 
-### [#sqzr7nk storage: move the tracker to an orphan trck-issues branch](items/sqzr7nk-storage-move-the-tracker-to-an-orphan-trck-issues-branch.md) — 97% (58/60 pts · 27/29 done) · _high_ · in-progress
+### [#sqzr7nk storage: move the tracker to an orphan trck-issues branch](items/sqzr7nk-storage-move-the-tracker-to-an-orphan-trck-issues-branch.md) — 95% (58/61 pts · 27/30 done) · _high_ · in-progress
 
 - [x] [#2ybw758 reads: resolve index, bodies and trck.json from a git ref](items/2ybw758-reads-resolve-index-bodies-and-trck-json-from-a-git-ref.md) · [review](https://github.com/leonkacowicz/trck/pull/36)
 - [x] [#32gyghs tests: a harness for a ref-backed tracker in a temp git repo](items/32gyghs-tests-a-harness-for-a-ref-backed-tracker-in-a-temp-git-repo.md) · [review](https://github.com/leonkacowicz/trck/pull/32)
@@ -213,6 +213,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#nuemwhc reads: report a stale tracker ref instead of silently using it](items/nuemwhc-reads-report-a-stale-tracker-ref-instead-of-silently-using-it.md)
 - [x] [#p95aabv new: --body, --body-file (- is stdin) and --empty; error without a TTY](items/p95aabv-new-body-body-file-is-stdin-and-empty-error-without-a-tty.md) · [review](https://github.com/leonkacowicz/trck/pull/37)
 - [x] [#r26hw48 tests: an adversarial index fixture, not the real tracker](items/r26hw48-tests-the-tracker-s-own-index-and-summary-lost-their-byte-for-byte-check.md)
+- [ ] [#r79v4va retire path, which and list --paths once --contains replaces them](items/r79v4va-retire-path-which-and-list-paths-once-contains-replaces-them.md) _(backlog)_
 - [x] [#sny6t9q writes: detach a worktree that has the tracker branch checked out](items/sny6t9q-writes-detach-a-worktree-that-has-the-tracker-branch-checked-out.md) · [review](https://github.com/leonkacowicz/trck/pull/51)
 - [x] [#tdrcfss ref: a fresh clone's first write reports the tracker as inconsistent](items/tdrcfss-ref-a-fresh-clone-s-first-write-reports-the-tracker-as-inconsistent.md)
 - [x] [#tkhcgv6 hooks: the pre-commit guard stops running trck check on main](items/tkhcgv6-hooks-the-pre-commit-guard-stops-running-trck-check-on-main.md)
