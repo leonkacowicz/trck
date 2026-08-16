@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 63 |
+| backlog | 64 |
 | in-progress | 4 |
 | in-review | 0 |
 | done | 225 |
-| **total** | **292** |
+| **total** | **293** |
 
 ## Hierarchies
 
@@ -253,6 +253,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## Backlog
 
+- [#8yg822w discovery: bound the walk up at the git repository root](items/8yg822w-discovery-bound-the-walk-up-at-the-git-repository-root.md) — _urgent_
 - [#38qfknm restore the coverage the deleted suite carried: hooks, setup-git, git-revision diff](items/38qfknm-restore-the-coverage-the-deleted-suite-carried-hooks-setup-git-git-revision-diff.md) — _high_
 - [#jcdynvv check: warn when this clone's registered merge drivers no longer resolve](items/jcdynvv-check-warn-when-this-clone-s-registered-merge-drivers-no-longer-resolve.md) — _high_ [conflict-resolution]
 - [#jvruz7x README: document the ref-backed tracker as a user feature](items/jvruz7x-readme-document-the-ref-backed-tracker-as-a-user-feature.md) — _high_
