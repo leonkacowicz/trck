@@ -192,7 +192,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#uq2zc2p conformance: convert the deps gutter tests](items/uq2zc2p-conformance-convert-the-deps-gutter-tests.md)
 - [x] [#xm6h2qn conformance: convert the command-output tests](items/xm6h2qn-conformance-convert-the-command-output-tests.md)
 
-### [#sqzr7nk storage: move the tracker to an orphan trck-issues branch](items/sqzr7nk-storage-move-the-tracker-to-an-orphan-trck-issues-branch.md) — 98% (57/58 pts · 26/27 done) · _high_ · in-progress
+### [#sqzr7nk storage: move the tracker to an orphan trck-issues branch](items/sqzr7nk-storage-move-the-tracker-to-an-orphan-trck-issues-branch.md) — 97% (57/59 pts · 26/28 done) · _high_ · in-progress
 
 - [x] [#2ybw758 reads: resolve index, bodies and trck.json from a git ref](items/2ybw758-reads-resolve-index-bodies-and-trck-json-from-a-git-ref.md) · [review](https://github.com/leonkacowicz/trck/pull/36)
 - [x] [#32gyghs tests: a harness for a ref-backed tracker in a temp git repo](items/32gyghs-tests-a-harness-for-a-ref-backed-tracker-in-a-temp-git-repo.md) · [review](https://github.com/leonkacowicz/trck/pull/32)
@@ -206,6 +206,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#c3uzxka diff: resolve revisions on the tracker branch](items/c3uzxka-diff-resolve-revisions-on-the-tracker-branch.md) · [review](https://github.com/leonkacowicz/trck/pull/46)
 - [x] [#ch5furb diff: says 'working tree' when the tracker is a ref and there is none](items/ch5furb-diff-says-working-tree-when-the-tracker-is-a-ref-and-there-is-none.md) · [review](https://github.com/leonkacowicz/trck/pull/59)
 - [x] [#dak2sjq trck sync, and the pending-changes report on every write verb](items/dak2sjq-trck-sync-and-the-pending-changes-report-on-every-write-verb.md) · [review](https://github.com/leonkacowicz/trck/pull/44)
+- [ ] [#fgsetxs tracker CI: assert the committed index and summary are canonical](items/fgsetxs-tracker-ci-assert-the-committed-index-and-summary-are-canonical.md) _(backlog)_
 - [x] [#jgf9ktx writes: blobs to tree to commit-tree, then CAS the local ref](items/jgf9ktx-writes-blobs-to-tree-to-commit-tree-then-cas-the-local-ref.md) · [review](https://github.com/leonkacowicz/trck/pull/39)
 - [x] [#kdbb9ms git: one plumbing module for the ref read and write primitives](items/kdbb9ms-git-one-plumbing-module-for-the-ref-read-and-write-primitives.md) · [review](https://github.com/leonkacowicz/trck/pull/30)
 - [x] [#nabxbdk new: $EDITOR on the template, validating like visudo](items/nabxbdk-new-editor-on-the-template-validating-like-visudo.md) · [review](https://github.com/leonkacowicz/trck/pull/38)
@@ -256,7 +257,6 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#jcdynvv check: warn when this clone's registered merge drivers no longer resolve](items/jcdynvv-check-warn-when-this-clone-s-registered-merge-drivers-no-longer-resolve.md) — _high_ [conflict-resolution]
 - [#jvruz7x README: document the ref-backed tracker as a user feature](items/jvruz7x-readme-document-the-ref-backed-tracker-as-a-user-feature.md) — _high_
 - [#bxfg4vk discovery: should the walk up be bounded, or can it adopt a stranger's tracker](items/bxfg4vk-discovery-should-the-walk-up-be-bounded-or-can-it-adopt-a-stranger-s-tracker.md) — _medium_
-- [#fgsetxs tracker CI: assert the committed index and summary are canonical](items/fgsetxs-tracker-ci-assert-the-committed-index-and-summary-are-canonical.md) — _medium_
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](items/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#j4vephz update: remove the obsolete update verb](items/j4vephz-update-remove-the-obsolete-update-verb.md) — _medium_
 - [#jkvexgs docs: record a terminal demo of the next-driven loop for the README](items/jkvexgs-docs-record-a-terminal-demo-of-the-next-driven-loop-for-the-readme.md) — _medium_
