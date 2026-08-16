@@ -1,0 +1,54 @@
+name: Tracker
+
+# This repository's own issue tracker, checked by the engine it ships.
+#
+# **This file lives on `trck-issues` and nowhere else, and that is not a filing decision.**
+# GitHub resolves a workflow from the ref the event happened on. Kept on `main`, a
+# `push: branches: [trck-issues]` trigger never fires at all: the push is to a ref whose
+# tree has no such file, so there is nothing to resolve. That is not a hypothetical — it
+# was tried, and the push that updated this branch produced no run whatsoever.
+#
+# So the branch's CI lives on the branch. The cost is a `.github/` at the root of a tree
+# that is otherwise nothing but a tracker, and being unable to see this file from a code
+# checkout. The alternative was a check that silently never ran.
+#
+# It also must never become a required check on `main`. Branch protection waits for the
+# checks it names, and one that only ever fires here would never arrive on a pull request —
+# the indefinite wait `paths-ignore` would have caused in `ci.yml`, from the other side.
+# Living on a branch `main` never merges is what makes that structural.
+on:
+  push:
+    branches: [trck-issues]
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: tracker consistency
+    runs-on: ubuntu-latest
+    steps:
+      # The engine comes from `main`, not from this branch, which has no engine — no
+      # `Cargo.toml`, no `src/`. Built from source rather than downloaded for the same reason
+      # nothing here is vendored: the tracker is answered for by the engine this repository
+      # currently ships, so a change that breaks `check` cannot hide behind an older release.
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Toolchain
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Build
+        run: cargo build --release
+
+      # The commit this workflow was resolved from — the pushed one on a push, this branch's
+      # tip on a manual run — fetched into the engine's checkout so git can resolve it.
+      # `github.sha` rather than the branch name: another push landing while this one runs
+      # must not silently move what is being checked.
+      - name: Fetch the tracker commit
+        run: git fetch --no-tags --depth=1 origin "${{ github.sha }}"
+
+      # Read out of the object store with nothing checked out — how every read verb reaches a
+      # ref-backed tracker, so this exercises the path users are on. `FETCH_HEAD` is what the
+      # fetch above just wrote, and nothing between here and there fetches anything else.
+      - name: Check
+        run: ./target/release/trck --ref FETCH_HEAD check
