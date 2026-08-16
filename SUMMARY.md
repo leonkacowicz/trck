@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 62 |
+| backlog | 63 |
 | in-progress | 3 |
 | in-review | 0 |
 | done | 225 |
-| **total** | **290** |
+| **total** | **291** |
 
 ## Hierarchies
 
@@ -274,6 +274,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#m3z2ywb summary: include foreign/unknown statuses in the counts table](items/m3z2ywb-summary-include-foreign-unknown-statuses-in-the-counts-table.md) — _low_
 - [#mf7ue8j trck-html: timeline view over created/started/closed](items/mf7ue8j-trck-html-timeline-view-over-created-started-closed.md) — _low_ [dates trck-html]
 - [#mwdg3pv validate and issue each carry their own Python repr, and they disagree](items/mwdg3pv-validate-and-issue-each-carry-their-own-python-repr-and-they-disagree.md) — _low_
+- [#q43qfm7 storage: support trackers in non-branch Git refs](items/q43qfm7-storage-support-trackers-in-non-branch-git-refs.md) — _low_
 - [#s3d6xyz Add reconfigure verb to rename/reorder statuses](items/s3d6xyz-add-reconfigure-verb-to-rename-reorder-statuses.md) — _low_ [tracker-features]
 - [#u833fh6 vocabulary: drop the 'ongoing' status alias](items/u833fh6-vocabulary-drop-the-ongoing-status-alias.md) — _low_ [tracker-features]
 - [#ut9bqm4 dates: time-in-status and per-status cycle time reporting](items/ut9bqm4-dates-time-in-status-and-per-status-cycle-time-reporting.md) — _low_ [dates]
