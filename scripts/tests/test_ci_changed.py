@@ -241,6 +241,15 @@ class TrackerWorkflow(unittest.TestCase):
         self.assertIn("trck --ref", self.yml, "the check must read the branch, not a checkout")
         self.assertIn("check", self.yml)
 
+    def test_a_manual_run_checks_the_branch_rather_than_github_sha(self):
+        """On `workflow_dispatch`, `github.sha` is `main`.
+
+        This file exists only on `main`, and GitHub resolves a workflow from the ref it is
+        dispatched on — so `--ref trck-issues` is refused and `main` is the only ref a
+        dispatch can name. Checking `main` as a tracker then fails for the uninteresting
+        reason that its root is not one, which makes the manual trigger worse than absent."""
+        self.assertIn("github.event_name == 'push' && github.sha || 'trck-issues'", self.yml)
+
     def test_it_builds_the_engine_from_this_repository(self):
         """Not a downloaded release: the tracker is answered for by the engine in `main`, for
         the same reason nothing here is vendored."""
