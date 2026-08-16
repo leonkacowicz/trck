@@ -221,39 +221,28 @@ class WorkflowWiring(unittest.TestCase):
                          "ci.yml: `- name: Build` must run whatever the classifier said")
 
 
-class TrackerWorkflow(unittest.TestCase):
-    """The tracker gets its own workflow, on its own branch.
+class NoWorkflowHereWatchesTheTracker(unittest.TestCase):
+    """The tracker's workflow lives on `trck-issues`, and cannot live here.
 
-    It cannot be a job in `ci.yml`: that workflow runs on pull requests to `main` and pushes
-    to it, and the tracker branch shares no history with either. And it must not become a
-    required check on `main` — a branch protection rule waiting for a job that only ever
-    fires on `trck-issues` is a pull request that never merges."""
+    GitHub resolves a workflow from the ref the event happened on, so a
+    `push: branches: [trck-issues]` trigger in a file on `main` never fires: the push is to
+    a ref whose tree has no such file, and there is nothing to resolve. It does not error —
+    no run appears at all, which is the failure mode that looks exactly like a green repo.
 
-    def setUp(self):
-        path = REPO_ROOT / ".github" / "workflows" / "tracker.yml"
-        self.assertTrue(path.is_file(), "no .github/workflows/tracker.yml")
-        self.yml = path.read_text(encoding="utf-8")
+    That is not a hypothetical. `tracker.yml` sat here for two merges and its push trigger
+    never once fired; only the manual dispatch ever ran, which is what disguised it. So the
+    assertion is an absence: nothing on `main` may claim to watch that branch."""
 
-    def test_it_fires_on_a_push_to_the_tracker_branch(self):
-        self.assertIn("branches: [trck-issues]", self.yml)
-
-    def test_it_runs_check_against_the_pushed_commit(self):
-        self.assertIn("trck --ref", self.yml, "the check must read the branch, not a checkout")
-        self.assertIn("check", self.yml)
-
-    def test_a_manual_run_checks_the_branch_rather_than_github_sha(self):
-        """On `workflow_dispatch`, `github.sha` is `main`.
-
-        This file exists only on `main`, and GitHub resolves a workflow from the ref it is
-        dispatched on — so `--ref trck-issues` is refused and `main` is the only ref a
-        dispatch can name. Checking `main` as a tracker then fails for the uninteresting
-        reason that its root is not one, which makes the manual trigger worse than absent."""
-        self.assertIn("github.event_name == 'push' && github.sha || 'trck-issues'", self.yml)
-
-    def test_it_builds_the_engine_from_this_repository(self):
-        """Not a downloaded release: the tracker is answered for by the engine in `main`, for
-        the same reason nothing here is vendored."""
-        self.assertIn("cargo build --release", self.yml)
+    def test_no_workflow_on_main_names_the_tracker_branch(self):
+        workflows = sorted((REPO_ROOT / ".github" / "workflows").glob("*.yml"))
+        self.assertTrue(workflows, "no workflows found at all")
+        for path in workflows:
+            # `assertNotIn` would print the whole workflow; the claim is one line, so say it.
+            self.assertTrue(
+                "trck-issues" not in path.read_text(encoding="utf-8"),
+                f"{path.name}: a workflow on main that names trck-issues cannot fire on it — "
+                "the tracker's workflow belongs on the tracker branch",
+            )
 
 
 if __name__ == "__main__":
