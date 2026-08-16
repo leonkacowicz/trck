@@ -31,8 +31,9 @@ fn assert_bounded(cwd: &Path, foreign_tracker: &Path) {
     assert!(!out.status.success(), "discovery adopted {}", foreign_tracker.display());
     let err = String::from_utf8_lossy(&out.stderr);
     assert!(err.contains("repository root"), "missing boundary in diagnostic: {err}");
-    let root = git_must(cwd, &["rev-parse", "--show-toplevel"]);
-    assert!(err.contains(&root), "diagnostic does not name the boundary {root}: {err}");
+    let reported_root = git_must(cwd, &["rev-parse", "--show-toplevel"]);
+    let root = Path::new(&reported_root).canonicalize().expect("canonical root");
+    assert!(err.contains(&root.display().to_string()), "diagnostic does not name the boundary {}: {err}", root.display());
 }
 
 #[test]
