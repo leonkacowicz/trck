@@ -136,10 +136,14 @@ mod tests {
     /// Round-trip every index committed in this repo and require the bytes back.
     ///
     /// The unit tests above cover the shapes someone thought to write down. This covers
-    /// the ones nobody did: 230-odd real rows carrying real titles, labels, links and
-    /// timestamps. Canonical serialisation has to be byte-identical to the Python
-    /// engine's, and these files *are* its output — they are written by `repo
-    /// normalize` and committed.
+    /// the ones nobody did: real rows carrying real titles, labels, links and timestamps.
+    /// Canonical serialisation has to be byte-identical to the Python engine's, and these
+    /// files *are* its output — they are written by `repo normalize` and committed.
+    ///
+    /// `issues/index.jsonl` is listed and will not be found: this repository's own tracker
+    /// moved to the `trck-issues` branch, taking 280-odd rows of coverage with it. The
+    /// entry stays because a unit test must not shell out to git to read a ref, and
+    /// dropping it would erase the only record of where that coverage went (#r26hw48).
     #[test]
     fn real_indexes_round_trip_byte_for_byte() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).to_path_buf();

@@ -247,8 +247,13 @@ mod tests {
     /// Regenerate this repo's committed `SUMMARY.md` and require the bytes back.
     ///
     /// It is a generated, committed file: a byte difference is a diff in someone's
-    /// working tree. And it exercises what a hand-written case cannot — 195 real issues
-    /// with real epics, labels, review links, resolutions and unicode titles.
+    /// working tree. And it exercises what a hand-written case cannot — real issues with
+    /// real epics, labels, review links, resolutions and unicode titles.
+    ///
+    /// `issues` is listed and will not be found: this repository's own tracker moved to the
+    /// `trck-issues` branch, and only the bundled example is left on disk. See #r26hw48 —
+    /// the entry stays as the marker for coverage that has to come back somewhere a git ref
+    /// is readable, which a unit test is not.
     #[test]
     fn the_repos_own_summary_regenerates_byte_for_byte() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR"));

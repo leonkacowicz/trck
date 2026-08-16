@@ -15,9 +15,14 @@ use std::io::Write as _;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
-/// This repository's own tracker — a real one, with more issues than any fixture.
+/// A real tracker on disk — the bundled example, not this repository's own.
+///
+/// This repository's lives on the `trck-issues` branch now, and `which` is one of the verbs a
+/// ref-backed tracker cannot answer at all: it maps body *files* to issues, and there are no
+/// files. What this test needs is a directory with a handful of issues in it, which the
+/// example is.
 fn repo_tracker() -> PathBuf {
-    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("issues");
+    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples").join("action-game");
     assert!(dir.join("index.jsonl").is_file(), "no tracker at {}", dir.display());
     dir
 }
