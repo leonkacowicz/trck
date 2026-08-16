@@ -248,3 +248,42 @@ fn both_verbs_refuse_outside_a_git_repository() {
 
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn setup_git_accepts_a_bare_repository() {
+    if !have_git() {
+        return;
+    }
+    let dir = scratch("bare");
+    std::fs::create_dir_all(&dir).expect("mkdir");
+    assert!(git(&dir, &["init", "-q", "--bare"]).status.success());
+    std::fs::create_dir_all(dir.join("items")).expect("items");
+    std::fs::write(dir.join("trck.json"), "{}\n").expect("config");
+
+    let out = ok(&dir, &["repo", "setup-git"]);
+    assert!(out.contains("wrote"), "{out}");
+    assert!(git_out(&dir, &["config", "--get", "merge.trck-index.driver"]).contains("merge-index"));
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn setup_git_does_not_suppress_ambiguous_tracker_discovery() {
+    if !have_git() {
+        return;
+    }
+    let root = scratch("ambiguous");
+    assert!(git(&root, &["init", "-q"]).status.success());
+    for name in ["first", "second"] {
+        let tracker = root.join(name);
+        std::fs::create_dir_all(&tracker).expect("tracker");
+        std::fs::write(tracker.join("trck.json"), "{}\n").expect("config");
+    }
+
+    let out = trck(&root, &["repo", "setup-git"]);
+    assert!(!out.status.success(), "configured an ambiguous repository");
+    assert!(String::from_utf8_lossy(&out.stderr).contains("ambiguous tracker"));
+    assert!(!git(&root, &["config", "--get", "merge.trck-index.driver"]).status.success());
+
+    let _ = std::fs::remove_dir_all(&root);
+}

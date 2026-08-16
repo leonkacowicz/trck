@@ -1,11 +1,14 @@
 //! `repo install-hook` — a pre-commit hook that runs `trck check` when the tracker changes.
 
 use super::git::{engine_invocation, require_repo};
-use crate::discovery::Ctx;
+use crate::discovery::{Ctx, Source};
 use crate::verbs::write_atomic;
 use std::path::{Path, PathBuf};
 
 pub(crate) fn cmd_install_hook(ctx: &Ctx) -> Result<String, String> {
+    if let Source::Ref { rev, .. } = &ctx.source {
+        return Err(format!("the tracker is stored in git ref '{rev}'; working-tree commits cannot change it, so a pre-commit hook has nothing to guard"));
+    }
     let hooks = hooks_dir(ctx)?;
     let rel = tracker_rel(ctx)?;
     std::fs::create_dir_all(&hooks).map_err(|e| format!("{}: {e}", hooks.display()))?;
@@ -18,15 +21,16 @@ pub(crate) fn cmd_install_hook(ctx: &Ctx) -> Result<String, String> {
 /// Where git looks for hooks — `--git-common-dir`, so a linked worktree installs into the
 /// shared hooks directory rather than one of its own that git would never consult.
 fn hooks_dir(ctx: &Ctx) -> Result<PathBuf, String> {
-    let common = require_repo(ctx, "--git-common-dir")?;
-    let hooks = ctx.dir()?.join(&common);
+    let cwd = ctx.git_cwd();
+    let common = require_repo(cwd, "--git-common-dir")?;
+    let hooks = cwd.join(&common);
     Ok(hooks.canonicalize().unwrap_or(hooks).join("hooks"))
 }
 
 /// The tracker's path relative to the repo root, in git's own forward-slash form — `.` when
 /// the tracker dir *is* the root.
 fn tracker_rel(ctx: &Ctx) -> Result<String, String> {
-    let toplevel = require_repo(ctx, "--show-toplevel")?;
+    let toplevel = require_repo(ctx.git_cwd(), "--show-toplevel")?;
     let root = Path::new(&toplevel).canonicalize().map_err(|e| format!("{toplevel}: {e}"))?;
     let tracker = ctx.dir()?;
     let dir = tracker.canonicalize().map_err(|e| format!("{}: {e}", tracker.display()))?;

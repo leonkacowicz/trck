@@ -30,3 +30,27 @@ pub(super) fn tracker_dir(args: &Args) -> Result<std::path::PathBuf, String> {
 pub(super) fn context(args: &Args) -> Result<Ctx, String> {
     Ctx::load(tracker_source(args)?, true)
 }
+
+/// The invocation directory and any tracker `setup-git` can resolve.
+///
+/// Clone-local configuration is also the remedy for an implicitly hidden tracker ref, so
+/// absence is allowed there. Explicit overrides stay strict: silently ignoring a mistyped
+/// `--dir` or `--ref` would configure the wrong repository.
+pub(super) fn setup_source(args: &Args) -> Result<(std::path::PathBuf, Option<Ctx>), String> {
+    let cwd = std::env::current_dir().map_err(|e| format!("cannot read the working directory: {e}"))?;
+    let env_set = |key: &str| std::env::var(key).is_ok_and(|value| !value.is_empty());
+    let explicit = [args.opt("--dir").is_some(), args.opt("--ref").is_some(), env_set("TRCK_DIR"), env_set("TRCK_REF")].contains(&true);
+    match tracker_source(args) {
+        Ok(source) => Ok((cwd, Some(Ctx::load(source, true)?))),
+        Err(error) => hidden_setup_source(cwd, error, explicit),
+    }
+}
+
+fn hidden_setup_source(cwd: std::path::PathBuf, error: String, explicit: bool) -> Result<(std::path::PathBuf, Option<Ctx>), String> {
+    (!explicit)
+        .then(|| crate::discovery::refspec::why_invisible(&cwd, crate::discovery::TRACKER_REF))
+        .flatten()
+        .filter(|hidden| hidden == &error)
+        .map(|_| (cwd, None))
+        .ok_or(error)
+}

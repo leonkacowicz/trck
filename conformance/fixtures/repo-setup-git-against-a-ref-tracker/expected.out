@@ -1,0 +1,4 @@
+skipped .gitattributes: the tracker is stored in git ref 'trck-issues', which has no working-tree file
+registered merge drivers in this clone (trck-index, trck-summary)
+added `+refs/heads/trck-issues:refs/remotes/origin/trck-issues` to remote.origin.fetch — run `git fetch` to bring the branch in
+note: .gitattributes is shared, but the driver commands are per-clone — every clone must run `trck repo setup-git` for auto-resolution to apply.

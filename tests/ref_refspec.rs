@@ -102,13 +102,13 @@ fn setup_git_widens_the_refspec_and_the_branch_then_arrives() {
         return;
     };
     let at = narrow_clone(&s, "narrow-setup");
-    // A tracker directory for `setup-git` to write `.gitattributes` into — it configures a
-    // tracker, and here the point is the *clone*, not which tracker it was pointed at.
-    trck_must(&at, &["init", "issues"]);
 
     let said = trck_must(&at, &["repo", "setup-git"]);
+    assert!(said.contains("skipped .gitattributes"), "{said}");
     assert!(said.contains("remote.origin.fetch"), "{said}");
     assert!(refspecs(&at).contains(TRACKER_BRANCH), "the refspec was not widened: {}", refspecs(&at));
+    assert!(git_must(&at, &["config", "--get", "merge.trck-index.driver"]).contains("merge-index"));
+    assert!(git_must(&at, &["config", "--get", "merge.trck-summary.driver"]).contains("merge-summary"));
 
     git_must(&at, &["fetch", "-q", "origin"]);
     assert!(common::git_ok(&at, &["rev-parse", "--verify", "--quiet", &format!("origin/{TRACKER_BRANCH}")]), "the branch still did not arrive");
@@ -135,11 +135,35 @@ fn setup_git_leaves_a_default_clone_alone() {
     let Some(s) = Scenario::build("refspec-default") else {
         return;
     };
-    // The fixture's clone has no `issues/` — the tracker is on the branch — so give
-    // `setup-git` a directory to configure. What is under test is the *clone*.
-    trck_must(&s.work, &["init", "issues"]);
     let before = refspecs(&s.work);
-    let said = trck_must(&s.work, &["--dir", "issues", "repo", "setup-git"]);
+    let said = trck_must(&s.work, &["repo", "setup-git"]);
     assert_eq!(refspecs(&s.work), before, "a wildcard refspec was widened anyway");
+    assert!(said.contains("skipped .gitattributes"), "{said}");
     assert!(said.contains("already fetches"), "{said}");
+}
+
+#[test]
+fn install_hook_explains_why_a_ref_tracker_needs_no_hook() {
+    let Some(s) = Scenario::build("ref-hook") else {
+        return;
+    };
+
+    let out = trck(&s.work, &["repo", "install-hook"]);
+    assert!(!out.status.success(), "installed a hook for a ref-backed tracker");
+    let err = String::from_utf8_lossy(&out.stderr);
+    assert!(err.contains("working-tree commits cannot change it"), "{err}");
+    assert!(err.contains("nothing to guard"), "{err}");
+    assert!(!err.contains("not a git repository"), "{err}");
+}
+
+#[test]
+fn setup_git_keeps_an_explicit_non_tracker_ref_strict() {
+    let Some(s) = Scenario::build("ref-setup-explicit") else {
+        return;
+    };
+
+    let out = trck(&s.work, &["--ref", "main", "repo", "setup-git"]);
+    assert!(!out.status.success(), "configured git for a ref that is not a tracker");
+    let err = String::from_utf8_lossy(&out.stderr);
+    assert!(err.contains("trck.json"), "{err}");
 }

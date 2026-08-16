@@ -32,7 +32,7 @@ view does not churn every golden in the suite.
 |---|---|
 | `initial/` | copied over the fresh tracker before anything runs |
 | `env` | `KEY=VALUE` lines added to the environment of every invocation |
-| `discovery` | run without `--dir` from a nested `git` or `plain` directory |
+| `discovery` | run without `--dir` from a nested `git`, `plain`, or ref-backed (`ref`) directory |
 | `setup` | one command per line, run in order; a non-zero exit aborts the fixture |
 | `cmd` | exactly one command line — the thing under test |
 | `expected.out` | stdout, compared literally |
@@ -44,6 +44,9 @@ view does not churn every golden in the suite.
 `setup` and `cmd` lines are split like a shell (`shlex`), so a quoted title stays one
 argument. Lines starting with `#` are comments — use them; a fixture whose name is its
 only explanation is a fixture nobody dares change.
+
+Ref-backed discovery fixtures may assert command output and status, but not artifact files:
+the tracker has no working-tree path from which the runner could read those artifacts.
 
 `{DIR}` in any `setup`/`cmd` argument expands to the tracker's absolute path. The tracker
 lives in a throwaway temp dir whose name is unknown when the fixture is written, so a verb
