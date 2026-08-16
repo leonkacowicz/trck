@@ -38,13 +38,12 @@ Add a test for every change, in whichever of the three it belongs to.
 
 ## What CI runs, and when
 
-A pull request that touches only `issues/`, `docs/` or repository-root markdown cannot affect
-the engine, so the build matrix, the conformance suite, the quality ratchet and the
-helper-script suite are skipped for it; `trck check` still runs. Anything else runs everything,
-as does every push to `main`.
+A pull request that touches only `docs/` or repository-root markdown cannot affect the engine,
+so the build matrix, the conformance suite, the quality ratchet and the helper-script suite are
+skipped for it. Anything else runs everything, as does every push to `main`.
 
 `scripts/ci_changed.py` is that decision, and it is an **allowlist** — every path is code
-unless it is in one of those three places. Markdown is not a safe signal in this repository:
+unless it is in one of those two places. Markdown is not a safe signal in this repository:
 `assets/` holds compiled-in templates, `conformance/` holds fixtures, `examples/` holds a
 tracker the screenshots are generated from. Uncertainty resolves to running everything, because
 the failure is silent in the other direction: a rule that wrongly says "skippable" does not
@@ -60,8 +59,14 @@ pull request would wait indefinitely for a check that is never coming. A job ski
 reports once under the bare name `rust` and never produces `rust (ubuntu-latest)` — the check
 merging is actually gated on, and the same indefinite wait `paths-ignore` would have caused. So
 it always runs; what shrinks is the matrix (`changes` publishes it: three platforms, or just
-`ubuntu-latest`) and what its steps do. Build and `trck check` run either way, which is why
-there is no separate tracker job.
+`ubuntu-latest`) and what its steps do. The build runs either way — a check that reports green
+without having done anything is worse than no check.
+
+**The tracker has its own workflow.** `.github/workflows/tracker.yml` fires on a push to
+`trck-issues`, builds the engine from `main`, and runs `trck --ref <sha> check` against the
+pushed commit. It is separate from `ci.yml` because the two run over branches that share no history,
+and it must stay separate: named as a required check on `main`, it would never report on a pull
+request, and the pull request would wait for it forever.
 
 ## The quality ratchet
 

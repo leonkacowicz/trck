@@ -12,8 +12,8 @@ on:
 jobs:
   # Does this change touch the engine at all?
   #
-  # A pull request that only edits tracker data or prose cannot break the build, so it has
-  # no business running three platforms of it. `paths-ignore` cannot express that here:
+  # A pull request that only edits prose cannot break the build, so it has no business
+  # running three platforms of it. `paths-ignore` cannot express that here:
   # merging is gated on named checks, and a workflow filtered out by paths never reports
   # them — the pull request would wait forever for a check that will never arrive. A job
   # skipped by an `if:` *does* report, and branch protection counts skipped as passing. So
@@ -50,8 +50,8 @@ jobs:
           code=true
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             git fetch --no-tags origin "$BASE_REF"
-            # --no-renames so a rename reports both paths: moving a file *out* of issues/
-            # is a code change, and rename detection would report only where it landed.
+            # --no-renames so a rename reports both paths: moving a file *out* of docs/ is
+            # a code change, and rename detection would report only where it landed.
             code=$(git diff --no-renames --name-only "origin/$BASE_REF...HEAD" \
                    | tee changed-paths.txt \
                    | python3 scripts/ci_changed.py)
@@ -60,8 +60,8 @@ jobs:
           if [ "$code" = "true" ]; then
             matrix='["ubuntu-latest", "macos-latest", "windows-latest"]'
           else
-            # One runner, and only to build the engine that answers `trck check`. The other
-            # two are about cross-platform correctness, which a tracker edit cannot affect.
+            # One runner, and only because the matrix job cannot be skipped whole. The other
+            # two are about cross-platform correctness, which a prose edit cannot affect.
             matrix='["ubuntu-latest"]'
           fi
           echo "Runs the engine's suites: $code"
@@ -165,8 +165,8 @@ jobs:
   #
   # This job carries no `if:` — see `changes`. Skipping a matrix job withholds the
   # per-combination check that merging is gated on, and the pull request waits for it
-  # forever. So on a tracker- or prose-only change it still runs, over one platform, and
-  # does the one thing that change can break: build the engine and check the tracker.
+  # forever. So on a prose-only change it still runs, over one platform, and does the one
+  # thing left worth doing: prove the engine still builds.
   rust:
     needs: changes
     runs-on: ${{ matrix.os }}
@@ -188,10 +188,10 @@ jobs:
         if: needs.changes.outputs.code == 'true'
         run: cargo clippy --all-targets --all-features -- -D warnings
 
-      # Unconditional: `trck check` below needs a binary, and it builds from source rather
-      # than downloading a release for the same reason nothing here is vendored — the
-      # tracker must be answered for by the engine in this commit. The crate has no
-      # dependencies, so that is a short build.
+      # Unconditional, because this job cannot be skipped as a whole and a check that
+      # reports green without having done anything is worse than no check. The conformance
+      # suite below needs the binary anyway, and the crate has no dependencies, so it is a
+      # short build.
       - name: Build
         run: cargo build --release
 
@@ -209,10 +209,3 @@ jobs:
       - name: Conformance (the specification)
         if: matrix.os == 'ubuntu-latest' && needs.changes.outputs.code == 'true'
         run: python3 conformance/run.py --bin target/release/trck --min-pass 266
-
-      # This repository's own tracker, checked by the engine it ships — on every change,
-      # including the ones that skip everything above, since an issues-only pull request is
-      # precisely the change that can break it.
-      - name: Tracker consistency
-        if: matrix.os == 'ubuntu-latest'
-        run: ./target/release/trck check

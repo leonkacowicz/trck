@@ -4,20 +4,27 @@
     git diff --no-renames --name-only "origin/$BASE...HEAD" | python3 scripts/ci_changed.py
     # -> "true" or "false" on stdout, nothing else
 
-A pull request that only edits tracker data or prose cannot affect the engine, so CI
-skips the build/test matrix, the conformance suite, the quality ratchet and the helper
-scripts for it. This script is the whole of that decision, kept out of the workflow file
-because a path glob buried in YAML is unreviewable and untestable — and the way this
-fails is silent. A rule that wrongly says "skippable" does not turn a check red; it makes
-the checks green by never running them.
+A pull request that only edits prose cannot affect the engine, so CI skips the build/test
+matrix, the conformance suite, the quality ratchet and the helper scripts for it. This
+script is the whole of that decision, kept out of the workflow file because a path glob
+buried in YAML is unreviewable and untestable — and the way this fails is silent. A rule
+that wrongly says "skippable" does not turn a check red; it makes the checks green by
+never running them.
 
 Two rules follow from that.
 
-**It is an allowlist.** Only `issues/`, `docs/` and repository-root markdown are
-skippable; everything else is code. A denylist keyed on `.md` would be wrong in this
-repository, where markdown is also a compiled-in asset (`assets/`), a conformance fixture
+**It is an allowlist.** Only `docs/` and repository-root markdown are skippable;
+everything else is code. A denylist keyed on `.md` would be wrong in this repository,
+where markdown is also a compiled-in asset (`assets/`), a conformance fixture
 (`conformance/`), an example tracker (`examples/`) and the shipped skill (`skills/`) —
 all of which the engine or its specification reads.
+
+`issues/` used to head that list, back when the tracker was a directory in this tree. It
+lives on the `trck-issues` branch now, which a pull request against `main` cannot reach,
+so there is no such thing as a tracker-only pull request to exempt. A diff that touches
+`issues/` today means somebody put a directory of that name back — which is a change to
+build, not one to wave through. The tracker is checked by its own workflow, on its own
+branch.
 
 **Every uncertainty resolves to code.** An empty diff, a diff of nothing but blank lines,
 a path shape not accounted for: all of them run everything. The cost of a needless CI run
@@ -29,8 +36,9 @@ where the engine does not build.
 import sys
 
 # Directories whose entire contents are inert to the engine. Trailing slash is load-bearing:
-# it is what stops `issues-archive/` from matching `issues/`.
-SKIPPABLE_DIRS = ("issues/", "docs/")
+# it is what stops `docs-archive/` from matching `docs/`. A tuple of one, deliberately —
+# `str.startswith` takes it as it stands, and the shape survives the next entry.
+SKIPPABLE_DIRS = ("docs/",)
 
 
 def is_skippable(path: str) -> bool:

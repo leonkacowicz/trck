@@ -46,18 +46,26 @@ The engine is **`src/`** — one package at the repo root, no workspace. Build i
 
 Add a test for every change (TDD), in whichever of the three it belongs to.
 
-**CI skips the engine's suites on a tracker- or prose-only pull request.** `scripts/ci_changed.py`
-classifies the diff and the jobs carry `if: needs.changes.outputs.code == 'true'`; `trck check`
-runs either way. It is an **allowlist** — only `issues/`, `docs/` and repository-root markdown are
-skippable, because markdown elsewhere is a compiled-in asset, a conformance fixture, or the example
-tracker. Uncertainty resolves to running everything: a rule that wrongly says "skippable" does not
-turn a check red, it makes the checks green by never running them. So widening it means adding a
-case to `scripts/tests/test_ci_changed.py` first. It cannot be `paths-ignore`, either — merging is
-gated on named checks and a path-filtered workflow never reports them, leaving the pull request
-waiting forever; a job skipped by an `if:` reports as skipped, which counts as passing. **The
-matrix job is the exception:** skipped whole, `rust` reports under that bare name and the gated
+**CI skips the engine's suites on a prose-only pull request.** `scripts/ci_changed.py` classifies
+the diff and the jobs carry `if: needs.changes.outputs.code == 'true'`. It is an **allowlist** —
+only `docs/` and repository-root markdown are skippable, because markdown elsewhere is a
+compiled-in asset, a conformance fixture, or the example tracker. Uncertainty resolves to running
+everything: a rule that wrongly says "skippable" does not turn a check red, it makes the checks
+green by never running them. So widening it means adding a case to
+`scripts/tests/test_ci_changed.py` first. It cannot be `paths-ignore`, either — merging is gated on
+named checks and a path-filtered workflow never reports them, leaving the pull request waiting
+forever; a job skipped by an `if:` reports as skipped, which counts as passing. **The matrix job is
+the exception:** skipped whole, `rust` reports under that bare name and the gated
 `rust (ubuntu-latest)` never arrives, so it always runs — `changes` shrinks its matrix to one
-platform and its steps carry the gate instead, with the build and `trck check` ungated.
+platform and its steps carry the gate instead, with the build ungated.
+
+`issues/` used to head that allowlist. The tracker is on the `trck-issues` branch now, which a pull
+request against `main` cannot reach, so there is no tracker-only pull request to exempt — and a diff
+that does touch `issues/` means someone put that directory back, which is a change to build.
+**`trck check` moved out of `ci.yml` entirely**, into `.github/workflows/tracker.yml`, which fires
+on a push to `trck-issues` and checks the pushed commit through `--ref`. It must stay a separate
+workflow: named as a required check on `main` it would never report on a pull request, and the pull
+request would wait for it forever.
 
 **The quality ratchet.** `quality-report.json` is a committed snapshot of structural metrics —
 function length, cognitive and cyclomatic complexity, argument counts, file size. CI runs
@@ -149,9 +157,9 @@ spec never becomes a download.
 **A release commit goes through a PR like any other.** `main` is protected and its required
 checks are the point — pushing a bump straight to it means the commit every published binary is
 built from is the one commit nobody ran CI on. Admin permissions make the bypass possible; that
-is not a reason to use it. **This rule is about code.** A tracker-only commit cannot affect the
-build — `scripts/ci_changed.py` already classifies `issues/` as skippable — and goes straight to
-`main` instead, per **Tracker writes** above. A version bump is code, whatever else it touches.
+is not a reason to use it. **This rule is about code.** A tracker commit cannot affect the build —
+it does not land on `main` at all, but on `trck-issues`, where its own workflow checks it. A
+version bump is code, whatever else it touches.
 The release workflow's own `verify` job is a stricter gate than the PR checks, but it runs
 *after* the tag, so a bump that breaks the build costs a tag you then have to delete and re-cut.
 
