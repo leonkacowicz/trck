@@ -6,10 +6,10 @@
 | State | Count |
 |---|---:|
 | backlog | 63 |
-| in-progress | 3 |
+| in-progress | 4 |
 | in-review | 0 |
 | done | 221 |
-| **total** | **287** |
+| **total** | **288** |
 
 ## Hierarchies
 
@@ -192,13 +192,13 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#uq2zc2p conformance: convert the deps gutter tests](items/uq2zc2p-conformance-convert-the-deps-gutter-tests.md)
 - [x] [#xm6h2qn conformance: convert the command-output tests](items/xm6h2qn-conformance-convert-the-command-output-tests.md)
 
-### [#sqzr7nk storage: move the tracker to an orphan trck-issues branch](items/sqzr7nk-storage-move-the-tracker-to-an-orphan-trck-issues-branch.md) — 91% (52/57 pts · 23/26 done) · _high_ · in-progress
+### [#sqzr7nk storage: move the tracker to an orphan trck-issues branch](items/sqzr7nk-storage-move-the-tracker-to-an-orphan-trck-issues-branch.md) — 90% (52/58 pts · 23/27 done) · _high_ · in-progress
 
 - [x] [#2ybw758 reads: resolve index, bodies and trck.json from a git ref](items/2ybw758-reads-resolve-index-bodies-and-trck-json-from-a-git-ref.md) · [review](https://github.com/leonkacowicz/trck/pull/36)
 - [x] [#32gyghs tests: a harness for a ref-backed tracker in a temp git repo](items/32gyghs-tests-a-harness-for-a-ref-backed-tracker-in-a-temp-git-repo.md) · [review](https://github.com/leonkacowicz/trck/pull/32)
 - [x] [#3dv63bn discovery: --ref/$TRCK_REF and the tracker-ref resolution order](items/3dv63bn-discovery-ref-trck-ref-and-the-tracker-ref-resolution-order.md) · [review](https://github.com/leonkacowicz/trck/pull/33)
 - [x] [#5w9d7sq writes: push with CAS, refetch on rejection, replay the pending commit](items/5w9d7sq-writes-push-with-cas-refetch-on-rejection-replay-the-pending-commit.md) · [review](https://github.com/leonkacowicz/trck/pull/43)
-- [ ] [#8d22h6x main: remove issues/ — the flip](items/8d22h6x-main-remove-issues-the-flip.md) _(backlog)_
+- [ ] [#8d22h6x main: remove issues/ — the flip](items/8d22h6x-main-remove-issues-the-flip.md) _(in-progress)_
 - [x] [#93zhqbd writes: structured commit subjects and a replayable Trck-Op trailer](items/93zhqbd-writes-structured-commit-subjects-and-a-replayable-trck-op-trailer.md) · [review](https://github.com/leonkacowicz/trck/pull/41)
 - [x] [#9gxktnk writes: replay stacked pending commits, and surface an op that no longer applies](items/9gxktnk-writes-replay-stacked-pending-commits-and-surface-an-op-that-no-longer-applies.md) · [review](https://github.com/leonkacowicz/trck/pull/48)
 - [x] [#abynj5c reads: prefer the local ref over origin, fast-forward when behind, report divergence](items/abynj5c-reads-prefer-the-local-ref-over-origin-fast-forward-when-behind-report-divergence.md) · [review](https://github.com/leonkacowicz/trck/pull/42)
@@ -211,6 +211,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#nabxbdk new: $EDITOR on the template, validating like visudo](items/nabxbdk-new-editor-on-the-template-validating-like-visudo.md) · [review](https://github.com/leonkacowicz/trck/pull/38)
 - [x] [#nuemwhc reads: report a stale tracker ref instead of silently using it](items/nuemwhc-reads-report-a-stale-tracker-ref-instead-of-silently-using-it.md)
 - [x] [#p95aabv new: --body, --body-file (- is stdin) and --empty; error without a TTY](items/p95aabv-new-body-body-file-is-stdin-and-empty-error-without-a-tty.md) · [review](https://github.com/leonkacowicz/trck/pull/37)
+- [ ] [#r26hw48 tests: the tracker's own index and summary lost their byte-for-byte check](items/r26hw48-tests-the-tracker-s-own-index-and-summary-lost-their-byte-for-byte-check.md) _(backlog)_
 - [x] [#sny6t9q writes: detach a worktree that has the tracker branch checked out](items/sny6t9q-writes-detach-a-worktree-that-has-the-tracker-branch-checked-out.md) · [review](https://github.com/leonkacowicz/trck/pull/51)
 - [x] [#tdrcfss ref: a fresh clone's first write reports the tracker as inconsistent](items/tdrcfss-ref-a-fresh-clone-s-first-write-reports-the-tracker-as-inconsistent.md)
 - [x] [#tkhcgv6 hooks: the pre-commit guard stops running trck check on main](items/tkhcgv6-hooks-the-pre-commit-guard-stops-running-trck-check-on-main.md)
