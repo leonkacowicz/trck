@@ -133,32 +133,41 @@ mod tests {
         assert_eq!(err, "somewhere.jsonl line 2: field 'points' must be an integer, got 'lots'");
     }
 
-    /// Round-trip every index committed in this repo and require the bytes back.
+    /// Round-trip an index built to break this, and require the bytes back.
     ///
-    /// The unit tests above cover the shapes someone thought to write down. This covers
-    /// the ones nobody did: real rows carrying real titles, labels, links and timestamps.
-    /// Canonical serialisation has to be byte-identical to the Python engine's, and these
-    /// files *are* its output — they are written by `repo normalize` and committed.
-    ///
-    /// `issues/index.jsonl` is listed and will not be found: this repository's own tracker
-    /// moved to the `trck-issues` branch, taking 280-odd rows of coverage with it. The
-    /// entry stays because a unit test must not shell out to git to read a ref, and
-    /// dropping it would erase the only record of where that coverage went (#r26hw48).
+    /// The tests above cover the shapes someone thought to write down; this one covers the
+    /// shapes that break a serialiser — every escape the encoder owes, characters beyond the
+    /// BMP, every optional field at once in canonical order, and the defaults that must come
+    /// out omitted. See [`crate::test_index`] for what each row is for, and for why it is a
+    /// deliberate fixture rather than this repository's own tracker.
     #[test]
-    fn real_indexes_round_trip_byte_for_byte() {
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).to_path_buf();
-        let mut checked = 0;
-        for rel in ["issues/index.jsonl", "examples/action-game/index.jsonl"] {
-            let path = root.join(rel);
-            let Ok(text) = std::fs::read_to_string(&path) else {
-                continue; // a consumer of this crate need not have the tracker
-            };
-            let rows = parse_index(&text, rel).unwrap_or_else(|e| panic!("{rel}: {e}"));
-            assert!(!rows.is_empty(), "{rel} parsed to nothing");
-            assert_eq!(render_index(&rows), text, "{rel} did not round-trip");
-            checked += 1;
-        }
-        assert!(checked > 0, "no committed index found to check");
+    fn a_hostile_index_round_trips_byte_for_byte() {
+        let text = crate::test_index::HOSTILE_INDEX;
+        let rows = parse_index(text, "hostile.jsonl").unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(rows.len(), 7, "the fixture lost a row");
+        assert_eq!(render_index(&rows), text, "the hostile index did not round-trip");
+    }
+
+    /// The bundled example is still what the engine would write — both files.
+    ///
+    /// A *data* check rather than an engine one, which is why the two generated files are
+    /// asserted together in one place instead of one each beside the function that produces
+    /// them: the question is whether the committed example has gone stale, and half an answer
+    /// to that is no answer. The README screenshots are generated from it.
+    ///
+    /// It skips when absent, because a consumer of this crate has no reason to have it — and
+    /// unlike the hostile fixture, nothing here depends on it being present to mean anything.
+    #[test]
+    fn the_bundled_example_is_canonical() {
+        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("examples").join("action-game");
+        let (Ok(text), Ok(summary)) = (std::fs::read_to_string(dir.join("index.jsonl")), std::fs::read_to_string(dir.join("SUMMARY.md"))) else {
+            return;
+        };
+        let rows = parse_index(&text, "the example").unwrap_or_else(|e| panic!("{e}"));
+        assert!(!rows.is_empty(), "the example parsed to nothing");
+        assert_eq!(render_index(&rows), text, "the example's index.jsonl did not round-trip");
+        let got = crate::summary::generate_summary(&crate::graph::Graph::new(rows));
+        assert_eq!(got, summary, "the example's SUMMARY.md is stale");
     }
 
     #[test]
