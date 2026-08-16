@@ -1,4 +1,4 @@
-# tests: the tracker's own index and summary lost their byte-for-byte check
+# tests: an adversarial index fixture, not the real tracker
 
 ## Summary
 
