@@ -173,7 +173,6 @@ mod tests {
 
     use super::*;
     use crate::index::parse_index;
-    use std::path::Path;
 
     fn graph_of(text: &str) -> Graph {
         Graph::new(parse_index(text, "index.jsonl").expect("parses"))
@@ -244,29 +243,20 @@ mod tests {
         assert!(s.contains("_wontfix_ (closed 2026-01-02)"), "{s}");
     }
 
-    /// Regenerate this repo's committed `SUMMARY.md` and require the bytes back.
+    /// The whole rollup, rendered from the hostile index, against a golden.
     ///
-    /// It is a generated, committed file: a byte difference is a diff in someone's
-    /// working tree. And it exercises what a hand-written case cannot — real issues with
-    /// real epics, labels, review links, resolutions and unicode titles.
+    /// The cases above each pin one rule. This pins the *document* — section order, blank
+    /// lines, the counts table, a three-deep hierarchy, and every interpolation the renderer
+    /// performs on text it does not escape: a title carrying `[`, `]` and `|` lands in link
+    /// text and in a table cell, and what comes out is what comes out. Nothing here is
+    /// asserting that markdown copes; it is asserting that the bytes do not change without
+    /// somebody deciding they should.
     ///
-    /// `issues` is listed and will not be found: this repository's own tracker moved to the
-    /// `trck-issues` branch, and only the bundled example is left on disk. See #r26hw48 —
-    /// the entry stays as the marker for coverage that has to come back somewhere a git ref
-    /// is readable, which a unit test is not.
+    /// See [`crate::test_index`] for the fixture, and for why it is not this repository's own
+    /// tracker any more.
     #[test]
-    fn the_repos_own_summary_regenerates_byte_for_byte() {
-        let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-        let mut checked = 0;
-        for rel in ["issues", "examples/action-game"] {
-            let dir = root.join(rel);
-            let (Ok(index), Ok(want)) = (std::fs::read_to_string(dir.join("index.jsonl")), std::fs::read_to_string(dir.join("SUMMARY.md"))) else {
-                continue; // a consumer of this crate need not have the tracker
-            };
-            let got = generate_summary(&graph_of(&index));
-            assert_eq!(got, want, "{rel}/SUMMARY.md did not regenerate identically");
-            checked += 1;
-        }
-        assert!(checked > 0, "no committed summary found to check");
+    fn the_hostile_index_renders_its_golden_summary() {
+        let got = generate_summary(&graph_of(crate::test_index::HOSTILE_INDEX));
+        assert_eq!(got, crate::test_index::HOSTILE_SUMMARY, "the rollup changed");
     }
 }
