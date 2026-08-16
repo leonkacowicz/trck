@@ -5,8 +5,8 @@
 
 | State | Count |
 |---|---:|
-| backlog | 64 |
-| in-progress | 3 |
+| backlog | 63 |
+| in-progress | 4 |
 | in-review | 0 |
 | done | 225 |
 | **total** | **292** |
@@ -212,7 +212,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#nabxbdk new: $EDITOR on the template, validating like visudo](items/nabxbdk-new-editor-on-the-template-validating-like-visudo.md) · [review](https://github.com/leonkacowicz/trck/pull/38)
 - [x] [#nuemwhc reads: report a stale tracker ref instead of silently using it](items/nuemwhc-reads-report-a-stale-tracker-ref-instead-of-silently-using-it.md)
 - [x] [#p95aabv new: --body, --body-file (- is stdin) and --empty; error without a TTY](items/p95aabv-new-body-body-file-is-stdin-and-empty-error-without-a-tty.md) · [review](https://github.com/leonkacowicz/trck/pull/37)
-- [ ] [#r26hw48 tests: an adversarial index fixture, not the real tracker](items/r26hw48-tests-the-tracker-s-own-index-and-summary-lost-their-byte-for-byte-check.md) _(backlog)_
+- [ ] [#r26hw48 tests: an adversarial index fixture, not the real tracker](items/r26hw48-tests-the-tracker-s-own-index-and-summary-lost-their-byte-for-byte-check.md) _(in-progress)_
 - [x] [#sny6t9q writes: detach a worktree that has the tracker branch checked out](items/sny6t9q-writes-detach-a-worktree-that-has-the-tracker-branch-checked-out.md) · [review](https://github.com/leonkacowicz/trck/pull/51)
 - [x] [#tdrcfss ref: a fresh clone's first write reports the tracker as inconsistent](items/tdrcfss-ref-a-fresh-clone-s-first-write-reports-the-tracker-as-inconsistent.md)
 - [x] [#tkhcgv6 hooks: the pre-commit guard stops running trck check on main](items/tkhcgv6-hooks-the-pre-commit-guard-stops-running-trck-check-on-main.md)
