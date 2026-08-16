@@ -6,8 +6,8 @@
 | State | Count |
 |---|---:|
 | backlog | 62 |
-| in-progress | 4 |
-| in-review | 0 |
+| in-progress | 3 |
+| in-review | 1 |
 | done | 227 |
 | **total** | **293** |
 
@@ -286,11 +286,11 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## In-progress
 
-- [#8yg822w discovery: bound the walk up at the git repository root](items/8yg822w-discovery-bound-the-walk-up-at-the-git-repository-root.md) — _urgent_
+_none_
 
 ## In-review
 
-_none_
+- [#8yg822w discovery: bound the walk up at the git repository root](items/8yg822w-discovery-bound-the-walk-up-at-the-git-repository-root.md) — _urgent_ · [review](https://github.com/leonkacowicz/trck/pull/61)
 
 ## Done
 
