@@ -31,12 +31,16 @@ fn is_tracker(dir: &Path) -> bool {
 }
 
 /// Walk up from `start` to the directory holding `trck.json`, or to one whose single
-/// child holds it — so running from a repo root finds `issues/` without being told.
+/// child holds it — so running from a repo root finds `issues/` without being told. Inside
+/// a Git checkout, stop after inspecting its root; a tracker cannot belong to the repository
+/// once the walk has left it. Outside Git, retain the filesystem-root walk.
 ///
 /// Two children holding one is ambiguous and refused rather than guessed at: picking
 /// the alphabetically-first would silently write to the wrong tracker.
 pub(crate) fn find_tracker(start: &Path) -> Result<PathBuf, String> {
     let mut cur = start.canonicalize().unwrap_or_else(|_| start.to_path_buf());
+    let search_start = cur.clone();
+    let boundary = crate::git::repo_root(&cur).unwrap_or(None);
     loop {
         if is_tracker(&cur) {
             return Ok(cur);
@@ -61,10 +65,7 @@ pub(crate) fn find_tracker(start: &Path) -> Result<PathBuf, String> {
                 return Err(format!("ambiguous tracker under {} ({n} found); pass --dir", cur.display()));
             },
         }
-        match cur.parent() {
-            Some(parent) if parent != cur => cur = parent.to_path_buf(),
-            _ => return Err("no tracker found here; run `trck init`".to_string()),
-        }
+        cur = source::next_search_dir(&cur, &search_start, boundary.as_deref())?;
     }
 }
 

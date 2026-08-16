@@ -14,7 +14,7 @@
     "file_lines": 554,
     "function_args": 10,
     "function_cognitive": 45,
-    "function_cyclomatic": 136,
+    "function_cyclomatic": 134,
     "function_lines": 1,
     "module_files": 0
   },
@@ -90,7 +90,7 @@
       "src/diff/mod.rs::parse_since": 4,
       "src/diff/mod.rs::render_changelog": 1,
       "src/discovery/load.rs::load": 2,
-      "src/discovery/mod.rs::find_tracker": 4,
+      "src/discovery/mod.rs::find_tracker": 2,
       "src/graph/cycles.rs::find_cycles": 1,
       "src/init.rs::cmd_init": 7,
       "src/merge.rs::merge_one": 5,

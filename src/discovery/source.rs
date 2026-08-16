@@ -7,6 +7,17 @@
 use super::{CONFIG_NAME, find_tracker, is_tracker};
 use std::path::{Path, PathBuf};
 
+/// Advance implicit discovery without crossing the current Git checkout's root.
+pub(super) fn next_search_dir(cur: &Path, start: &Path, boundary: Option<&Path>) -> Result<PathBuf, String> {
+    if boundary == Some(cur) {
+        return Err(format!("no tracker found from {} through Git repository root {}; run `trck init`", start.display(), cur.display()));
+    }
+    match cur.parent() {
+        Some(parent) if parent != cur => Ok(parent.to_path_buf()),
+        _ => Err("no tracker found here; run `trck init`".to_string()),
+    }
+}
+
 /// Where the engine should look, given the explicit overrides.
 ///
 /// `dir_opt` is `--dir` and `env_dir` is `$TRCK_DIR`; absent both, walk up from `cwd`. An

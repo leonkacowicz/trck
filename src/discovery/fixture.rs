@@ -4,11 +4,10 @@
 //!
 //! **A fixture never puts `trck.json` at its own root.** [`Tmp::tracker`] takes a relative path
 //! for exactly that reason, and it is not a stylistic preference: discovery walks up from a
-//! start directory and, at *every* ancestor, scans that directory's **direct children** for a
+//! start directory and, outside Git, scans every ancestor's **direct children** for a
 //! `trck.json`. A fixture rooted at `<temp>/trck-test-x` with a config at its root therefore
-//! makes `<temp>` a tracker to everything else running there — and the discovery tests that
-//! assert there is *nothing* to find start finding it instead. One level further down, the
-//! scan of `<temp>` never sees it.
+//! makes `<temp>` a tracker to every non-repository test running there. One level further
+//! down, the scan of `<temp>` never sees it.
 //!
 //! That is a race between suites, not a dirty-machine problem: `cargo test --all` runs test
 //! binaries concurrently, and `tests/git_hooks.rs` builds a tracker at a repository root on

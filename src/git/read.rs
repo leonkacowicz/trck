@@ -124,7 +124,8 @@ pub(crate) fn repo_root(cwd: &Path) -> Result<Option<PathBuf>, String> {
     if !out.status.success() {
         return Ok(None);
     }
-    Ok(Some(PathBuf::from(String::from_utf8_lossy(&out.stdout).trim())))
+    let root = PathBuf::from(String::from_utf8_lossy(&out.stdout).trim());
+    Ok(Some(root.canonicalize().unwrap_or(root)))
 }
 
 #[cfg(test)]
