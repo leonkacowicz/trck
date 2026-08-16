@@ -10,11 +10,11 @@
     "module_files": 20
   },
   "totals": {
-    "file_functions": 244,
-    "file_lines": 554,
+    "file_functions": 243,
+    "file_lines": 526,
     "function_args": 10,
     "function_cognitive": 45,
-    "function_cyclomatic": 134,
+    "function_cyclomatic": 128,
     "function_lines": 1,
     "module_files": 0
   },
@@ -25,6 +25,8 @@
       "src/cli/mod.rs": 18,
       "src/config.rs": 33,
       "src/diff/mod.rs": 42,
+      "src/discovery/content.rs": 3,
+      "src/git/read.rs": 5,
       "src/graph/demand.rs": 8,
       "src/gutter/shorten.rs": 4,
       "src/html.rs": 14,
@@ -33,7 +35,8 @@
       "src/json/scan.rs": 3,
       "src/merge.rs": 23,
       "src/query/deps.rs": 3,
-      "src/query/list.rs": 28,
+      "src/query/filter.rs": 7,
+      "src/query/list.rs": 12,
       "src/query/paths.rs": 4,
       "src/query/rank.rs": 13,
       "src/render/annotate.rs": 2,
@@ -49,8 +52,7 @@
       "src/config.rs": 155,
       "src/diff/mod.rs": 89,
       "src/issue/read.rs": 14,
-      "src/merge.rs": 96,
-      "src/query/list.rs": 28
+      "src/merge.rs": 96
     },
     "function_args": {
       "src/diff/mod.rs::walk": 1,
@@ -95,8 +97,8 @@
       "src/init.rs::cmd_init": 7,
       "src/merge.rs::merge_one": 5,
       "src/merge.rs::merge_rows": 1,
+      "src/query/filter.rs::row_keeps": 4,
       "src/query/list.rs::cmd_list": 7,
-      "src/query/list.rs::keeps": 10,
       "src/query/show.rs::cmd_show": 7,
       "src/render/colour.rs::ansi": 6,
       "src/repo/drivers.rs::cmd_merge_index": 1,

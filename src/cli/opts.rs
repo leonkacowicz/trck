@@ -50,6 +50,7 @@ pub(super) fn list_opts(args: &Args) -> ListOpts<'_> {
         label: args.opt("--label"),
         parent: args.opt("--parent"),
         match_title: args.opt("--match"),
+        contains: args.opt("--contains"),
         fields: args.all("--field"),
         show_fields: args.all("--show-field"),
         sort: args.opt("--sort"),

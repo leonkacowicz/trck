@@ -1,0 +1,5 @@
+# A pattern nothing holds is an empty result, not an error: git grep reports "no match" with
+# the same exit 1 it uses for real failures elsewhere, and a filter that matched nothing has
+# not failed. `trck list --contains X` in a script must be safe to run before it is read.
+new "First" --id aaaaaaa --body "The parser hits a race condition under load."
+new "Second" --id bbbbbbb --empty

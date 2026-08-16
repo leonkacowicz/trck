@@ -1,62 +1,18 @@
-//! `list` and `tree`: selecting rows and rendering them as a forest, a flat list, JSON, or
-//! paths.
+//! `list` and `tree`: rendering the selected rows as a forest, a flat list, JSON, or paths.
 //!
 //! Separated from the other read verbs because it is the only one that filters. What to
-//! *keep* and how to *show* it are different questions, and the filtering half — ten
-//! conditions, all the same shape — is most of the weight.
+//! *keep* and how to *show* it are different questions, and the first of them is
+//! [`super::filter`] — this file is the second.
 
+use super::filter::{RowFilter, body_hits};
 use super::{ListOpts, rank};
-use crate::config::is_terminal;
 use crate::discovery::Ctx;
 use crate::graph::Graph;
-use crate::issue::{Issue, check_field_key};
+use crate::issue::Issue;
 use crate::json::Json;
-use crate::render::{Annotation, RowOpts, field_value_raw, render_rows, unique_prefix_lens};
+use crate::render::{Annotation, RowOpts, render_rows, unique_prefix_lens};
 use crate::verbs::{load_rows, resolve_ref};
 use std::collections::{BTreeMap, BTreeSet};
-
-/// `--status a,b` keeps those; `--status '!done'` drops them. Returns `(keep, drop)`.
-///
-/// Names are canonicalised, so a filter spelled with a retired status selects the rows
-/// that status became — which is the only reading that can match anything, since no row
-/// is stored under the old name.
-fn parse_status_filter(spec: Option<&str>) -> (BTreeSet<String>, BTreeSet<String>) {
-    let (mut keep, mut drop) = (BTreeSet::new(), BTreeSet::new());
-    for part in spec.unwrap_or("").split(',').map(str::trim) {
-        if part.is_empty() {
-            continue;
-        }
-        if let Some(name) = part.strip_prefix('!') {
-            drop.insert(crate::config::canonical_status(name).to_string());
-        } else {
-            keep.insert(crate::config::canonical_status(part).to_string());
-        }
-    }
-    (keep, drop)
-}
-
-/// Validate the option combination before any work: an unknown `--sort` or a malformed
-/// `--field` should be reported as such, not silently ignored.
-fn check_list_opts(opts: &ListOpts) -> Result<Vec<(String, String)>, String> {
-    let mut field_filters = Vec::new();
-    for spec in &opts.fields {
-        let (k, v) = spec.split_once('=').ok_or_else(|| format!("--field expects key=value, got '{spec}'"))?;
-        // The same key rule the write side enforces. Without it a filter on a built-in —
-        // `--field status=backlog` — would look up a custom field that can never exist and
-        // quietly match nothing, or worse, appear to work.
-        if let Some(msg) = check_field_key(k) {
-            return Err(msg);
-        }
-        field_filters.push((k.to_string(), v.to_string()));
-    }
-    if let Some(s) = opts.sort
-        && !["priority", "points", "created", "id"].contains(&s)
-        && !s.starts_with("field:")
-    {
-        return Err(format!("unknown --sort '{s}' (choices: id, priority, points, created, field:NAME)"));
-    }
-    Ok(field_filters)
-}
 
 /// One nested node of `list --json`, recursing into the children that are on screen.
 ///
@@ -77,71 +33,16 @@ fn json_node(g: &Graph, sel: &Selection, id: &str, sorted: &mut impl FnMut(&mut 
     Json::Object(obj)
 }
 
-/// Settled work: terminal, under a parent that is also terminal (or none at all).
-///
-/// The default view hides it, which is what keeps `trck list` about what is left rather
-/// than about everything that ever happened.
-fn is_settled(g: &Graph, r: &Issue) -> bool {
-    is_terminal(&r.status) && r.parent.as_ref().and_then(|p| g.get(p)).is_none_or(|p| is_terminal(&p.status))
-}
-
-/// Everything `list` selects on, resolved once from the options and the graph.
-///
-/// Gathered into a type rather than left as a closure with ten captures: the conditions are
-/// the bulk of what `cmd_list` used to be, they are all the same shape, and none of them has
-/// anything to do with choosing an output format — which is all that is left there now.
-struct RowFilter<'a> {
-    keep_status: BTreeSet<String>,
-    drop_status: BTreeSet<String>,
-    priority: Option<&'a str>,
-    label: Option<&'a str>,
-    parent: Option<String>,
-    title_match: String,
-    fields: Vec<(String, String)>,
-    blocked_only: bool,
-    orphans_only: bool,
-    hide_settled: bool,
-}
-
-impl RowFilter<'_> {
-    fn build<'b>(opts: &'b ListOpts, parent: Option<String>) -> Result<RowFilter<'b>, String> {
-        let (keep_status, drop_status) = parse_status_filter(opts.status);
-        Ok(RowFilter {
-            keep_status,
-            drop_status,
-            priority: opts.priority,
-            label: opts.label,
-            parent,
-            title_match: opts.match_title.unwrap_or("").to_lowercase(),
-            fields: check_list_opts(opts)?,
-            blocked_only: opts.blocked,
-            orphans_only: opts.orphan,
-            // An explicit --status or --all bypasses the default hiding.
-            hide_settled: opts.status.is_none() && !opts.all,
-        })
-    }
-
-    fn keeps(&self, g: &Graph, r: &Issue) -> bool {
-        (self.keep_status.is_empty() || self.keep_status.contains(&r.status))
-            && !self.drop_status.contains(&r.status)
-            && self.priority.is_none_or(|p| r.priority == p)
-            && self.label.is_none_or(|l| r.labels.iter().any(|x| x == l))
-            && self.parent.as_ref().is_none_or(|p| r.parent.as_ref() == Some(p))
-            && (self.title_match.is_empty() || r.title.to_lowercase().contains(&self.title_match))
-            && (!self.blocked_only || g.is_blocked(&r.id))
-            && (!self.orphans_only || r.parent.is_none())
-            && (!self.hide_settled || !is_settled(g, r))
-            && self.fields.iter().all(|(k, v)| field_value_raw(r, k).as_ref() == Some(v))
-    }
-}
-
 pub(crate) fn cmd_list(ctx: &Ctx, opts: &ListOpts) -> Result<String, String> {
     let rows = load_rows(ctx)?;
     let root = opts.root.map(|t| resolve_ref(&rows, t)).transpose()?;
     let parent_filter = opts.parent.map(|t| resolve_ref(&rows, t)).transpose()?;
+    // Before the graph, because it is a search over the tracker's bodies rather than a
+    // question about a row, and it runs exactly once however many rows there turn out to be.
+    let contains = body_hits(ctx, &rows, opts.contains)?;
     let g = Graph::new(rows);
 
-    let filter = RowFilter::build(opts, parent_filter)?;
+    let filter = RowFilter::build(opts, parent_filter, contains)?;
     let keep = |r: &Issue| filter.keeps(&g, r);
 
     let sort = opts.sort.unwrap_or("created");
@@ -151,9 +52,6 @@ pub(crate) fn cmd_list(ctx: &Ctx, opts: &ListOpts) -> Result<String, String> {
     };
 
     if opts.paths {
-        if opts.json {
-            return Err("--paths and --json are different output modes; pick one".into());
-        }
         return super::paths::paths_of(ctx, &g, &selected(&g, &keep, &mut sorted));
     }
     if opts.json {
@@ -286,43 +184,5 @@ fn walk(g: &Graph, f: &mut Forest, id: &str, pfx: &str, sorted: &mut impl FnMut(
             let ext = format!("{pfx}{}", if last { "   " } else { "│  " });
             walk(g, f, kid, &ext, sorted);
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    // Tests assert; that is their job. The crate denies unwrap/expect/panic because a
-    // malformed tracker must produce a diagnostic rather than a stack trace, but a test
-    // that cannot panic cannot fail.
-    #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
-
-    use super::*;
-
-    #[test]
-    fn a_status_filter_separates_keeps_from_drops() {
-        let (keep, drop) = parse_status_filter(Some("backlog,in-progress"));
-        assert_eq!(keep.len(), 2);
-        assert!(drop.is_empty());
-        let (keep, drop) = parse_status_filter(Some("!done"));
-        assert!(keep.is_empty());
-        assert!(drop.contains("done"));
-    }
-
-    #[test]
-    fn a_retired_status_name_filters_on_what_it_became() {
-        // No row is stored under the old name, so a filter that kept it verbatim could
-        // only ever match nothing — on either side of the negation.
-        let (keep, drop) = parse_status_filter(Some("ongoing"));
-        assert!(keep.contains("in-progress"));
-        assert!(!keep.contains("ongoing"));
-        let (_, drop_legacy) = parse_status_filter(Some("!ongoing"));
-        assert!(drop_legacy.contains("in-progress"));
-        assert!(drop.is_empty());
-    }
-
-    #[test]
-    fn an_absent_filter_keeps_everything() {
-        let (keep, drop) = parse_status_filter(None);
-        assert!(keep.is_empty() && drop.is_empty());
     }
 }

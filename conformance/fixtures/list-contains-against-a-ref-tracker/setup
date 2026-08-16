@@ -1,0 +1,8 @@
+# The case body search exists for. A ref-backed tracker has no files on disk, so the old
+# `rg -l PATTERN $(trck list --paths)` pipeline has nothing to hand rg — the flag reads the
+# blobs out of the revision instead, and answers exactly what the directory-backed fixtures do.
+#
+# The command also runs from a directory *below* the repository root, which is where a
+# relative pathspec would silently search the wrong `items/` and find nothing.
+new "First" --id aaaaaaa --body "The parser hits a Race Condition under load."
+new "Second" --id bbbbbbb --body "Nothing interesting happens here."

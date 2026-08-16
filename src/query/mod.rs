@@ -10,6 +10,7 @@
 //! as dimmed context. Without that a matched child floats free of the epic it belongs to.
 
 mod deps;
+mod filter;
 mod list;
 mod paths;
 mod rank;
@@ -41,6 +42,10 @@ pub(crate) struct ListOpts<'a> {
     pub(crate) label: Option<&'a str>,
     pub(crate) parent: Option<&'a str>,
     pub(crate) match_title: Option<&'a str>,
+    /// `--contains`: a literal, case-insensitive substring of the issue's markdown body.
+    /// Distinct from `match_title` on purpose — the body opens with its `# Title` heading,
+    /// so this subsumes that filter, and a caller that meant the title should keep saying so.
+    pub(crate) contains: Option<&'a str>,
     pub(crate) fields: Vec<&'a str>,
     pub(crate) show_fields: Vec<&'a str>,
     pub(crate) sort: Option<&'a str>,
