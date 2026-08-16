@@ -2,10 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-`trck` is an in-repo issue tracker: one markdown file per issue under a tracker directory, all
-metadata in `index.jsonl`, and a generated `SUMMARY.md`. It ships as a single binary. This repo
-**self-hosts** its own issues under `./issues/`, so the engine you build here is the engine that
-tracks the work on it.
+`trck` is an in-repo issue tracker: one markdown file per issue, all metadata in `index.jsonl`,
+and a generated `SUMMARY.md`. It ships as a single binary. Those files can be a directory in the
+working tree or the root of a git ref; this repo **self-hosts** its own issues on the
+`trck-issues` branch, so the engine you build here is the engine that tracks the work on it —
+including the work of moving them there.
 
 ## Working on the engine
 
@@ -95,11 +96,11 @@ it.** When `ratchet check` starts failing on a clean checkout, compare `ratchet 
 against the pin in `.github/workflows/ci.yml` before believing the numbers.
 
 **Enable the pre-commit guard once per clone:** `git config core.hooksPath scripts/hooks`. It
-runs `ratchet check`, and nothing else. It deliberately does **not** run `trck check`: once the
-tracker moves onto the `trck-issues` ref no commit in this working tree can make it inconsistent,
-and until then the check is a duplicate of the one the tracker-write ritual already runs before
-pushing. `scripts/tests/test_pre_commit.py` asserts the absence, because a guard that grows a
-tracker check back would refuse the flip commit itself.
+runs `ratchet check`, and nothing else. It deliberately does **not** run `trck check`: the tracker
+is not in this working tree, so no commit here can make it inconsistent — the write verbs commit
+to the ref through plumbing, validating as they go, and never pass through a pre-commit hook.
+`scripts/tests/test_pre_commit.py` asserts the absence, because a guard that grew a tracker check
+back would refuse any commit that touched a directory called `issues/`.
 
 The vocabulary is **fixed in code**, not configured — `backlog → in-progress → in-review → done`,
 five priorities, three resolutions, all constants in `src/config.rs`. It used to come
@@ -108,47 +109,46 @@ now holds only the format version and the update channel.
 
 ## Tracking work (dogfooding)
 
-- Use the built binary (`./target/release/trck`) for all bookkeeping; hand-edit only an
-  issue's markdown **body** (Summary / Acceptance criteria / Notes). Never hand-edit `index.jsonl` or `SUMMARY.md`, and never move or
-  rename issue files by hand — the verbs do that.
-- Issue bodies all live in `issues/items/` — status is **not** encoded in the path; it lives only
-  in `index.jsonl`. A `start`/`done` touches the index and `SUMMARY.md`, never the body file.
-  (`trck repo migrate-layout` converts a pre-0.23 tracker; every verb refuses one until it runs.)
-- `trck check` must pass before committing. `SUMMARY.md` is generated.
-- Tracker writes go straight to `main` from a throwaway worktree, never from the branch you are
-  working on — see **Tracker writes** below. That is what keeps issue-tracker commits out of
-  engine-code commits.
+**The tracker is not in this working tree.** It lives at the root of the `trck-issues` branch,
+and every verb finds it there by itself. Run them from anywhere in the repo, with no flags:
+
+```
+trck ready                       # what is unblocked
+trck new "title" --priority high # files it, commits it, pushes it
+trck start <id>                  # and so does every other write verb
+```
+
+- Use the built binary (`./target/release/trck`) for all bookkeeping. It has to be one that can
+  read a ref — v0.30.0 or newer, or a build from `main`. Anything older looks for a directory,
+  does not find one, and says so.
+- **A write verb is the whole transaction.** It builds a commit on `trck-issues` through git
+  plumbing and pushes it — no checkout, no staging, no worktree, and your branch and working tree
+  are untouched however dirty they are. Nothing here needs a branch, a PR or a review: an issue
+  row cannot break the build.
+- **A rejected push is not a failure.** Someone else landed first, so the operation is *replayed*
+  on top of theirs from its `Trck-Op:` trailer and pushed again. Nothing is ever forced.
+- **A write that cannot reach the remote still succeeded.** The commit is anchored locally and the
+  verb says `(N unpushed changes — run `trck sync`)`. `trck sync` pushes them when you are back.
+- Hand-edit only an issue's markdown **body** (Summary / Acceptance criteria / Notes), through
+  `trck edit <id>`, which opens `$VISUAL`/`$EDITOR` on the body and commits what you write. There
+  is no file to open by hand — `--body`, `--body-file` and `--empty` say where the prose comes
+  from when no editor is wanted. Never try to hand-edit `index.jsonl` or `SUMMARY.md`.
+- Status is **not** encoded in any path; it lives in `index.jsonl` alone. `SUMMARY.md` is
+  generated on every write.
 - **Nothing is vendored.** `trck` is installed on the machine or built here, never committed
   into the repository it serves — so there is no second engine that can drift from the data.
 
-### Tracker writes
+The tracker branch has its own CI (`tracker.yml`, which lives on that branch — see above), so
+`trck check` runs on every tracker commit without anyone remembering to.
 
-An issue row is not code. It cannot break the build, so it does not get a branch, a PR or a
-review — it gets pushed to `main` from a detached worktree. That is what lets you file what you
-find without stopping what you are doing: your working branch is never touched, and no tracker
-change ever appears in a feature diff.
+### If you need to see the tracker as files
 
-**The ritual itself lives in `skills/trck-worktree/SKILL.md`** — the commands, the push loop, and a
-recovery table. Follow it there rather than reconstructing it from memory; one copy is the point,
-because the last time this was written down twice only one of them got fixed. What follows is *why*
-it is shaped that way, which is what tells you whether a deviation is safe.
-
-- **`--dir` is load-bearing.** A bare `trck new` walks up to the nearest `trck.json`, finds your
-  primary checkout, and lands the row on your feature branch — the coupling this exists to avoid.
-- **`trck repo setup-git` is a precondition, not a nicety.** The merge drivers are per-clone, so
-  without them a contended rebase does not conflict — it fails outright with `fatal: custom merge
-  driver trck-index lacks command line.`
-- **`trck check` runs before the push, not after.** There is no PR, so it is the only gate.
-- **The worktree path is per session.** Several agents may file in one clone at once, and a fixed
-  path means the second one's `worktree add` fails for as long as the first holds it — the whole
-  time an issue body is being written, not a narrow window. **Never remove a worktree you did not
-  create:** an existing path is a live session, not debris, and force-removing it destroys a body
-  someone is still writing.
-- **Never `push --force`.** A rejection means someone else's work landed. The loop rebases instead,
-  and the drivers resolve `index.jsonl` and regenerate `SUMMARY.md`.
-
-Read verbs — `list`, `tree`, `ready`, `next`, `deps`, `show`, `check`, `summary`, `diff` — need
-none of this. Run them in your checkout.
+You cannot, and the verbs will tell you so rather than printing a path that is not there:
+`trck path`, `trck which` and `list --paths` all refuse against a ref-backed tracker, rather than
+printing a relative path that reads as real and is not there. Use `trck show <id>` for a body,
+`git show trck-issues:items/<id>-<slug>.md` to read one raw, or check the branch out somewhere —
+but if you do, **detach it**: a live checkout of `trck-issues` has its `HEAD` moved under it by
+the next write, and `git status` there then shows that write inverted (#sny6t9q).
 
 ## Releasing
 
