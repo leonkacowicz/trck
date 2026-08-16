@@ -6,9 +6,9 @@
 | State | Count |
 |---|---:|
 | backlog | 63 |
-| in-progress | 4 |
+| in-progress | 3 |
 | in-review | 0 |
-| done | 221 |
+| done | 222 |
 | **total** | **288** |
 
 ## Hierarchies
@@ -192,13 +192,13 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#uq2zc2p conformance: convert the deps gutter tests](items/uq2zc2p-conformance-convert-the-deps-gutter-tests.md)
 - [x] [#xm6h2qn conformance: convert the command-output tests](items/xm6h2qn-conformance-convert-the-command-output-tests.md)
 
-### [#sqzr7nk storage: move the tracker to an orphan trck-issues branch](items/sqzr7nk-storage-move-the-tracker-to-an-orphan-trck-issues-branch.md) — 90% (52/58 pts · 23/27 done) · _high_ · in-progress
+### [#sqzr7nk storage: move the tracker to an orphan trck-issues branch](items/sqzr7nk-storage-move-the-tracker-to-an-orphan-trck-issues-branch.md) — 93% (54/58 pts · 24/27 done) · _high_ · in-progress
 
 - [x] [#2ybw758 reads: resolve index, bodies and trck.json from a git ref](items/2ybw758-reads-resolve-index-bodies-and-trck-json-from-a-git-ref.md) · [review](https://github.com/leonkacowicz/trck/pull/36)
 - [x] [#32gyghs tests: a harness for a ref-backed tracker in a temp git repo](items/32gyghs-tests-a-harness-for-a-ref-backed-tracker-in-a-temp-git-repo.md) · [review](https://github.com/leonkacowicz/trck/pull/32)
 - [x] [#3dv63bn discovery: --ref/$TRCK_REF and the tracker-ref resolution order](items/3dv63bn-discovery-ref-trck-ref-and-the-tracker-ref-resolution-order.md) · [review](https://github.com/leonkacowicz/trck/pull/33)
 - [x] [#5w9d7sq writes: push with CAS, refetch on rejection, replay the pending commit](items/5w9d7sq-writes-push-with-cas-refetch-on-rejection-replay-the-pending-commit.md) · [review](https://github.com/leonkacowicz/trck/pull/43)
-- [ ] [#8d22h6x main: remove issues/ — the flip](items/8d22h6x-main-remove-issues-the-flip.md) _(in-progress)_
+- [x] [#8d22h6x main: remove issues/ — the flip](items/8d22h6x-main-remove-issues-the-flip.md)
 - [x] [#93zhqbd writes: structured commit subjects and a replayable Trck-Op trailer](items/93zhqbd-writes-structured-commit-subjects-and-a-replayable-trck-op-trailer.md) · [review](https://github.com/leonkacowicz/trck/pull/41)
 - [x] [#9gxktnk writes: replay stacked pending commits, and surface an op that no longer applies](items/9gxktnk-writes-replay-stacked-pending-commits-and-surface-an-op-that-no-longer-applies.md) · [review](https://github.com/leonkacowicz/trck/pull/48)
 - [x] [#abynj5c reads: prefer the local ref over origin, fast-forward when behind, report divergence](items/abynj5c-reads-prefer-the-local-ref-over-origin-fast-forward-when-behind-report-divergence.md) · [review](https://github.com/leonkacowicz/trck/pull/42)
