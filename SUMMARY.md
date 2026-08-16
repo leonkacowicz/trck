@@ -5,10 +5,10 @@
 
 | State | Count |
 |---|---:|
-| backlog | 63 |
+| backlog | 62 |
 | in-progress | 3 |
 | in-review | 0 |
-| done | 224 |
+| done | 225 |
 | **total** | **290** |
 
 ## Hierarchies
@@ -264,7 +264,6 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#v5wvabj list: --since/--until date-range filters over created/started/closed](items/v5wvabj-list-since-until-date-range-filters-over-created-started-closed.md) — _medium_ [dates]
 - [#wh3mv52 mv/done: guard closing a parent with open descendants (--recurse to cascade)](items/wh3mv52-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
 - [#ycg7egx dates: shared cutoff parser — accept relative forms (7d, 2w, yesterday) and resolve to absolute](items/ycg7egx-dates-shared-cutoff-parser-accept-relative-forms-7d-2w-yesterday-and-resolve-to-absolute.md) — _medium_ [dates]
-- [#5jhvpz4 update: add a minimum-size sanity check on the downloaded engine](items/5jhvpz4-update-add-a-minimum-size-sanity-check-on-the-downloaded-engine.md) — _low_
 - [#bbek25a summary/html: follow list's topological sibling order, or state why not](items/bbek25a-summary-html-follow-list-s-topological-sibling-order-or-state-why-not.md) — _low_
 - [#c2wadyd graph/render: id type annotations still say int after the random-id migration](items/c2wadyd-graph-render-id-type-annotations-still-say-int-after-the-random-id-migration.md) — _low_
 - [#cbf4sxp config: friendly errors for empty statuses/priorities/kinds lists](items/cbf4sxp-config-friendly-errors-for-empty-statuses-priorities-kinds-lists.md) — _low_
@@ -356,6 +355,7 @@ _none_
 - [#y5a9jwj pay down draw_row and validate](items/y5a9jwj-pay-down-draw-row-and-validate.md) — _medium_ (closed 2026-08-06)
 - [#yvbgt53 Consolidate parent-to-children map building onto Graph](items/yvbgt53-consolidate-parent-to-children-map-building-onto-graph.md) — _medium_ (closed 2026-06-10)
 - [#3qsk26v version/update: suppress no-tracker stderr noise when run outside a tracker](items/3qsk26v-version-update-suppress-no-tracker-stderr-noise-when-run-outside-a-tracker.md) — _low_ (closed 2026-06-05)
+- [#5jhvpz4 update: add a minimum-size sanity check on the downloaded engine](items/5jhvpz4-update-add-a-minimum-size-sanity-check-on-the-downloaded-engine.md) — _low_ · _superseded_ (closed 2026-08-16)
 - [#6ddksge Reconcile id collisions when branches concurrently create issues](items/6ddksge-reconcile-id-collisions-when-branches-concurrently-create-issues.md) — _low_ [conflict-resolution tracker-features] · _superseded_ (closed 2026-07-31)
 - [#8xdzmr4 summary: sort status sections by priority (highest first)](items/8xdzmr4-summary-sort-status-sections-by-priority-highest-first.md) — _low_ (closed 2026-06-05)
 - [#av2h8cm docs: refresh docs/img/ready.svg — the screenshot predates the demand marker](items/av2h8cm-docs-refresh-docs-img-ready-svg-the-screenshot-predates-the-demand-marker.md) — _low_ (closed 2026-07-30)
