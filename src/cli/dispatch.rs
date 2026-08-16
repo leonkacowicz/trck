@@ -8,7 +8,7 @@
 use super::opts::{deps_opts, init_from_args, list_opts, mv_opts, set_opts};
 use super::reports::{cmd_changelog, cmd_check, cmd_diff, cmd_summary};
 use super::tables::{VERBS, id_operand};
-use super::{Args, context, parse_args, tracker_dir};
+use super::{Args, context, parse_args, setup_source, tracker_dir};
 use crate::discovery::Ctx;
 use crate::query;
 use crate::repo;
@@ -113,8 +113,11 @@ fn dispatch_repo(args: &Args) -> Result<String, String> {
         // reachable trck.json still has to merge the rows it was handed.
         "merge-index" => repo::cmd_merge_index(context(args).ok().as_ref(), operand(1)?, operand(2)?, operand(3)?),
         "merge-summary" => repo::cmd_merge_summary(context(args).ok().as_ref(), operand(1)?),
-        // These need a real tracker, unlike the drivers.
-        "setup-git" => repo::cmd_setup_git(&context(args)?),
+        // Clone-local setup is also how an implicitly hidden tracker ref becomes visible.
+        "setup-git" => {
+            let (cwd, context) = setup_source(args)?;
+            repo::cmd_setup_git(&cwd, context.as_ref())
+        },
         "install-hook" => repo::cmd_install_hook(&context(args)?),
         "normalize" => repo::cmd_normalize(&context(args)?),
         // The one verb whose whole job is to operate on a legacy tracker, so it resolves

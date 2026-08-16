@@ -21,7 +21,7 @@ pub(crate) mod tables;
 mod tracker;
 use dispatch::dispatch;
 use tables::unrecognized_flag;
-use tracker::{context, tracker_dir};
+use tracker::{context, setup_source, tracker_dir};
 
 use crate::help;
 

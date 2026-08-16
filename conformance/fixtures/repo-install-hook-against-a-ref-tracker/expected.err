@@ -1,0 +1,1 @@
+error: the tracker is stored in git ref 'trck-issues'; working-tree commits cannot change it, so a pre-commit hook has nothing to guard

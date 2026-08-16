@@ -1,22 +1,21 @@
 //! Talking to git: running it in the tracker, and naming ourselves to it.
 
-use crate::discovery::Ctx;
+use std::path::Path;
 
-/// Run a git command in the tracker directory, returning its trimmed stdout.
-///
-/// The tracker directory is the only thing this adds over [`crate::git::stdout`]; the
-/// primitives themselves live there, since `diff` and the ref-backed source want them
-/// against a path rather than a loaded tracker.
-pub(super) fn git(ctx: &Ctx, args: &[&str]) -> Result<String, String> {
-    crate::git::stdout(ctx.dir()?, args)
+/// Run a git command in the repository, returning its trimmed stdout.
+pub(super) fn git(cwd: &Path, args: &[&str]) -> Result<String, String> {
+    crate::git::stdout(cwd, args)
 }
 
 /// Assert we are inside a git repository, answering with the given git query.
 ///
 /// Both git verbs open this way, and both want the same refusal: `git`'s own message names a
 /// plumbing command the user did not run, which is not the thing they need to hear.
-pub(super) fn require_repo(ctx: &Ctx, query: &str) -> Result<String, String> {
-    git(ctx, &["rev-parse", query]).map_err(|_| "not a git repository".to_string())
+pub(super) fn require_repo(cwd: &Path, query: &str) -> Result<String, String> {
+    if !crate::git::run(cwd, &["rev-parse", "--git-dir"])?.status.success() {
+        return Err("not a git repository".to_string());
+    }
+    git(cwd, &["rev-parse", query])
 }
 
 /// How a git driver or hook should re-invoke this engine.

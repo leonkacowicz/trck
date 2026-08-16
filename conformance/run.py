@@ -103,20 +103,42 @@ def build_tracker(fixture, workdir, binary, env_extra):
     return tracker
 
 
-def discovery_context(fixture, workdir):
+def discovery_context(fixture, workdir, tracker):
     """Return `(cwd, discover)` for fixtures that exercise implicit discovery."""
     modes = read_lines(fixture / "discovery")
     if not modes:
         return None, False
-    if len(modes) != 1 or modes[0] not in ("git", "plain"):
-        raise RuntimeError("discovery: expected exactly one of 'git' or 'plain'")
+    if len(modes) != 1 or modes[0] not in ("git", "plain", "ref"):
+        raise RuntimeError("discovery: expected exactly one of 'git', 'plain', or 'ref'")
     cwd = Path(workdir) / "repo" / "nested"
     cwd.mkdir(parents=True)
-    if modes[0] == "git":
+    if modes[0] in ("git", "ref"):
         r = subprocess.run(["git", "init", "-q", "-b", "main"], cwd=cwd.parent,
                            capture_output=True, text=True)
         if r.returncode:
             raise RuntimeError(f"discovery: git init failed: {r.stderr.strip()}")
+    if modes[0] == "ref":
+        commands = [
+            ["git", "-c", "user.name=trck", "-c", "user.email=trck@example.com",
+             "commit", "--allow-empty", "-qm", "code"],
+            ["git", "checkout", "-q", "--orphan", "trck-issues"],
+        ]
+        for child in tracker.iterdir():
+            target = cwd.parent / child.name
+            if child.is_dir():
+                shutil.copytree(child, target)
+            else:
+                shutil.copy2(child, target)
+        commands.extend([
+            ["git", "add", "-A"],
+            ["git", "-c", "user.name=trck", "-c", "user.email=trck@example.com",
+             "commit", "-qm", "tracker"],
+            ["git", "checkout", "-q", "main"],
+        ])
+        for command in commands:
+            r = subprocess.run(command, cwd=cwd.parent, capture_output=True, text=True)
+            if r.returncode:
+                raise RuntimeError(f"discovery: {' '.join(command)} failed: {r.stderr.strip()}")
     return cwd, True
 
 
@@ -153,10 +175,12 @@ def capture(fixture, binary):
         raise RuntimeError(
             f"cmd: expected exactly one command line, found {len(cmd_lines)}")
     env_extra = dict(kv.split("=", 1) for kv in read_lines(fixture / "env")) or None
+    if read_lines(fixture / "discovery") == ["ref"] and any((fixture / name).is_file() for name in ARTIFACTS):
+        raise RuntimeError("ref discovery does not support expected artifact files")
 
     with tempfile.TemporaryDirectory() as tmp:
         tracker = build_tracker(fixture, tmp, binary, env_extra)
-        cwd, discover = discovery_context(fixture, tmp)
+        cwd, discover = discovery_context(fixture, tmp, tracker)
         r = run_trck(binary, tracker, split_args(cmd_lines[0]), env_extra,
                      cwd, discover)
         got = {"stdout": normalise(r.stdout, tracker),
@@ -201,6 +225,8 @@ def run_fixture(fixture, binary, update):
 
     env_extra = dict(
         kv.split("=", 1) for kv in read_lines(fixture / "env")) or None
+    if read_lines(fixture / "discovery") == ["ref"] and any((fixture / name).is_file() for name in ARTIFACTS):
+        return ["ref discovery does not support expected artifact files"]
 
     # A brand-new fixture — nothing asserted yet — gets its stdout captured, plus
     # stderr and exit code when they are interesting. Everything beyond that is opted
@@ -216,7 +242,7 @@ def run_fixture(fixture, binary, update):
             return [str(e)]
 
         try:
-            cwd, discover = discovery_context(fixture, tmp)
+            cwd, discover = discovery_context(fixture, tmp, tracker)
         except RuntimeError as e:
             return [str(e)]
         r = run_trck(binary, tracker, split_args(cmd_lines[0]), env_extra,
