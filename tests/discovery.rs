@@ -76,6 +76,7 @@ fn explicit_directory_overrides_can_reach_outside_the_repository() {
     init_repo(&repo);
     std::fs::create_dir_all(&tracker).expect("mkdir tracker");
     std::fs::write(tracker.join("trck.json"), "{}\n").expect("config");
+    let canonical_tracker = tracker.canonicalize().expect("canonical tracker");
 
     for (args, env_dir) in [(vec!["--dir", tracker.to_str().expect("utf8"), "version"], None), (vec!["version"], Some(&tracker))] {
         let mut command = Command::new(env!("CARGO_BIN_EXE_trck"));
@@ -85,6 +86,6 @@ fn explicit_directory_overrides_can_reach_outside_the_repository() {
         }
         let out = command.output().expect("running trck");
         assert!(out.status.success(), "explicit override failed: {}", String::from_utf8_lossy(&out.stderr));
-        assert!(String::from_utf8_lossy(&out.stderr).contains(&tracker.display().to_string()));
+        assert!(String::from_utf8_lossy(&out.stderr).contains(&canonical_tracker.display().to_string()));
     }
 }
