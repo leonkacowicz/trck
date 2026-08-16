@@ -5,9 +5,9 @@
 
 | State | Count |
 |---|---:|
-| backlog | 63 |
+| backlog | 62 |
 | in-progress | 3 |
-| in-review | 0 |
+| in-review | 1 |
 | done | 223 |
 | **total** | **289** |
 
@@ -204,7 +204,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#abynj5c reads: prefer the local ref over origin, fast-forward when behind, report divergence](items/abynj5c-reads-prefer-the-local-ref-over-origin-fast-forward-when-behind-report-divergence.md) · [review](https://github.com/leonkacowicz/trck/pull/42)
 - [x] [#ahgehpa discovery: reads go through Ctx content accessors, not paths](items/ahgehpa-discovery-reads-go-through-ctx-content-accessors-not-paths.md) · [review](https://github.com/leonkacowicz/trck/pull/31)
 - [x] [#c3uzxka diff: resolve revisions on the tracker branch](items/c3uzxka-diff-resolve-revisions-on-the-tracker-branch.md) · [review](https://github.com/leonkacowicz/trck/pull/46)
-- [ ] [#ch5furb diff: says 'working tree' when the tracker is a ref and there is none](items/ch5furb-diff-says-working-tree-when-the-tracker-is-a-ref-and-there-is-none.md) _(backlog)_
+- [ ] [#ch5furb diff: says 'working tree' when the tracker is a ref and there is none](items/ch5furb-diff-says-working-tree-when-the-tracker-is-a-ref-and-there-is-none.md) _(in-review)_ · [review](https://github.com/leonkacowicz/trck/pull/59)
 - [x] [#dak2sjq trck sync, and the pending-changes report on every write verb](items/dak2sjq-trck-sync-and-the-pending-changes-report-on-every-write-verb.md) · [review](https://github.com/leonkacowicz/trck/pull/44)
 - [x] [#jgf9ktx writes: blobs to tree to commit-tree, then CAS the local ref](items/jgf9ktx-writes-blobs-to-tree-to-commit-tree-then-cas-the-local-ref.md) · [review](https://github.com/leonkacowicz/trck/pull/39)
 - [x] [#kdbb9ms git: one plumbing module for the ref read and write primitives](items/kdbb9ms-git-one-plumbing-module-for-the-ref-read-and-write-primitives.md) · [review](https://github.com/leonkacowicz/trck/pull/30)
