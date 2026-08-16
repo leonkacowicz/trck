@@ -1,0 +1,4 @@
+# --contains searches the markdown body, not the row. Neither title says "race condition";
+# one body does, and the case differs from the pattern because the match is case-insensitive.
+new "First" --id aaaaaaa --body "The parser hits a Race Condition under load."
+new "Second" --id bbbbbbb --body "Nothing interesting happens here."

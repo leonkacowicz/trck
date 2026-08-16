@@ -16,6 +16,7 @@ pub(super) const LIST_FLAGS: &[&str] = &[
     "--label",
     "--parent",
     "--match",
+    "--contains",
     "--field",
     "--show-field",
     "--sort",

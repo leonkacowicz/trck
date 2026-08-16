@@ -1,0 +1,4 @@
+# A body opens with its own `# Title` heading, so --contains finds what --match would.
+# The two stay distinct anyway: --match is the title alone, --contains is anywhere.
+new "Flaky deploy" --id aaaaaaa --empty
+new "Something else" --id bbbbbbb --body "Prose that says nothing about deploys."

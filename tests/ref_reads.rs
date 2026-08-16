@@ -71,6 +71,44 @@ fn a_body_missing_from_the_ref_reads_like_a_missing_file() {
     assert!(err.contains("file missing for #bbbbbbb"), "unexpected wording: {err}");
 }
 
+/// `list --contains` against a ref, which is the case the flag exists for: the tracker has
+/// no files, so the `rg -l PATTERN $(trck list --paths)` pipeline it replaces has nothing to
+/// search. Only `aaaaaaa` carries [`SEEDED_BODY`], so a filter that read nothing would show
+/// both rows and one that read the index instead of the bodies would show neither.
+///
+/// A fixture cannot assert this: the conformance runner's ref mode proves the flag answers
+/// there, but only a real clone proves it does so with the tracker branch *not checked out*
+/// and the working tree sitting on something else entirely.
+#[test]
+fn list_contains_searches_the_bodies_the_ref_holds() {
+    let Some(s) = Scenario::build("reads-contains") else {
+        return;
+    };
+    // Cased differently from the body on purpose — the match is case-insensitive.
+    let out = trck_must(&s.work, &["list", "--contains", "PROSE THAT LIVES", "--flat"]);
+    assert!(out.contains("aaaaaaa"), "the body in the ref was not searched:\n{out}");
+    assert!(!out.contains("bbbbbbb"), "a row whose body says nothing came through:\n{out}");
+
+    // Nothing matched is an empty list and a success, not an error.
+    let empty = trck(&s.work, &["list", "--contains", "no body says this", "--flat"]);
+    assert!(empty.status.success(), "a pattern that matched nothing failed: {}", String::from_utf8_lossy(&empty.stderr));
+    assert!(String::from_utf8_lossy(&empty.stdout).trim().is_empty(), "{:?}", empty.stdout);
+}
+
+/// The generated files carry every title in the tracker, and they sit beside `items/` at the
+/// root of the ref. A search that did not scope to the bodies would match every issue at once
+/// the moment it matched any — so scoping is asserted, not assumed.
+#[test]
+fn list_contains_does_not_match_the_generated_index_and_summary() {
+    let Some(s) = Scenario::build("reads-contains-scope") else {
+        return;
+    };
+    // A phrase only `SUMMARY.md` and `index.jsonl` hold: `bbbbbbb`'s body is the bare
+    // heading `# Second issue`, and titles are what the generated files are made of.
+    let out = trck_must(&s.work, &["list", "--contains", "\"title\": \"Second issue\"", "--flat"]);
+    assert!(out.trim().is_empty(), "the search escaped items/ into the generated files:\n{out}");
+}
+
 /// A revision that resolves but holds no tracker is a different mistake from one that does
 /// not resolve, and it has to name the ref either way — otherwise the message is "no
 /// tracker found here", which is false and sends you looking at your working directory.

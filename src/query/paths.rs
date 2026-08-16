@@ -1,9 +1,15 @@
 //! The file-path verbs: `path`, `which`, and the `list --paths` renderer they share.
 //!
-//! trck has no `search`/`grep` of its own, because issue bodies are plain markdown and the
-//! search tool is already on the machine. What it owes that tool instead is a way in and a
-//! way back: `list --paths`/`path` name the files, `which` names the issues those files are.
-//! All three live here so the two directions cannot disagree about what a body file is.
+//! A way in and a way back: `list --paths`/`path` name the files, `which` names the issues
+//! those files are. All three live here so the two directions cannot disagree about what a
+//! body file is.
+//!
+//! These used to be how body search was done — issue bodies are plain markdown and the
+//! search tool is already on the machine, so `rg -l PATTERN $(trck list --paths) | trck
+//! which` was the whole answer. A ref-backed tracker has no files, which falsified the
+//! premise rather than the recipe, and body search is [`super::filter`]'s `--contains` now.
+//! What is left here is handing a *path*-shaped tool a way to name issues, which is still
+//! worth having wherever the tracker is a directory.
 
 use crate::discovery::Ctx;
 use crate::graph::Graph;

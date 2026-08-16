@@ -1,0 +1,7 @@
+# The point of making body search a filter rather than a pipeline: it ANDs with the metadata
+# filters like any other. Two issues hold the word; only one of them is in-progress.
+new "First" --id aaaaaaa --body "A race condition in the writer."
+new "Second" --id bbbbbbb --body "A race condition in the reader."
+new "Third" --id ccccccc --empty
+start aaaaaaa
+start ccccccc

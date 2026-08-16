@@ -439,20 +439,25 @@ flags any malformed key or non-string value. Free-form by design — a future op
 (types, allowed values, required-ness) is sketched in
 `docs/specs/2026-06-11-custom-fields-design.md`.
 
-Full-text body search: `trck` has no built-in `search`/`grep` verb — issue bodies are plain
-Markdown files, so it composes with the search tool you already have. `trck list --paths`
-prints the absolute file path of each issue passing the usual filters, `trck path NNN` prints
-one issue's path, and `trck which` maps issue file paths (positional args, or one per line on
-stdin) back to `list`-style rows (`--ids` for bare ids). Together they scope, search, and
-render:
+**Full-text body search** — `trck list --contains TEXT` keeps the issues whose markdown body
+holds `TEXT`, matched case-insensitively as a literal substring. Not a regex, and not a verb
+of its own: it is a **filter**, so it composes with everything else `list` takes and renders
+through every output mode.
 
-    rg -l 'race condition' $(trck list --paths --status '!done')   # paths, scoped by metadata
-    rg -l 'race condition' $(trck list --paths) | trck which       # ...rendered back as issues
-    trck path k3m                                                  # one issue's file, e.g. to $EDITOR
+    trck list --contains 'race condition'                          # the nested forest, filtered
+    trck list --contains 'race condition' --status '!done'         # AND-ed with any other filter
+    trck list --contains 'race condition' --json                   # ...or as one JSON document
 
-`which` answers in the tracker's own order, not the order the paths arrived in — the ordering
-of a grep's output is the grep's business — and silently skips any path that is not a body
-file here, since that input is whatever a search printed.
+The body opens with its own `# Title` heading, so `--contains` finds everything `--match`
+would and more; `--match` stays for when you mean the title alone.
+
+It answers identically whether the tracker is a directory or a git ref, which is why it is a
+filter rather than a pipeline. The old recipe — `rg -l TEXT $(trck list --paths) | trck which`
+— cannot work against a ref-backed tracker, because there are no files on disk for `rg` to
+open and no paths for `which` to map back. `--contains` searches the blobs directly, with one
+`git grep` per invocation rather than one read per issue. `path`, `which` and `list --paths`
+are still there for a working-tree tracker, and still refuse a ref-backed one rather than
+printing a path that is not there.
 
 Output is colorized when stdout is a terminal (disable with `NO_COLOR=1`, force with
 `FORCE_COLOR=1`); piped/redirected output stays plain for scripts and agents. `trck show`

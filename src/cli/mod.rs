@@ -57,6 +57,7 @@ const VALUED: &[&str] = &[
     "--label",
     "--show-field",
     "--match",
+    "--contains",
     "--since",
     "--from",
     "--to",
@@ -194,10 +195,9 @@ fn usage_error(args: &Args) -> Option<String> {
     if !args.verb.is_empty() && !tables::VERBS.contains(&args.verb.as_str()) {
         return Some(format!("unknown verb `{}`", args.verb));
     }
-    // `--json` is in the known-flag tables so the read verbs keep parsing the way the Python
-    // engine's do, but no verb honours it yet. Refusing it is the whole point: a flag that is
-    // accepted and ignored returns human text with exit 0, and a caller piping into `jq` finds
-    // out far from the cause. Drop this once the read verbs emit JSON.
+    // A flag that is accepted and ignored returns human text with exit 0, and a caller piping
+    // into `jq` finds out far from the cause. So a verb with no `--json` refuses it rather
+    // than dropping it; `JSON_VERBS` is the list of the ones that answer.
     if args.has("--json") && !tables::JSON_VERBS.contains(&args.verb.as_str()) {
         return Some(format!("{}: --json is not implemented in this engine yet", args.verb));
     }

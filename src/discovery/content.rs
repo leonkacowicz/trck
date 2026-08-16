@@ -100,6 +100,32 @@ impl Ctx {
         }
     }
 
+    /// The issue bodies holding `needle`, by file name — `list --contains`'s search.
+    ///
+    /// A **pre-pass**, not a per-row predicate, and that is the whole design. Asking each
+    /// row whether its body matches is one [`read_body`](Self::read_body) per issue, which
+    /// against a ref is one `git show` *spawn* per issue on a tracker with hundreds of them.
+    /// One invocation answers for all of them, and the caller reduces the result to a set
+    /// membership test.
+    ///
+    /// Scoped to `items/` deliberately: `index.jsonl` and `SUMMARY.md` carry every title and
+    /// label in the tracker, so an unscoped search would match every issue whenever it
+    /// matched any.
+    ///
+    /// File names rather than ids, because that is what git hands back and turning one into
+    /// an id means knowing which row owns which file — the caller's rows and
+    /// [`crate::summary::filename`]'s rule, not this accessor's.
+    pub(crate) fn body_matches(&self, needle: &str) -> Result<std::collections::BTreeSet<String>, String> {
+        let hits = match &self.source {
+            Source::Dir(dir) => crate::git::grep_files(dir, None, needle, ITEMS_DIR)?,
+            Source::Ref { rev, cwd } => crate::git::grep_files(cwd, Some(rev), needle, ITEMS_DIR)?,
+        };
+        // The last component is the whole of what either form says: git prints
+        // `<rev>:items/<name>` for a revision and a working-directory-relative path
+        // otherwise, and a tracker's bodies all live in one flat directory.
+        Ok(hits.iter().filter_map(|p| p.rsplit('/').next()).map(str::to_string).collect())
+    }
+
     /// Every name in the items directory, sorted, unfiltered.
     ///
     /// Unfiltered because deciding what counts as an issue file is `validate`'s rule and
@@ -189,6 +215,25 @@ mod tests {
         // Everything in the directory, unfiltered — deciding what is an issue file belongs
         // to `validate`, which is the only caller that has the rules for it.
         assert_eq!(ctx.list_items().expect("list"), vec!["README.md", "aaa1111-a.md", "bbb2222-b.md"]);
+    }
+
+    /// The pre-pass behind `list --contains`: one search, answering for every issue at once.
+    #[test]
+    fn body_matches_names_the_files_holding_the_needle() {
+        let tmp = Tmp::new("bodymatch");
+        let d = tmp.tracker("issues");
+        std::fs::create_dir_all(d.join(ITEMS_DIR)).expect("mkdir");
+        std::fs::write(d.join(ITEMS_DIR).join("aaa1111-a.md"), "# a\n\nA Race Condition here.\n").expect("write");
+        std::fs::write(d.join(ITEMS_DIR).join("bbb2222-b.md"), "# race condition in the title\n").expect("write");
+        std::fs::write(d.join(ITEMS_DIR).join("ccc3333-c.md"), "# c\n\nnothing.\n").expect("write");
+        // The generated files sit beside `items/` and carry every title in the tracker, so a
+        // search that did not scope to the directory would match all three issues at once.
+        std::fs::write(d.join("SUMMARY.md"), "race condition\n").expect("write");
+        let ctx = Ctx::load(Source::Dir(d), false).expect("loads");
+
+        let hit = ctx.body_matches("race condition").expect("searched");
+        assert_eq!(hit, ["aaa1111-a.md".to_string(), "bbb2222-b.md".to_string()].into_iter().collect());
+        assert!(ctx.body_matches("nothing holds this").expect("searched").is_empty());
     }
 
     #[test]
