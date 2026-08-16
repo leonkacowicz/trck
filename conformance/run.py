@@ -35,6 +35,7 @@ NOW = "2026-01-01T00:00:00Z"
 # Output is compared literally, so anything varying between runs has to be replaced
 # first. The tracker lives in a temp dir, and `new`/`path`/`which` print paths into it.
 TRACKER_PLACEHOLDER = "<TRACKER>"
+WORKDIR_PLACEHOLDER = "<WORKDIR>"
 
 ARTIFACTS = {                      # golden file -> path inside the tracker
     "expected.index.jsonl": "index.jsonl",
@@ -57,7 +58,7 @@ def read_lines(path):
             if ln.strip() and not ln.lstrip().startswith("#")]
 
 
-def run_trck(binary, tracker, argv, env_extra=None):
+def run_trck(binary, tracker, argv, env_extra=None, cwd=None, discover=False):
     env = dict(os.environ, TRCK_NOW=NOW, NO_COLOR="1")
     env.pop("TRCK_DIR", None)      # the fixture's tracker, never the caller's
     env.update(env_extra or {})
@@ -70,13 +71,15 @@ def run_trck(binary, tracker, argv, env_extra=None):
     # stdin is closed, not inherited. Two verbs read it — `which` with no operands, and
     # `new --body-file -` — and one asks whether it is a terminal, so a fixture run from a
     # shell would behave differently from the same fixture in CI, or block outright.
-    return subprocess.run([str(binary), "--dir", str(tracker), *argv],
+    prefix = [] if discover else ["--dir", str(tracker)]
+    return subprocess.run([str(binary), *prefix, *argv], cwd=cwd,
                           capture_output=True, text=True, env=env,
                           stdin=subprocess.DEVNULL)
 
 
 def normalise(text, tracker):
-    return text.replace(str(Path(tracker).resolve()), TRACKER_PLACEHOLDER)
+    return (text.replace(str(Path(tracker).resolve()), TRACKER_PLACEHOLDER)
+            .replace(str(Path(tracker).resolve().parent), WORKDIR_PLACEHOLDER))
 
 
 def build_tracker(fixture, workdir, binary, env_extra):
@@ -98,6 +101,23 @@ def build_tracker(fixture, workdir, binary, env_extra):
         if r.returncode != 0:
             raise RuntimeError(f"setup step failed: {line}\n{r.stderr.strip()}")
     return tracker
+
+
+def discovery_context(fixture, workdir):
+    """Return `(cwd, discover)` for fixtures that exercise implicit discovery."""
+    modes = read_lines(fixture / "discovery")
+    if not modes:
+        return None, False
+    if len(modes) != 1 or modes[0] not in ("git", "plain"):
+        raise RuntimeError("discovery: expected exactly one of 'git' or 'plain'")
+    cwd = Path(workdir) / "repo" / "nested"
+    cwd.mkdir(parents=True)
+    if modes[0] == "git":
+        r = subprocess.run(["git", "init", "-q", "-b", "main"], cwd=cwd.parent,
+                           capture_output=True, text=True)
+        if r.returncode:
+            raise RuntimeError(f"discovery: git init failed: {r.stderr.strip()}")
+    return cwd, True
 
 
 def compare(name, golden_path, actual, failures, update):
@@ -136,7 +156,9 @@ def capture(fixture, binary):
 
     with tempfile.TemporaryDirectory() as tmp:
         tracker = build_tracker(fixture, tmp, binary, env_extra)
-        r = run_trck(binary, tracker, split_args(cmd_lines[0]), env_extra)
+        cwd, discover = discovery_context(fixture, tmp)
+        r = run_trck(binary, tracker, split_args(cmd_lines[0]), env_extra,
+                     cwd, discover)
         got = {"stdout": normalise(r.stdout, tracker),
                "stderr": normalise(r.stderr, tracker),
                "code": r.returncode}
@@ -193,7 +215,12 @@ def run_fixture(fixture, binary, update):
         except RuntimeError as e:
             return [str(e)]
 
-        r = run_trck(binary, tracker, split_args(cmd_lines[0]), env_extra)
+        try:
+            cwd, discover = discovery_context(fixture, tmp)
+        except RuntimeError as e:
+            return [str(e)]
+        r = run_trck(binary, tracker, split_args(cmd_lines[0]), env_extra,
+                     cwd, discover)
         out = normalise(r.stdout, tracker)
         err = normalise(r.stderr, tracker)
 

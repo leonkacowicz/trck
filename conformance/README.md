@@ -32,6 +32,7 @@ view does not churn every golden in the suite.
 |---|---|
 | `initial/` | copied over the fresh tracker before anything runs |
 | `env` | `KEY=VALUE` lines added to the environment of every invocation |
+| `discovery` | run without `--dir` from a nested `git` or `plain` directory |
 | `setup` | one command per line, run in order; a non-zero exit aborts the fixture |
 | `cmd` | exactly one command line — the thing under test |
 | `expected.out` | stdout, compared literally |
@@ -66,6 +67,11 @@ implements, not a hook bolted onto one of them.
 
 Output is also run with `NO_COLOR=1`, and the tracker's temp path is replaced with
 `<TRACKER>` before comparison.
+
+`discovery` is for the boundary of implicit lookup itself. `git` initializes a sibling
+repository and runs from a nested directory inside it; `plain` uses the same shape without
+Git. In both modes the fresh tracker is outside the command's starting tree, so the fixture
+states whether walking through their common parent is allowed.
 
 ## Setup: commands or literal state
 
