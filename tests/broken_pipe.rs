@@ -19,13 +19,18 @@ use std::io::Read as _;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
-/// This repository's own tracker: a real one, and big enough that the verb has plenty to say.
+/// A real tracker on disk, with epics, dependencies and enough rows to render.
+///
+/// The bundled example, not this repository's own: that one lives on the `trck-issues`
+/// branch now, and a ref-backed tracker cannot be handed to `--dir` at all. Size is not what
+/// this test rests on — see above, the reader is gone before the first write — so the smaller
+/// tracker costs it nothing.
 ///
 /// Absent, this fails rather than skipping. It used to return `None` and let the assertions
 /// run against empty output — which passes, silently, and would have gone on passing after
 /// the crate moved to the repo root had the path been wrong.
 fn repo_tracker() -> PathBuf {
-    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("issues");
+    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples").join("action-game");
     assert!(dir.join("index.jsonl").is_file(), "no tracker at {}", dir.display());
     dir
 }
