@@ -6,9 +6,9 @@
 | State | Count |
 |---|---:|
 | backlog | 63 |
-| in-progress | 4 |
+| in-progress | 3 |
 | in-review | 0 |
-| done | 222 |
+| done | 223 |
 | **total** | **289** |
 
 ## Hierarchies
@@ -192,7 +192,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#uq2zc2p conformance: convert the deps gutter tests](items/uq2zc2p-conformance-convert-the-deps-gutter-tests.md)
 - [x] [#xm6h2qn conformance: convert the command-output tests](items/xm6h2qn-conformance-convert-the-command-output-tests.md)
 
-### [#sqzr7nk storage: move the tracker to an orphan trck-issues branch](items/sqzr7nk-storage-move-the-tracker-to-an-orphan-trck-issues-branch.md) — 93% (54/58 pts · 24/27 done) · _high_ · in-progress
+### [#sqzr7nk storage: move the tracker to an orphan trck-issues branch](items/sqzr7nk-storage-move-the-tracker-to-an-orphan-trck-issues-branch.md) — 97% (56/58 pts · 25/27 done) · _high_ · in-progress
 
 - [x] [#2ybw758 reads: resolve index, bodies and trck.json from a git ref](items/2ybw758-reads-resolve-index-bodies-and-trck-json-from-a-git-ref.md) · [review](https://github.com/leonkacowicz/trck/pull/36)
 - [x] [#32gyghs tests: a harness for a ref-backed tracker in a temp git repo](items/32gyghs-tests-a-harness-for-a-ref-backed-tracker-in-a-temp-git-repo.md) · [review](https://github.com/leonkacowicz/trck/pull/32)
@@ -217,7 +217,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#tkhcgv6 hooks: the pre-commit guard stops running trck check on main](items/tkhcgv6-hooks-the-pre-commit-guard-stops-running-trck-check-on-main.md)
 - [x] [#u3s6y7h CI: check on the tracker branch, and ci_changed drops its issues/ case](items/u3s6y7h-ci-check-on-the-tracker-branch-and-ci-changed-drops-its-issues-case.md)
 - [x] [#usc2cxg migration: split issues/ onto an orphan trck-issues branch, history intact](items/usc2cxg-migration-split-issues-onto-an-orphan-trck-issues-branch-history-intact.md)
-- [ ] [#wzg85n6 docs: delete the worktree skill, rewrite both CLAUDE.md files, repoint README](items/wzg85n6-docs-delete-the-worktree-skill-rewrite-both-claude-md-files-repoint-readme.md) _(in-progress)_
+- [x] [#wzg85n6 docs: delete the worktree skill, rewrite both CLAUDE.md files, repoint README](items/wzg85n6-docs-delete-the-worktree-skill-rewrite-both-claude-md-files-repoint-readme.md)
 - [x] [#yqb2afy discovery: a narrowed fetch refspec hides the tracker, and setup-git widens it](items/yqb2afy-discovery-a-narrowed-fetch-refspec-hides-the-tracker-and-setup-git-widens-it.md) · [review](https://github.com/leonkacowicz/trck/pull/45)
 - [x] [#yuj6azz finalize: return a changeset and an Op instead of writing files](items/yuj6azz-finalize-return-a-changeset-and-an-op-instead-of-writing-files.md) · [review](https://github.com/leonkacowicz/trck/pull/34)
 - [x] [#zxz9vu2 trck edit <id>: edit an existing body through the same path](items/zxz9vu2-trck-edit-id-edit-an-existing-body-through-the-same-path.md) · [review](https://github.com/leonkacowicz/trck/pull/40)
