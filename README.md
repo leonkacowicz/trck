@@ -69,6 +69,59 @@ Locally, `trck repo install-hook` adds a pre-commit hook that runs the same chec
 commit touches the tracker. Treat it as a convenience rather than a guarantee: a hook is one
 `--no-verify` away from silent, and it does nothing at all on a machine that has no `trck`.
 
+## Moving a tracker onto a branch
+
+A tracker is either a directory in your working tree or **the root of a git ref**. The branch
+shape keeps issue churn off your code branches: nothing is checked out, reads come out of the
+object store, and a write verb builds a commit and pushes it by itself — whatever branch you
+are on, however dirty your tree is.
+
+Converting an existing `issues/` directory is one git command. Split its history onto an orphan
+branch named `trck-issues`, which is the name every verb looks for:
+
+```bash
+git subtree split -P issues -b trck-issues   # issues/'s whole history, rewritten to the root
+git push origin trck-issues
+```
+
+`-P` rewrites the prefix away, and that is the point: the branch's *root* is the tracker, so
+`<ref>:index.jsonl` resolves without one. History is preserved commit for commit, so `trck diff`
+over pre-migration revisions keeps working.
+
+Check the result by object id rather than by diff:
+
+```bash
+git rev-parse HEAD:issues trck-issues^{tree}   # must print the same oid twice
+trck --ref trck-issues check
+```
+
+Two equal tree oids mean index, bodies, summary, `.gitattributes` and `trck.json` are identical
+by construction — there is no file a comparison could have skipped.
+
+**Publishing the branch changes nothing on its own.** Discovery goes `--dir` → `$TRCK_DIR` →
+`--ref` → `$TRCK_REF` → the walk-up for `trck.json` → the conventional `trck-issues` ref (the
+local branch, else `origin/trck-issues`), so a directory in the working tree still wins and every
+clone keeps behaving as it did. The move is the *separate* commit that deletes `issues/` — which
+is what makes it reviewable and revertible on its own. Until it lands, every write still goes to
+the directory and the branch drifts from the moment you cut it, so re-run the split against the
+tree as it stands when you flip rather than pushing what you split earlier.
+
+Before flipping:
+
+- **Check the tracker never lived under another path.** `-P issues` only sees history beneath
+  that prefix; an earlier incarnation somewhere else is dropped without a word. Read the renames
+  in its history before trusting the split.
+- **Everyone needs `trck` v0.30.0 or newer.** No binary published before that can read a ref: an
+  older one looks for a directory, does not find one, and says so.
+- **A shallow or single-branch clone does not fetch the branch**, so the tracker reads as absent
+  there — the usual case being a CI checkout. Adding
+  `+refs/heads/trck-issues:refs/remotes/origin/trck-issues` to `remote.origin.fetch` fixes it,
+  and `trck` says as much when it detects that shape.
+- **A `trck check` step on your code branches stops seeing the tracker.** Give the tracker branch
+  its own CI, triggered by pushes to it. On GitHub that workflow has to live *on that branch*: a
+  `push:` trigger is resolved from the ref the push happened on, so the same file kept on your
+  default branch never fires at all.
+
 ## Upgrading
 
 Whatever installed `trck` owns the file: re-run the install script, or use your package
@@ -518,4 +571,5 @@ git ref instead of a directory, read out of the object store with nothing checke
 finds it with no flags, and a write verb commits and pushes there by itself, whatever branch you
 happen to be on. `trck --ref <rev>` or `$TRCK_REF` points at a different one; a tracker directory
 in the working tree still wins when there is one, which is what let this repository move over in
-pieces.
+pieces — see [Moving a tracker onto a branch](#moving-a-tracker-onto-a-branch) for the split that
+does it.
