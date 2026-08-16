@@ -62,10 +62,14 @@ platform and its steps carry the gate instead, with the build ungated.
 `issues/` used to head that allowlist. The tracker is on the `trck-issues` branch now, which a pull
 request against `main` cannot reach, so there is no tracker-only pull request to exempt — and a diff
 that does touch `issues/` means someone put that directory back, which is a change to build.
-**`trck check` moved out of `ci.yml` entirely**, into `.github/workflows/tracker.yml`, which fires
-on a push to `trck-issues` and checks the pushed commit through `--ref`. It must stay a separate
-workflow: named as a required check on `main` it would never report on a pull request, and the pull
-request would wait for it forever.
+**`trck check` moved out of `ci.yml` entirely**, into a `tracker.yml` that lives **on the
+`trck-issues` branch**, where it fires on a push and checks the pushed commit through `--ref`.
+On the branch and not here, because GitHub resolves a workflow from the ref the event happened on:
+kept on `main`, a `push: branches: [trck-issues]` trigger never fires at all — no error, no run,
+nothing. It sat here for two merges before that was noticed, so
+`scripts/tests/test_ci_changed.py` now asserts that **no** workflow on `main` names that branch.
+Living on a branch `main` never merges also keeps it from becoming a required check: named in
+branch protection it would never report on a pull request, which would wait for it forever.
 
 **The quality ratchet.** `quality-report.json` is a committed snapshot of structural metrics —
 function length, cognitive and cyclomatic complexity, argument counts, file size. CI runs

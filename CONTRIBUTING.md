@@ -62,11 +62,12 @@ it always runs; what shrinks is the matrix (`changes` publishes it: three platfo
 `ubuntu-latest`) and what its steps do. The build runs either way — a check that reports green
 without having done anything is worse than no check.
 
-**The tracker has its own workflow.** `.github/workflows/tracker.yml` fires on a push to
-`trck-issues`, builds the engine from `main`, and runs `trck --ref <sha> check` against the
-pushed commit. It is separate from `ci.yml` because the two run over branches that share no history,
-and it must stay separate: named as a required check on `main`, it would never report on a pull
-request, and the pull request would wait for it forever.
+**The tracker has its own workflow, on its own branch.** `tracker.yml` lives on `trck-issues`
+and not here, because GitHub resolves a workflow from the ref the event happened on: a
+`push: branches: [trck-issues]` trigger in a file on `main` never fires — no error, no run at
+all. It builds the engine from `main` and runs `trck --ref <sha> check` against the pushed
+commit. Living on a branch `main` never merges also keeps it from becoming a required check,
+which would leave every pull request waiting for a job that only ever fires elsewhere.
 
 ## The quality ratchet
 
