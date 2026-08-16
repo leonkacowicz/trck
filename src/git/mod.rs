@@ -26,6 +26,7 @@ use std::process::{Command, Output, Stdio};
 // which is what the crate-level `dead_code` expectation is for.
 mod read;
 pub(crate) mod refs;
+pub(crate) mod worktree;
 pub(crate) mod write;
 
 pub(crate) use read::{changed_paths, commit_message, is_ancestor, ls_tree, repo_root, rev_list, rev_parse, show, tree_blobs};

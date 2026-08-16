@@ -104,6 +104,10 @@ fn rebuild(cwd: &Path, target: &str, replay: &dyn Fn(&Op, &str) -> Result<(), St
     // position: its tree is where that op's prose comes from, and after the reset nothing
     // else points at it.
     let stack = pending(cwd, &tracking, target).map_err(Unshared::Fatal)?;
+    // Both moves below are ref moves like any other, so anyone holding the branch comes off it
+    // first. Once here they are already detached — the write that is being rebuilt released
+    // them — which makes this the belt to that braces, at the price of one `worktree list`.
+    super::release(cwd, target).map_err(Unshared::Fatal)?;
     update_ref(cwd, target, &theirs, Some(&ours)).map_err(Unshared::Fatal)?;
 
     for (sha, op) in &stack {

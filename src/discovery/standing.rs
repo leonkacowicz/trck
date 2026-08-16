@@ -27,18 +27,24 @@ pub(crate) fn tracking() -> String {
     format!("origin/{TRACKER_REF}")
 }
 
-/// Bring the local branch into a state worth reading, or say why it is not.
+/// Bring the local branch into a state worth reading, and answer with which ref to read.
 ///
-/// Local is what gets read either way — it is the only one that can hold work nobody else
-/// has. This decides whether it needs catching up first, and whether the reader needs
-/// telling.
-pub(super) fn reconcile(cwd: &Path, local: &str, remote: &str) -> Result<(), String> {
+/// Local is the answer almost always — it is the only one that can hold work nobody else has.
+/// This decides whether it needs catching up first, whether the reader needs telling, and the
+/// one case where the remote-tracking ref answers instead.
+pub(super) fn reconcile(cwd: &Path, local: &str, remote: &str) -> Result<String, String> {
     match standing(cwd, local, remote)? {
-        Standing::Same | Standing::Ahead => Ok(()),
+        Standing::Same | Standing::Ahead => Ok(TRACKER_REF.to_string()),
+        // Behind, and somebody has the branch checked out. The fast-forward below would move
+        // the branch under their worktree, leaving it reporting the newer commits inverted —
+        // a desync arriving from `trck list`, which has no business detaching anyone to avoid
+        // it. So nothing moves and the remote-tracking ref answers: it holds exactly the
+        // commits the fast-forward would have brought.
+        Standing::Behind if crate::git::worktree::is_checked_out(cwd, &format!("refs/heads/{TRACKER_REF}"))? => Ok(tracking()),
         // A fast-forward and nothing else: the compare-and-swap names the value just read,
         // so a concurrent write between the read and the move is refused rather than
         // overwritten. This is the only ref move a *read* is allowed to make.
-        Standing::Behind => crate::git::refs::update_ref(cwd, &format!("refs/heads/{TRACKER_REF}"), remote, Some(local)),
+        Standing::Behind => crate::git::refs::update_ref(cwd, &format!("refs/heads/{TRACKER_REF}"), remote, Some(local)).map(|()| TRACKER_REF.to_string()),
         Standing::Diverged => {
             // Local wins, because it holds work that exists nowhere else. Saying so is the
             // whole point: the alternative is a listing quietly missing whatever landed
@@ -47,7 +53,7 @@ pub(super) fn reconcile(cwd: &Path, local: &str, remote: &str) -> Result<(), Str
                 "warning: {TRACKER_REF} and origin/{TRACKER_REF} have diverged; reading {TRACKER_REF}, \
                  which is missing whatever landed remotely — run `trck sync` to reconcile"
             );
-            Ok(())
+            Ok(TRACKER_REF.to_string())
         },
     }
 }

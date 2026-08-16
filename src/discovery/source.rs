@@ -134,9 +134,10 @@ fn conventional_ref(cwd: &Path) -> Result<Option<Source>, String> {
         return Ok(only.map(|rev| Source::Ref { rev, cwd: cwd.to_path_buf() }));
     };
 
-    // Local answers in every remaining case. What differs is what has to happen first.
-    super::standing::reconcile(cwd, local_sha, remote_sha)?;
-    Ok(Some(Source::Ref { rev: TRACKER_REF.to_string(), cwd: cwd.to_path_buf() }))
+    // Local answers in almost every remaining case; what differs is what has to happen first,
+    // and the one exception is a branch somebody has checked out. `standing` decides both.
+    let rev = super::standing::reconcile(cwd, local_sha, remote_sha)?;
+    Ok(Some(Source::Ref { rev, cwd: cwd.to_path_buf() }))
 }
 
 #[cfg(test)]
