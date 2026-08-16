@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 62 |
+| backlog | 63 |
 | in-progress | 3 |
 | in-review | 0 |
 | done | 224 |
-| **total** | **289** |
+| **total** | **290** |
 
 ## Hierarchies
 
@@ -257,6 +257,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#jvruz7x README: document the ref-backed tracker as a user feature](items/jvruz7x-readme-document-the-ref-backed-tracker-as-a-user-feature.md) — _high_
 - [#bxfg4vk discovery: should the walk up be bounded, or can it adopt a stranger's tracker](items/bxfg4vk-discovery-should-the-walk-up-be-bounded-or-can-it-adopt-a-stranger-s-tracker.md) — _medium_
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](items/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
+- [#j4vephz update: remove the obsolete update verb](items/j4vephz-update-remove-the-obsolete-update-verb.md) — _medium_
 - [#jkvexgs docs: record a terminal demo of the next-driven loop for the README](items/jkvexgs-docs-record-a-terminal-demo-of-the-next-driven-loop-for-the-readme.md) — _medium_
 - [#k6g7kvf CI: a consistency check a consumer repo can drop in](items/k6g7kvf-ci-a-consistency-check-a-consumer-repo-can-drop-in.md) — _medium_
 - [#tfhhp8h mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](items/tfhhp8h-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
