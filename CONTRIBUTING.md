@@ -85,9 +85,22 @@ is all it checks — the tracker is validated by the verbs that write it, not by
 
 ## Dogfooding
 
-This repo **self-hosts** its own issues under `./issues/` — browse them to see `trck` tracking
-its own roadmap. Use the built binary for bookkeeping and hand-edit only an issue's markdown
-body; `index.jsonl` and `SUMMARY.md` are generated.
+This repo **self-hosts** its own issues, at the root of the
+[`trck-issues`](../../tree/trck-issues) branch rather than in a directory here — browse
+[the tracker](../../blob/trck-issues/SUMMARY.md) to see `trck` tracking its own roadmap.
+
+Nothing about that changes how you use it: every verb finds the branch with no flags, and a
+write verb builds its commit and pushes it by itself, from whatever branch you are on and however
+dirty your working tree is. So filing what you notice mid-change costs one command and disturbs
+nothing:
+
+```
+trck new "the thing you just noticed" --priority high
+```
+
+Use the built binary (`./target/release/trck`) — it must be one that can read a ref, so v0.30.0
+or newer. Prose goes through `trck edit <id>`, which opens your editor on the body and commits
+what you write; `index.jsonl` and `SUMMARY.md` are generated and never hand-edited.
 
 The README screenshots are regenerated from the bundled example tracker with
 `python3 docs/gen-screenshots.py`, which writes the SVGs under `docs/img/`.

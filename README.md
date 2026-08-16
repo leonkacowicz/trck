@@ -509,5 +509,13 @@ urgent by hand only flattens the ordering you were trying to express.
 
 `cargo build --release`. The engine is `src/` — one package at the repo root, no workspace,
 and no dependencies. Build, tests, the quality ratchet and the release process are in
-[CONTRIBUTING.md](CONTRIBUTING.md). This repo **self-hosts** its own issues under `./issues/` —
-browse them to see `trck` tracking its own roadmap.
+[CONTRIBUTING.md](CONTRIBUTING.md). This repo **self-hosts** its own issues — browse
+[the tracker](../../blob/trck-issues/SUMMARY.md) to see `trck` tracking its own roadmap.
+
+They are not in this tree. They live at the root of the
+[`trck-issues`](../../tree/trck-issues) branch, which is the other shape a tracker can take: a
+git ref instead of a directory, read out of the object store with nothing checked out. Every verb
+finds it with no flags, and a write verb commits and pushes there by itself, whatever branch you
+happen to be on. `trck --ref <rev>` or `$TRCK_REF` points at a different one; a tracker directory
+in the working tree still wins when there is one, which is what let this repository move over in
+pieces.
