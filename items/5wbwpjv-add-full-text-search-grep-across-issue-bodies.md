@@ -45,3 +45,25 @@ Acceptance criteria, mapped to the composition:
 - same one-line-per-issue format / empty prints nothing → `trck which` uses `print_rows`.
 - the engine gains no runtime dependency on an external tool — the user brings their
   own `rg`/`fzf`; nothing is shelled out internally.
+
+## Addendum — 2026-08-16: the premise expired
+The resolution above rests on one fact: *issue bodies are plain files the search tool
+already on the machine can read.* The move to the `trck-issues` ref (#sqzr7nk) made that
+false. There are no body files in the working tree, and all three primitives this issue
+added resolve through `Ctx::dir`, which answers a ref-backed tracker with "the tracker is
+git ref '…', which has no files on disk" — so `list --paths`, `path` and the `rg … | trck
+which` pipeline refuse rather than search.
+
+What replaces it is **not** the `trck search` verb this issue rejected. It is a filter on
+`list` — `--contains PATTERN`, tracked as #ubvkhds. That keeps the part of the reasoning
+that still holds: the matching primitive is commodity, and on a ref it is `git grep -l -F
+-i PAT <rev> -- items/`, one process reading blobs with no checkout. git grep does not
+disappear from the design; it moves inside the engine and stops being something the
+operator types. What trck still uniquely adds is the same thing it added here — mapping a
+hit back to an issue record — except that as a filter it also inherits every metadata
+filter, the nested forest, the ordering and `--json`, none of which the pipeline could
+compose with.
+
+So: a premise change, not a change of mind. This issue stays **done** — the composition it
+built was right for a tracker made of files, and it is `#ubvkhds` that owns the ref-backed
+answer and the retirement of `path`/`which`/`--paths` that follows it.
