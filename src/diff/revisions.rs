@@ -63,6 +63,24 @@ fn anchored(ctx: &Ctx, rev: &str) -> String {
     }
 }
 
+/// What to call the side that means "the tracker as it stands", which is not always a place.
+///
+/// For a directory it is the files on disk, committed or not, and `working tree` is exactly
+/// what `diff` with no `--to` is asking about. For a ref there is no working tree in the
+/// comparison at all — the answer came out of the object store — so naming one describes
+/// something that is both absent and, in a checkout that has one, actively misleading.
+///
+/// The ref as it was *resolved*, so `origin/trck-issues` where that is what was read: this is
+/// a label for what happened, not the branch a write would have targeted. It doubles as the
+/// correction for the other side, since a `HEAD` on the left was reanchored to this same
+/// branch and a reader taking it literally is counting the checkout's commits.
+fn here(ctx: &Ctx) -> String {
+    match &ctx.source {
+        Source::Dir(_) => "working tree".to_string(),
+        Source::Ref { rev, .. } => rev.clone(),
+    }
+}
+
 /// `HEAD`, and only `HEAD`, replaced by `tracker`.
 fn reanchor(rev: &str, tracker: &str) -> String {
     let Some(suffix) = rev.strip_prefix("HEAD") else {
@@ -89,10 +107,10 @@ pub(crate) fn parse_rev_spec(spec: &str) -> Result<(String, Option<String>), Str
 }
 
 /// Resolve a `--from`/`--to` spec: a file, a directory holding one, `-` for stdin, or the
-/// working tree when unspecified.
+/// tracker as it stands when unspecified.
 pub(crate) fn resolve_source(spec: Option<&str>, ctx: &Ctx) -> Result<Snapshot, String> {
     let Some(spec) = spec else {
-        return Snapshot::from_text(&ctx.read_index()?, "working tree");
+        return Snapshot::from_text(&ctx.read_index()?, &here(ctx));
     };
     if spec == "-" {
         use std::io::Read as _;

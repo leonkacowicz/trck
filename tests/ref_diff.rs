@@ -69,6 +69,46 @@ fn an_unknown_revision_still_says_unknown() {
     assert!(err.contains("no-such-rev"), "{err}");
 }
 
+/// The header names what was actually compared, and here that is not a working tree.
+///
+/// `diff`'s right-hand side is "the tracker as it stands", which for a directory is the files
+/// on disk and is labelled `working tree`. Read out of a ref there is no working tree in the
+/// comparison at all — the label was describing the wrong thing, and describing it in a repo
+/// where a working tree exists but has nothing to do with the answer, which is worse than a
+/// name for something absent.
+///
+/// It also disambiguates the left-hand side. `HEAD~1` was reanchored to the tracker branch, so
+/// a reader who takes `HEAD` at its word is counting the wrong commits; naming the branch on
+/// the right is the cheapest available correction.
+#[test]
+fn the_right_hand_side_names_the_ref_not_a_working_tree() {
+    let Some(s) = Scenario::build("diff-label-ref") else {
+        return;
+    };
+    // No local branch yet, so the tracker resolves through the remote-tracking ref — and the
+    // label has to be the ref that was *read*, whichever of the two spellings that is.
+    let out = trck_must(&s.work, &["diff", "HEAD~1"]);
+
+    let header = out.lines().next().unwrap_or_default();
+    assert_eq!(header, format!("HEAD~1 → origin/{TRACKER_BRANCH}"), "unexpected header in:\n{out}");
+    assert!(!out.contains("working tree"), "there is no working tree in this comparison:\n{out}");
+}
+
+/// And once the clone has its own tracker branch, that is the one named.
+#[test]
+fn the_label_follows_the_ref_that_was_resolved() {
+    let Some(s) = Scenario::build("diff-label-local") else {
+        return;
+    };
+    // A write creates the local branch, after which resolution prefers it over the remote.
+    trck_must(&s.work, &["new", "Filed here", "--id", "ccccccc", "--empty"]);
+
+    let out = trck_must(&s.work, &["diff", "HEAD~1"]);
+
+    let header = out.lines().next().unwrap_or_default();
+    assert_eq!(header, format!("HEAD~1 → {TRACKER_BRANCH}"), "unexpected header in:\n{out}");
+}
+
 /// `--from` names a file rather than a revision, and none of this touches it.
 #[test]
 fn from_a_file_is_unaffected() {
