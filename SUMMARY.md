@@ -5,10 +5,10 @@
 
 | State | Count |
 |---|---:|
-| backlog | 64 |
+| backlog | 63 |
 | in-progress | 4 |
 | in-review | 0 |
-| done | 225 |
+| done | 226 |
 | **total** | **293** |
 
 ## Hierarchies
@@ -257,7 +257,6 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#38qfknm restore the coverage the deleted suite carried: hooks, setup-git, git-revision diff](items/38qfknm-restore-the-coverage-the-deleted-suite-carried-hooks-setup-git-git-revision-diff.md) — _high_
 - [#jcdynvv check: warn when this clone's registered merge drivers no longer resolve](items/jcdynvv-check-warn-when-this-clone-s-registered-merge-drivers-no-longer-resolve.md) — _high_ [conflict-resolution]
 - [#jvruz7x README: document the ref-backed tracker as a user feature](items/jvruz7x-readme-document-the-ref-backed-tracker-as-a-user-feature.md) — _high_
-- [#bxfg4vk discovery: should the walk up be bounded, or can it adopt a stranger's tracker](items/bxfg4vk-discovery-should-the-walk-up-be-bounded-or-can-it-adopt-a-stranger-s-tracker.md) — _medium_
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](items/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#j4vephz update: remove the obsolete update verb](items/j4vephz-update-remove-the-obsolete-update-verb.md) — _medium_
 - [#jkvexgs docs: record a terminal demo of the next-driven loop for the README](items/jkvexgs-docs-record-a-terminal-demo-of-the-next-driven-loop-for-the-readme.md) — _medium_
@@ -326,6 +325,7 @@ _none_
 - [#at6pwut release v0.24.0](items/at6pwut-release-v0-24-0.md) — _medium_ (closed 2026-07-31)
 - [#b7t7d4q list: show points-weighted percent-complete on parent rows](items/b7t7d4q-list-show-points-weighted-percent-complete-on-parent-rows.md) — _medium_ (closed 2026-06-14)
 - [#bpwuedw Deduplicate parent-cycle detection via Graph.ancestors_of](items/bpwuedw-deduplicate-parent-cycle-detection-via-graph-ancestors-of.md) — _medium_ (closed 2026-06-10)
+- [#bxfg4vk discovery: should the walk up be bounded, or can it adopt a stranger's tracker](items/bxfg4vk-discovery-should-the-walk-up-be-bounded-or-can-it-adopt-a-stranger-s-tracker.md) — _medium_ · _superseded_ (closed 2026-08-16)
 - [#ccht2u2 list: order siblings by a global topological rank (blockers first)](items/ccht2u2-list-order-siblings-by-a-global-topological-rank-blockers-first.md) — _medium_ (closed 2026-08-07)
 - [#cea683t validate/dep: detect and prevent dependency cycles](items/cea683t-validate-dep-detect-and-prevent-dependency-cycles.md) — _medium_ [tracker-features] (closed 2026-06-08)
 - [#dbq2wqn deps: hide done work by default (fully-done chains + --omit-done)](items/dbq2wqn-deps-hide-done-by-default.md) — _medium_ (closed 2026-06-24)
