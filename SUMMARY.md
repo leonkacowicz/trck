@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 64 |
+| backlog | 65 |
 | in-progress | 3 |
 | in-review | 0 |
 | done | 230 |
-| **total** | **297** |
+| **total** | **298** |
 
 ## Hierarchies
 
@@ -259,6 +259,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#jcdynvv check: warn when this clone's registered merge drivers no longer resolve](items/jcdynvv-check-warn-when-this-clone-s-registered-merge-drivers-no-longer-resolve.md) — _high_ [conflict-resolution]
 - [#jvruz7x README: document the ref-backed tracker as a user feature](items/jvruz7x-readme-document-the-ref-backed-tracker-as-a-user-feature.md) — _high_
 - [#fgsetxs tracker CI: assert the committed index and summary are canonical](items/fgsetxs-tracker-ci-assert-the-committed-index-and-summary-are-canonical.md) — _medium_
+- [#ghwwpvk diagnostics: the file-shaped verbs should name their replacement and their scope](items/ghwwpvk-diagnostics-the-file-shaped-verbs-should-name-their-replacement-and-their-scope.md) — _medium_
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](items/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#j4vephz update: remove the obsolete update verb](items/j4vephz-update-remove-the-obsolete-update-verb.md) — _medium_
 - [#jkvexgs docs: record a terminal demo of the next-driven loop for the README](items/jkvexgs-docs-record-a-terminal-demo-of-the-next-driven-loop-for-the-readme.md) — _medium_
