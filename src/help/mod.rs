@@ -158,7 +158,7 @@ mod tests {
     /// accepted that goes unmentioned.
     #[test]
     fn documented_options_are_exactly_the_accepted_ones() {
-        for (verb, _, accepted) in crate::cli::KNOWN_FLAGS {
+        for (verb, _, accepted) in crate::cli::tables::KNOWN_FLAGS {
             let Some(h) = entries().find(|h| h.verb == *verb) else {
                 continue;
             };

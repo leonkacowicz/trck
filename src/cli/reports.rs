@@ -5,9 +5,21 @@
 //! is a few lines of orchestration over `diff`/`validate`, and a dispatch file that also
 //! implements three verbs is a dispatch file nobody can skim.
 
-use super::{Args, emit, is_closed_pipe};
+use super::{Args, context, emit, is_closed_pipe};
 use crate::discovery::Ctx;
 use crate::verbs;
+
+/// Route the three of them. Beside the implementations rather than in `dispatch`, for the
+/// reason above: this is the file that knows what these verbs are, and a dispatcher that
+/// merely names them has nothing to add by holding their arms as well.
+pub(super) fn dispatch_reports(args: &Args) -> Option<Result<String, String>> {
+    Some(match args.verb.as_str() {
+        "diff" => context(args).and_then(|ctx| cmd_diff(&ctx, args)),
+        "changelog" => context(args).and_then(|ctx| cmd_changelog(&ctx, args)),
+        "check" => context(args).and_then(|ctx| cmd_check(&ctx)),
+        _ => return None,
+    })
+}
 
 /// What shipped since a cutoff.
 pub(super) fn cmd_changelog(ctx: &Ctx, args: &Args) -> Result<String, String> {

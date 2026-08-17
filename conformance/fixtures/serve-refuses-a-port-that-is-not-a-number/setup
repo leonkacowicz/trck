@@ -1,0 +1,6 @@
+# The port is validated before the tracker is resolved and before anything is bound, so a
+# typo costs neither.
+#
+# No fixture in this suite ever *starts* a server. `serve` is the one verb whose job is to run
+# until it is signalled, and a fixture is one command and the answer it prints — so what is
+# specified here is the refusals, each of which exits before the socket exists.

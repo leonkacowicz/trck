@@ -5,6 +5,10 @@
 //! takes, which take a value, how many positionals are required — and they belong to the
 //! parser rather than to any one verb. They had accumulated in `opts` because it was the
 //! nearest place to put them.
+//!
+//! [`KNOWN_FLAGS`] arrived last, from `mod.rs`, where it was the odd one out: every other
+//! per-verb table was already here, and the guard that reads it — [`unrecognized_flag`] — was
+//! too. The two files it is named from now name it from one place.
 
 use super::Args;
 
@@ -26,6 +30,45 @@ pub(super) const LIST_FLAGS: &[&str] = &[
     "--flat",
     "--paths",
     "--json",
+];
+
+/// The flags each verb accepts, so a typo is refused rather than ignored.
+///
+/// Silently dropping an unrecognised option is the worst of both worlds: `list
+/// --stauts done` would list everything and read as a successful filter. Python's
+/// argparse rejects it; so does this, though the message differs — argparse prints its
+/// own usage block, and reproducing that is pinning argparse rather than trck.
+pub(crate) const KNOWN_FLAGS: &[(&str, usize, &[&str])] = &[
+    ("new", 0, &["--dir", "--id", "--slug", "--priority", "--points", "--parent", "--requires", "--spec", "--review-url", "--body", "--body-file", "--empty"]),
+    ("edit", 0, super::prose::EDIT_FLAGS),
+    ("sync", 0, &["--dir"]),
+    ("mv", 0, &["--dir", "--resolution", "--review-url"]),
+    ("start", 0, &["--dir"]),
+    ("review", 0, &["--dir", "--review-url"]),
+    ("done", 0, &["--dir", "--resolution"]),
+    ("set", 0, &["--dir", "--auto", "--priority", "--points", "--parent", "--spec", "--review-url", "--title", "--slug", "--field", "--unset"]),
+    ("dep", 0, &["--dir", "--add", "--remove"]),
+    ("label", 0, &["--dir", "--add", "--remove"]),
+    ("list", 0, LIST_FLAGS),
+    // Named once rather than repeated: `tree` is an alias, so a flag either verb accepted
+    // alone would be a flag the other silently refused.
+    ("tree", 0, LIST_FLAGS),
+    ("show", 0, &["--dir", "--json"]),
+    ("path", 0, &["--dir"]),
+    ("which", 0, &["--dir", "--ids"]),
+    ("check", 0, &["--dir"]),
+    ("html", 0, &["--dir", "--out", "--cmd"]),
+    ("serve", 0, &["--dir", "--port"]),
+    ("diff", 0, &["--dir", "--from", "--to"]),
+    ("changelog", 0, &["--dir", "--since"]),
+    ("summary", 0, &["--dir"]),
+    ("ready", 0, &["--dir", "--next", "--json"]),
+    ("deps", 0, &["--dir", "--requires", "--blocks", "--full", "--omit-done", "--include-done-chains", "--fanout", "--json"]),
+    ("next", 0, &["--dir", "--json"]),
+    // `--no-vendor` is accepted and does nothing. It asked for the only behaviour there is
+    // now, so refusing it would mean erroring on a request already satisfied; every README
+    // and script that learned to pass it keeps working. `init -h` says as much.
+    ("init", 1, &["--dir", "--force", "--hook", "--no-vendor"]),
 ];
 
 /// Verbs whose `--json` is implemented. The rest still refuse the flag: accepted-and-ignored
@@ -76,6 +119,7 @@ pub(crate) const VERBS: &[&str] = &[
     // `html` has no Python counterpart: it is `tools/trck-html`, folded in. The verb
     // list is what this binary offers, not a mirror of the old CLI.
     "html",
+    "serve",
     "repo",
     "init",
     "version",
@@ -101,6 +145,6 @@ pub(crate) const GLOBAL_FLAGS: &[&str] = &["--dir", "--ref"];
 /// Its own function because `usage_error` is a list of guards and this is the only one that
 /// has to consult two tables: the verb's own flags, and the ones every verb takes.
 pub(super) fn unrecognized_flag(args: &Args) -> Option<&str> {
-    let (_, _, flags) = super::KNOWN_FLAGS.iter().find(|(verb, ..)| *verb == args.verb)?;
+    let (_, _, flags) = KNOWN_FLAGS.iter().find(|(verb, ..)| *verb == args.verb)?;
     args.options.iter().map(|(n, _)| n.as_str()).find(|n| !flags.contains(n) && !GLOBAL_FLAGS.contains(n))
 }

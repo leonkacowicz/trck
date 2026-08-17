@@ -117,6 +117,17 @@ pub(super) const VERBS: &[VerbHelp] = &[
         example: "",
     },
     VerbHelp {
+        verb: "serve",
+        tagline: "serve the tracker's page from a live process (loopback only)",
+        usage: "trck serve [options]",
+        blurb: "Serve the page `trck html` writes, from a process that renders it per request — so it shows the tracker as it is now rather than as it was when a file was last regenerated. Binds 127.0.0.1 and nothing else: there is no flag that widens it, because a tracker is a repository's working notes and nothing here should be reachable from a network. GET / is the page; /app.css and /app.js answer from the copies compiled into this binary, never from a file on disk. Nothing is written — this serves the tracker, it does not edit it. Ctrl-C stops it and frees the port.",
+        args: &[],
+        opts: &[("--port PORT", "port to listen on (default 8725); 0 asks the OS to choose one and the startup line says which")],
+        alias_of: "",
+        example: "trck serve
+  trck serve --port 9000",
+    },
+    VerbHelp {
         verb: "changelog",
         tagline: "list issues shipped since a date/timestamp (release notes)",
         usage: "trck changelog [options]",

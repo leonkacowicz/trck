@@ -2,16 +2,20 @@
 //!
 //! Split from the parsing beside it because they answer different questions — what did the
 //! user type, and what should that do — and because one `match` over two dozen verbs is a
-//! function nobody can hold in their head. The three groups here (write something, read
-//! something, maintain the repository) are the seams the verbs already fall along.
+//! function nobody can hold in their head. The groups (write something, read something, report
+//! on the tracker, maintain the repository) are the seams the verbs already fall along.
+//!
+//! Two of those groups route from the file that implements them rather than from here —
+//! `reports` and `maintain` — because in both cases the routing is a restatement of what that
+//! file already knows, and one of them (`repo`) needs a paragraph per subcommand about which
+//! context it may resolve. [`dispatch`] names the stages in order; adding a group is a name in
+//! that list.
 
 use super::opts::{deps_opts, init_from_args, list_opts, mv_opts, set_opts};
-use super::reports::{cmd_changelog, cmd_check, cmd_diff, cmd_summary};
+use super::reports::{cmd_summary, dispatch_reports};
 use super::tables::{VERBS, id_operand};
-use super::{Args, context, parse_args, setup_source, tracker_dir};
-use crate::discovery::Ctx;
+use super::{Args, context, parse_args, tracker_dir};
 use crate::query;
-use crate::repo;
 use crate::verbs;
 
 /// The verbs that write. Returns `None` when the verb is not one of them, so `dispatch`
@@ -79,9 +83,7 @@ fn dispatch_browse(args: &Args) -> Option<Result<String, String>> {
     })
 }
 
-/// The read verbs. Split out for the same reason `dispatch_mutating` is: one `match` over
-/// two dozen verbs is a function nobody can hold in their head, and the three groups —
-/// change something, read something, maintain the repository — are the natural seams.
+/// The read verbs that are not a listing and not a report: resolve the tracker, answer once.
 fn dispatch_query(args: &Args) -> Option<Result<String, String>> {
     if let Some(result) = dispatch_browse(args) {
         return Some(result);
@@ -93,52 +95,26 @@ fn dispatch_query(args: &Args) -> Option<Result<String, String>> {
             query::cmd_which(&ctx, &paths, args.has("--ids"))
         }),
         "html" => context(args).and_then(|ctx| crate::html::cmd_html(&ctx, args.opt("--out"), args.opt("--cmd"))),
-        "diff" => context(args).and_then(|ctx| cmd_diff(&ctx, args)),
-        "changelog" => context(args).and_then(|ctx| cmd_changelog(&ctx, args)),
-        "check" => context(args).and_then(|ctx| cmd_check(&ctx)),
+        // The one verb that does not return: it prints where it is listening and then serves
+        // until the process is signalled. The tracker is resolved before anything is bound, so
+        // an unresolvable one refuses here rather than leaving a socket listening on a page
+        // the process cannot render.
+        "serve" => context(args).and_then(|ctx| crate::serve::cmd_serve(&ctx, args.opt("--port"))),
         _ => return None,
     })
-}
-
-/// `repo` and its subcommands.
-///
-/// The context is resolved per subcommand rather than once, because they disagree about
-/// what they need: the merge drivers must work with no tracker in reach at all, and
-/// `migrate-layout` must reach one the ordinary guards would refuse.
-fn dispatch_repo(args: &Args) -> Result<String, String> {
-    let sub = args.positional_at(0).unwrap_or("");
-    let operand = |n: usize| -> Result<&str, String> { args.positional_at(n).ok_or_else(|| format!("repo {sub}: missing operand {n}")) };
-    match sub {
-        // git may invoke a driver from anywhere in the worktree, and a merge with no
-        // reachable trck.json still has to merge the rows it was handed.
-        "merge-index" => repo::cmd_merge_index(context(args).ok().as_ref(), operand(1)?, operand(2)?, operand(3)?),
-        "merge-summary" => repo::cmd_merge_summary(context(args).ok().as_ref(), operand(1)?),
-        // Clone-local setup is also how an implicitly hidden tracker ref becomes visible.
-        "setup-git" => {
-            let (cwd, context) = setup_source(args)?;
-            repo::cmd_setup_git(&cwd, context.as_ref())
-        },
-        "install-hook" => repo::cmd_install_hook(&context(args)?),
-        "normalize" => repo::cmd_normalize(&context(args)?),
-        // The one verb whose whole job is to operate on a legacy tracker, so it resolves
-        // the context without the layout guard that refuses one.
-        "migrate-layout" => repo::cmd_migrate_layout(&Ctx::load(crate::discovery::Source::Dir(tracker_dir(args)?), false)?, args.has("--dry-run")),
-        "" => Err("repo: missing a subcommand".into()),
-        other => Err(format!("repo: `{other}` is not implemented yet in the Rust engine")),
-    }
 }
 
 pub(super) fn dispatch(raw: &[String]) -> Result<String, String> {
     let args = parse_args(raw);
     // In order, first to claim the verb wins. A loop rather than a chain of `if let`s so
     // that adding a group is a line in the list rather than a change to the control flow.
-    for stage in [super::prose::dispatch_prose, super::sync::dispatch_sync, dispatch_mutating, dispatch_query] {
+    for stage in [super::prose::dispatch_prose, super::sync::dispatch_sync, dispatch_mutating, dispatch_query, dispatch_reports] {
         if let Some(result) = stage(&args) {
             return result;
         }
     }
     match args.verb.as_str() {
-        "repo" => dispatch_repo(&args),
+        "repo" => super::maintain::dispatch_repo(&args),
         // Version on stdout, tracker on stderr — so `trck version` stays pipeable to
         // something that wants only the number while a human still sees which tracker
         // they are pointed at.

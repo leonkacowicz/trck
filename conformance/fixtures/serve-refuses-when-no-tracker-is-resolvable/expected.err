@@ -1,0 +1,1 @@
+error: no tracker found from <WORKDIR>/repo/nested through Git repository root <WORKDIR>/repo; run `trck init`
