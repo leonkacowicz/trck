@@ -6,8 +6,8 @@
 | State | Count |
 |---|---:|
 | backlog | 62 |
-| in-progress | 4 |
-| in-review | 0 |
+| in-progress | 3 |
+| in-review | 1 |
 | done | 232 |
 | **total** | **298** |
 
@@ -227,7 +227,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ### [#tcm5s56 serve: a live process over the tracker ref, with writes from the page](items/tcm5s56-v7-trck-serve-live-process-edits-write-back-to-index-jsonl.md) — 0% (0/5 pts · 0/5 done) · _low_ · in-progress
 
-- [ ] [#ba48fnw serve: the HTTP layer — loopback listener, compiled-in assets, clean shutdown](items/ba48fnw-serve-the-http-layer-loopback-listener-compiled-in-assets-clean-shutdown.md) _(in-progress)_
+- [ ] [#ba48fnw serve: the HTTP layer — loopback listener, compiled-in assets, clean shutdown](items/ba48fnw-serve-the-http-layer-loopback-listener-compiled-in-assets-clean-shutdown.md) _(in-review)_ · [review](https://github.com/leonkacowicz/trck/pull/67)
 - [ ] [#eemua4s serve: poll and fast-forward the tracker ref on a timer](items/eemua4s-serve-poll-and-fast-forward-the-tracker-ref-on-a-timer.md) _(backlog)_
 - [ ] [#mcmfmca serve: POST to Op — the page's staged edits become in-process write verbs](items/mcmfmca-serve-post-to-op-the-page-s-staged-edits-become-in-process-write-verbs.md) _(backlog)_
 - [ ] [#us8fenh serve: SSE re-render — ref movement pushes to open pages](items/us8fenh-serve-sse-re-render-ref-movement-pushes-to-open-pages.md) _(backlog)_
