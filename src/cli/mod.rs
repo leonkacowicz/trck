@@ -182,17 +182,7 @@ fn usage_error(args: &Args) -> Option<String> {
 }
 
 fn usage() -> String {
-    format!(
-        "trck {} — deterministic in-repo issue tracker\n\
-         \n\
-         One binary, no runtime and no dependencies. The tracker is plain files in your\n\
-         repository: a markdown body per issue, plus a generated index and summary.\n\
-         What the verbs do is specified by conformance/, which runs against this binary.\n\
-         \n\
-         Verbs: {}\n",
-        env!("CARGO_PKG_VERSION"),
-        tables::VERBS.join(", ")
-    )
+    help::overview(env!("CARGO_PKG_VERSION"))
 }
 
 /// Resolve the tracker and load it, applying the format guard.

@@ -1,8 +1,10 @@
-//! Per-verb help.
+//! Help: the program's overview, and a page per verb.
 //!
 //! `trck <verb> --help` has to answer about the verb, not the program. It used to print the
 //! same summary whatever came before it, which is the least useful moment to be told what
-//! trck is in general.
+//! trck is in general. `trck --help` is the other half of the same idea: a reader with the
+//! binary installed wants the vocabulary, so it lists the verbs and nothing else. Both are
+//! built from one table, so a verb cannot appear in the map and be missing from the detail.
 //!
 //! The text is inherited rather than invented: it comes from the argparse definitions the
 //! engine's predecessor carried, where every option already had a sentence written for it.
@@ -40,60 +42,23 @@ const GLOBAL_OPTS: &[(&str, &str)] = &[
 
 mod edit;
 mod maintain;
+mod overview;
 mod read;
+mod render;
 
-/// Every verb's help, in the order the groups are declared.
+pub(crate) use overview::overview;
+
+use render::{columns, wrap};
+
+/// Every verb's help, in the order the groups are declared, each under the heading the
+/// program's own help lists it beneath.
 ///
 /// Three slices rather than one table: the text is ~300 lines of prose and it is the
 /// part that changes most, so it lives beside the dispatch grouping it mirrors.
-const GROUPS: &[&[VerbHelp]] = &[edit::VERBS, read::VERBS, maintain::VERBS];
+const GROUPS: &[(&str, &[VerbHelp])] = &[("work with issues", edit::VERBS), ("read the tracker", read::VERBS), ("maintain", maintain::VERBS)];
 
 fn entries() -> impl Iterator<Item = &'static VerbHelp> {
-    GROUPS.iter().copied().flatten()
-}
-
-/// Wrap `text` to `width` columns, prefixing every line with `indent`.
-///
-/// Written out rather than pre-wrapped in the table because the table is edited far more
-/// often than this is, and a paragraph stored as one string is one a person can rewrite
-/// without re-flowing it by hand.
-fn wrap(text: &str, width: usize, indent: &str) -> String {
-    let mut lines: Vec<String> = Vec::new();
-    let mut line = String::new();
-    for word in text.split_whitespace() {
-        if !line.is_empty() && line.chars().count() + 1 + word.chars().count() > width {
-            lines.push(std::mem::take(&mut line));
-        }
-        if !line.is_empty() {
-            line.push(' ');
-        }
-        line.push_str(word);
-    }
-    if !line.is_empty() {
-        lines.push(line);
-    }
-    let mut out = String::new();
-    for l in &lines {
-        out.push_str(indent);
-        out.push_str(l);
-        out.push('\n');
-    }
-    out
-}
-
-/// A two-column block: the term, then its description wrapped in the remaining width.
-fn columns(rows: &[(&str, &str)], width: usize) -> String {
-    let gutter = rows.iter().map(|(t, _)| t.chars().count()).max().unwrap_or(0) + 2;
-    let mut out = String::new();
-    for (term, desc) in rows {
-        let indent = " ".repeat(gutter + 2);
-        let body = wrap(desc, width.saturating_sub(gutter + 2), &indent);
-        out.push_str("  ");
-        out.push_str(term);
-        out.push_str(&" ".repeat(gutter.saturating_sub(term.chars().count())));
-        out.push_str(body.trim_start());
-    }
-    out
+    GROUPS.iter().flat_map(|(_, verbs)| verbs.iter())
 }
 
 /// Help for one verb, or `None` when it has none — in which case the caller falls back to

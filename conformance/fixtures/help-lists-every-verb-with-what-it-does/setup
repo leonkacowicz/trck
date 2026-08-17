@@ -1,0 +1,3 @@
+# `trck --help` answers "what can I type", so it lists every verb with one line on what that
+# verb does. It is not the place to describe what trck is: whoever is reading it has already
+# installed the binary. The version is normalised to <VERSION>, so this golden survives a bump.

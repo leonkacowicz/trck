@@ -16,6 +16,7 @@ See README.md in this directory for the fixture format.
 import argparse
 import difflib
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -44,6 +45,12 @@ TIMEOUT_CODE = 124                 # what `timeout(1)` uses, for the same meanin
 # first. The tracker lives in a temp dir, and `new`/`path`/`which` print paths into it.
 TRACKER_PLACEHOLDER = "<TRACKER>"
 WORKDIR_PLACEHOLDER = "<WORKDIR>"
+# The engine stamps its own version into the header of `--help`. Naming it in a golden would
+# mean rewriting that golden at every release, so it is replaced too. Anchored to the start of
+# a line after the program's own name, which is the only place a version is printed as prose —
+# `version` prints the number alone and stays assertable.
+VERSION_PLACEHOLDER = "<VERSION>"
+VERSION_LINE = re.compile(r"^trck \d+\.\d+\.\d+\S*", re.M)
 
 ARTIFACTS = {                      # golden file -> path inside the tracker
     "expected.index.jsonl": "index.jsonl",
@@ -105,8 +112,9 @@ def _text(captured):
 
 
 def normalise(text, tracker):
-    return (text.replace(str(Path(tracker).resolve()), TRACKER_PLACEHOLDER)
+    text = (text.replace(str(Path(tracker).resolve()), TRACKER_PLACEHOLDER)
             .replace(str(Path(tracker).resolve().parent), WORKDIR_PLACEHOLDER))
+    return VERSION_LINE.sub(f"trck {VERSION_PLACEHOLDER}", text)
 
 
 def build_tracker(fixture, workdir, binary, env_extra):

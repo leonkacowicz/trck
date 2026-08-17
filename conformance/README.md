@@ -76,7 +76,9 @@ compared byte for byte. The clock override is part of the specification every en
 implements, not a hook bolted onto one of them.
 
 Output is also run with `NO_COLOR=1`, and the tracker's temp path is replaced with
-`<TRACKER>` before comparison.
+`<TRACKER>` before comparison. So is the engine's version where `--help` prints it as
+`trck X.Y.Z — …`, which becomes `trck <VERSION> — …`; otherwise that golden would need
+rewriting at every release. `version` prints the bare number and is left alone.
 
 `discovery` is for the boundary of implicit lookup itself. `git` initializes a sibling
 repository and runs from a nested directory inside it; `plain` uses the same shape without
