@@ -16,7 +16,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use std::io::{BufRead as _, BufReader, Read as _, Write as _};
-use std::net::{Ipv4Addr, TcpListener, TcpStream};
+use std::net::{Ipv4Addr, TcpStream};
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 
@@ -145,6 +145,11 @@ fn a_busy_port_is_refused_with_a_diagnostic_naming_it() {
 #[cfg(unix)]
 #[test]
 fn ctrl_c_leaves_the_port_free() {
+    // Imported here rather than at the top: this is the only test that rebinds, and on a
+    // platform without `SIGINT` the whole test is gone — leaving an unused import behind,
+    // which `-D warnings` fails the Windows build over.
+    use std::net::TcpListener;
+
     let mut server = Server::start();
     assert!(server.get("/").starts_with("HTTP/1.1 200 OK\r\n"), "the server was not up to begin with");
     let port = server.port;
