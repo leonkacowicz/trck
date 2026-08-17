@@ -1,5 +1,8 @@
 # retire path, which and list --paths once --contains replaces them
 
+**Closed `wontfix` on 2026-08-16. They stay.** The reasoning is at the end; the original
+proposal is left intact above it, because the argument it lost is the useful part.
+
 ## Summary
 `path`, `which` and `list --paths` exist to hand a search tool a set of files and read its
 output back — a bridge that only spans a tracker made of files. On the `trck-issues` ref
@@ -11,7 +14,40 @@ pipeline this repo can no longer run.
 The deletion is deliberately **after** the replacement, not with it — do not remove the
 escape route before `--contains` exists.
 
-## Acceptance criteria
+## Why it was rejected
+
+The proposal rested on: *two ways to search bodies, one of which only works in one storage
+mode, is worse for everyone than one that works in both.* That holds only if both are
+presented as general. Measured after `--contains` landed:
+
+- Against a directory tracker the whole pipeline still round-trips —
+  `list --paths --all | which --ids` returns the right ids against `examples/action-game`.
+  Nothing is broken for the storage mode these verbs were written for.
+- Against a ref they fail cleanly: exit 1, the real cause named, no path printed that is not
+  there.
+
+So this is not a broken feature being carried; it is a working feature of a supported storage
+mode. Deleting it would take something away from every other repository in order to tidy up
+this one — and this repository is the only one that migrated. `--contains` earns its place by
+working in both modes, not by leaving nothing else standing.
+
+The issue named this outcome in advance and required it be taken cleanly: keep them
+directory-only and close `wontfix`, rather than let the change quietly become half a
+deletion. That is what happened.
+
+## What was real in it
+
+One thing: the refusal is accurate but incomplete. It says the tracker has no files; it does
+not say that `list --contains` is what the workflow became, and no help text says these three
+need a tracker directory. That gap is #ghwwpvk, filed outside the storage epic because it is
+about how the engine explains itself to everyone rather than about this repository's move.
+
+The conformance arithmetic in the notes below is therefore moot — no fixtures are deleted and
+the floor does not move. Recorded because the reasoning about *when* a floor may come down is
+worth keeping: a fixture deleted along with the feature it describes is not a regression,
+which is a different case from one that starts failing.
+
+## Acceptance criteria (of the rejected proposal)
 - [ ] `src/query/paths.rs` deleted: `cmd_path`, `cmd_which`, `which_operands`, `paths_of`,
       and the Windows `plain`/`needs_verbatim` helpers with their unit tests.
 - [ ] `--paths` gone from `ListOpts` and `cmd_list`, including the `--json`/`--paths`
