@@ -5,8 +5,8 @@
 
 | State | Count |
 |---|---:|
-| backlog | 60 |
-| in-progress | 3 |
+| backlog | 59 |
+| in-progress | 4 |
 | in-review | 0 |
 | done | 235 |
 | **total** | **298** |
@@ -230,7 +230,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#ba48fnw serve: the HTTP layer — loopback listener, compiled-in assets, clean shutdown](items/ba48fnw-serve-the-http-layer-loopback-listener-compiled-in-assets-clean-shutdown.md) · [review](https://github.com/leonkacowicz/trck/pull/67)
 - [x] [#eemua4s serve: poll and fast-forward the tracker ref on a timer](items/eemua4s-serve-poll-and-fast-forward-the-tracker-ref-on-a-timer.md) · [review](https://github.com/leonkacowicz/trck/pull/68)
 - [x] [#mcmfmca serve: POST to Op — the page's staged edits become in-process write verbs](items/mcmfmca-serve-post-to-op-the-page-s-staged-edits-become-in-process-write-verbs.md) · [review](https://github.com/leonkacowicz/trck/pull/69)
-- [ ] [#us8fenh serve: SSE re-render — ref movement pushes to open pages](items/us8fenh-serve-sse-re-render-ref-movement-pushes-to-open-pages.md) _(backlog)_
+- [ ] [#us8fenh serve: SSE re-render — ref movement pushes to open pages](items/us8fenh-serve-sse-re-render-ref-movement-pushes-to-open-pages.md) _(in-progress)_
 - [ ] [#zd9jqav serve: pending and sync in the UI — unpushed commits visible and flushable](items/zd9jqav-serve-pending-and-sync-in-the-ui-unpushed-commits-visible-and-flushable.md) _(backlog)_
 
 ### [#u5fc5vm trck diff: semantic diff of tracker state between revisions](items/u5fc5vm-trck-diff-semantic-diff-of-tracker-state-between-revisions.md) — 29% (5/17 pts · 2/8 done) · _medium_ · in-progress
