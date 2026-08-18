@@ -79,8 +79,16 @@ pub(crate) fn batch(ctx: &Ctx, body: &str) -> Result<Outcome, String> {
             break;
         }
     }
-    outcome.sha = head_sha(ctx);
+    outcome.sha = super::events::version(ctx);
     outcome.pending = unpushed(ctx);
+    // The other cause an open page cares about. Announced even when nothing was applied,
+    // because a batch that stopped part way still moved the tracker for the part that did —
+    // and announced before the answer goes out, so the page that asked for this write learns
+    // of it the same way every other page does rather than through a special case.
+    if outcome.applied.is_empty() {
+        return Ok(outcome);
+    }
+    super::events::announce(outcome.sha.as_deref());
     Ok(outcome)
 }
 
@@ -147,15 +155,4 @@ fn unpushed(ctx: &Ctx) -> usize {
         return 0;
     };
     crate::discovery::standing::pending(cwd).unwrap_or(0)
-}
-
-/// What the tracker ref points at now.
-///
-/// `None` for a directory tracker, which has no ref and no sha to compare — the page falls
-/// back to reloading, which is what it would do anyway.
-fn head_sha(ctx: &Ctx) -> Option<String> {
-    let crate::discovery::Source::Ref { cwd, .. } = &ctx.source else {
-        return None;
-    };
-    crate::git::rev_parse(cwd, crate::verbs::backend::local_branch(crate::discovery::TRACKER_REF)).ok().flatten()
 }

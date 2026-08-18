@@ -2,9 +2,10 @@
 //!
 //! **Why this is hand-written.** The dependency rule permits a crate — anything that links
 //! statically in qualifies — so this was decided on what it costs rather than on a
-//! prohibition. What `serve` needs is one method, three fixed paths, no query parsing, no
-//! chunked bodies, no TLS, no keep-alive and no content negotiation; every response body is
-//! already in memory before the headers are written. That is a few dozen lines here against
+//! prohibition. What `serve` needs is two methods, a handful of fixed paths, no chunked
+//! bodies, no TLS, no keep-alive and no content negotiation; every response body is already
+//! in memory before the headers are written — bar one, and that one is a stream of lines
+//! written by hand as they happen. That is a few dozen lines here against
 //! a tree of crates to audit and build on every platform the release matrix cross-compiles
 //! for. The parser is also *deliberately* narrow: it accepts what a browser on loopback
 //! sends and refuses the rest, which is a smaller attack surface than a general server, not
@@ -27,12 +28,16 @@ const MAX_HEAD: usize = 8 * 1024;
 /// process for an allocation.
 const MAX_BODY: usize = 256 * 1024;
 
-/// What routing depends on: the method, the path with any query stripped, the `Host` the
-/// client thought it was talking to, and — for the one verb that writes — what it sent.
+/// What routing depends on: the method, the path, whatever followed it, the `Host` the
+/// client thought it was talking to, and — for the one route that writes — what it sent.
 pub(crate) struct Request {
     pub(crate) method: String,
     pub(crate) path: String,
     pub(crate) host: Option<String>,
+    /// Whatever followed `?`, undecoded and unsplit. One route reads it — the event stream,
+    /// which is told the version the page holds — and a general query parser for one caller
+    /// would be furniture.
+    pub(crate) query: String,
     /// Empty for a GET, which is every route but one.
     pub(crate) body: String,
 }
@@ -159,10 +164,24 @@ fn request_line(line: &str) -> Result<Request, Response> {
     if !target.starts_with('/') {
         return Err(Response::problem(400, "Bad Request", "only origin-form targets (`/path`) are served"));
     }
-    // The query is the page's business, not the server's: every route here is a fixed path,
-    // and `/?view=board` is the same document as `/`.
-    let path = target.split('?').next().unwrap_or(target);
-    Ok(Request { method: method.to_string(), path: path.to_string(), host: None, body: String::new() })
+    // Split rather than dropped: routing is by path alone — `/?view=board` is the same
+    // document as `/` — but one route does read what follows.
+    let (path, query) = target.split_once('?').unwrap_or((target, ""));
+    Ok(Request { method: method.to_string(), path: path.to_string(), query: query.to_string(), host: None, body: String::new() })
+}
+
+impl Request {
+    /// One `name=value` out of the query string, which is the whole of the query language here.
+    ///
+    /// Not percent-decoded: the one thing anything asks for is a version, which is a commit sha
+    /// or a small integer — and a decoder written for a caller that never needs one is a
+    /// decoder nobody would ever find the bug in. An absent or empty value is `None`, which
+    /// reads as "whatever you have" and is what a page with no version of its own sends.
+    pub(crate) fn query_value(&self, name: &str) -> Option<String> {
+        let prefix = format!("{name}=");
+        let value = self.query.split('&').find_map(|pair| pair.strip_prefix(&prefix))?;
+        (!value.is_empty()).then(|| value.to_string())
+    }
 }
 
 /// `Name: value`, matched case-insensitively on the name as HTTP requires.

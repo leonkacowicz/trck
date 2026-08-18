@@ -14,7 +14,14 @@ function el(tag, props = {}, ...kids) {
   return n;
 }
 
-const byId = Object.fromEntries(DATA.issues.map(i => [i.id, i]));
+// Rebuilt in place rather than reassigned, so that every renderer can go on closing over one
+// object across a live re-render. `const` binds the name, not the contents.
+const byId = {};
+function reindex() {
+  for (const id of Object.keys(byId)) delete byId[id];
+  for (const i of DATA.issues) byId[i.id] = i;
+}
+reindex();
 const terminal = new Set(DATA.config.statuses.filter(s => s.terminal).map(s => s.name));
 const prio = DATA.config.priorities;
 // What each facet offers a box for. Also the seed for its selection: everything starts
@@ -135,7 +142,7 @@ async function applyEdits() {
       body: JSON.stringify({ edits }),
     });
     const out = await res.json();
-    if (out.ok) { state.edits = {}; location.reload(); return; }
+    if (out.ok) { state.edits = {}; await refresh(); return; }
     showApplyError(applyMessage(out));
   } catch (e) {
     showApplyError('could not reach the trck server: ' + e);
@@ -168,6 +175,58 @@ async function copyAll() {
   }
   flash('#pcopy', 'Copied!');
 }
+// --- live re-render (v4): the server says the tracker moved, the page catches up ----------
+const MODEL_PATH = '/model';
+const EVENTS_PATH = '/events';
+//
+// A reload would be simpler and would throw away the three things a reader most notices losing:
+// which issue is selected, where the view is scrolled to, and any edit staged but not yet
+// applied. So the model is re-fetched and the same renderers are run again over it, through
+// `keepingScroll` — which is what `select()` already does for the same reason.
+async function refresh() {
+  const res = await fetch(MODEL_PATH);
+  if (!res.ok) return;
+  Object.assign(DATA, await res.json());
+  reindex();
+  // The selected issue may have been closed and pruned, or never have existed in this
+  // rendering; `renderDetail` copes with nothing selected, and pointing at a ghost is worse.
+  if (state.selected && !byId[state.selected]) state.selected = null;
+  dropSettledEdits();
+  renderCounts();
+  renderDetail();
+  renderPending();
+  keepingScroll($('#' + state.view), renderActiveView);
+}
+
+// Forget the staged edits reality has caught up with.
+//
+// Somebody else — or you, in a terminal — may have made the very change that was staged here.
+// Keeping it would leave a command in the panel that would now do nothing, and `setEdit`
+// already treats "same as the issue" as not an edit; this applies that rule to the issue
+// having moved rather than to the field having been set back.
+function dropSettledEdits() {
+  for (const [k, v] of Object.entries(state.edits)) {
+    const id = k.slice(0, k.indexOf('::')), field = k.slice(k.indexOf('::') + 2);
+    if (byId[id] === undefined || byId[id][field] === v) delete state.edits[k];
+  }
+}
+
+// Listen for the tracker moving, for as long as this page is open.
+//
+// `EventSource` reconnects by itself, so what is left here is saying so: a page that quietly
+// stopped being live looks exactly like a tracker where nothing is happening, and the whole
+// point of this is that the difference is visible. The badge goes up on the first failure and
+// comes down when the stream opens again — including after the server was restarted, since the
+// browser keeps retrying at the interval the stream itself asked for.
+function watch() {
+  const since = DATA.config.version ? '?v=' + encodeURIComponent(DATA.config.version) : '';
+  const events = new EventSource(EVENTS_PATH + since);
+  events.onopen = () => { $('#offline').hidden = true; };
+  events.onerror = () => { $('#offline').hidden = false; };
+  events.onmessage = () => { $('#offline').hidden = true; refresh(); };
+}
+// --- end live re-render ------------------------------------------------------
+
 function clearEdits() { state.edits = {}; renderDetail(); renderPending(); renderActiveView(); }
 function editSelect(i, field, values) {
   const cur = stagedValue(i, field);
@@ -388,8 +447,11 @@ function renderActiveView() {
 // Run `render` without letting the pane it rebuilds lose its place. Every renderer empties
 // its container before refilling it, and that container is the scrolling element — so a
 // rebuild silently returns the reader to the top-left of a graph they had scrolled across.
-// Sound only because the caller's change is cosmetic: selection moves the `sel` class and
-// nothing else, so the geometry the offsets refer to is the same one on the way out.
+//
+// Exact for a cosmetic change: selection moves the `sel` class and nothing else, so the
+// geometry the offsets refer to is the same one on the way out. A live re-render is the other
+// case — rows can appear and disappear, so the offsets land near where the reader was rather
+// than exactly on it. Near is the whole of what is available and far better than the top.
 function keepingScroll(box, render) {
   if (!box) return render();
   const top = box.scrollTop, left = box.scrollLeft;
@@ -1089,5 +1151,6 @@ function init() {
   renderActiveView();
   renderDetail();
   renderPending();
+  if (DATA.config.live) watch();
 }
 init();

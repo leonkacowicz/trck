@@ -150,6 +150,8 @@ main { display: grid; grid-template-columns: minmax(12rem, var(--leftw, 40%)) 6p
         border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .pcount { font-weight: 600; }
 .phint { color: var(--muted); font-size: .8rem; }
+.offline { margin-left: auto; padding: .1rem .4rem; border: 1px solid var(--hot); border-radius: 3px;
+  color: var(--hot); font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; }
 .perror { margin: 0; padding: .4rem .6rem; color: var(--hot); font-size: .8rem; white-space: pre-wrap; }
 .pspace { flex: 1; }
 .pending button { font: inherit; padding: .3rem .8rem; border: 1px solid var(--line);

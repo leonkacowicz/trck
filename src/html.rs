@@ -26,7 +26,7 @@ use crate::{config, summary};
 /// answers `/app.css` and `/app.js` from these very constants — so a live process can never
 /// serve an asset out of the working tree it was launched in, which may be on another branch.
 pub(crate) const CSS: &str = include_str!("../assets/app.css");
-const SHELL: &str = include_str!("../assets/shell.html");
+pub(crate) const SHELL: &str = include_str!("../assets/shell.html");
 pub(crate) const APP_JS: &str = include_str!("../assets/app.js");
 
 fn s(v: &str) -> Json {
@@ -118,8 +118,25 @@ fn default_cmd() -> String {
         .map_or_else(|| exe.display().to_string(), |rel| format!("./{}", rel.display()))
 }
 
+/// What a particular *rendering* is, as opposed to what the tracker says.
+///
+/// Three facts that travel together because they answer the same question — which page is this,
+/// and what can it do — and because a `build_model` taking them loose is one whose call sites
+/// pass three positional values, two of them `Option<&str>` and neither named at the call.
+pub(crate) struct Page<'a> {
+    /// The command prefix the page's copy-to-clipboard commands are built from, or `None` to
+    /// work one out.
+    pub(crate) cmd: Option<&'a str>,
+    /// Whether a process is behind this page, and so whether staged edits can be applied from
+    /// it. Told, not sniffed: to `location.protocol` any statically-served page looks live.
+    pub(crate) live: bool,
+    /// What this rendering was made from, so a page reconnecting to the event stream can say
+    /// where it is and be caught up if it is behind.
+    pub(crate) version: Option<&'a str>,
+}
+
 /// The whole model the page is built from.
-pub(crate) fn build_model(ctx: &Ctx, g: &Graph, cmd: Option<&str>, live: bool) -> Json {
+pub(crate) fn build_model(ctx: &Ctx, g: &Graph, page: &Page) -> Json {
     // The project the tracker belongs to: the directory holding it. Deliberately not
     // `update.repo` — that is the engine's release channel, and it would title every
     // consumer's page with trck's own upstream slug.
@@ -158,10 +175,9 @@ pub(crate) fn build_model(ctx: &Ctx, g: &Graph, cmd: Option<&str>, live: bool) -
             Json::Object(vec![
                 ("statuses".into(), Json::Array(statuses)),
                 ("priorities".into(), Json::Array(config::PRIORITIES.iter().map(|p| s(p)).collect())),
-                ("cmd".into(), s(&cmd.map_or_else(default_cmd, str::to_string))),
-                // Whether staged edits can be applied from here. Told, not sniffed: to
-                // `location.protocol` any statically-served page looks live, and is not.
-                ("live".into(), Json::Bool(live)),
+                ("cmd".into(), s(&page.cmd.map_or_else(default_cmd, str::to_string))),
+                ("live".into(), Json::Bool(page.live)),
+                ("version".into(), page.version.map_or(Json::Null, s)),
             ]),
         ),
         ("issues".into(), Json::Array(issues)),
@@ -173,17 +189,17 @@ pub(crate) fn build_model(ctx: &Ctx, g: &Graph, cmd: Option<&str>, live: bool) -
 /// Escape the data island so an issue body can never break out of the `<script>` tag or
 /// inject markup. The two line separators are escaped because they terminate a
 /// JavaScript string literal even though JSON allows them raw.
-fn json_island(model: &Json) -> String {
+pub(crate) fn json_island(model: &Json) -> String {
     model.to_json().replace('<', "\\u003c").replace('>', "\\u003e").replace('&', "\\u0026").replace('\u{2028}', "\\u2028").replace('\u{2029}', "\\u2029")
 }
 
-fn escape_html(text: &str) -> String {
+pub(crate) fn escape_html(text: &str) -> String {
     text.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
 }
 
 /// A `Ctx` to one self-contained HTML page.
-pub(crate) fn render_html(ctx: &Ctx, g: &Graph, cmd: Option<&str>, live: bool) -> String {
-    let model = build_model(ctx, g, cmd, live);
+pub(crate) fn render_html(ctx: &Ctx, g: &Graph, page: &Page) -> String {
+    let model = build_model(ctx, g, page);
     let repo = model.get("repo").and_then(Json::as_str).unwrap_or_default().to_string();
     let title = escape_html(&format!("trck · {repo}"));
     format!(
@@ -205,8 +221,9 @@ pub(crate) fn render_html(ctx: &Ctx, g: &Graph, cmd: Option<&str>, live: bool) -
 pub(crate) fn cmd_html(ctx: &Ctx, out: Option<&str>, cmd: Option<&str>) -> Result<String, String> {
     let rows = crate::verbs::load_rows(ctx)?;
     let g = Graph::new(rows);
-    // A written file has no process behind it, whatever it is later served by.
-    let html = render_html(ctx, &g, cmd, false);
+    // A written file has no process behind it, whatever it is later served by — and so no
+    // version to be caught up from.
+    let html = render_html(ctx, &g, &Page { cmd, live: false, version: None });
     // Beside the index when there is one. A ref-backed tracker has no directory to sit
     // beside, so the page lands where the command was run instead of nowhere.
     let path = match out {
@@ -224,76 +241,4 @@ pub(crate) fn cmd_html(ctx: &Ctx, out: Option<&str>, cmd: Option<&str>) -> Resul
 /// cannot drift on what an issue's file is called.
 pub(crate) fn body_filename(r: &Issue) -> String {
     summary::filename(r)
-}
-
-#[cfg(test)]
-mod tests {
-    // Tests assert; that is their job. The crate denies unwrap/expect/panic because a
-    // malformed tracker must produce a diagnostic rather than a stack trace, but a test
-    // that cannot panic cannot fail.
-    #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
-
-    use super::*;
-
-    #[test]
-    fn the_assets_are_compiled_in() {
-        assert!(CSS.len() > 10_000, "stylesheet looks truncated");
-        assert!(APP_JS.len() > 40_000, "script looks truncated");
-        assert!(SHELL.contains("<div"), "shell looks wrong");
-    }
-
-    #[test]
-    fn the_page_references_nothing_external() {
-        // The whole point: a file you can open, mail, or commit. A CDN script or a
-        // remote font would make it a page that only works online.
-        //
-        // The test is what gets *fetched*, not what merely contains a URL: `SVGNS` is
-        // `http://www.w3.org/2000/svg`, an XML namespace identifier that
-        // `createElementNS` requires and nothing ever requests. A blanket "no http"
-        // rule would fail on it and teach the next reader to weaken the check.
-        for asset in [CSS, SHELL, APP_JS] {
-            for needle in ["src=\"http", "href=\"http", "<link", "@import", "//cdn"] {
-                assert!(!asset.contains(needle), "asset fetches something external: {needle}");
-            }
-        }
-        assert!(APP_JS.contains("http://www.w3.org/2000/svg"), "the SVG namespace should still be here — if it went, this test lost its point");
-    }
-
-    #[test]
-    fn the_island_escapes_anything_that_could_break_out() {
-        // An issue body is arbitrary text. Without this it could close the script tag.
-        let model = Json::String("</script><img src=x onerror=alert(1)> & \u{2028}".into());
-        let island = json_island(&model);
-        assert!(!island.contains('<'), "{island}");
-        assert!(!island.contains('>'), "{island}");
-        assert!(!island.contains('&'), "{island}");
-        assert!(!island.contains('\u{2028}'), "{island}");
-    }
-
-    #[test]
-    fn the_title_is_html_escaped() {
-        assert_eq!(escape_html("a<b>&c"), "a&lt;b&gt;&amp;c");
-    }
-
-    #[test]
-    fn the_shell_height_is_derived_rather_than_a_constant() {
-        // `main` was once `height: calc(100vh - 92px)`, where 92px was a hand-measured
-        // guess at the topbar plus the filter bar. Every way that guess can be wrong —
-        // a different font metric, a zoom level, a filter bar wrapping to two lines,
-        // a view that hides the facets — made the page taller or shorter than the
-        // window, which a reader saw as a document scrollbar that scrolled nothing.
-        //
-        // Nothing here can check layout: CSS is a string to this crate and there is no
-        // engine to lay it out. What it can check is that the constant has not come
-        // back, because the constant is the bug. A viewport-tall flex column with a
-        // shrinkable `main` is the shape that needs no number.
-        //
-        // Comments are stripped first, because the rule this guards is explained in one —
-        // and a stylesheet that merely *mentions* the old declaration is not the bug.
-        let rules: String = CSS.split("/*").map(|part| part.split_once("*/").map_or(part, |(_, tail)| tail)).collect();
-        assert!(!rules.contains("calc(100vh -") && !rules.contains("calc(100dvh -"), "the shell is subtracting a hardcoded chrome height again");
-        for needle in ["flex-direction: column", "height: 100dvh", "min-height: 0"] {
-            assert!(rules.contains(needle), "the viewport-tall column lost `{needle}`");
-        }
-    }
 }
