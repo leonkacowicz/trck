@@ -1,0 +1,42 @@
+trck <VERSION> — in-repo issue tracker
+
+usage: trck <verb> [args] [options]
+
+work with issues:
+  new        create a new issue, body and all
+  edit       rewrite an issue's prose
+  mv         move an issue to a status
+  start      alias: move to in-progress
+  review     alias: move to in-review (and link a PR)
+  done       alias: move to done
+  set        edit metadata fields
+  dep        add/remove a dependency edge
+  label      add/remove labels on an issue
+
+read the tracker:
+  show       print an issue's metadata + body
+  path       print the absolute file path of one issue
+  which      resolve issue file paths back to issues
+  list       browse issues as a nested forest (filterable)
+  tree       alias for `list`
+  ready      list unclaimed issues you can work on right now
+  next       print the single best issue to work on next
+  deps       draw the dependency DAG (lazygit-style gutter)
+  serve      serve the tracker's page from a live process (loopback only)
+  changelog  list issues shipped since a date/timestamp (release notes)
+  diff       show what changed in the tracker between two points
+
+maintain:
+  check      validate consistency (nonzero exit on error)
+  summary    regenerate SUMMARY.md
+  html       write a self-contained HTML view of the tracker
+  sync       share local tracker commits, and pick up what landed elsewhere
+  repo       tracker maintenance (normalize, install-hook, …)
+  init       scaffold a tracker into the current repo
+  version    print the running trck version
+
+global:
+  --dir DIR  the tracker to act on, overriding discovery and $TRCK_DIR
+  --ref REF  read the tracker from this git ref, overriding discovery and $TRCK_REF
+
+`trck <verb> --help` for one verb's arguments, options and examples.
