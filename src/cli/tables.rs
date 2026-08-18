@@ -6,9 +6,11 @@
 //! parser rather than to any one verb. They had accumulated in `opts` because it was the
 //! nearest place to put them.
 //!
-//! [`KNOWN_FLAGS`] arrived last, from `mod.rs`, where it was the odd one out: every other
-//! per-verb table was already here, and the guard that reads it — [`unrecognized_flag`] — was
-//! too. The two files it is named from now name it from one place.
+//! [`KNOWN_FLAGS`] arrived from `mod.rs`, where it was the odd one out: every other per-verb
+//! table was already here, and the guard that reads it — [`unrecognized_flag`] — was too. The
+//! two files it is named from now name it from one place. `VALUED` and [`is_valued`] followed
+//! for the same reason: which flags take a value is a fact about the flags, not about the
+//! loop in `parse_args` that consults it.
 
 use super::Args;
 
@@ -31,6 +33,55 @@ pub(super) const LIST_FLAGS: &[&str] = &[
     "--paths",
     "--json",
 ];
+
+/// Options that take a value. Anything not listed is a boolean flag, so
+/// `trck list --flat --json` parses without the flags swallowing each other.
+const VALUED: &[&str] = &[
+    "--dir",
+    "--body",
+    "--body-file",
+    "--ref",
+    "--id",
+    "--slug",
+    "--priority",
+    "--points",
+    "--parent",
+    "--spec",
+    "--review-url",
+    "--resolution",
+    "--title",
+    "--status",
+    "--field",
+    "--unset",
+    "--add",
+    "--remove",
+    "--sort",
+    "--label",
+    "--show-field",
+    "--match",
+    "--contains",
+    "--since",
+    "--from",
+    "--to",
+    "--out",
+    "--cmd",
+    "--port",
+    "--poll",
+];
+
+/// `--requires` is the one flag whose arity depends on the verb: `new --requires a,b` names
+/// the issues a new one waits on, while `deps --requires` is a filter that takes nothing.
+/// Same word, deliberately — they describe the same edges from either end — so the parser
+/// resolves it against the verb rather than forcing one of them to be spelled differently.
+///
+/// Reading the verb first is safe because a flag before it can only be `--dir`, which is
+/// unambiguously valued.
+pub(super) fn is_valued(name: &str, verb: &str) -> bool {
+    if name == "--requires" {
+        return verb == "new";
+    }
+    VALUED.contains(&name)
+}
 
 /// The flags each verb accepts, so a typo is refused rather than ignored.
 ///
@@ -58,7 +109,7 @@ pub(crate) const KNOWN_FLAGS: &[(&str, usize, &[&str])] = &[
     ("which", 0, &["--dir", "--ids"]),
     ("check", 0, &["--dir"]),
     ("html", 0, &["--dir", "--out", "--cmd"]),
-    ("serve", 0, &["--dir", "--port"]),
+    ("serve", 0, &["--dir", "--port", "--poll"]),
     ("diff", 0, &["--dir", "--from", "--to"]),
     ("changelog", 0, &["--dir", "--since"]),
     ("summary", 0, &["--dir"]),

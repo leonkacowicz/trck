@@ -17,6 +17,7 @@
 //! asserts the outcome that actually matters: after a `SIGINT`, the port binds again.
 
 mod http;
+mod poll;
 mod route;
 #[cfg(test)]
 mod test_http;
@@ -132,10 +133,15 @@ fn dispatch<'s>(scope: &'s std::thread::Scope<'s, '_>, ctx: &'s crate::discovery
 /// An accept that fails is skipped rather than fatal: `ECONNABORTED` is a client that gave up
 /// between the handshake and the accept, and tearing the server down over one would make a
 /// port scan a denial of service.
-fn accept_loop(ctx: &crate::discovery::Ctx, listener: &TcpListener) {
+/// The poller shares the scope so that it, too, borrows the resolved `Ctx` — and so that
+/// there is one place where every thread this process owns is started.
+fn accept_loop(ctx: &crate::discovery::Ctx, listener: &TcpListener, every: Option<Duration>) {
     let live = AtomicUsize::new(0);
     let live = &live;
     std::thread::scope(|scope| {
+        if let Some(every) = every {
+            scope.spawn(move || poll::run(ctx, every));
+        }
         for stream in listener.incoming().flatten() {
             dispatch(scope, ctx, live, stream);
         }
@@ -143,13 +149,15 @@ fn accept_loop(ctx: &crate::discovery::Ctx, listener: &TcpListener) {
 }
 
 /// Serve the tracker until the process is stopped.
-pub(crate) fn cmd_serve(ctx: &crate::discovery::Ctx, port: Option<&str>) -> Result<String, String> {
+pub(crate) fn cmd_serve(ctx: &crate::discovery::Ctx, port: Option<&str>, poll_spec: Option<&str>) -> Result<String, String> {
+    // Both arguments are validated before anything is bound, so a typo costs no socket.
+    let every = poll::interval_from(poll_spec)?;
     let listener = bind(port_from(port)?)?;
     // Asked of the socket rather than assumed from the argument: `--port 0` means the OS chose,
     // and only the socket knows what it chose.
     let addr = listener.local_addr().map_err(|e| format!("cannot read the address of the listening socket: {e}"))?;
     announce(&addr);
-    accept_loop(ctx, &listener);
+    accept_loop(ctx, &listener, every);
     // Reached only if `incoming()` ends, which it does not. Empty rather than a farewell:
     // the verb's success output would print after a shutdown nobody is watching for.
     Ok(String::new())
