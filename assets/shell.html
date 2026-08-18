@@ -28,10 +28,12 @@
 <div id="pending" class="pending" hidden>
   <div class="pbar">
     <span id="pcount" class="pcount"></span>
-    <span class="phint">staged edits don't persist — run these in your terminal</span>
+    <span id="phint" class="phint">staged edits don't persist — run these in your terminal</span>
     <span class="pspace"></span>
+    <button id="papply" type="button" hidden>Apply</button>
     <button id="pcopy" type="button">Copy all</button>
     <button id="pclear" type="button">Clear</button>
   </div>
   <ul id="plist" class="plist"></ul>
+  <p id="perror" class="perror" hidden></p>
 </div>

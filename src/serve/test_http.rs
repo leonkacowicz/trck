@@ -110,7 +110,7 @@ fn the_content_length_counts_bytes_not_characters() {
 #[test]
 fn a_405_names_the_method_and_carries_allow() {
     let mut out: Vec<u8> = Vec::new();
-    Response::method_not_allowed("DELETE").write_to(&mut out).expect("written");
+    Response::method_not_allowed("DELETE", Response::ALLOW_GET).write_to(&mut out).expect("written");
     let text = String::from_utf8(out).expect("utf-8");
     assert!(text.starts_with("HTTP/1.1 405 Method Not Allowed\r\n"), "{text}");
     assert!(text.contains("Allow: GET\r\n"), "{text}");

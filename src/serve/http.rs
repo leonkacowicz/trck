@@ -18,14 +18,23 @@ use std::io::{BufRead, BufReader, Read, Write};
 
 /// The whole request head, capped. A client that sends more than this before the blank line
 /// is not a browser addressing this page, so the cap doubles as the refusal.
-const MAX_HEAD: u64 = 8 * 1024;
+const MAX_HEAD: usize = 8 * 1024;
 
-/// What routing depends on: the method, the path with any query stripped, and the `Host` the
-/// client thought it was talking to.
+/// The body a request may carry, capped.
+///
+/// A staged batch from the page is a few hundred bytes; anything approaching this is not one.
+/// The cap is what stops a client that lies about `Content-Length` from being able to ask this
+/// process for an allocation.
+const MAX_BODY: usize = 256 * 1024;
+
+/// What routing depends on: the method, the path with any query stripped, the `Host` the
+/// client thought it was talking to, and — for the one verb that writes — what it sent.
 pub(crate) struct Request {
     pub(crate) method: String,
     pub(crate) path: String,
     pub(crate) host: Option<String>,
+    /// Empty for a GET, which is every route but one.
+    pub(crate) body: String,
 }
 
 /// One response, held whole: the body is a `String` because every route already has its
@@ -51,6 +60,16 @@ impl Response {
         Response { code: 200, reason: "OK", content_type, extra: "", body: body.to_string() }
     }
 
+    /// A JSON answer, at whatever status the outcome deserves.
+    ///
+    /// The status and the document both carry the verdict on purpose: `fetch` does not reject
+    /// on a 4xx, so a page that only looked at `ok` in the body would be right, and a caller
+    /// that only looked at the status would be right too. They must not be able to disagree,
+    /// which is why the one function that builds this takes both.
+    pub(crate) fn json(code: u16, reason: &'static str, body: String) -> Response {
+        Response { code, reason, content_type: "application/json; charset=utf-8", extra: "", body }
+    }
+
     /// A refusal, with the diagnostic as the body: `curl` shows it, and a browser tab that
     /// went to the wrong path says why rather than rendering nothing.
     pub(crate) fn problem(code: u16, reason: &'static str, detail: &str) -> Response {
@@ -58,12 +77,18 @@ impl Response {
     }
 
     /// A 405, carrying the `Allow` the status is required to come with.
-    pub(crate) fn method_not_allowed(method: &str) -> Response {
-        Response {
-            extra: "Allow: GET\r\n",
-            ..Response::problem(405, "Method Not Allowed", &format!("{method} is not served here; this page is read-only over GET"))
-        }
+    ///
+    /// `allow` is the whole header line rather than a method name, because a `&'static str` is
+    /// what [`Response::extra`] holds and every caller knows its answer at compile time — the
+    /// route decides which methods it has, not the request.
+    pub(crate) fn method_not_allowed(method: &str, allow: &'static str) -> Response {
+        let permitted = allow.trim_start_matches("Allow: ").trim_end();
+        Response { extra: allow, ..Response::problem(405, "Method Not Allowed", &format!("{method} is not served here; this route takes {permitted}")) }
     }
+
+    /// The two `Allow` lines this server has.
+    pub(crate) const ALLOW_GET: &'static str = "Allow: GET\r\n";
+    pub(crate) const ALLOW_POST: &'static str = "Allow: POST\r\n";
 
     pub(crate) fn code(&self) -> u16 {
         self.code
@@ -102,11 +127,18 @@ impl Response {
 /// A bare `\n` is accepted as well as `\r\n`: `printf 'GET / HTTP/1.0\n\n' | nc` is how a
 /// person checks a server by hand, and refusing it would fail the one client with no library
 /// between it and the socket.
-fn next_line(src: &mut impl BufRead) -> std::io::Result<Option<String>> {
+///
+/// `budget` is what is left of [`MAX_HEAD`], spent as lines are read. Capping *here* rather
+/// than by wrapping the whole stream in a `Take` is what lets a body follow: that `Take` would
+/// bound the body by the head's allowance, and unwrapping it afterwards would throw away
+/// whatever the buffer had already pulled in past the blank line.
+fn next_line(src: &mut impl BufRead, budget: &mut usize) -> std::io::Result<Option<String>> {
     let mut line = String::new();
-    if src.read_line(&mut line)? == 0 {
+    let read = src.take(*budget as u64).read_line(&mut line)?;
+    if read == 0 {
         return Ok(None);
     }
+    *budget -= read;
     Ok(Some(line.trim_end_matches('\n').trim_end_matches('\r').to_string()))
 }
 
@@ -130,7 +162,7 @@ fn request_line(line: &str) -> Result<Request, Response> {
     // The query is the page's business, not the server's: every route here is a fixed path,
     // and `/?view=board` is the same document as `/`.
     let path = target.split('?').next().unwrap_or(target);
-    Ok(Request { method: method.to_string(), path: path.to_string(), host: None })
+    Ok(Request { method: method.to_string(), path: path.to_string(), host: None, body: String::new() })
 }
 
 /// `Name: value`, matched case-insensitively on the name as HTTP requires.
@@ -153,29 +185,73 @@ fn truncated() -> Response {
 /// preconnect, or a port check. Answering that with a 400 would be noise about a client that
 /// never asked anything, so it is a distinct outcome rather than a refusal.
 pub(crate) fn read_head(src: impl Read) -> Result<Option<Request>, Response> {
-    let mut reader = BufReader::new(src.take(MAX_HEAD));
-    match next_line(&mut reader) {
+    let mut reader = BufReader::new(src);
+    let mut budget = MAX_HEAD;
+    match next_line(&mut reader, &mut budget) {
         Ok(None) => Ok(None),
         Ok(Some(line)) => {
             let mut request = request_line(&line)?;
-            request.host = read_host(&mut reader)?;
+            let headers = read_headers(&mut reader, &mut budget)?;
+            request.host = headers.host;
+            // Only where one is expected. A GET with a body is legal and meaningless, and
+            // reading it would make every ordinary page load wait on a length nobody sent.
+            if request.method != "GET" {
+                request.body = read_body(&mut reader, headers.length)?;
+            }
             Ok(Some(request))
         },
         Err(_) => Err(truncated()),
     }
 }
 
-/// Drain the header block up to the blank line, keeping only `Host`.
+/// The two headers anything here acts on, read out of the block on the way past.
 ///
-/// The rest is discarded rather than collected: nothing here negotiates content, follows a
+/// Everything else is discarded rather than collected: nothing negotiates content, follows a
 /// referer or reads a cookie, and a header map nobody consults is a place for a bug to hide.
-fn read_host(reader: &mut impl BufRead) -> Result<Option<String>, Response> {
-    let mut host = None;
+#[derive(Default)]
+struct Headers {
+    host: Option<String>,
+    length: Option<usize>,
+}
+
+/// Drain the header block up to the blank line, keeping the two that matter.
+fn read_headers(reader: &mut impl BufRead, budget: &mut usize) -> Result<Headers, Response> {
+    let mut headers = Headers::default();
     loop {
-        match next_line(reader) {
-            Ok(Some(line)) if line.is_empty() => return Ok(host),
-            Ok(Some(line)) => host = header_value(&line, "host").or(host),
+        match next_line(reader, budget) {
+            Ok(Some(line)) if line.is_empty() => return Ok(headers),
+            Ok(Some(line)) => {
+                headers.host = header_value(&line, "host").or(headers.host);
+                // A length that is not a number is a length this cannot honour, and reading a
+                // body without one would be reading until the client hangs up. Left as `None`,
+                // which the body read below turns into the refusal.
+                headers.length = header_value(&line, "content-length").and_then(|v| v.parse().ok()).or(headers.length);
+            },
             Ok(None) | Err(_) => return Err(truncated()),
         }
     }
+}
+
+/// Read exactly the bytes the head said were coming.
+///
+/// **Exactly**, not "until the end": the connection is not framed by anything else, so a read
+/// to EOF would sit there until the client closed its own write side, and a short read would
+/// hand routing half a document. A body that is not valid UTF-8 is refused here rather than
+/// downstream — every route that takes one takes JSON.
+fn read_body(reader: &mut impl BufRead, length: Option<usize>) -> Result<String, Response> {
+    // No `Content-Length` means no body — that is what it means in a request, and it is what
+    // `POST /` with nothing after the blank line sends. A route that needs a body refuses an
+    // empty one in its own words, which is a better error than a protocol-level one about a
+    // header the sender never meant to omit.
+    let Some(length) = length else {
+        return Ok(String::new());
+    };
+    if length > MAX_BODY {
+        return Err(Response::problem(413, "Content Too Large", &format!("a body of {length} bytes is past the {MAX_BODY}-byte limit")));
+    }
+    let mut bytes = vec![0u8; length];
+    if reader.read_exact(&mut bytes).is_err() {
+        return Err(Response::problem(400, "Bad Request", "the body ended before Content-Length said it would"));
+    }
+    String::from_utf8(bytes).map_err(|_| Response::problem(400, "Bad Request", "the body is not valid UTF-8"))
 }

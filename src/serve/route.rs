@@ -50,8 +50,28 @@ fn is_loopback_host(host: &str) -> bool {
 /// up, so fixing the index and reloading the tab is the whole recovery.
 fn page(ctx: &Ctx) -> Response {
     match crate::verbs::load_rows(ctx) {
-        Ok(rows) => Response::html(crate::html::render_html(ctx, &Graph::new(rows), None)),
+        Ok(rows) => Response::html(crate::html::render_html(ctx, &Graph::new(rows), None, true)),
         Err(e) => Response::problem(500, "Internal Server Error", &e),
+    }
+}
+
+/// Where the page posts what it has staged. The one route that writes.
+pub(crate) const EDITS_PATH: &str = "/edits";
+
+/// Apply a staged batch and answer with what happened.
+///
+/// Three outcomes, three statuses, and the document says the same thing as the status line —
+/// `fetch` does not reject on a 4xx, so a page reading only the body would be right and one
+/// reading only the status would be right too, and they must not be able to disagree.
+///
+/// A refusal from the tracker is a **422**, not a 400: the request was understood perfectly
+/// and the tracker declined it, which is a fact about the tracker and is why the body carries
+/// the engine's own words rather than a rewording of them.
+fn edits(ctx: &Ctx, body: &str) -> Response {
+    match super::apply::batch(ctx, body) {
+        Err(malformed) => Response::problem(400, "Bad Request", &malformed),
+        Ok(outcome) if outcome.ok() => Response::json(200, "OK", outcome.json()),
+        Ok(outcome) => Response::json(422, "Unprocessable Content", outcome.json()),
     }
 }
 
@@ -62,14 +82,19 @@ pub(crate) fn respond(ctx: &Ctx, req: &Request) -> Response {
     {
         return Response::problem(403, "Forbidden", "this server answers only to a loopback Host; a request naming another host is not from this machine");
     }
+    // The write route is checked before the method guard, so that a POST to it is served and a
+    // POST anywhere else is still refused as a method rather than as a missing page.
+    if req.path == EDITS_PATH {
+        return if req.method == "POST" { edits(ctx, &req.body) } else { Response::method_not_allowed(&req.method, Response::ALLOW_POST) };
+    }
     if req.method != "GET" {
-        return Response::method_not_allowed(&req.method);
+        return Response::method_not_allowed(&req.method, Response::ALLOW_GET);
     }
     match req.path.as_str() {
         "/" => page(ctx),
         CSS_PATH => Response::asset("text/css; charset=utf-8", crate::html::CSS),
         JS_PATH => Response::asset("text/javascript; charset=utf-8", crate::html::APP_JS),
-        other => Response::problem(404, "Not Found", &format!("no route for {other}; this server serves /, {CSS_PATH} and {JS_PATH}")),
+        other => Response::problem(404, "Not Found", &format!("no route for {other}; this server serves /, {CSS_PATH}, {JS_PATH} and {EDITS_PATH}")),
     }
 }
 
@@ -85,7 +110,7 @@ mod tests {
     use crate::discovery::tests::Tmp;
 
     fn request(method: &str, path: &str, host: Option<&str>) -> Request {
-        Request { method: method.to_string(), path: path.to_string(), host: host.map(str::to_string) }
+        Request { method: method.to_string(), path: path.to_string(), host: host.map(str::to_string), body: String::new() }
     }
 
     /// A tracker with one issue in it, on disk. The routes do not care which source the
@@ -120,7 +145,7 @@ mod tests {
         assert!(served.contains("Content-Type: text/html; charset=utf-8"), "{}", &served[..served.len().min(200)]);
         // Not "looks like HTML" — the same bytes `render_html` produces, so a page served and
         // a page written can never be two renderings of one tracker.
-        let expected = crate::html::render_html(&ctx, &Graph::new(crate::verbs::load_rows(&ctx).expect("rows")), None);
+        let expected = crate::html::render_html(&ctx, &Graph::new(crate::verbs::load_rows(&ctx).expect("rows")), None, true);
         assert!(served.ends_with(&expected), "the served page is not what render_html produced");
         assert!(expected.contains("Alpha"), "the fixture tracker did not render");
     }

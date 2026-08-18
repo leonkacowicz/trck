@@ -84,19 +84,76 @@ function commandFor(id, field, value) {
   if (field === 'priority') return c + ' set ' + id + ' --priority ' + value;
   return '';
 }
+// One staged edit, as both ends see it: `{id, field, value}` is what the server takes, and
+// `commandFor` renders the very same thing as the command a person would type. The two are
+// asserted equal by `tests/app_js.rs`, which runs `commandFor` under node and compares it with
+// what the engine builds — so the panel cannot promise one thing and the Apply button do
+// another.
+function stagedEdits() {
+  return Object.entries(state.edits).map(([k, v]) => (
+    { id: k.slice(0, k.indexOf('::')), field: k.slice(k.indexOf('::') + 2), value: v }
+  ));
+}
 function pendingCommands() {
-  return Object.entries(state.edits).map(([k, v]) => {
-    const id = k.slice(0, k.indexOf('::')), field = k.slice(k.indexOf('::') + 2);
-    return commandFor(id, field, v);
-  });
+  return stagedEdits().map(e => commandFor(e.id, e.field, e.value));
 }
 function renderPending() {
   const box = $('#pending'), list = $('#plist'); list.textContent = '';
+  $('#perror').hidden = true;
   const cmds = pendingCommands();
   if (!cmds.length) { box.hidden = true; return; }
   box.hidden = false;
+  // A served page has a process to POST to; a file has nobody, so it keeps offering the
+  // commands to paste. The flag comes from the engine rather than from `location.protocol`,
+  // which would call a page served by any other static server live — and it is not.
+  const live = !!(DATA.config && DATA.config.live);
+  $('#papply').hidden = !live;
+  $('#phint').textContent = live
+    ? 'these run against the tracker when you apply them'
+    : "staged edits don't persist — run these in your terminal";
   $('#pcount').textContent = cmds.length + (cmds.length === 1 ? ' command' : ' commands');
   for (const c of cmds) list.append(el('li', { class: 'pcmd', text: c }));
+}
+
+// Post the staged batch and let the engine answer. On success the page reloads, because the
+// tracker it was rendered from has moved and re-deriving readiness, rollups and the demand
+// cone in JavaScript is exactly what this page does not do. Pushing the reload from the
+// server instead is #us8fenh.
+// On a refusal nothing reloads and nothing is unstaged. Each operation is its own commit, so
+// a batch that stopped part way did part of what it was asked; the panel says which part, in
+// the engine's own words, and the edits stay staged so a second attempt is one button rather
+// than a re-entry.
+async function applyEdits() {
+  const edits = stagedEdits();
+  if (!edits.length) return;
+  const button = $('#papply');
+  button.disabled = true;
+  try {
+    const res = await fetch('/edits', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ edits }),
+    });
+    const out = await res.json();
+    if (out.ok) { state.edits = {}; location.reload(); return; }
+    showApplyError(applyMessage(out));
+  } catch (e) {
+    showApplyError('could not reach the trck server: ' + e);
+  } finally {
+    button.disabled = false;
+  }
+}
+// What a refused batch has to say: what stopped it, and how much of it had already landed.
+// Its own function, free of the DOM, so `tests/app_js.rs` can run it.
+function applyMessage(out) {
+  const landed = (out.applied || []).length;
+  const before = landed ? landed + (landed === 1 ? ' operation applied' : ' operations applied') + ' before it stopped — ' : '';
+  return before + (out.error || 'the write was refused');
+}
+function showApplyError(text) {
+  const box = $('#perror');
+  box.textContent = text;
+  box.hidden = false;
 }
 function flash(sel, msg) {
   const b = $(sel), t = b.textContent;
@@ -1023,6 +1080,7 @@ function init() {
   fillFacet($('#ffpriority'), 'priority', DATA.config.priorities, state.priority);
   syncFacetBar();
   $('#q').addEventListener('input', e => { state.q = e.target.value; applyFilter(); });
+  $('#papply').addEventListener('click', applyEdits);
   $('#pcopy').addEventListener('click', copyAll);
   $('#pclear').addEventListener('click', clearEdits);
   for (const b of document.querySelectorAll('.viewtoggle button'))
