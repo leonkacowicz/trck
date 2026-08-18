@@ -16,9 +16,17 @@
 //! is no state that a graceful path could flush that an abrupt one loses. `tests/serve.rs`
 //! asserts the outcome that actually matters: after a `SIGINT`, the port binds again.
 
+mod apply;
+mod edits;
 mod http;
 mod poll;
 mod route;
+// Each gated on its own: `#[cfg(test)]` reaches the next item and no further, so a list of
+// test modules under one attribute compiles all but the first into the shipped binary.
+#[cfg(test)]
+mod test_apply;
+#[cfg(test)]
+mod test_edits;
 #[cfg(test)]
 mod test_http;
 

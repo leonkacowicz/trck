@@ -287,10 +287,12 @@ marker, rollup percentages, the shortest-unique-id prefix — all of it is writt
 island by the binary, and the script re-derives none of it. The page and the CLI cannot
 disagree about what the tracker says.
 
-**Edits stage; they never save.** A page opened from disk has nothing to write to, and one that
-pretended otherwise would lose work silently. So changing a status or priority queues the
-`trck` command that *would* do it, and a bar at the bottom hands you the lot to paste into a
-terminal. The tracker is still only ever written by the binary.
+**Edits stage.** A page opened from disk has nothing to write to, and one that pretended
+otherwise would lose work silently. So changing a status or priority queues the `trck` command
+that *would* do it, and a bar at the bottom hands you the lot to paste into a terminal. The
+tracker is only ever written by the binary — which is also why the same staged edits can be
+applied straight from a page that has one behind it (see `trck serve` below): the panel shows
+the command, and the process runs that operation rather than the string.
 
 ### The same page, live (`trck serve`)
 
@@ -320,8 +322,13 @@ this machine's own is refused, so a page on the open web cannot use your browser
 tracker. `/app.css` and `/app.js` answer from the copies compiled into the binary, never from a
 file on disk. Ctrl-C stops it and frees the port.
 
-It **serves**; it does not write. Edits still stage into commands to paste, exactly as they do
-from a file — the tracker is only ever written by a verb you ran.
+**It writes, too.** Edits staged on the page have always rendered as the `trck` commands that
+would make them; from a served page the Apply button posts them back, and the process runs those
+same operations in-process — one commit each, pushed as usual, through the verb functions the
+CLI calls. It never shells out to itself. The panel shows exactly what will run, a refusal comes
+back as the engine's own diagnostic with nothing changed, and a push that landed after somebody
+else's is replayed on top rather than forced. A page written by `trck html` has no process
+behind it and says so, so it keeps offering the commands to paste.
 
 ## Issue ids
 

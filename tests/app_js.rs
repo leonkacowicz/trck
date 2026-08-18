@@ -204,3 +204,75 @@ fn selecting_an_issue_leaves_the_view_pane_where_it_was() {
     // that passes its own test. The pane ids match the view names one-for-one.
     assert!(APP_JS.contains("keepingScroll($('#' + state.view), renderActiveView)"), "select() must re-render the active view through keepingScroll");
 }
+
+/// **The two ends of one promise.** The pending panel shows the command a staged edit would
+/// run; `POST /edits` runs that edit in this process. If the two ever disagree, the panel is
+/// lying about what the Apply button does — which is the one thing a page that both *shows*
+/// and *applies* an edit must not do.
+///
+/// The commands below are the contract, and both ends assert against them:
+/// `src/serve/edits.rs::a_scalar_field_maps_to_the_command_the_panel_shows` asserts the engine
+/// builds exactly these (minus the `trck` prefix, which an op does not render), and this
+/// asserts the page's own `commandFor` renders them. Change one and the other fails.
+#[test]
+fn the_panel_renders_the_command_the_server_will_run() {
+    if !have_node() {
+        return;
+    }
+    let script = format!(
+        "const DATA = {{ config: {{ cmd: 'trck' }} }};\n\
+         {}\n\
+         console.log(JSON.stringify([\n\
+           commandFor('aaaaaaa', 'status', 'done'),\n\
+           commandFor('aaaaaaa', 'priority', 'high'),\n\
+         ]));\n",
+        lift(&["commandFor"])
+    );
+    let out = run_node(&script);
+    assert_eq!(out.trim(), r#"["trck mv aaaaaaa done","trck set aaaaaaa --priority high"]"#, "{out}");
+}
+
+/// A staged edit crosses the wire as `{id, field, value}` — the same three things the panel
+/// splits its key into. Asserted because that split is string arithmetic on `::`, and the day
+/// a field name contains one it would quietly post a different edit than the one on screen.
+#[test]
+fn a_staged_edit_becomes_the_document_the_server_takes() {
+    if !have_node() {
+        return;
+    }
+    let script = format!(
+        "const state = {{ edits: {{ 'aaaaaaa::status': 'done', 'bbbbbbb::priority': 'low' }} }};\n\
+         {}\n\
+         console.log(JSON.stringify(stagedEdits()));\n",
+        lift(&["stagedEdits"])
+    );
+    let out = run_node(&script);
+    assert_eq!(out.trim(), r#"[{"id":"aaaaaaa","field":"status","value":"done"},{"id":"bbbbbbb","field":"priority","value":"low"}]"#, "{out}");
+}
+
+/// A refused batch has two things to say and the page has to say both: what stopped it, in the
+/// engine's own words, and how much had already landed — because each operation is its own
+/// commit, so "it failed" and "nothing happened" are different sentences.
+#[test]
+fn a_refused_batch_says_what_stopped_it_and_what_had_already_landed() {
+    if !have_node() {
+        return;
+    }
+    let script = format!(
+        "{}\n\
+         console.log(JSON.stringify([\n\
+           applyMessage({{ ok: false, applied: [], error: \"unknown priority 'urgent'\" }}),\n\
+           applyMessage({{ ok: false, applied: ['#a moved'], error: 'refused' }}),\n\
+           applyMessage({{ ok: false, applied: ['#a moved', '#b moved'], error: 'refused' }}),\n\
+           applyMessage({{ ok: false, applied: [] }}),\n\
+         ]));\n",
+        lift(&["applyMessage"])
+    );
+    let out = run_node(&script);
+    // Nothing landed: the diagnostic alone, with no preamble claiming a partial write.
+    assert!(out.contains(r#""unknown priority 'urgent'""#), "{out}");
+    assert!(out.contains("1 operation applied before it stopped — refused"), "{out}");
+    assert!(out.contains("2 operations applied before it stopped — refused"), "{out}");
+    // A response carrying no `error` at all still says something rather than "undefined".
+    assert!(out.contains("the write was refused"), "{out}");
+}

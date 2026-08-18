@@ -5,11 +5,15 @@
 //! building the JSON data island the script reads, which is why the schema below is
 //! written out field by field rather than derived.
 //!
-//! **Self-contained is the point.** No network requests, no external references,
-//! nothing to serve — the output is a file you can open, mail, or commit. Every derived
-//! value the page needs (readiness, the demand cone, rollup percentages, the
-//! shortest-unique-id prefix) is computed here by the engine rather than re-derived in
-//! JavaScript, so the page and the CLI can never disagree about what the tracker says.
+//! **Self-contained is the point.** No external references, nothing to serve — the output
+//! is a file you can open, mail, or commit. Every derived value the page needs (readiness,
+//! the demand cone, rollup percentages, the shortest-unique-id prefix) is computed here by
+//! the engine rather than re-derived in JavaScript, so the page and the CLI can never
+//! disagree about what the tracker says.
+//!
+//! The script's one possible request is same-origin and only when told: `serve` sets
+//! `config.live` so Apply can post staged edits back. A file says `live: false` and fetches
+//! nothing, which is what keeps "open it over `file://`" true.
 
 use crate::discovery::Ctx;
 use crate::graph::Graph;
@@ -18,11 +22,9 @@ use crate::json::Json;
 use crate::render::unique_prefix_lens;
 use crate::{config, summary};
 
-/// The stylesheet and the script, compiled in.
-///
-/// Visible past this module because `serve` answers `/app.css` and `/app.js` from these very
-/// constants — the point being that a live process can never serve an asset out of whatever
-/// working tree it was launched in, which may be on another branch entirely.
+/// The stylesheet and the script, compiled in. Visible past this module because `serve`
+/// answers `/app.css` and `/app.js` from these very constants — so a live process can never
+/// serve an asset out of the working tree it was launched in, which may be on another branch.
 pub(crate) const CSS: &str = include_str!("../assets/app.css");
 const SHELL: &str = include_str!("../assets/shell.html");
 pub(crate) const APP_JS: &str = include_str!("../assets/app.js");
@@ -117,7 +119,7 @@ fn default_cmd() -> String {
 }
 
 /// The whole model the page is built from.
-pub(crate) fn build_model(ctx: &Ctx, g: &Graph, cmd: Option<&str>) -> Json {
+pub(crate) fn build_model(ctx: &Ctx, g: &Graph, cmd: Option<&str>, live: bool) -> Json {
     // The project the tracker belongs to: the directory holding it. Deliberately not
     // `update.repo` — that is the engine's release channel, and it would title every
     // consumer's page with trck's own upstream slug.
@@ -157,6 +159,9 @@ pub(crate) fn build_model(ctx: &Ctx, g: &Graph, cmd: Option<&str>) -> Json {
                 ("statuses".into(), Json::Array(statuses)),
                 ("priorities".into(), Json::Array(config::PRIORITIES.iter().map(|p| s(p)).collect())),
                 ("cmd".into(), s(&cmd.map_or_else(default_cmd, str::to_string))),
+                // Whether staged edits can be applied from here. Told, not sniffed: to
+                // `location.protocol` any statically-served page looks live, and is not.
+                ("live".into(), Json::Bool(live)),
             ]),
         ),
         ("issues".into(), Json::Array(issues)),
@@ -177,8 +182,8 @@ fn escape_html(text: &str) -> String {
 }
 
 /// A `Ctx` to one self-contained HTML page.
-pub(crate) fn render_html(ctx: &Ctx, g: &Graph, cmd: Option<&str>) -> String {
-    let model = build_model(ctx, g, cmd);
+pub(crate) fn render_html(ctx: &Ctx, g: &Graph, cmd: Option<&str>, live: bool) -> String {
+    let model = build_model(ctx, g, cmd, live);
     let repo = model.get("repo").and_then(Json::as_str).unwrap_or_default().to_string();
     let title = escape_html(&format!("trck · {repo}"));
     format!(
@@ -200,7 +205,8 @@ pub(crate) fn render_html(ctx: &Ctx, g: &Graph, cmd: Option<&str>) -> String {
 pub(crate) fn cmd_html(ctx: &Ctx, out: Option<&str>, cmd: Option<&str>) -> Result<String, String> {
     let rows = crate::verbs::load_rows(ctx)?;
     let g = Graph::new(rows);
-    let html = render_html(ctx, &g, cmd);
+    // A written file has no process behind it, whatever it is later served by.
+    let html = render_html(ctx, &g, cmd, false);
     // Beside the index when there is one. A ref-backed tracker has no directory to sit
     // beside, so the page lands where the command was run instead of nowhere.
     let path = match out {
