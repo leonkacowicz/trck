@@ -7,8 +7,8 @@
 |---|---:|
 | backlog | 61 |
 | in-progress | 3 |
-| in-review | 1 |
-| done | 233 |
+| in-review | 0 |
+| done | 234 |
 | **total** | **298** |
 
 ## Hierarchies
@@ -225,10 +225,10 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#yuj6azz finalize: return a changeset and an Op instead of writing files](items/yuj6azz-finalize-return-a-changeset-and-an-op-instead-of-writing-files.md) · [review](https://github.com/leonkacowicz/trck/pull/34)
 - [x] [#zxz9vu2 trck edit <id>: edit an existing body through the same path](items/zxz9vu2-trck-edit-id-edit-an-existing-body-through-the-same-path.md) · [review](https://github.com/leonkacowicz/trck/pull/40)
 
-### [#tcm5s56 serve: a live process over the tracker ref, with writes from the page](items/tcm5s56-v7-trck-serve-live-process-edits-write-back-to-index-jsonl.md) — 20% (1/5 pts · 1/5 done) · _low_ · in-progress
+### [#tcm5s56 serve: a live process over the tracker ref, with writes from the page](items/tcm5s56-v7-trck-serve-live-process-edits-write-back-to-index-jsonl.md) — 40% (2/5 pts · 2/5 done) · _low_ · in-progress
 
 - [x] [#ba48fnw serve: the HTTP layer — loopback listener, compiled-in assets, clean shutdown](items/ba48fnw-serve-the-http-layer-loopback-listener-compiled-in-assets-clean-shutdown.md) · [review](https://github.com/leonkacowicz/trck/pull/67)
-- [ ] [#eemua4s serve: poll and fast-forward the tracker ref on a timer](items/eemua4s-serve-poll-and-fast-forward-the-tracker-ref-on-a-timer.md) _(in-review)_ · [review](https://github.com/leonkacowicz/trck/pull/68)
+- [x] [#eemua4s serve: poll and fast-forward the tracker ref on a timer](items/eemua4s-serve-poll-and-fast-forward-the-tracker-ref-on-a-timer.md) · [review](https://github.com/leonkacowicz/trck/pull/68)
 - [ ] [#mcmfmca serve: POST to Op — the page's staged edits become in-process write verbs](items/mcmfmca-serve-post-to-op-the-page-s-staged-edits-become-in-process-write-verbs.md) _(backlog)_
 - [ ] [#us8fenh serve: SSE re-render — ref movement pushes to open pages](items/us8fenh-serve-sse-re-render-ref-movement-pushes-to-open-pages.md) _(backlog)_
 - [ ] [#zd9jqav serve: pending and sync in the UI — unpushed commits visible and flushable](items/zd9jqav-serve-pending-and-sync-in-the-ui-unpushed-commits-visible-and-flushable.md) _(backlog)_
