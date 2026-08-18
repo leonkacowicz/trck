@@ -297,11 +297,22 @@ terminal. The tracker is still only ever written by the binary.
 ```bash
 trck serve                         # http://127.0.0.1:8725/
 trck serve --port 0                # let the OS pick; the startup line says which
+trck serve --poll 5                # fetch the tracker branch every 5s (0 turns it off)
 ```
 
 `html` writes a file, which is a tracker frozen at the moment you remembered to regenerate it.
 `serve` renders the same page per request, so a reload shows the tracker as it is now —
 including a write another terminal made a second ago.
+
+**It is the one thing in trck that fetches without being asked.** Every read verb leaves the
+network alone, so a `trck list` on a plane answers instead of failing; `serve` is a long-lived
+process with a timer rather than a verb in a pipeline, so it pays that round trip once per
+interval however many pages are open — and what it buys is the whole point, since a tab left
+open on a week-old ref is a read from the past with nothing to say so. It applies the same
+local-versus-remote rule everything else does: behind fast-forwards, ahead or equal does
+nothing, **diverged is reported and never resolved**. An unreachable remote is reported too,
+and the local ref is served anyway; the process does not die because a laptop left the office.
+The running log goes to stderr, and only when something changes.
 
 **Loopback only, and there is no flag that widens it.** A tracker is a repository's working
 notes; nothing here should be reachable from a network. A request naming a host that is not

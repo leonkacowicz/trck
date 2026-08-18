@@ -26,7 +26,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use std::path::{Path, PathBuf};
-use std::process::{Command, Output};
+use std::process::{Child, Command, Output};
 
 /// The conventional branch a ref-backed tracker lives on.
 pub(crate) const TRACKER_BRANCH: &str = "trck-issues";
@@ -259,5 +259,122 @@ impl Scenario {
     pub(crate) fn show(&self, rev: &str, path: &str) -> Option<String> {
         let out = run_git(&self.work, &["show", &format!("{rev}:{path}")]);
         out.status.success().then(|| String::from_utf8_lossy(&out.stdout).into_owned())
+    }
+}
+
+/// A `trck serve` on an ephemeral port, killed however the test ends.
+///
+/// Here rather than in one test binary because two of them drive a live server: `serve.rs`
+/// asks what the socket answers, and `serve_poll.rs` asks what the process does to the
+/// tracker ref while nobody is looking. Starting one is the slow part of both.
+pub(crate) struct Server {
+    child: Child,
+    /// The port the OS chose, read back out of the startup line.
+    pub(crate) port: u16,
+    /// The startup line itself, which is the only place `--port 0` states the port.
+    pub(crate) banner: String,
+    /// stderr, redirected to a file so a test can read the running log *while* the process is
+    /// still running. A pipe would have to be drained by a thread of its own, and a full one
+    /// would block the thing under test.
+    log: PathBuf,
+    _tmp: TmpDir,
+}
+
+impl Server {
+    /// Start `trck serve --port 0` in `dir`, with whatever else the test needs.
+    ///
+    /// The startup line doubles as the handshake: the binary writes it after the bind, so a
+    /// caller that has read it has a listener to talk to and needs no sleep.
+    pub(crate) fn start(dir: &Path, extra: &[&str]) -> Server {
+        let tmp = TmpDir::new("serve-log");
+        let log = tmp.path().join("stderr.log");
+        let sink = std::fs::File::create(&log).expect("stderr log");
+        let mut child = Command::new(env!("CARGO_BIN_EXE_trck"))
+            .args(["serve", "--port", "0"])
+            .args(extra)
+            .current_dir(dir)
+            .env("NO_COLOR", "1")
+            .stdout(std::process::Stdio::piped())
+            .stderr(sink)
+            .spawn()
+            .expect("spawning trck serve");
+        let mut out = std::io::BufReader::new(child.stdout.take().expect("stdout is piped"));
+        let mut banner = String::new();
+        std::io::BufRead::read_line(&mut out, &mut banner).expect("the startup line");
+        let port = banner
+            .rsplit_once(':')
+            .map(|(_, tail)| tail.trim_start_matches(|c: char| !c.is_ascii_digit()))
+            .and_then(|tail| tail.split(|c: char| !c.is_ascii_digit()).next())
+            .and_then(|digits| digits.parse().ok())
+            .unwrap_or_else(|| panic!("no port in {banner:?}; log: {}", std::fs::read_to_string(&log).unwrap_or_default()));
+        Server { child, port, banner, log, _tmp: tmp }
+    }
+
+    pub(crate) fn pid(&self) -> u32 {
+        self.child.id()
+    }
+
+    /// Send a request verbatim and read the whole response. The server closes the connection
+    /// after answering, which is what ends the read.
+    pub(crate) fn request(&self, raw: &str) -> String {
+        use std::io::{Read as _, Write as _};
+        let mut sock = std::net::TcpStream::connect((std::net::Ipv4Addr::LOCALHOST, self.port)).expect("connecting");
+        sock.write_all(raw.as_bytes()).expect("writing the request");
+        let mut answer = Vec::new();
+        sock.read_to_end(&mut answer).expect("reading the response");
+        String::from_utf8_lossy(&answer).into_owned()
+    }
+
+    pub(crate) fn get(&self, path: &str) -> String {
+        self.request(&format!("GET {path} HTTP/1.1\r\nHost: 127.0.0.1:{}\r\nConnection: close\r\n\r\n", self.port))
+    }
+
+    /// Everything the process has said on stderr so far.
+    pub(crate) fn log(&self) -> String {
+        std::fs::read_to_string(&self.log).unwrap_or_default()
+    }
+
+    /// Wait until `f` answers true, or give up; answers whether it happened.
+    ///
+    /// Polling rather than one long sleep, because what is being waited for is a timer in
+    /// *another process*: a test that sleeps for exactly as long as it hopes that timer takes
+    /// is a test that fails on a loaded runner. The deadline is generous for the same reason,
+    /// and costs nothing on the fast path.
+    /// Wait for the process to exit; answers whether it did.
+    ///
+    /// Its own method rather than a [`wait_for`](Self::wait_for) predicate because reaping a
+    /// child needs `&mut self`, which a closure borrowing the server cannot have at the same
+    /// time.
+    pub(crate) fn wait_exit(&mut self, secs: u64) -> bool {
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(secs);
+        loop {
+            if matches!(self.child.try_wait(), Ok(Some(_))) {
+                return true;
+            }
+            if std::time::Instant::now() >= deadline {
+                return false;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(50));
+        }
+    }
+
+    pub(crate) fn wait_for(&self, secs: u64, mut f: impl FnMut(&Server) -> bool) -> bool {
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(secs);
+        while std::time::Instant::now() < deadline {
+            if f(self) {
+                return true;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        }
+        f(self)
+    }
+}
+
+impl Drop for Server {
+    /// A failing assertion unwinds past any teardown written at the end of a test body, and a
+    /// server left listening would fail the next run rather than this one.
+    fn drop(&mut self) {
+        let _ = self.child.kill();
+        let _ = self.child.wait();
     }
 }

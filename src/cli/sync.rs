@@ -8,6 +8,15 @@
 //! It is also the remedy every pending-changes note names, so what it says has to match what
 //! that note promised: push what is waiting, pick up what landed elsewhere, and say which of
 //! the two happened.
+//!
+//! **There is exactly one exception, and it is `serve`.** `serve`'s poll loop (`src/serve/poll.rs`) fetches the
+//! tracker branch on a timer. The rule above is written for a verb in a pipeline, where the
+//! round trip is paid again by every `trck list` anybody types; `serve` is one long-lived
+//! process, so it pays once per interval however many pages are open, and what it buys is the
+//! reason that verb exists — a tab left open on a week-old ref is a read from the past with
+//! nothing to say so. The exception is about the *shape* of the caller, not about
+//! convenience, which is why it has stayed at one: if a second verb ever wants it, that verb
+//! has to be a daemon too.
 
 use super::Args;
 use crate::discovery::standing::{pending, tracking};

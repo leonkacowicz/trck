@@ -21,7 +21,7 @@ mod sync;
 pub(crate) mod tables;
 mod tracker;
 use dispatch::dispatch;
-use tables::unrecognized_flag;
+use tables::{is_valued, unrecognized_flag};
 use tracker::{context, setup_source, tracker_dir};
 
 use crate::help;
@@ -31,54 +31,6 @@ struct Args {
     verb: String,
     positional: Vec<String>,
     options: Vec<(String, Option<String>)>,
-}
-
-/// Options that take a value. Anything not listed is a boolean flag, so
-/// `trck list --flat --json` parses without the flags swallowing each other.
-const VALUED: &[&str] = &[
-    "--dir",
-    "--body",
-    "--body-file",
-    "--ref",
-    "--id",
-    "--slug",
-    "--priority",
-    "--points",
-    "--parent",
-    "--spec",
-    "--review-url",
-    "--resolution",
-    "--title",
-    "--status",
-    "--field",
-    "--unset",
-    "--add",
-    "--remove",
-    "--sort",
-    "--label",
-    "--show-field",
-    "--match",
-    "--contains",
-    "--since",
-    "--from",
-    "--to",
-    "--out",
-    "--cmd",
-    "--port",
-];
-
-/// `--requires` is the one flag whose arity depends on the verb: `new --requires a,b` names
-/// the issues a new one waits on, while `deps --requires` is a filter that takes nothing.
-/// Same word, deliberately — they describe the same edges from either end — so the parser
-/// resolves it against the verb rather than forcing one of them to be spelled differently.
-///
-/// Reading the verb first is safe because a flag before it can only be `--dir`, which is
-/// unambiguously valued.
-fn is_valued(name: &str, verb: &str) -> bool {
-    if name == "--requires" {
-        return verb == "new";
-    }
-    VALUED.contains(&name)
 }
 
 fn parse_args(argv: &[String]) -> Args {

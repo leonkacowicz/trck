@@ -120,9 +120,12 @@ pub(super) const VERBS: &[VerbHelp] = &[
         verb: "serve",
         tagline: "serve the tracker's page from a live process (loopback only)",
         usage: "trck serve [options]",
-        blurb: "Serve the page `trck html` writes, from a process that renders it per request — so it shows the tracker as it is now rather than as it was when a file was last regenerated. Binds 127.0.0.1 and nothing else: there is no flag that widens it, because a tracker is a repository's working notes and nothing here should be reachable from a network. GET / is the page; /app.css and /app.js answer from the copies compiled into this binary, never from a file on disk. Nothing is written — this serves the tracker, it does not edit it. Ctrl-C stops it and frees the port.",
+        blurb: "Serve the page `trck html` writes, from a process that renders it per request — so it shows the tracker as it is now rather than as it was when a file was last regenerated. Binds 127.0.0.1 and nothing else: there is no flag that widens it, because a tracker is a repository's working notes and nothing here should be reachable from a network. GET / is the page; /app.css and /app.js answer from the copies compiled into this binary, never from a file on disk. Nothing is written — this serves the tracker, it does not edit it. A ref-backed tracker is also kept current: a timer fetches the tracker branch and fast-forwards the local ref when it is behind, which is the one place trck fetches without being asked — every read verb leaves the network alone. A diverged pair is reported, never resolved; an unreachable remote is reported and the local ref is served anyway. Ctrl-C stops it and frees the port.",
         args: &[],
-        opts: &[("--port PORT", "port to listen on (default 8725); 0 asks the OS to choose one and the startup line says which")],
+        opts: &[
+            ("--port PORT", "port to listen on (default 8725); 0 asks the OS to choose one and the startup line says which"),
+            ("--poll SECONDS", "how often to fetch the tracker branch (default 30); 0 turns polling off, which is what a tracker with no remote wants"),
+        ],
         alias_of: "",
         example: "trck serve
   trck serve --port 9000",

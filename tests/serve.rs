@@ -6,6 +6,10 @@
 //! the port free — the last being the whole of the shutdown contract, since nothing installs a
 //! signal handler and the kernel is what closes the listener.
 //!
+//! What the process does to the *tracker ref* while it runs is `serve_poll.rs`, which needs a
+//! repository to have a ref in; everything here points at a directory tracker on purpose, so
+//! nothing in this file depends on git at all.
+//!
 //! The requests are written by hand rather than through a client library, which is the same
 //! reason the server is: it is a request line and two headers, and the bytes on the wire are
 //! exactly what is under test.
@@ -15,73 +19,29 @@
 // cannot fail.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use std::io::{BufRead as _, BufReader, Read as _, Write as _};
-use std::net::{Ipv4Addr, TcpStream};
+mod common;
+
+use common::Server;
 use std::path::PathBuf;
-use std::process::{Child, Command, Stdio};
+use std::process::Command;
 
-/// The bundled example tracker: a directory, so this test needs no git repository of its own.
-fn tracker() -> PathBuf {
-    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples").join("action-game");
+/// Where the binary is run from. Irrelevant to what it does — every server here is pointed at
+/// its tracker with `--dir` — but it has to be somewhere that exists.
+fn here() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+}
+
+/// The bundled example tracker: a directory, so this file needs no git repository of its own.
+fn tracker() -> String {
+    let dir = here().join("examples").join("action-game");
     assert!(dir.join("index.jsonl").is_file(), "no tracker at {}", dir.display());
-    dir
+    dir.display().to_string()
 }
 
-/// A `trck serve` on an ephemeral port, killed however the test ends.
-struct Server {
-    child: Child,
-    port: u16,
-    banner: String,
-}
-
-impl Server {
-    /// Start on `--port 0` and read back the port the OS chose.
-    ///
-    /// The startup line is the handshake as well as the announcement: it is written after the
-    /// bind, so a test that has read it has a listener to talk to and needs no sleep.
-    fn start() -> Server {
-        let mut child = Command::new(env!("CARGO_BIN_EXE_trck"))
-            .args(["serve", "--port", "0", "--dir"])
-            .arg(tracker())
-            .env("NO_COLOR", "1")
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .expect("spawning trck serve");
-        let mut out = BufReader::new(child.stdout.take().expect("stdout is piped"));
-        let mut banner = String::new();
-        out.read_line(&mut banner).expect("the startup line");
-        let port = banner
-            .rsplit_once(':')
-            .map(|(_, tail)| tail.trim_start_matches(|c: char| !c.is_ascii_digit()))
-            .and_then(|tail| tail.split(|c: char| !c.is_ascii_digit()).next())
-            .and_then(|digits| digits.parse().ok())
-            .unwrap_or_else(|| panic!("no port in the startup line: {banner:?}"));
-        Server { child, port, banner }
-    }
-
-    /// Send a request verbatim and read the whole response. The server closes the connection
-    /// after answering, which is what ends the read.
-    fn request(&self, raw: &str) -> String {
-        let mut sock = TcpStream::connect((Ipv4Addr::LOCALHOST, self.port)).expect("connecting");
-        sock.write_all(raw.as_bytes()).expect("writing the request");
-        let mut answer = Vec::new();
-        sock.read_to_end(&mut answer).expect("reading the response");
-        String::from_utf8_lossy(&answer).into_owned()
-    }
-
-    fn get(&self, path: &str) -> String {
-        self.request(&format!("GET {path} HTTP/1.1\r\nHost: 127.0.0.1:{}\r\nConnection: close\r\n\r\n", self.port))
-    }
-}
-
-impl Drop for Server {
-    /// A failing assertion unwinds past any teardown written at the end of a test body, and a
-    /// server left listening would fail the next run rather than this one.
-    fn drop(&mut self) {
-        let _ = self.child.kill();
-        let _ = self.child.wait();
-    }
+/// A server over the example tracker, with polling off: there is no ref to poll, and this
+/// file is about the socket.
+fn serving() -> Server {
+    Server::start(&here(), &["--dir", &tracker(), "--poll", "0"])
 }
 
 /// Everything the socket is supposed to answer, in one process: a page, an asset, and each
@@ -89,7 +49,7 @@ impl Drop for Server {
 /// these requests can affect another — the process holds no state between them.
 #[test]
 fn the_page_and_the_assets_come_back_over_the_socket() {
-    let server = Server::start();
+    let server = serving();
     assert!(server.banner.contains("127.0.0.1"), "the startup line does not say where it is listening: {:?}", server.banner);
     assert!(server.banner.contains("loopback"), "the startup line does not say the listener is loopback-only: {:?}", server.banner);
 
@@ -119,15 +79,23 @@ fn the_page_and_the_assets_come_back_over_the_socket() {
     assert!(server.get("/").starts_with("HTTP/1.1 200 OK\r\n"), "the server did not survive its own refusals");
 }
 
+/// A directory tracker has no ref, so the timer has nothing it could discover and no thread is
+/// left awake to find that out again every interval. Silence on stderr is the assertion.
+#[test]
+fn a_directory_tracker_is_not_polled() {
+    let server = Server::start(&here(), &["--dir", &tracker()]);
+    assert!(server.get("/").starts_with("HTTP/1.1 200 OK\r\n"), "the server did not come up");
+    assert_eq!(server.log(), "", "a directory tracker has no ref to poll, so nothing should be said about one");
+}
+
 /// A second `serve` on the same port, which is what happens when one is already running in
 /// another terminal. The diagnostic has to name the port: that is the fact the user needs and
 /// the one thing the io error leaves out.
 #[test]
 fn a_busy_port_is_refused_with_a_diagnostic_naming_it() {
-    let server = Server::start();
+    let server = serving();
     let second = Command::new(env!("CARGO_BIN_EXE_trck"))
-        .args(["serve", "--port", &server.port.to_string(), "--dir"])
-        .arg(tracker())
+        .args(["serve", "--port", &server.port.to_string(), "--dir", &tracker()])
         .output()
         .expect("spawning a second trck serve");
     let err = String::from_utf8_lossy(&second.stderr);
@@ -148,18 +116,20 @@ fn ctrl_c_leaves_the_port_free() {
     // Imported here rather than at the top: this is the only test that rebinds, and on a
     // platform without `SIGINT` the whole test is gone — leaving an unused import behind,
     // which `-D warnings` fails the Windows build over.
-    use std::net::TcpListener;
+    use std::net::{Ipv4Addr, TcpListener};
 
-    let mut server = Server::start();
+    let mut server = serving();
     assert!(server.get("/").starts_with("HTTP/1.1 200 OK\r\n"), "the server was not up to begin with");
     let port = server.port;
 
-    let signalled = Command::new("kill").args(["-INT", &server.child.id().to_string()]).status().expect("sending SIGINT");
+    let signalled = Command::new("kill").args(["-INT", &server.pid().to_string()]).status().expect("sending SIGINT");
     assert!(signalled.success(), "could not signal the server");
-    server.child.wait().expect("the server exits on SIGINT");
+    // A poller thread must not keep the process alive past the signal either; the default
+    // disposition kills the process whatever its threads are doing, and that is the point.
+    assert!(server.wait_exit(10), "the server did not exit on SIGINT");
 
     // The listener went with the process. Not "eventually": the socket was closed by the
-    // kernel as the process died, so this holds on the first attempt.
+    // kernel as the process died.
     let rebound = TcpListener::bind((Ipv4Addr::LOCALHOST, port));
     assert!(rebound.is_ok(), "port {port} is still bound after SIGINT: {rebound:?}");
 }

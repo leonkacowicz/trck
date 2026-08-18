@@ -1,0 +1,2 @@
+# Validated before anything is bound and before the poller starts, so a typo costs neither.
+# `--poll 0` is the only way to say "never", and it is not spelled with a word.

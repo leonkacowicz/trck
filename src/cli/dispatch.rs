@@ -99,7 +99,7 @@ fn dispatch_query(args: &Args) -> Option<Result<String, String>> {
         // until the process is signalled. The tracker is resolved before anything is bound, so
         // an unresolvable one refuses here rather than leaving a socket listening on a page
         // the process cannot render.
-        "serve" => context(args).and_then(|ctx| crate::serve::cmd_serve(&ctx, args.opt("--port"))),
+        "serve" => context(args).and_then(|ctx| crate::serve::cmd_serve(&ctx, args.opt("--port"), args.opt("--poll"))),
         _ => return None,
     })
 }
