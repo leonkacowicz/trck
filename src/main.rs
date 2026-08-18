@@ -41,6 +41,8 @@ mod summary;
 #[cfg(test)]
 mod test_graph;
 #[cfg(test)]
+mod test_html;
+#[cfg(test)]
 mod test_index;
 mod validate;
 mod verbs;

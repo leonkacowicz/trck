@@ -276,3 +276,57 @@ fn a_refused_batch_says_what_stopped_it_and_what_had_already_landed() {
     // A response carrying no `error` at all still says something rather than "undefined".
     assert!(out.contains("the write was refused"), "{out}");
 }
+
+/// A staged edit that reality caught up with is not an edit any more.
+///
+/// Somebody else — or you, in a terminal — may make the very change that is staged here. After
+/// a live re-render, keeping it would leave a command in the panel that would now do nothing;
+/// `setEdit` already treats "same as the issue" as not an edit, and this applies that same rule
+/// to the issue having moved rather than the field having been set back.
+#[test]
+fn a_live_re_render_forgets_the_staged_edits_reality_caught_up_with() {
+    if !have_node() {
+        return;
+    }
+    let script = format!(
+        "const byId = {{\n\
+           a: {{ id: 'a', status: 'done', priority: 'high' }},\n\
+           b: {{ id: 'b', status: 'backlog', priority: 'low' }},\n\
+         }};\n\
+         const state = {{ edits: {{\n\
+           'a::status': 'done',\n\
+           'a::priority': 'low',\n\
+           'b::status': 'in-progress',\n\
+           'gone::status': 'done',\n\
+         }} }};\n\
+         {}\n\
+         dropSettledEdits();\n\
+         console.log(JSON.stringify(Object.keys(state.edits).sort()));\n",
+        lift(&["dropSettledEdits"])
+    );
+    let out = run_node(&script);
+    // `a::status` says what the issue now is, and `gone` is not in the tracker any more. The
+    // two that still ask for something survive.
+    assert_eq!(out.trim(), r#"["a::priority","b::status"]"#, "{out}");
+}
+
+/// The index every renderer reads is rebuilt **in place**. A live re-render replaces the
+/// model, and a renderer that had closed over the old object would go on drawing the tracker
+/// as it was — silently, and only in whichever views happened to capture it.
+#[test]
+fn the_issue_index_is_rebuilt_in_place_rather_than_replaced() {
+    if !have_node() {
+        return;
+    }
+    let script = format!(
+        "const DATA = {{ issues: [{{ id: 'a' }}, {{ id: 'b' }}] }};\n\
+         {}\n\
+         const captured = byId;\n\
+         DATA.issues = [{{ id: 'b' }}, {{ id: 'c' }}];\n\
+         reindex();\n\
+         console.log(JSON.stringify([captured === byId, Object.keys(byId).sort()]));\n",
+        lift(&["byId", "reindex"])
+    );
+    let out = run_node(&script);
+    assert_eq!(out.trim(), r#"[true,["b","c"]]"#, "{out}");
+}

@@ -322,6 +322,13 @@ this machine's own is refused, so a page on the open web cannot use your browser
 tracker. `/app.css` and `/app.js` answer from the copies compiled into the binary, never from a
 file on disk. Ctrl-C stops it and frees the port.
 
+**An open page keeps up on its own.** It holds one connection back to the server, which says
+so whenever the tracker moves — a write from this process, or a fast-forward the poll loop
+found — and the page re-renders in place rather than reloading: the selection stays, the scroll
+position stays, and so does anything staged but not yet applied. When the server is not
+answering the page says `offline` rather than quietly showing a tracker from an hour ago, and it
+reconnects by itself when it comes back.
+
 **It writes, too.** Edits staged on the page have always rendered as the `trck` commands that
 would make them; from a served page the Apply button posts them back, and the process runs those
 same operations in-process — one commit each, pushed as usual, through the verb functions the

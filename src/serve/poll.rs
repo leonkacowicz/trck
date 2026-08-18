@@ -98,6 +98,12 @@ fn tick(cwd: &Path, served: &str, previous: Option<&str>) -> (Vec<Note>, Option<
     // every other verb. Either way the answer is the same question — what does it point at
     // now — so there is one place that can be wrong about it.
     let now = crate::git::rev_parse(cwd, served).ok().flatten();
+    // One of the two causes an open page cares about — the other is a write from this process.
+    // Said on every tick rather than only when it changed: the beacon compares versions and
+    // ignores a repeat, so there is one place that decides what counts as movement.
+    if let Some(sha) = &now {
+        super::events::announce(Some(sha));
+    }
     if let Some(sha) = &now
         && previous.is_some_and(|was| was != sha)
     {

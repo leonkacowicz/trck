@@ -18,6 +18,7 @@
 
 mod apply;
 mod edits;
+mod events;
 mod http;
 mod poll;
 mod route;
@@ -28,7 +29,11 @@ mod test_apply;
 #[cfg(test)]
 mod test_edits;
 #[cfg(test)]
+mod test_events;
+#[cfg(test)]
 mod test_http;
+#[cfg(test)]
+mod test_route;
 
 use http::Response;
 use std::net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream};
@@ -51,6 +56,26 @@ const TIMEOUT: Duration = Duration::from_secs(15);
 /// hundreds is a bug — its own or someone else's — that should not be able to grow this
 /// process without bound.
 const MAX_LIVE: usize = 64;
+
+/// Event streams open at once, out of the connections above.
+///
+/// Far below [`MAX_LIVE`] on purpose: a stream lasts as long as a browser tab, so without a
+/// bound of its own a handful of forgotten tabs would fill the connection budget and leave
+/// nothing to serve the page they are watching. A person does not have sixteen tabs open on
+/// one tracker; something that does is a bug, and it should meet its own ceiling rather than
+/// the server's.
+const MAX_STREAMS: usize = 16;
+
+/// What is in flight: connections, and the streams among them.
+///
+/// Together rather than as two loose counters, because they are one answer to one question —
+/// how much of this process's serving capacity is spoken for — and because a `dispatch` taking
+/// two atomics in a row is a `dispatch` that will one day be handed them the wrong way round.
+#[derive(Default)]
+struct Counts {
+    open: AtomicUsize,
+    streams: AtomicUsize,
+}
 
 /// The `--port` argument as a port, or the sentence that says what a port is.
 ///
@@ -90,7 +115,8 @@ fn announce(addr: &SocketAddr) {
     let _ = crate::cli::emit(&format!("serving http://{addr}/ — loopback only, Ctrl-C to stop\n"));
 }
 
-/// Read one request, answer it, close.
+/// Read one request, answer it, close — unless the answer is an event stream, which does not
+/// close until the page does.
 ///
 /// One request per connection: with `Connection: close` there is no second message to frame,
 /// which removes the whole of HTTP's keep-alive bookkeeping from a server that renders a page
@@ -98,18 +124,47 @@ fn announce(addr: &SocketAddr) {
 ///
 /// Every io error here is dropped deliberately. A client that hangs up halfway through its
 /// request, or before reading the answer, has done nothing this process should report or
-/// react to — it is the browser closing a preconnect, or a tab being closed mid-load.
-fn serve_one(ctx: &crate::discovery::Ctx, stream: &TcpStream) {
+/// react to — it is the browser closing a preconnect, or a tab being closed mid-load, and for
+/// a stream it is the ordinary way one ends.
+fn serve_one(ctx: &crate::discovery::Ctx, stream: &TcpStream, streams: &AtomicUsize) {
     let _ = stream.set_read_timeout(Some(TIMEOUT));
     let _ = stream.set_write_timeout(Some(TIMEOUT));
     let answer = match http::read_head(stream) {
         // The client connected and said nothing. Nothing is the right answer.
         Ok(None) => return,
         Ok(Some(request)) => route::respond(ctx, &request),
-        Err(refusal) => refusal,
+        Err(refusal) => route::Answer::Now(refusal),
     };
     let mut out = stream;
-    let _ = answer.write_to(&mut out);
+    match answer {
+        route::Answer::Now(response) => {
+            let _ = response.write_to(&mut out);
+        },
+        route::Answer::Stream(since) => hold(stream, &mut out, since.as_deref(), streams),
+    }
+}
+
+/// Hold a connection open as an event stream, within the separate allowance for them.
+///
+/// **Two caps, because these are two resources.** An ordinary request is over in milliseconds;
+/// a stream lasts as long as a browser tab, so a handful of forgotten tabs could otherwise fill
+/// the whole connection budget and leave nothing to serve the page they are watching. Streams
+/// therefore have a bound of their own, well below it, and a request past that bound is turned
+/// away with a 503 rather than being allowed to take the last slot.
+///
+/// The read timeout goes: `EventSource` sends its request and then only listens, so there is
+/// nothing more to read and a deadline on reading would be a deadline on nothing. The *write*
+/// timeout stays, because it is what turns a client that vanished without closing into a
+/// thread that ends.
+fn hold(stream: &TcpStream, out: &mut impl std::io::Write, since: Option<&str>, streams: &AtomicUsize) {
+    if streams.fetch_add(1, Ordering::Relaxed) >= MAX_STREAMS {
+        streams.fetch_sub(1, Ordering::Relaxed);
+        let _ = Response::problem(503, "Service Unavailable", "too many event streams open; close a tab").write_to(out);
+        return;
+    }
+    let _ = stream.set_read_timeout(None);
+    let _ = events::stream(out, since, events::HEARTBEAT);
+    streams.fetch_sub(1, Ordering::Relaxed);
 }
 
 /// Hand one accepted connection to a thread, or turn it away if too many are in flight.
@@ -118,16 +173,16 @@ fn serve_one(ctx: &crate::discovery::Ctx, stream: &TcpStream) {
 /// the cap counts connections being served rather than threads that happen to exist. Relaxed
 /// ordering is enough: nothing is published through it, and being off by one at the boundary
 /// costs one connection either way.
-fn dispatch<'s>(scope: &'s std::thread::Scope<'s, '_>, ctx: &'s crate::discovery::Ctx, live: &'s AtomicUsize, stream: TcpStream) {
-    if live.fetch_add(1, Ordering::Relaxed) >= MAX_LIVE {
-        live.fetch_sub(1, Ordering::Relaxed);
+fn dispatch<'s>(scope: &'s std::thread::Scope<'s, '_>, ctx: &'s crate::discovery::Ctx, live: &'s Counts, stream: TcpStream) {
+    if live.open.fetch_add(1, Ordering::Relaxed) >= MAX_LIVE {
+        live.open.fetch_sub(1, Ordering::Relaxed);
         let mut out = &stream;
         let _ = Response::problem(503, "Service Unavailable", "too many connections in flight").write_to(&mut out);
         return;
     }
     scope.spawn(move || {
-        serve_one(ctx, &stream);
-        live.fetch_sub(1, Ordering::Relaxed);
+        serve_one(ctx, &stream, &live.streams);
+        live.open.fetch_sub(1, Ordering::Relaxed);
     });
 }
 
@@ -144,7 +199,7 @@ fn dispatch<'s>(scope: &'s std::thread::Scope<'s, '_>, ctx: &'s crate::discovery
 /// The poller shares the scope so that it, too, borrows the resolved `Ctx` — and so that
 /// there is one place where every thread this process owns is started.
 fn accept_loop(ctx: &crate::discovery::Ctx, listener: &TcpListener, every: Option<Duration>) {
-    let live = AtomicUsize::new(0);
+    let live = Counts::default();
     let live = &live;
     std::thread::scope(|scope| {
         if let Some(every) = every {
@@ -164,6 +219,13 @@ pub(crate) fn cmd_serve(ctx: &crate::discovery::Ctx, port: Option<&str>, poll_sp
     // Asked of the socket rather than assumed from the argument: `--port 0` means the OS chose,
     // and only the socket knows what it chose.
     let addr = listener.local_addr().map_err(|e| format!("cannot read the address of the listening socket: {e}"))?;
+    // Seed the beacon before anything can listen on it. Left empty, the first thing the poll
+    // loop said would be a change *from nothing* — so every page open at that moment would
+    // re-render for a tracker that had not moved, once, on a timer, for no reason anyone
+    // watching could see.
+    if let Some(version) = events::version(ctx) {
+        events::announce(Some(&version));
+    }
     announce(&addr);
     accept_loop(ctx, &listener, every);
     // Reached only if `incoming()` ends, which it does not. Empty rather than a farewell:
