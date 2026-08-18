@@ -13,6 +13,7 @@
 mod body;
 mod dispatch;
 mod editor;
+mod maintain;
 pub(crate) mod opts;
 mod prose;
 mod reports;
@@ -63,6 +64,7 @@ const VALUED: &[&str] = &[
     "--to",
     "--out",
     "--cmd",
+    "--port",
 ];
 
 /// `--requires` is the one flag whose arity depends on the verb: `new --requires a,b` names
@@ -125,44 +127,6 @@ impl Args {
         self.positional.get(n).map(String::as_str)
     }
 }
-
-/// The flags each verb accepts, so a typo is refused rather than ignored.
-///
-/// Silently dropping an unrecognised option is the worst of both worlds: `list
-/// --stauts done` would list everything and read as a successful filter. Python's
-/// argparse rejects it; so does this, though the message differs — argparse prints its
-/// own usage block, and reproducing that is pinning argparse rather than trck.
-pub(crate) const KNOWN_FLAGS: &[(&str, usize, &[&str])] = &[
-    ("new", 0, &["--dir", "--id", "--slug", "--priority", "--points", "--parent", "--requires", "--spec", "--review-url", "--body", "--body-file", "--empty"]),
-    ("edit", 0, prose::EDIT_FLAGS),
-    ("sync", 0, &["--dir"]),
-    ("mv", 0, &["--dir", "--resolution", "--review-url"]),
-    ("start", 0, &["--dir"]),
-    ("review", 0, &["--dir", "--review-url"]),
-    ("done", 0, &["--dir", "--resolution"]),
-    ("set", 0, &["--dir", "--auto", "--priority", "--points", "--parent", "--spec", "--review-url", "--title", "--slug", "--field", "--unset"]),
-    ("dep", 0, &["--dir", "--add", "--remove"]),
-    ("label", 0, &["--dir", "--add", "--remove"]),
-    ("list", 0, tables::LIST_FLAGS),
-    // Named once rather than repeated: `tree` is an alias, so a flag either verb accepted
-    // alone would be a flag the other silently refused.
-    ("tree", 0, tables::LIST_FLAGS),
-    ("show", 0, &["--dir", "--json"]),
-    ("path", 0, &["--dir"]),
-    ("which", 0, &["--dir", "--ids"]),
-    ("check", 0, &["--dir"]),
-    ("html", 0, &["--dir", "--out", "--cmd"]),
-    ("diff", 0, &["--dir", "--from", "--to"]),
-    ("changelog", 0, &["--dir", "--since"]),
-    ("summary", 0, &["--dir"]),
-    ("ready", 0, &["--dir", "--next", "--json"]),
-    ("deps", 0, &["--dir", "--requires", "--blocks", "--full", "--omit-done", "--include-done-chains", "--fanout", "--json"]),
-    ("next", 0, &["--dir", "--json"]),
-    // `--no-vendor` is accepted and does nothing. It asked for the only behaviour there is
-    // now, so refusing it would mean erroring on a request already satisfied; every README
-    // and script that learned to pass it keeps working. `init -h` says as much.
-    ("init", 1, &["--dir", "--force", "--hook", "--no-vendor"]),
-];
 
 /// Everything wrong with the *shape* of the invocation, as opposed to what it asks for.
 ///
@@ -250,7 +214,11 @@ fn is_closed_pipe(e: &std::io::Error) -> bool {
 /// Flushing here rather than leaving it to process teardown is the point: `Stdout` is
 /// line-buffered, so without an explicit flush the failing write can happen after `main`
 /// has returned, where there is no longer anything that can decide what it means.
-fn emit(text: &str) -> Result<(), std::io::Error> {
+///
+/// `pub(crate)` for one caller: `serve` has to say which port it bound *before* the loop it
+/// will not return from, so it cannot let `main` print its output for it. Everything else
+/// still returns its text and lets the exit path here write it.
+pub(crate) fn emit(text: &str) -> Result<(), std::io::Error> {
     use std::io::Write as _;
     let stdout = std::io::stdout();
     let mut lock = stdout.lock();

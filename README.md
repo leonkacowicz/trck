@@ -292,6 +292,26 @@ pretended otherwise would lose work silently. So changing a status or priority q
 `trck` command that *would* do it, and a bar at the bottom hands you the lot to paste into a
 terminal. The tracker is still only ever written by the binary.
 
+### The same page, live (`trck serve`)
+
+```bash
+trck serve                         # http://127.0.0.1:8725/
+trck serve --port 0                # let the OS pick; the startup line says which
+```
+
+`html` writes a file, which is a tracker frozen at the moment you remembered to regenerate it.
+`serve` renders the same page per request, so a reload shows the tracker as it is now —
+including a write another terminal made a second ago.
+
+**Loopback only, and there is no flag that widens it.** A tracker is a repository's working
+notes; nothing here should be reachable from a network. A request naming a host that is not
+this machine's own is refused, so a page on the open web cannot use your browser to read your
+tracker. `/app.css` and `/app.js` answer from the copies compiled into the binary, never from a
+file on disk. Ctrl-C stops it and frees the port.
+
+It **serves**; it does not write. Edits still stage into commands to paste, exactly as they do
+from a file — the tracker is only ever written by a verb you ran.
+
 ## Issue ids
 
 Each issue gets a **short random alphanumeric id** — 7 characters drawn from a base32

@@ -32,6 +32,14 @@ DEFAULT_BIN = HERE.parent / "target" / "release" / "trck"
 # instant; a fixture that needs the clock to move is not expressible yet (see README).
 NOW = "2026-01-01T00:00:00Z"
 
+# How long one invocation may take. Generous: the slowest fixtures shell out to git several
+# times, and a machine under load must not turn that into a failure. It is a backstop against
+# a fixture that hangs the whole suite, which `serve` makes possible — it is the one verb whose
+# job is to run until it is signalled, so a fixture may only assert the refusals that exit
+# before it binds. Reported as an exit status no verb produces, so it cannot be mistaken for one.
+TIMEOUT = 30
+TIMEOUT_CODE = 124                 # what `timeout(1)` uses, for the same meaning
+
 # Output is compared literally, so anything varying between runs has to be replaced
 # first. The tracker lives in a temp dir, and `new`/`path`/`which` print paths into it.
 TRACKER_PLACEHOLDER = "<TRACKER>"
@@ -72,9 +80,28 @@ def run_trck(binary, tracker, argv, env_extra=None, cwd=None, discover=False):
     # `new --body-file -` — and one asks whether it is a terminal, so a fixture run from a
     # shell would behave differently from the same fixture in CI, or block outright.
     prefix = [] if discover else ["--dir", str(tracker)]
-    return subprocess.run([str(binary), *prefix, *argv], cwd=cwd,
-                          capture_output=True, text=True, env=env,
-                          stdin=subprocess.DEVNULL)
+    try:
+        return subprocess.run([str(binary), *prefix, *argv], cwd=cwd,
+                              capture_output=True, text=True, env=env,
+                              stdin=subprocess.DEVNULL, timeout=TIMEOUT)
+    except subprocess.TimeoutExpired as expired:
+        # A verb that never returns is a fixture nobody can debug: the runner hangs, CI hangs
+        # with it, and there is no output to read. `serve` is the one verb that is *supposed*
+        # to run forever, so the shape exists — a fixture may only assert its refusals, which
+        # exit before it binds. Reported as an ordinary failing invocation, since that is what
+        # it is; the killed child's own output is kept, because it is usually the clue.
+        return subprocess.CompletedProcess(expired.cmd, TIMEOUT_CODE,
+                                           _text(expired.stdout),
+                                           _text(expired.stderr) + f"trck: killed after {TIMEOUT}s\n")
+
+
+def _text(captured):
+    """`TimeoutExpired` hands back bytes even from a text-mode run, and may hand back None."""
+    if captured is None:
+        return ""
+    if isinstance(captured, bytes):
+        return captured.decode(errors="replace")
+    return captured
 
 
 def normalise(text, tracker):

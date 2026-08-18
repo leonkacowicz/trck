@@ -18,9 +18,14 @@ use crate::json::Json;
 use crate::render::unique_prefix_lens;
 use crate::{config, summary};
 
-const CSS: &str = include_str!("../assets/app.css");
+/// The stylesheet and the script, compiled in.
+///
+/// Visible past this module because `serve` answers `/app.css` and `/app.js` from these very
+/// constants — the point being that a live process can never serve an asset out of whatever
+/// working tree it was launched in, which may be on another branch entirely.
+pub(crate) const CSS: &str = include_str!("../assets/app.css");
 const SHELL: &str = include_str!("../assets/shell.html");
-const APP_JS: &str = include_str!("../assets/app.js");
+pub(crate) const APP_JS: &str = include_str!("../assets/app.js");
 
 fn s(v: &str) -> Json {
     Json::String(v.to_string())

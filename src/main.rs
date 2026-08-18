@@ -36,6 +36,7 @@ mod merge;
 mod query;
 mod render;
 mod repo;
+mod serve;
 mod summary;
 #[cfg(test)]
 mod test_graph;

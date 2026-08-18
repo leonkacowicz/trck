@@ -1,0 +1,3 @@
+# A number that is not a port and a word that is not a number are the same mistake to whoever
+# typed it — a value that is not a port — so both get the sentence that says what a port is,
+# rather than one naming the parse rule the text happened to break.

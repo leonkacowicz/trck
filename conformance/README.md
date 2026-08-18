@@ -41,6 +41,13 @@ view does not churn every golden in the suite.
 | `expected.index.jsonl` | the tracker's index after the command |
 | `expected.SUMMARY.md` | the generated summary after the command |
 
+**One invocation may take 30 seconds.** Past that the runner kills it and reports the fixture
+as failing with status 124, which no verb produces. The limit is generous — the slowest
+fixtures shell out to git several times — and it exists because one verb, `serve`, runs until
+it is signalled: without a backstop a fixture that started a server would hang the suite and
+CI with it, with no output to read. So a fixture may assert `serve`'s refusals, which exit
+before the socket exists, and never a running one.
+
 `setup` and `cmd` lines are split like a shell (`shlex`), so a quoted title stays one
 argument. Lines starting with `#` are comments — use them; a fixture whose name is its
 only explanation is a fixture nobody dares change.
