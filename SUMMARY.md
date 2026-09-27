@@ -6,9 +6,9 @@
 | State | Count |
 |---|---:|
 | backlog | 59 |
-| in-progress | 6 |
+| in-progress | 7 |
 | in-review | 0 |
-| done | 237 |
+| done | 236 |
 | **total** | **302** |
 
 ## Hierarchies
@@ -129,9 +129,9 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#mseqgr5 cli: --pr on new/set/mv](items/mseqgr5-cli-pr-on-new-set-mv.md)
 - [x] [#shaadcs render: PR links in SUMMARY.md, --show-field over canonical fields](items/shaadcs-render-pr-links-in-summary-md-show-field-over-canonical-fields.md)
 
-### [#js9hehc trck-html graph: draw the hierarchy edges deps draws (containment, inherited, reduced)](items/js9hehc-html-graph-hierarchy-edges.md) — 33% (1/3 pts · 1/3 done) · _medium_ · in-progress
+### [#js9hehc trck-html graph: draw the hierarchy edges deps draws (containment, inherited, reduced)](items/js9hehc-html-graph-hierarchy-edges.md) — 0% (0/3 pts · 0/3 done) · _medium_ · in-progress
 
-- [x] [#5r4b2y8 html graph: derive and reduce the drawn edge set in the page](items/5r4b2y8-html-graph-drawn-edges.md)
+- [ ] [#5r4b2y8 html graph: derive and reduce the drawn edge set in the page](items/5r4b2y8-html-graph-drawn-edges.md) _(in-progress)_
 - [ ] [#aw859ny html graph: style containment and inherited edges apart from authored ones](items/aw859ny-html-graph-edge-kind-styles.md) _(in-progress)_
 - [ ] [#tyc6k6x html graph: select, seed and done-filter over the drawn edges](items/tyc6k6x-html-graph-select-over-drawn-edges.md) _(in-progress)_
 
