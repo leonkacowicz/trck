@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 59 |
+| backlog | 60 |
 | in-progress | 4 |
 | in-review | 3 |
 | done | 236 |
-| **total** | **302** |
+| **total** | **303** |
 
 ## Hierarchies
 
@@ -261,6 +261,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## Backlog
 
+- [#pa9jtd5 writes: a write from a subdirectory drops the tracker tree on the branch](items/pa9jtd5-writes-a-write-from-a-subdirectory-drops-the-tracker-tree-on-the-branch.md) — _urgent_
 - [#38qfknm restore the coverage the deleted suite carried: hooks, setup-git, git-revision diff](items/38qfknm-restore-the-coverage-the-deleted-suite-carried-hooks-setup-git-git-revision-diff.md) — _high_
 - [#jcdynvv check: warn when this clone's registered merge drivers no longer resolve](items/jcdynvv-check-warn-when-this-clone-s-registered-merge-drivers-no-longer-resolve.md) — _high_ [conflict-resolution]
 - [#jvruz7x README: document the ref-backed tracker as a user feature](items/jvruz7x-readme-document-the-ref-backed-tracker-as-a-user-feature.md) — _high_
