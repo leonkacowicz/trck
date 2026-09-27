@@ -153,8 +153,9 @@ pub(crate) fn build_model(ctx: &Ctx, g: &Graph, page: &Page) -> Json {
             pairs.push(("plen".into(), num(i64::try_from(plen.get(&r.id).copied().unwrap_or(1)).unwrap_or(1))));
         }
         issues.push(obj);
-        // Authored dependency edges, blocker -> blocked. Containment is deliberately
-        // excluded: the graph view draws ordering constraints, not the hierarchy.
+        // Authored dependency edges, blocker -> blocked. Only authored ones: the graph view
+        // derives containment and inherited edges itself (`drawnEdges` in app.js), because
+        // which of them it draws depends on the ids its filters leave on screen.
         for b in g.requires_of(&r.id) {
             edges.push(Json::Object(vec![("from".into(), s(&b)), ("to".into(), s(&r.id))]));
         }

@@ -330,3 +330,184 @@ fn the_issue_index_is_rebuilt_in_place_rather_than_replaced() {
     let out = run_node(&script);
     assert_eq!(out.trim(), r#"[true,["b","c"]]"#, "{out}");
 }
+
+/// The page's graph draws what `trck deps` draws: an epic waits on each child, and a child
+/// waits on what its ancestors wait on — but only when no ancestor between the two is on
+/// screen to carry the edge itself. Restating it under every child would replace one edge at
+/// the altitude it was authored with a fan of them. Mirrors `src/gutter/edges.rs`.
+#[test]
+fn the_graph_draws_containment_and_inheritance_like_deps() {
+    if !have_node() {
+        return;
+    }
+    let script = format!(
+        "const byId = {{\n\
+           blocker: {{ id: 'blocker', parent: null, children: [], requires: [] }},\n\
+           epic: {{ id: 'epic', parent: null, children: ['kid'], requires: ['blocker'] }},\n\
+           kid: {{ id: 'kid', parent: 'epic', children: [], requires: [] }},\n\
+         }};\n\
+         {}\n\
+         const show = es => es.map(e => e.from + '>' + e.to + ':' + e.kind).sort();\n\
+         console.log(JSON.stringify([\n\
+           show(drawnEdges(new Set(['blocker', 'epic', 'kid']))),\n\
+           show(drawnEdges(new Set(['blocker', 'kid']))),\n\
+         ]));\n",
+        lift(&["ancestorsOf", "carriedAbove", "drawnEdges"])
+    );
+    let out = run_node(&script);
+    // With the epic drawn, it carries the dependency and the kid joins it by containment.
+    // With the epic hidden, the kid is what shows the blocker holding it up.
+    assert_eq!(out.trim(), r#"[["blocker>epic:dep","kid>epic:child"],["blocker>kid:inherited"]]"#, "{out}");
+}
+
+/// An edge is dropped only in favour of a path that is itself drawn — reduced over the ids on
+/// screen, never over the whole tracker, or two issues joined through a hidden one would look
+/// unrelated. A containment edge implied by a sibling ordering goes the same way. Mirrors
+/// `src/gutter/reduce.rs`.
+#[test]
+fn the_graph_drops_an_edge_only_for_a_drawn_path() {
+    if !have_node() {
+        return;
+    }
+    let script = format!(
+        "const byId = {{\n\
+           a: {{ id: 'a', parent: null, children: [], requires: [] }},\n\
+           b: {{ id: 'b', parent: null, children: [], requires: ['a'] }},\n\
+           c: {{ id: 'c', parent: null, children: [], requires: ['a', 'b'] }},\n\
+           epic: {{ id: 'epic', parent: null, children: ['x', 'y'], requires: [] }},\n\
+           x: {{ id: 'x', parent: 'epic', children: [], requires: [] }},\n\
+           y: {{ id: 'y', parent: 'epic', children: [], requires: ['x'] }},\n\
+         }};\n\
+         {}\n\
+         const show = es => es.map(e => e.from + '>' + e.to + ':' + e.kind).sort();\n\
+         const reduced = ids => show(reduceEdges(drawnEdges(new Set(ids))));\n\
+         console.log(JSON.stringify([\n\
+           reduced(['a', 'b', 'c']),\n\
+           reduced(['a', 'c']),\n\
+           reduced(['epic', 'x', 'y']),\n\
+         ]));\n",
+        lift(&["ancestorsOf", "carriedAbove", "drawnEdges", "reduceEdges"])
+    );
+    let out = run_node(&script);
+    assert_eq!(out.trim(), r#"[["a>b:dep","b>c:dep"],["a>c:dep"],["x>y:dep","y>epic:child"]]"#, "{out}");
+}
+
+/// `check` is what reports a cycle; the page must not hang before anyone gets to run it. A
+/// dependency loop and a parent loop both have to come back.
+#[test]
+fn the_graph_derivation_terminates_on_a_malformed_tracker() {
+    if !have_node() {
+        return;
+    }
+    let script = format!(
+        "const byId = {{\n\
+           a: {{ id: 'a', parent: null, children: [], requires: ['b'] }},\n\
+           b: {{ id: 'b', parent: null, children: [], requires: ['a'] }},\n\
+           p: {{ id: 'p', parent: 'q', children: ['q'], requires: ['a'] }},\n\
+           q: {{ id: 'q', parent: 'p', children: ['p'], requires: [] }},\n\
+         }};\n\
+         {}\n\
+         reduceEdges(drawnEdges(new Set(Object.keys(byId))));\n\
+         console.log('ok');\n",
+        lift(&["ancestorsOf", "carriedAbove", "drawnEdges", "reduceEdges"])
+    );
+    assert_eq!(run_node(&script).trim(), "ok");
+}
+
+/// The bare graph shows what bare `trck deps` shows: every family holding an authored edge,
+/// taken whole, and nothing else. Containment joins nearly the whole forest, so "every issue
+/// on an edge" would redraw the list; and a parent shown without some of its children would
+/// misreport what it waits on. Mirrors `gutter::overview_ids`.
+#[test]
+fn the_bare_graph_keeps_a_family_whole_once_it_has_an_authored_edge() {
+    if !have_node() {
+        return;
+    }
+    let script = format!(
+        "const byId = {{\n\
+           epic: {{ id: 'epic', parent: null, children: ['a', 'b'], requires: [] }},\n\
+           a: {{ id: 'a', parent: 'epic', children: [], requires: [] }},\n\
+           b: {{ id: 'b', parent: 'epic', children: [], requires: ['a'] }},\n\
+           other: {{ id: 'other', parent: null, children: ['c'], requires: [] }},\n\
+           c: {{ id: 'c', parent: 'other', children: [], requires: [] }},\n\
+           lone: {{ id: 'lone', parent: null, children: [], requires: [] }},\n\
+         }};\n\
+         {}\n\
+         console.log(JSON.stringify([...overviewIds()].sort()));\n",
+        lift(&["ancestorsOf", "carriedAbove", "drawnEdges", "adjacency", "components", "overviewIds"])
+    );
+    assert_eq!(run_node(&script).trim(), r#"["a","b","epic"]"#);
+}
+
+/// A filter seeds the graph with each match's dependency line, walked as
+/// `Graph::dependency_line` walks it: up through blockers, children and what ancestors wait
+/// on; down through dependents and the containing parent. The two sweeps never cross, so a
+/// sibling stays out — it meets the seed only at the parent, and neither sweep turns there.
+#[test]
+fn a_filter_seeds_the_graph_with_each_matchs_dependency_line() {
+    if !have_node() {
+        return;
+    }
+    let script = format!(
+        "const byId = {{\n\
+           blocker: {{ id: 'blocker', parent: null, children: [], requires: [], dependents: ['epic'] }},\n\
+           epic: {{ id: 'epic', parent: null, children: ['a', 'b'], requires: ['blocker'], dependents: [] }},\n\
+           a: {{ id: 'a', parent: 'epic', children: [], requires: [], dependents: [] }},\n\
+           b: {{ id: 'b', parent: 'epic', children: [], requires: [], dependents: [] }},\n\
+         }};\n\
+         {}\n\
+         console.log(JSON.stringify([[...coneOf(['a'])].sort(), [...coneOf(['epic'])].sort()]));\n",
+        lift(&["ancestorsOf", "coneOf"])
+    );
+    assert_eq!(run_node(&script).trim(), r#"[["a","blocker","epic"],["a","b","blocker","epic"]]"#);
+}
+
+/// A settled chain is hidden as a component, and components are counted over the drawn edges:
+/// done work a live parent still contains belongs to that parent's component, and stays until
+/// `omit done` asks for done issues to go wherever they sit. Mirrors `gutter::filter_done`.
+#[test]
+fn done_work_a_live_parent_contains_is_not_a_settled_chain() {
+    if !have_node() {
+        return;
+    }
+    let script = format!(
+        "const byId = {{\n\
+           p: {{ id: 'p', parent: null, children: ['q', 'r', 's'], requires: [], terminal: false }},\n\
+           q: {{ id: 'q', parent: 'p', children: [], requires: [], terminal: false }},\n\
+           r: {{ id: 'r', parent: 'p', children: [], requires: [], terminal: true }},\n\
+           s: {{ id: 's', parent: 'p', children: [], requires: ['r'], terminal: true }},\n\
+           x: {{ id: 'x', parent: null, children: [], requires: [], terminal: true }},\n\
+           y: {{ id: 'y', parent: null, children: [], requires: ['x'], terminal: true }},\n\
+         }};\n\
+         const state = {{ graphIncludeDone: false, graphOmitDone: false }};\n\
+         {}\n\
+         const all = new Set(Object.keys(byId));\n\
+         const chains = [...doneFiltered(all)].sort();\n\
+         state.graphOmitDone = true;\n\
+         console.log(JSON.stringify([chains, [...doneFiltered(all)].sort()]));\n",
+        lift(&["ancestorsOf", "carriedAbove", "drawnEdges", "adjacency", "components", "doneFiltered"])
+    );
+    assert_eq!(run_node(&script).trim(), r#"[["p","q","r","s"],["p","q"]]"#);
+}
+
+/// Containment and inheritance are structure the engine infers, not ordering anyone
+/// authored, so they must not read as authored edges. The CLI dims containment for that;
+/// the page has shape to spare. Each inferred kind gets its own class, and the stylesheet
+/// has to actually style it — a class nothing matches is a distinction nobody sees.
+#[test]
+fn inferred_edges_do_not_look_authored() {
+    if !have_node() {
+        return;
+    }
+    let script = format!(
+        "{}\n\
+         console.log(JSON.stringify(['dep', 'child', 'inherited'].map(kind => edgeClass({{ kind }}))));\n",
+        lift(&["edgeClass"])
+    );
+    assert_eq!(run_node(&script).trim(), r#"["gedge","gedge child","gedge inherited"]"#);
+    let css = include_str!("../assets/app.css");
+    for rule in [".gedge.child {", ".gedge.inherited {"] {
+        assert!(css.contains(rule), "app.css must style `{rule}`");
+    }
+    assert!(APP_JS.contains("class: edgeClass(e)"), "the graph must draw its paths through edgeClass");
+}

@@ -466,7 +466,7 @@ function select(id) {
   keepingScroll($('#' + state.view), renderActiveView);
 }
 
-// --- v3 dependency graph: SVG layered DAG from authored edges ----------------
+// --- v3 dependency graph: SVG layered DAG of the edges `trck deps` draws ------
 const SVGNS = 'http://www.w3.org/2000/svg';
 function sv(tag, props = {}, ...kids) {
   const n = document.createElementNS(SVGNS, tag);
@@ -487,36 +487,139 @@ const NODE_W = 150, NODE_H = 32, COL_GAP = 20, ROW_GAP = 64, PAD = 14, COMP_GAP 
 // running under it to the tip (which left a stroke-width nub poking past the point).
 const ARROW = 10;
 const trunc = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
+// An inferred edge — containment, or a dependency inherited from an ancestor — is drawn
+// apart from an authored one: it is structure the engine derived, not ordering anyone wrote.
+const edgeClass = e => 'gedge' + (e.kind === 'dep' ? '' : ' ' + e.kind);
 
-// The dependency cone of a set of seeds: everything reachable up (blockers) and
-// down (dependents). Used to seed the graph from the filter bar's matches.
-function coneOf(seeds) {
-  const fwd = {}, back = {};
-  for (const e of DATA.edges) {
-    (fwd[e.from] = fwd[e.from] || []).push(e.to);
-    (back[e.to] = back[e.to] || []).push(e.from);
+// The parent spine above `id`, nearest first. A parent missing from the tracker ends it,
+// and the `seen` guard breaks a parent loop: `check` reports those, drawing must not hang.
+function ancestorsOf(id) {
+  const chain = [], seen = new Set([id]);
+  for (let p = byId[id] && byId[id].parent; p && byId[p] && !seen.has(p); p = byId[p].parent) {
+    seen.add(p);
+    chain.push(p);
   }
-  const grow = adj => {
-    const seen = new Set(seeds), st = [...seeds];
-    while (st.length) { const n = st.pop(); for (const m of (adj[n] || [])) if (!seen.has(m)) { seen.add(m); st.push(m); } }
-    return seen;
-  };
-  const out = new Set();
-  for (const id of grow(fwd)) out.add(id);
-  for (const id of grow(back)) out.add(id);
+  return chain;
+}
+// Is an ancestor between `id` and `author` (inclusive) on screen? Then that row already
+// draws the author's dependency, and containment joins it to `id`.
+function carriedAbove(id, author, ids) {
+  for (const a of ancestorsOf(id)) {
+    if (ids.has(a)) return true;
+    if (a === author) break;
+  }
+  return false;
+}
+// The edges `trck deps` draws over `ids`, each blocker -> blocked with its kind: the
+// issue's own `requires` ('dep'), each child to the parent waiting on it ('child'), and
+// what an ancestor requires, drawn under the issue itself ('inherited') unless a visible
+// ancestor already carries it — restating it under every child would swap one edge at the
+// altitude it was authored for a fan. A port of src/gutter/edges.rs, derived here rather
+// than shipped because what it draws depends on which ids the filters left on screen.
+function drawnEdges(ids) {
+  const out = [];
+  for (const id of [...ids].sort()) {
+    const i = byId[id];
+    if (!i) continue;
+    for (const d of i.requires) if (ids.has(d)) out.push({ from: d, to: id, kind: 'dep' });
+    for (const k of i.children) if (ids.has(k)) out.push({ from: k, to: id, kind: 'child' });
+    // Nearest author first, and a target seen once is enough — which is also what keeps
+    // an edge the issue authored itself from coming round again as inherited.
+    const seen = new Set(i.requires);
+    for (const author of ancestorsOf(id)) {
+      const quiet = carriedAbove(id, author, ids);
+      for (const t of byId[author].requires) {
+        if (seen.has(t)) continue;
+        seen.add(t);
+        if (!quiet && ids.has(t)) out.push({ from: t, to: id, kind: 'inherited' });
+      }
+    }
+  }
   return out;
 }
-function restrictedAdj(nodeSet) {
+// `edges` minus every edge a longer path through them already implies, so an edge is only
+// ever dropped for a path that is itself drawn. A port of src/gutter/reduce.rs: an edge is
+// implied when another blocker of the same node already waits on its blocker.
+function reduceEdges(edges) {
+  const blockers = {};
+  for (const e of edges) (blockers[e.to] = blockers[e.to] || []).push(e.from);
+  // Everything each node transitively waits on, memoised. Iterative post-order, so a deep
+  // chain cannot overflow the stack; the placeholder written before descending is what
+  // makes a malformed cycle terminate rather than loop.
+  const reach = new Map();
+  for (const start of Object.keys(blockers)) {
+    const stack = [[start, false]];
+    while (stack.length) {
+      const [u, expanded] = stack.pop();
+      if (expanded) {
+        const below = new Set();
+        for (const v of (blockers[u] || [])) { below.add(v); for (const w of (reach.get(v) || [])) below.add(w); }
+        reach.set(u, below);
+      } else if (!reach.has(u)) {
+        reach.set(u, new Set());
+        stack.push([u, true]);
+        for (const v of (blockers[u] || [])) stack.push([v, false]);
+      }
+    }
+  }
+  const implied = e => blockers[e.to].some(w => w !== e.from && reach.has(w) && reach.get(w).has(e.from));
+  return edges.filter(e => !implied(e));
+}
+
+// Undirected adjacency over `edges`, for splitting a node set into components.
+function adjacency(edges) {
   const adj = {};
-  for (const e of DATA.edges) {
-    if (!nodeSet.has(e.from) || !nodeSet.has(e.to)) continue;
+  for (const e of edges) {
     (adj[e.from] = adj[e.from] || []).push(e.to);
     (adj[e.to] = adj[e.to] || []).push(e.from);
   }
   return adj;
 }
+// What the bare graph shows, as bare `trck deps` does (gutter::overview_ids): every
+// component holding an authored edge, taken whole. Containment joins nearly the whole
+// forest, so "every issue on an edge" would redraw the list; and a parent shown without
+// some of its children would misreport what it is waiting on.
+function overviewIds() {
+  const all = new Set(Object.keys(byId));
+  const edges = drawnEdges(all);
+  const authored = new Set(edges.filter(e => e.kind === 'dep').flatMap(e => [e.from, e.to]));
+  const keep = new Set();
+  for (const comp of components([...all], adjacency(edges)))
+    if (comp.some(id => authored.has(id))) comp.forEach(id => keep.add(id));
+  return keep;
+}
+// The dependency lines of a set of seeds, walked as Graph::dependency_line walks one: up
+// to what each waits on (blockers, children, and what its ancestors wait on), down to what
+// waits on it (dependents, and the parent containing it). Two sweeps that never cross, so
+// a sibling stays a cousin rather than joining through the parent they share.
+function coneOf(seeds) {
+  const up = id => [...byId[id].requires, ...byId[id].children, ...ancestorsOf(id).flatMap(a => byId[a].requires)];
+  const down = id => [...byId[id].dependents, ...(byId[id].parent ? [byId[id].parent] : [])];
+  const grow = next => {
+    const seen = new Set(seeds), st = [...seeds];
+    while (st.length) { const n = st.pop(); for (const m of next(n)) if (byId[m] && !seen.has(m)) { seen.add(m); st.push(m); } }
+    return seen;
+  };
+  return new Set([...grow(up), ...grow(down)]);
+}
+// The filter bar's matches that sit on any edge the graph could draw, authored or
+// containment — the issues `trck deps <id>` would draw a line for.
 function graphSeeds() {
-  return [...new Set(DATA.edges.flatMap(e => [e.from, e.to]))].filter(id => byId[id] && matches(byId[id]));
+  const onAnEdge = i => i.requires.length || i.dependents.length || i.children.length || i.parent;
+  return Object.values(byId).filter(i => onAnEdge(i) && matches(i)).map(i => i.id);
+}
+// Display-only done filtering, mirroring the engine's gutter::filter_done: a component
+// with nothing left in it goes unless done chains are asked for, then `omit done` drops
+// done issues wherever they sit. Components are over the drawn edges, so done work a live
+// parent still contains is part of that parent's component, not a settled chain.
+function doneFiltered(nodes) {
+  const kept = new Set(nodes);
+  if (!state.graphIncludeDone)
+    for (const comp of components([...kept], adjacency(drawnEdges(kept))))
+      if (comp.every(id => byId[id] && byId[id].terminal)) comp.forEach(id => kept.delete(id));
+  if (state.graphOmitDone)
+    for (const id of [...kept]) if (byId[id] && byId[id].terminal) kept.delete(id);
+  return kept;
 }
 function checkbox(label, checked, onchange, cls = 'gcheck') {
   const cb = el('input', { type: 'checkbox' });
@@ -980,19 +1083,9 @@ function renderGraph() {
   const box = $('#graph'); box.textContent = '';
   box.append(graphToolbar());
 
-  const all = new Set();
-  for (const e of DATA.edges) { all.add(e.from); all.add(e.to); }
   const active = filterActive();
-  // Filter bar seeds the graph: show the union of the matches' dependency cones.
-  let nodes = active ? coneOf(graphSeeds()) : new Set(all);
-  // Done-filtering, mirroring the engine's filter_deps_graph_ids.
-  if (!state.graphIncludeDone) {
-    const a = restrictedAdj(nodes);
-    for (const comp of components([...nodes], a))
-      if (comp.every(id => byId[id] && byId[id].terminal)) comp.forEach(id => nodes.delete(id));
-  }
-  if (state.graphOmitDone)
-    for (const id of [...nodes]) if (byId[id] && byId[id].terminal) nodes.delete(id);
+  // Filter bar seeds the graph: show the union of the matches' dependency lines.
+  const nodes = doneFiltered(active ? coneOf(graphSeeds()) : overviewIds());
 
   if (!nodes.size) {
     box.append(el('p', { class: 'gempty',
@@ -1000,13 +1093,11 @@ function renderGraph() {
     return;
   }
 
-  const edges = DATA.edges.filter(e => nodes.has(e.from) && nodes.has(e.to));
-  const preds = {}, adj = {};
-  for (const e of edges) {
-    (preds[e.to] = preds[e.to] || []).push(e.from);
-    (adj[e.from] = adj[e.from] || []).push(e.to);
-    (adj[e.to] = adj[e.to] || []).push(e.from);
-  }
+  // Derived and reduced over exactly the ids left on screen, so an edge only ever gives
+  // way to a path that is drawn — never to one through an issue a filter took out.
+  const edges = reduceEdges(drawnEdges(nodes));
+  const preds = {}, adj = adjacency(edges);
+  for (const e of edges) (preds[e.to] = preds[e.to] || []).push(e.from);
   const nodeList = [...nodes].sort((a, b) => a.localeCompare(b));
   // Flow the components left→right, wrapping to a new row when the pane width is
   // exceeded, so the graph grows down (natural scroll) rather than out.
@@ -1057,7 +1148,7 @@ function renderGraph() {
       px = p.x; py = p.y + NODE_H;
     }
     // Trimming ARROW off the final y leaves the head to cover exactly the missing stretch.
-    const path = sv('path', { class: 'gedge', 'marker-end': 'url(#arrow)', d: d + hop(px, py, x2, y2) });
+    const path = sv('path', { class: edgeClass(e), 'marker-end': 'url(#arrow)', d: d + hop(px, py, x2, y2) });
     edgeLayer.append(path);
     (incident[e.from] = incident[e.from] || []).push(path);
     (incident[e.to] = incident[e.to] || []).push(path);
