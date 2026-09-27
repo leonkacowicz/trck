@@ -7,8 +7,8 @@
 |---|---:|
 | backlog | 60 |
 | in-progress | 3 |
-| in-review | 1 |
-| done | 240 |
+| in-review | 0 |
+| done | 241 |
 | **total** | **304** |
 
 ## Hierarchies
@@ -302,12 +302,13 @@ _none_
 
 ## In-review
 
-- [#pa9jtd5 writes: a write from a subdirectory drops the tracker tree on the branch](items/pa9jtd5-writes-a-write-from-a-subdirectory-drops-the-tracker-tree-on-the-branch.md) — _urgent_ · [review](https://github.com/leonkacowicz/trck/pull/73)
+_none_
 
 ## Done
 
 - [#8yg822w discovery: bound the walk up at the git repository root](items/8yg822w-discovery-bound-the-walk-up-at-the-git-repository-root.md) — _urgent_ (closed 2026-08-16) · [review](https://github.com/leonkacowicz/trck/pull/61)
 - [#9jgarpa list: 'needs' annotation ignores inherited deps, disagreeing with ready/is_blocked](items/9jgarpa-list-needs-annotation-ignores-inherited-deps-disagreeing-with-ready-is-blocked.md) — _urgent_ (closed 2026-07-23)
+- [#pa9jtd5 writes: a write from a subdirectory drops the tracker tree on the branch](items/pa9jtd5-writes-a-write-from-a-subdirectory-drops-the-tracker-tree-on-the-branch.md) — _urgent_ (closed 2026-09-27) · [review](https://github.com/leonkacowicz/trck/pull/73)
 - [#s5585hq check: reject duplicate ids in index.jsonl](items/s5585hq-check-reject-duplicate-ids-in-index-jsonl.md) — _urgent_ [conflict-resolution] (closed 2026-07-30)
 - [#2ngp4y4 trck <verb> --help explains the verb, not the program](items/2ngp4y4-trck-verb-help-explains-the-verb-not-the-program.md) — _high_ (closed 2026-08-06)
 - [#dqmp5c5 Cut v0.1.0 release](items/dqmp5c5-cut-v0-1-0-release.md) — _high_ (closed 2026-06-05)
