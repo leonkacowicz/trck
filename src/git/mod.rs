@@ -24,12 +24,14 @@ use std::process::{Command, Output, Stdio};
 // what most callers want, and the qualifier is a reminder that the other four mutate the
 // object store. Nothing calls them yet — the write path (`#jgf9ktx`) is the first consumer —
 // which is what the crate-level `dead_code` expectation is for.
+mod grep;
 mod read;
 pub(crate) mod refs;
 pub(crate) mod worktree;
 pub(crate) mod write;
 
-pub(crate) use read::{changed_paths, commit_message, grep_files, is_ancestor, ls_tree, repo_root, rev_list, rev_parse, show, tree_blobs};
+pub(crate) use grep::grep_files;
+pub(crate) use read::{changed_paths, commit_message, is_ancestor, ls_tree, repo_root, rev_list, rev_parse, show, tree_blobs};
 
 /// What a failed spawn says. Callers add the context; see the module note.
 const NO_GIT: &str = "git is not on PATH";

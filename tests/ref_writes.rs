@@ -361,3 +361,29 @@ fn walk(root: &Path, dir: &Path) -> Vec<String> {
     }
     out
 }
+
+/// A write run from below the repository root commits the whole tracker, exactly as one run
+/// from the root does. `ls-tree` scopes itself to the working directory's path inside the
+/// revision it lists, so the base read as empty from a subdirectory, and the commit held
+/// only the files the verb had just written — `trck.json` and every other body deleted, then
+/// pushed (#pa9jtd5). The next verb refused the ref as not a tracker.
+#[test]
+fn a_write_from_a_subdirectory_carries_the_whole_tracker_forward() {
+    let Some(s) = Scenario::build("refwrite-subdir") else { return };
+    let deep = s.work.join("src").join("deep");
+    std::fs::create_dir_all(&deep).expect("mkdir");
+    // A fresh clone's only tracker ref is the remote-tracking one.
+    let before = tree(&s.work, "origin/trck-issues");
+    assert!(before.iter().any(|p| p == "trck.json"), "the fixture is a tracker: {before:?}");
+
+    trck_must(&deep, &["start", "aaaaaaa"]);
+    trck_must(&deep, &["new", "Filed from below", "--id", "ccccccc", "--empty"]);
+
+    let after = tree(&s.work, LOCAL_REF);
+    for path in &before {
+        assert!(after.contains(path), "{path} was dropped by a write from a subdirectory: {after:?}");
+    }
+    assert!(after.iter().any(|p| p.starts_with("items/ccccccc-")), "and the new body landed: {after:?}");
+    // And it reads back as a consistent tracker from down there, too.
+    trck_must(&deep, &["check"]);
+}

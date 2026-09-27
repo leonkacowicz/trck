@@ -1,0 +1,6 @@
+# `discovery: ref` runs the command from `repo/nested`, below the repository root. `check`
+# lists the bodies under `items/` out of the revision, and `ls-tree` scopes a listing to the
+# working directory's path inside it — so from down here every body read as missing and a
+# consistent tracker failed its own check (#pa9jtd5).
+new "First" --id aaaaaaa --body "One body."
+new "Second" --id bbbbbbb --body "Another body."
