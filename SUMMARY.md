@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 59 |
+| backlog | 60 |
 | in-progress | 3 |
 | in-review | 1 |
 | done | 240 |
-| **total** | **303** |
+| **total** | **304** |
 
 ## Hierarchies
 
@@ -270,6 +270,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#j4vephz update: remove the obsolete update verb](items/j4vephz-update-remove-the-obsolete-update-verb.md) — _medium_
 - [#jkvexgs docs: record a terminal demo of the next-driven loop for the README](items/jkvexgs-docs-record-a-terminal-demo-of-the-next-driven-loop-for-the-readme.md) — _medium_
 - [#k6g7kvf CI: a consistency check a consumer repo can drop in](items/k6g7kvf-ci-a-consistency-check-a-consumer-repo-can-drop-in.md) — _medium_
+- [#kduap9z conformance: let a ref-mode fixture assert what landed on the branch](items/kduap9z-conformance-let-a-ref-mode-fixture-assert-what-landed-on-the-branch.md) — _medium_
 - [#tfhhp8h mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](items/tfhhp8h-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
 - [#v5wvabj list: --since/--until date-range filters over created/started/closed](items/v5wvabj-list-since-until-date-range-filters-over-created-started-closed.md) — _medium_ [dates]
 - [#wh3mv52 mv/done: guard closing a parent with open descendants (--recurse to cascade)](items/wh3mv52-mv-done-guard-closing-a-parent-with-open-descendants-recurse-to-cascade.md) — _medium_
