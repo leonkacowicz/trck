@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 61 |
+| backlog | 62 |
 | in-progress | 3 |
 | in-review | 0 |
 | done | 236 |
-| **total** | **300** |
+| **total** | **301** |
 
 ## Hierarchies
 
@@ -129,9 +129,10 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#mseqgr5 cli: --pr on new/set/mv](items/mseqgr5-cli-pr-on-new-set-mv.md)
 - [x] [#shaadcs render: PR links in SUMMARY.md, --show-field over canonical fields](items/shaadcs-render-pr-links-in-summary-md-show-field-over-canonical-fields.md)
 
-### [#js9hehc trck-html graph: draw the hierarchy edges deps draws (containment, inherited, reduced)](items/js9hehc-html-graph-hierarchy-edges.md) — 0% (0/1 pts · 0/1 done) · _medium_ · backlog
+### [#js9hehc trck-html graph: draw the hierarchy edges deps draws (containment, inherited, reduced)](items/js9hehc-html-graph-hierarchy-edges.md) — 0% (0/2 pts · 0/2 done) · _medium_ · backlog
 
 - [ ] [#5r4b2y8 html graph: derive and reduce the drawn edge set in the page](items/5r4b2y8-html-graph-drawn-edges.md) _(backlog)_
+- [ ] [#tyc6k6x html graph: select, seed and done-filter over the drawn edges](items/tyc6k6x-html-graph-select-over-drawn-edges.md) _(backlog)_
 
 ### [#pgpmbvw SUMMARY.md is a graveyard: redesign it around open work](items/pgpmbvw-summary-md-is-a-graveyard-redesign-it-around-open-work.md) — 0% (0/8 pts · 0/4 done) · _medium_ · backlog
 
