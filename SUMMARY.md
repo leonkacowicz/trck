@@ -6,8 +6,8 @@
 | State | Count |
 |---|---:|
 | backlog | 59 |
-| in-progress | 6 |
-| in-review | 1 |
+| in-progress | 5 |
+| in-review | 2 |
 | done | 236 |
 | **total** | **302** |
 
@@ -133,7 +133,7 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 - [ ] [#5r4b2y8 html graph: derive and reduce the drawn edge set in the page](items/5r4b2y8-html-graph-drawn-edges.md) _(in-review)_ · [review](https://github.com/leonkacowicz/trck/pull/71)
 - [ ] [#aw859ny html graph: style containment and inherited edges apart from authored ones](items/aw859ny-html-graph-edge-kind-styles.md) _(in-progress)_
-- [ ] [#tyc6k6x html graph: select, seed and done-filter over the drawn edges](items/tyc6k6x-html-graph-select-over-drawn-edges.md) _(in-progress)_
+- [ ] [#tyc6k6x html graph: select, seed and done-filter over the drawn edges](items/tyc6k6x-html-graph-select-over-drawn-edges.md) _(in-review)_ · [review](https://github.com/leonkacowicz/trck/pull/71)
 
 ### [#pgpmbvw SUMMARY.md is a graveyard: redesign it around open work](items/pgpmbvw-summary-md-is-a-graveyard-redesign-it-around-open-work.md) — 0% (0/8 pts · 0/4 done) · _medium_ · backlog
 
