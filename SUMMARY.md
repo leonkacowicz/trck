@@ -5,11 +5,11 @@
 
 | State | Count |
 |---|---:|
-| backlog | 60 |
+| backlog | 61 |
 | in-progress | 3 |
 | in-review | 0 |
 | done | 236 |
-| **total** | **299** |
+| **total** | **300** |
 
 ## Hierarchies
 
@@ -128,6 +128,10 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [x] [#kcqe3dj trck-html: export and link the pr field](items/kcqe3dj-trck-html-export-and-link-the-pr-field.md)
 - [x] [#mseqgr5 cli: --pr on new/set/mv](items/mseqgr5-cli-pr-on-new-set-mv.md)
 - [x] [#shaadcs render: PR links in SUMMARY.md, --show-field over canonical fields](items/shaadcs-render-pr-links-in-summary-md-show-field-over-canonical-fields.md)
+
+### [#js9hehc trck-html graph: draw the hierarchy edges deps draws (containment, inherited, reduced)](items/js9hehc-html-graph-hierarchy-edges.md) — 0% (0/1 pts · 0/1 done) · _medium_ · backlog
+
+- [ ] [#5r4b2y8 html graph: derive and reduce the drawn edge set in the page](items/5r4b2y8-html-graph-drawn-edges.md) _(backlog)_
 
 ### [#pgpmbvw SUMMARY.md is a graveyard: redesign it around open work](items/pgpmbvw-summary-md-is-a-graveyard-redesign-it-around-open-work.md) — 0% (0/8 pts · 0/4 done) · _medium_ · backlog
 
@@ -263,7 +267,6 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 - [#hzy98pm deps: select graph seeds by predicate (union of per-seed cones)](items/hzy98pm-deps-select-graph-seeds-by-predicate-union-of-per-seed-cones.md) — _medium_
 - [#j4vephz update: remove the obsolete update verb](items/j4vephz-update-remove-the-obsolete-update-verb.md) — _medium_
 - [#jkvexgs docs: record a terminal demo of the next-driven loop for the README](items/jkvexgs-docs-record-a-terminal-demo-of-the-next-driven-loop-for-the-readme.md) — _medium_
-- [#js9hehc trck-html graph: draw the hierarchy edges deps draws (containment, inherited, reduced)](items/js9hehc-html-graph-hierarchy-edges.md) — _medium_
 - [#k6g7kvf CI: a consistency check a consumer repo can drop in](items/k6g7kvf-ci-a-consistency-check-a-consumer-repo-can-drop-in.md) — _medium_
 - [#tfhhp8h mv/done: guard closing an issue with unfinished dependencies (out-of-order completion)](items/tfhhp8h-mv-done-guard-closing-an-issue-with-unfinished-dependencies-out-of-order-completion.md) — _medium_
 - [#v5wvabj list: --since/--until date-range filters over created/started/closed](items/v5wvabj-list-since-until-date-range-filters-over-created-started-closed.md) — _medium_ [dates]
