@@ -6,8 +6,8 @@
 | State | Count |
 |---|---:|
 | backlog | 59 |
-| in-progress | 4 |
-| in-review | 0 |
+| in-progress | 3 |
+| in-review | 1 |
 | done | 240 |
 | **total** | **303** |
 
@@ -297,11 +297,11 @@ Spec: [`docs/specs/2026-07-28-in-review-status-and-pr-field-design.md`](../docs/
 
 ## In-progress
 
-- [#pa9jtd5 writes: a write from a subdirectory drops the tracker tree on the branch](items/pa9jtd5-writes-a-write-from-a-subdirectory-drops-the-tracker-tree-on-the-branch.md) — _urgent_
+_none_
 
 ## In-review
 
-_none_
+- [#pa9jtd5 writes: a write from a subdirectory drops the tracker tree on the branch](items/pa9jtd5-writes-a-write-from-a-subdirectory-drops-the-tracker-tree-on-the-branch.md) — _urgent_ · [review](https://github.com/leonkacowicz/trck/pull/73)
 
 ## Done
 
