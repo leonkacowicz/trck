@@ -178,6 +178,11 @@ main { display: grid; grid-template-columns: minmax(12rem, var(--leftw, 40%)) 6p
 .gnode .gidpre { font-weight: 600; }
 .gnode .gidrest { fill: var(--muted); }
 .gedge { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+/* Inferred edges, by shape rather than colour so hover can still take the accent: dashed
+   for a parent waiting on its child, dotted for a dependency drawn under a child because
+   an ancestor authored it. */
+.gedge.child { stroke-dasharray: 6 4; }
+.gedge.inherited { stroke-dasharray: 1.5 4; stroke-linecap: round; }
 /* Hovering a node lifts the edges it touches. Both directions take the same accent the
    hovered box itself takes — the arrowhead already says which way an edge runs, and two
    colours here would collide with the accent `.gnode.sel` is using a few lines up. The
