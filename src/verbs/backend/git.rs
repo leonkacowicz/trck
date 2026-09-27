@@ -17,6 +17,7 @@
 use super::super::op::Op;
 use super::message::message;
 use super::{Changeset, Edit, git_path, local_ref, release};
+use crate::discovery::CONFIG_NAME;
 use crate::git::refs::update_ref;
 use crate::git::write::{commit_tree, hash_object, write_tree};
 use crate::git::{rev_parse, tree_blobs};
@@ -47,6 +48,7 @@ impl<'a> RefBackend<'a> {
         let held = rev_parse(self.cwd, &target)?;
         let parent = base(self.cwd, held.as_deref(), rev_parse(self.cwd, self.rev)?.as_deref())?;
         let entries = self.plan_tree(parent.as_deref(), cs)?;
+        keeps_config(&entries, &target)?;
         let listed: Vec<(&str, &str)> = entries.iter().map(|(p, sha)| (p.as_str(), sha.as_str())).collect();
         let tree = write_tree(self.cwd, &listed)?;
         let parents: Vec<&str> = parent.as_deref().into_iter().collect();
@@ -105,6 +107,22 @@ fn plan(mut base: BTreeMap<String, String>, edits: &[Edit], blobs: &[Option<Stri
         }
     }
     base
+}
+
+/// Refuse a tree that is no longer a tracker.
+///
+/// No verb removes `trck.json`, and discovery only hands this backend a ref that holds one, so
+/// a planned tree without it means the base was misread — and committing it would delete the
+/// tracker and push the deletion. That is what #pa9jtd5 did. Caught here, before anything is
+/// written, it is an error instead of silent data loss.
+fn keeps_config(entries: &BTreeMap<String, String>, target: &str) -> Result<(), String> {
+    if entries.contains_key(CONFIG_NAME) {
+        return Ok(());
+    }
+    Err(format!(
+        "refusing to commit a tracker tree with no {CONFIG_NAME} to '{target}': the ref would stop being a tracker. \
+         Nothing was written. This is a bug in trck — please report it."
+    ))
 }
 
 /// The commit the new one is built on.
@@ -212,6 +230,20 @@ mod tests {
         let out = plan(BTreeMap::new(), &edits, &[Some("i1".to_string())]);
         assert_eq!(out.len(), 1);
         assert_eq!(out.get("index.jsonl"), Some(&"i1".to_string()));
+    }
+
+    /// A tree with no `trck.json` is not a tracker — every later verb refuses the ref — so no
+    /// write may commit one, whatever went wrong upstream of the tree build. That is how
+    /// #pa9jtd5 lost data silently: an empty base listing produced exactly this tree, and it
+    /// was committed and pushed.
+    #[test]
+    fn a_tree_without_the_config_is_refused_and_one_with_it_passes() {
+        let mut entries = base();
+        let err = keeps_config(&entries, "refs/heads/trck-issues").expect_err("no trck.json");
+        assert!(err.contains("trck.json") && err.contains("refs/heads/trck-issues"), "{err}");
+        assert!(err.contains("Nothing was written"), "the refusal says the ref is untouched: {err}");
+        entries.insert("trck.json".to_string(), "c0".to_string());
+        assert!(keeps_config(&entries, "refs/heads/trck-issues").is_ok());
     }
 
     /// git's own refusal is aimed at someone committing by hand and ends in "unable to
